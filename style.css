@@ -464,6 +464,12 @@ p {
     color: #fff;
 }
 
+.solscan-btn {
+    background-color: #8C52FF; /* A distinct color for Solscan */
+    color: #fff;
+}
+
+
 /* Contact Section */
 .contact-info {
     margin-top: 30px;
