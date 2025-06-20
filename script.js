@@ -51,9 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (contractAddressElement) {
                 try {
                     await navigator.clipboard.writeText(contractAddressElement.textContent);
-                    copyButton.textContent = 'Copied!'; // Changed to English
+                    copyButton.textContent = 'Copied!';
                     setTimeout(() => {
-                        copyButton.textContent = 'Copy'; // Changed to English
+                        copyButton.textContent = 'Copy';
                     }, 2000);
                 } catch (err) {
                     console.error('Failed to copy text:', err);
