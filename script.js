@@ -4,9 +4,12 @@ document.addEventListener('DOMContentLoaded', () => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
 
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
-                behavior: 'smooth'
-            });
+            const targetId = this.getAttribute('href');
+            if (targetId) { // Check if href is not empty
+                document.querySelector(targetId).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
 
             // Optional: Add active class to navigation link
             document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
@@ -42,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sectionObserver.observe(section);
     });
 
-
     // Copy to clipboard functionality for contract address
     const copyButton = document.querySelector('.copy-btn');
     if (copyButton) {
@@ -61,5 +63,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+    }
+
+    // Announcement Feature
+    const announcementInput = document.getElementById('announcementInput');
+    const publishButton = document.getElementById('publishButton');
+    const announcementsList = document.getElementById('announcementsList');
+
+    // Load announcements when the page loads
+    loadAnnouncements();
+
+    if (publishButton) { // Ensure the button exists before adding listener
+        publishButton.addEventListener('click', () => {
+            const announcementText = announcementInput.value.trim();
+
+            if (announcementText) {
+                const now = new Date();
+                const dateString = now.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const newAnnouncement = {
+                    text: announcementText,
+                    date: dateString
+                };
+
+                // Save the announcement
+                saveAnnouncement(newAnnouncement);
+
+                // Display the announcement on the page
+                displayAnnouncement(newAnnouncement);
+
+                // Clear the input field
+                announcementInput.value = '';
+            } else {
+                alert('Please enter announcement text.');
+            }
+        });
+    }
+
+    function saveAnnouncement(announcement) {
+        let announcements = JSON.parse(localStorage.getItem('aurumFoxAnnouncements')) || [];
+        announcements.unshift(announcement); // Add new announcement to the beginning
+        localStorage.setItem('aurumFoxAnnouncements', JSON.stringify(announcements));
+    }
+
+    function loadAnnouncements() {
+        let announcements = JSON.parse(localStorage.getItem('aurumFoxAnnouncements')) || [];
+        announcements.forEach(announcement => displayAnnouncement(announcement));
+    }
+
+    function displayAnnouncement(announcement) {
+        const announcementItem = document.createElement('div');
+        announcementItem.classList.add('announcement-item');
+        announcementItem.innerHTML = `
+            <p>${announcement.text}</p>
+            <div class="announcement-date">${announcement.date}</div>
+        `;
+        // Prepend to add the newest announcement at the top
+        if (announcementsList) {
+            announcementsList.prepend(announcementItem);
+        }
     }
 });
