@@ -74,12 +74,18 @@ const wallets = [
 // --- NFT Details Modal Functions (Consolidated Block) ---
 // =========================================================================
 
+// Added console.log for debugging (these will run when script.js loads)
+console.log('nftDetailsModal:', nftDetailsModal);
+console.log('closeButton:', closeButton);
+console.log('nftDetailHistory (initial check):', nftDetailHistory);
+
 // Check if closeButton exists before attaching the event listener
 if (closeButton) {
     closeButton.onclick = function() {
         // Ensure nftDetailsModal exists before trying to hide it
         if (nftDetailsModal) {
             nftDetailsModal.style.display = 'none';
+            console.log('Modal closed via close button.'); // For debugging
         }
     };
 }
@@ -88,6 +94,7 @@ if (closeButton) {
 window.onclick = function(event) {
     if (event.target == nftDetailsModal) {
         nftDetailsModal.style.display = 'none';
+        console.log('Modal closed via outside click.'); // For debugging
     }
 };
 
@@ -133,7 +140,13 @@ async function showNftDetails(nft, currentUserWallet) {
         nftDetailBuyBtn.style.display = 'inline-block';
     }
 
-    if (nftDetailHistory) nftDetailHistory.textContent = 'Not implemented in this simulation.';
+    if (nftDetailHistory) {
+        nftDetailHistory.textContent = 'Not implemented in this simulation.';
+        console.log('nftDetailHistory text updated to:', nftDetailHistory.textContent); // For debugging
+    } else {
+        console.warn('Element with ID "nftDetailHistory" not found!');
+    }
+
 
     // Attach event listeners for actions
     if (nftDetailBuyBtn) nftDetailBuyBtn.onclick = () => alert(`Simulating purchase of ${nft.name} for ${nft.price} SOL. (Requires real blockchain interaction)`);
@@ -150,6 +163,7 @@ async function showNftDetails(nft, currentUserWallet) {
 
     // Finally, make the modal visible
     nftDetailsModal.style.display = 'flex';
+    console.log('NFT details modal displayed.'); // For debugging
 }
 
 // =========================================================================
