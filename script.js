@@ -70,6 +70,93 @@ const wallets = [
     // new SolanaWalletAdapterWallets.SolflareWalletAdapter({ network }),
 ];
 
+// =========================================================================
+// --- NFT Details Modal Functions (Consolidated Block) ---
+// =========================================================================
+
+// Check if closeButton exists before attaching the event listener
+if (closeButton) {
+    closeButton.onclick = function() {
+        // Ensure nftDetailsModal exists before trying to hide it
+        if (nftDetailsModal) {
+            nftDetailsModal.style.display = 'none';
+        }
+    };
+}
+
+// Handler to close the modal when clicking outside of its content (on the modal overlay itself)
+window.onclick = function(event) {
+    if (event.target == nftDetailsModal) {
+        nftDetailsModal.style.display = 'none';
+    }
+};
+
+// Function to display the NFT details modal and populate its content
+async function showNftDetails(nft, currentUserWallet) {
+    // Return early if the modal element cannot be found in the DOM
+    if (!nftDetailsModal) {
+        console.error("NFT details modal element not found!");
+        return;
+    }
+
+    nftDetailImage.src = nft.image || 'https://via.placeholder.com/250x150?text=NFT';
+    nftDetailName.textContent = nft.name || 'Untitled NFT';
+    nftDetailDescription.textContent = nft.description || 'No description available.';
+    nftDetailOwner.textContent = nft.owner || 'Unknown';
+    nftDetailMint.textContent = nft.mint || 'N/A';
+    nftDetailSolscanLink.href = `https://solscan.io/token/${nft.mint}?cluster=${network}`;
+
+    if (attributesList) {
+        attributesList.innerHTML = '';
+        if (nft.attributes && Array.isArray(nft.attributes)) {
+            nft.attributes.forEach(attr => {
+                const li = document.createElement('li');
+                li.textContent = `${attr.trait_type || attr.key}: ${attr.value}`;
+                attributesList.appendChild(li);
+            });
+        } else {
+            attributesList.innerHTML = '<li>No attributes.</li>';
+        }
+    }
+
+    // Show/hide action buttons based on ownership and listing status
+    if (nftDetailBuyBtn) nftDetailBuyBtn.style.display = 'none';
+    if (nftDetailSellBtn) nftDetailSellBtn.style.display = 'none';
+    if (nftDetailTransferBtn) nftDetailTransferBtn.style.display = 'none';
+
+    if (currentUserWallet && nft.owner === currentUserWallet) {
+        if (nftDetailTransferBtn) nftDetailTransferBtn.style.display = 'inline-block';
+        if (!nft.isListed && nftDetailSellBtn) { // If it's not currently listed for sale
+            nftDetailSellBtn.style.display = 'inline-block';
+        }
+    } else if (nft.isListed && nftDetailBuyBtn) { // It's listed for sale by someone else
+        nftDetailBuyBtn.style.display = 'inline-block';
+    }
+
+    if (nftDetailHistory) nftDetailHistory.textContent = 'Not implemented in this simulation.';
+
+    // Attach event listeners for actions
+    if (nftDetailBuyBtn) nftDetailBuyBtn.onclick = () => alert(`Simulating purchase of ${nft.name} for ${nft.price} SOL. (Requires real blockchain interaction)`);
+    if (nftDetailSellBtn) {
+        nftDetailSellBtn.onclick = () => {
+            if (nftToSellSelect) document.getElementById('nftToSell').value = nft.mint;
+            if (nftDetailsModal) nftDetailsModal.style.display = 'none';
+            // Smooth scroll to the NFT section
+            const nftSection = document.getElementById('nft-section');
+            if (nftSection) nftSection.scrollIntoView({ behavior: 'smooth' });
+        };
+    }
+    if (nftDetailTransferBtn) nftDetailTransferBtn.onclick = () => alert(`Simulating transfer of ${nft.name}. (Requires real blockchain interaction)`);
+
+    // Finally, make the modal visible
+    nftDetailsModal.style.display = 'flex';
+}
+
+// =========================================================================
+// --- End NFT Details Modal Functions ---
+// =========================================================================
+
+
 // --- Wallet Connection Function ---
 async function connectWallet() {
     try {
@@ -234,74 +321,6 @@ async function loadMarketplaceNFTs() {
         console.error('Error loading marketplace NFTs:', error);
         marketplaceNftList.innerHTML = `<p class="placeholder-item web3-placeholder">Error loading marketplace NFTs: ${error.message}.</p>`;
     }
-}
-
-// --- NFT Details Modal Functions ---
-if (closeButton) {
-    closeButton.onclick = function() {
-        if (nftDetailsModal) nftDetailsModal.style.display = 'none';
-    };
-}
-
-window.onclick = function(event) {
-    if (event.target == nftDetailsModal) {
-        nftDetailsModal.style.display = 'none';
-    }
-};
-
-async function showNftDetails(nft, currentUserWallet) {
-    if (!nftDetailsModal) return; // Ensure modal elements exist
-
-    nftDetailImage.src = nft.image || 'https://via.placeholder.com/250x150?text=NFT';
-    nftDetailName.textContent = nft.name || 'Untitled NFT';
-    nftDetailDescription.textContent = nft.description || 'No description available.';
-    nftDetailOwner.textContent = nft.owner || 'Unknown';
-    nftDetailMint.textContent = nft.mint || 'N/A';
-    nftDetailSolscanLink.href = `https://solscan.io/token/${nft.mint}?cluster=${network}`;
-
-    if (attributesList) {
-        attributesList.innerHTML = '';
-        if (nft.attributes && Array.isArray(nft.attributes)) {
-            nft.attributes.forEach(attr => {
-                const li = document.createElement('li');
-                li.textContent = `${attr.trait_type || attr.key}: ${attr.value}`;
-                attributesList.appendChild(li);
-            });
-        } else {
-            attributesList.innerHTML = '<li>No attributes.</li>';
-        }
-    }
-
-    // Show/hide action buttons based on ownership and listing status
-    if (nftDetailBuyBtn) nftDetailBuyBtn.style.display = 'none';
-    if (nftDetailSellBtn) nftDetailSellBtn.style.display = 'none';
-    if (nftDetailTransferBtn) nftDetailTransferBtn.style.display = 'none';
-
-    if (currentUserWallet && nft.owner === currentUserWallet) {
-        if (nftDetailTransferBtn) nftDetailTransferBtn.style.display = 'inline-block';
-        if (!nft.isListed && nftDetailSellBtn) { // If it's not currently listed for sale
-            nftDetailSellBtn.style.display = 'inline-block';
-        }
-    } else if (nft.isListed && nftDetailBuyBtn) { // It's listed for sale by someone else
-        nftDetailBuyBtn.style.display = 'inline-block';
-    }
-
-    if (nftDetailHistory) nftDetailHistory.textContent = 'Not implemented in this simulation.';
-
-    // Attach event listeners for actions
-    if (nftDetailBuyBtn) nftDetailBuyBtn.onclick = () => alert(`Simulating purchase of ${nft.name} for ${nft.price} SOL. (Requires real blockchain interaction)`);
-    if (nftDetailSellBtn) {
-        nftDetailSellBtn.onclick = () => {
-            if (nftToSellSelect) document.getElementById('nftToSell').value = nft.mint;
-            if (nftDetailsModal) nftDetailsModal.style.display = 'none';
-            // Smooth scroll to the NFT section
-            const nftSection = document.getElementById('nft-section');
-            if (nftSection) nftSection.scrollIntoView({ behavior: 'smooth' });
-        };
-    }
-    if (nftDetailTransferBtn) nftDetailTransferBtn.onclick = () => alert(`Simulating transfer of ${nft.name}. (Requires real blockchain interaction)`);
-
-    nftDetailsModal.style.display = 'flex';
 }
 
 // --- Event Listeners for Wallet Connect Buttons ---
