@@ -9,6 +9,9 @@
     <link rel="icon" href="./assets/favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js" type="application/javascript"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.js"></script>
 </head>
 <body>
     <header class="header">
@@ -300,7 +303,7 @@
                         Twitter (X)
                     </a>
                     <a href="https://solscan.io/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer" class="social-btn solscan-btn">
-                        <svg class="social-icon" viewBox="0 0 576 512" ><path fill="currentColor" d="M573.5 241.1C559.5 245.9 544.7 248 529.7 248H528c-18.7 0-33.8 15.1-33.8 33.8v80.4c0 30.6-24.8 55.4-55.4 55.4h-35.3c-14.7 0-26.6 11.9-26.6 26.6v29.6c0 14.7 11.9 26.6 26.6 26.6H502c30.6 0 55.4-24.8 55.4-55.4v-30.8c0-10.9 9-19.9 19.9-19.9h.2c10.9 0 19.9 9 19.9 19.9v30.8c0 52.4-42.5 94.9-94.9 94.9h-35.3c-52.4 0-94.9-42.5-94.9-94.9V362.2c0-14.7-11.9-26.6-26.6-26.6h-35.3c-30.6 0-55.4-24.8-55.4-55.4V281.8c0-18.7-15.1-33.8-33.8-33.8h-1.7c-15 0-29.8-2.1-43.8-6.9-49.3-17.4-87.8-64.7-87.8-119.5C96 55.4 138.5 13 190.9 13H384c17.7 0 32 14.3 32 32s-14.3 32-32 32h-193.1c-17 0-30.8 13.8-30.8 30.8s13.8 30.8 30.8 30.8H352c17.7 0 32 14.3 32 32s-14.3 32-32 32H190.9c-52.4 0-94.9 42.5-94.9 94.9 0 32.5 16.4 61.5 41.5 78.4 2.6 1.8 5.4 3.2 8.3 4.3 12.1 4.7 24.8 7.2 37.8 7.2h1.7c18.7 0 33.8 15.1 33.8 33.8v80.4c0 30.6 24.8 55.4 55.4 55.4h35.3c14.7 0 26.6 11.9 26.6 26.6v29.6c0 14.7-11.9 26.6-26.6 26.6h-35.3c-52.4 0-94.9-42.5-94.9-94.9V409.8c0-10.9-9-19.9-19.9-19.9h-.2c-10.9 0-19.9 9-19.9 19.9v30.8c0 52.4 42.5 94.9 94.9 94.9h35.3c52.4 0 94.9-42.5 94.9-94.9V409.8c0-18.7 15.1-33.8 33.8-33.8h1.7c15 0 29.8-2.1 43.8-6.9C523.5 351.7 562 304.4 562 249.6c0-32.5-16.4-61.5-41.5-78.4z"/></svg>
+                        <svg class="social-icon" viewBox="0 0 576 512" ><path fill="currentColor" d="M573.5 241.1C559.5 245.9 544.7 248 529.7 248H528c-18.7 0-33.8 15.1-33.8 33.8v80.4c0 30.6-24.8 55.4-55.4 55.4h-35.3c-14.7 0-26.6 11.9-26.6 26.6v29.6c0 14.7 11.9 26.6 26.6 26.6H502c30.6 0 55.4-24.8 55.4-55.4v-30.8c0-10.9 9-19.9 19.9-19.9h.2c10.9 0 19.9 9 19.9 19.9v30.8c0 52.4-42.5 94.9-94.9 94.9h-35.3c-52.4 0-94.9-42.5-94.9-94.9V362.2c0-14.7-11.9-26.6-26.6-26.6h-35.3c-30.6 0-55.4-24.8-55.4-55.4V281.8c0-18.7-15.1-33.8-33.8-33.8h-1.7c-15 0-29.8-2.1-43.8-6.9-49.3-17.4-87.8-64.7-87.8-119.5C96 55.4 138.5 13 190.9 13H384c17.7 0 32 14.3 32 32s-14.3 32-32 32h-193.1c-17 0-30.8 13.8-30.8 30.8s13.8 30.8 30.8 30.8H352c17.7 0 32 14.3 32 32s-14.3 32-32 32H190.9c-52.4 0-94.9 42.5-94.9 94.9 0 32.5 16.4 61.5 41.5 78.4 2.6 1.8 5.4 3.2 8.3 4.3 12.1 4.7 24.8 7.2 37.8 7.2h1.7c18.7 0 33.8 15.1 33.8 33.8v80.4c0 30.6 24.8 55.4 55.4 55.4h35.3c14.7 0 26.6 11.9-26.6 26.6v29.6c0 14.7-11.9 26.6-26.6 26.6h-35.3c-52.4 0-94.9-42.5-94.9-94.9V409.8c0-10.9-9-19.9-19.9-19.9h-.2c-10.9 0-19.9 9-19.9 19.9v30.8c0 52.4 42.5 94.9 94.9 94.9h35.3c52.4 0 94.9-42.5 94.9-94.9V409.8c0-18.7 15.1-33.8 33.8-33.8h1.7c15 0 29.8-2.1 43.8-6.9C523.5 351.7 562 304.4 562 249.6c0-32.5-16.4-61.5-41.5-78.4z"/></svg>
                         Solscan
                     </a>
                     <a href="#aurum-announcements" class="social-btn news-btn">
@@ -451,16 +454,18 @@
         <section id="photo-section" class="section multimedia-section">
             <div class="container multimedia-portal-container">
                 <h2 class="multimedia-heading">Upload Photos</h2>
-                <form action="#" method="post" enctype="multipart/form-data" class="upload-form multimedia-form">
+                <form id="photoUploadForm" class="upload-form multimedia-form" enctype="multipart/form-data">
                     <label for="photo-upload">Select file:</label>
                     <input type="file" id="photo-upload" name="photo" accept="image/*">
                     <label for="photo-title">Photo Title:</label>
                     <input type="text" id="photo-title" name="photo_title" placeholder="Enter photo title">
+                    <label for="photo-description">Description:</label>
+                    <textarea id="photo-description" name="photo_description" rows="3" placeholder="Enter photo description"></textarea>
                     <button type="submit" class="multimedia-btn">Upload Photo</button>
                 </form>
 
                 <h3 class="multimedia-subheading">My Gallery</h3>
-                <div class="gallery multimedia-grid">
+                <div id="photo-gallery" class="gallery multimedia-grid">
                     <div class="item multimedia-item">
                         <img src="https://via.placeholder.com/250x150?text=Photo+1" alt="Description of photo 1">
                         <h3>Beautiful Sunset</h3>
@@ -478,7 +483,7 @@
         <section id="post-section" class="section multimedia-section-alt">
             <div class="container multimedia-portal-container">
                 <h2 class="multimedia-heading">Create New Post</h2>
-                <form action="#" method="post" class="upload-form multimedia-form">
+                <form id="postForm" class="upload-form multimedia-form">
                     <label for="post-title">Post Title:</label>
                     <input type="text" id="post-title" name="post_title" placeholder="Enter post title">
                     <label for="post-content">Post Content:</label>
@@ -487,7 +492,7 @@
                 </form>
 
                 <h3 class="multimedia-subheading">My Posts</h3>
-                <div class="posts multimedia-grid">
+                <div id="posts-list" class="posts multimedia-grid">
                     <div class="item multimedia-item">
                         <h3>My First Blog Post</h3>
                         <p>Welcome to my blog! Here I will share my thoughts and ideas.</p>
