@@ -81,22 +81,34 @@ console.log('nftDetailHistory (initial check):', nftDetailHistory);
 
 // Check if closeButton exists before attaching the event listener
 if (closeButton) {
-    closeButton.onclick = function() {
+    // FIXED: Using addEventListener instead of onclick
+    closeButton.addEventListener('click', function() {
         // Ensure nftDetailsModal exists before trying to hide it
         if (nftDetailsModal) {
             nftDetailsModal.style.display = 'none';
             console.log('Modal closed via close button.'); // For debugging
         }
-    };
+    });
 }
 
 // Handler to close the modal when clicking outside of its content (on the modal overlay itself)
-window.onclick = function(event) {
+// FIXED: Using addEventListener instead of onclick on window
+window.addEventListener('click', function(event) {
     if (event.target == nftDetailsModal) {
         nftDetailsModal.style.display = 'none';
         console.log('Modal closed via outside click.'); // For debugging
     }
-};
+});
+
+// Add an event listener for the Escape key to close the modal
+document.addEventListener('keydown', (event) => {
+    // Check if the Escape key is pressed and the modal is currently visible (using 'flex' as you use it for display)
+    if (event.key === 'Escape' && nftDetailsModal && nftDetailsModal.style.display === 'flex') {
+        nftDetailsModal.style.display = 'none';
+        console.log('Modal closed via Escape key.');
+    }
+});
+
 
 // Function to display the NFT details modal and populate its content
 async function showNftDetails(nft, currentUserWallet) {
@@ -148,7 +160,7 @@ async function showNftDetails(nft, currentUserWallet) {
     }
 
 
-    // Attach event listeners for actions
+    // Attach event listeners for actions (these onclick handlers can remain, as they are specific to elements inside the modal and won't overwrite general close handlers)
     if (nftDetailBuyBtn) nftDetailBuyBtn.onclick = () => alert(`Simulating purchase of ${nft.name} for ${nft.price} SOL. (Requires real blockchain interaction)`);
     if (nftDetailSellBtn) {
         nftDetailSellBtn.onclick = () => {
@@ -162,7 +174,7 @@ async function showNftDetails(nft, currentUserWallet) {
     if (nftDetailTransferBtn) nftDetailTransferBtn.onclick = () => alert(`Simulating transfer of ${nft.name}. (Requires real blockchain interaction)`);
 
     // Finally, make the modal visible
-    nftDetailsModal.style.display = 'flex';
+    nftDetailsModal.style.display = 'flex'; // Ensure your CSS for .modal uses display: flex; to show it
     console.log('NFT details modal displayed.'); // For debugging
 }
 
