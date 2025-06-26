@@ -13,7 +13,6 @@ const connectWalletBtnWeb3 = document.getElementById('connectWalletBtnWeb3');
 const walletAddressDisplayWeb3 = document.getElementById('walletAddressDisplayWeb3');
 const connectWalletNftBtn = document.getElementById('connectWalletNftBtn');
 const walletAddressDisplayNft = document.getElementById('walletAddressDisplayNft');
-const walletAddressDisplayDao = document.getElementById('walletAddressDisplayDao'); // Added for DAO/Staking section
 
 // NFT Section
 const userNftList = document.getElementById('user-nft-list'); // Corrected ID based on common practice
@@ -57,20 +56,6 @@ const nftDetailHistory = document.getElementById('nftDetailHistory');
 // Copy Button
 const copyBtn = document.querySelector('.copy-btn');
 
-// Staking Section Elements
-const userAfoxBalance = document.getElementById('userAfoxBalance');
-const userStakedAmount = document.getElementById('userStakedAmount');
-const userRewardsAmount = document.getElementById('userRewardsAmount');
-const stakingApr = document.getElementById('stakingApr');
-const stakeAmountInput = document.getElementById('stakeAmountInput');
-const stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
-const claimRewardsBtn = document.getElementById('claimRewardsBtn');
-const unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
-const minStakeAmountDisplay = document.getElementById('minStakeAmount');
-const lockupPeriodDisplay = document.getElementById('lockupPeriod');
-const unstakeFeeDisplay = document.getElementById('unstakeFee');
-const rewardCalculationDisplay = document.getElementById('rewardCalculation');
-
 
 // --- Global Variables for Wallet Connection ---
 let walletPublicKey = null; // Stores the public key of the connected wallet
@@ -84,11 +69,6 @@ const wallets = [
     // Add other wallets here if desired, e.g.:
     // new SolanaWalletAdapterWallets.SolflareWalletAdapter({ network }),
 ];
-
-// Example Addresses (REPLACE WITH YOUR PROJECT'S ACTUAL ADDRESSES)
-// IMPORTANT: These are placeholders. You MUST replace them with your actual Solana program IDs and token mint addresses.
-const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey('YourAFOXTokenMintAddressHere'); // <-- YOUR AFOX TOKEN MINT ADDRESS
-const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('YourStakingProgramIdHere'); // <-- YOUR STAKING SMART CONTRACT (PROGRAM) ID
 
 // =========================================================================
 // --- NFT Details Modal Functions (Consolidated Block) ---
@@ -228,7 +208,6 @@ async function connectWallet() {
         // Update display elements
         if (walletAddressDisplayWeb3) walletAddressDisplayWeb3.textContent = walletPublicKey.toBase58();
         if (walletAddressDisplayNft) walletAddressDisplayNft.textContent = walletPublicKey.toBase58();
-        if (walletAddressDisplayDao) walletAddressDisplayDao.textContent = walletPublicKey.toBase58(); // Update for DAO/Staking
 
         // Initialize Solana Connection
         connection = new SolanaWeb3.Connection(
@@ -238,7 +217,6 @@ async function connectWallet() {
 
         // Load user-specific data after wallet connection
         await loadUserNFTs(walletPublicKey.toBase58());
-        await updateStakingUI(); // Load staking data
 
         // Listen for account changes (only works if `solana` object is globally available)
         // Note: The `window.solana` object for Phantom is often deprecated in favor of adapter events.
@@ -250,9 +228,7 @@ async function connectWallet() {
                     walletPublicKey = publicKey;
                     if (walletAddressDisplayWeb3) walletAddressDisplayWeb3.textContent = walletPublicKey.toBase58();
                     if (walletAddressDisplayNft) walletAddressDisplayNft.textContent = walletPublicKey.toBase58();
-                    if (walletAddressDisplayDao) walletAddressDisplayDao.textContent = walletPublicKey.toBase58();
                     loadUserNFTs(walletPublicKey.toBase58()); // Reload NFTs for new account
-                    updateStakingUI(); // Reload staking data for new account
                 } else {
                     // This event fires if the wallet is locked or disconnected by the user
                     console.log('Wallet account removed or locked.');
@@ -279,10 +255,8 @@ function handleWalletDisconnect() {
     connection = null;
     if (walletAddressDisplayWeb3) walletAddressDisplayWeb3.textContent = 'Not Connected';
     if (walletAddressDisplayNft) walletAddressDisplayNft.textContent = 'Not Connected';
-    if (walletAddressDisplayDao) walletAddressDisplayDao.textContent = 'Not Connected';
     if (userNftList) userNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Connect your wallet to see your NFTs.</p>';
     if (nftToSellSelect) nftToSellSelect.innerHTML = '<option value="">-- Please select an NFT --</option>';
-    updateStakingUI(); // Reset staking UI on disconnect
 }
 
 // --- NFT Display Functions ---
@@ -708,216 +682,6 @@ if (postForm) {
     });
 }
 
-// --- Solana Connection Initialization for Staking ---
-function initializeSolanaConnection() {
-    // This function can be called on page load or wallet connection.
-    // It's good practice to ensure 'connection' is only initialized once
-    // or updated when the network changes.
-    if (!connection) {
-        connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(network), 'confirmed');
-        console.log('Solana connection initialized.');
-    }
-}
-
-// Function to update all staking data in the UI
-async function updateStakingUI() {
-    if (!walletPublicKey) {
-        userAfoxBalance.textContent = '0 AFOX';
-        userStakedAmount.textContent = '0 AFOX';
-        userRewardsAmount.textContent = '0 AFOX';
-        // Update other info fields to default values
-        if (stakingApr) stakingApr.textContent = '--%';
-        if (minStakeAmountDisplay) minStakeAmountDisplay.textContent = '1 AFOX'; // Default value
-        if (lockupPeriodDisplay) lockupPeriodDisplay.textContent = '0 days (flexible)'; // Default value
-        if (unstakeFeeDisplay) unstakeFeeDisplay.textContent = '0%'; // Default value
-        if (rewardCalculationDisplay) rewardCalculationDisplay.textContent = 'Daily'; // Default value
-        return;
-    }
-
-    try {
-        // Ensure connection is initialized
-        initializeSolanaConnection();
-
-        // 1. Get user's AFOX token balance
-        let afoxBalance = 0;
-        try {
-            const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-                walletPublicKey,
-                { mint: AFOX_TOKEN_MINT_ADDRESS }
-            );
-
-            if (tokenAccounts.value.length > 0) {
-                // Assume the user has only one account for this token
-                afoxBalance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-            }
-        } catch (tokenError) {
-            console.warn('Could not fetch AFOX token balance (might not have any):', tokenError);
-            // Default to 0 if balance fetch fails (e.g., token account doesn't exist)
-            afoxBalance = 0;
-        }
-        if (userAfoxBalance) userAfoxBalance.textContent = `${afoxBalance} AFOX`;
-
-        // 2. Get user's staked amount and accumulated rewards
-        // THIS IS PSEUDO-CODE! You'll need to call your staking smart contract
-        // to retrieve this data. For example, via a PDA (Program Derived Address)
-        // associated with the user's wallet and the staking program.
-        const userStakingAccount = await getUserStakingAccount(walletPublicKey); // Your function to get staking data
-        if (userStakingAccount) {
-            if (userStakedAmount) userStakedAmount.textContent = `${userStakingAccount.stakedAmount} AFOX`;
-            if (userRewardsAmount) userRewardsAmount.textContent = `${userStakingAccount.rewards} AFOX`;
-        } else {
-            if (userStakedAmount) userStakedAmount.textContent = '0 AFOX';
-            if (userRewardsAmount) userRewardsAmount.textContent = '0 AFOX';
-        }
-
-        // 3. Get general staking parameters (APR, lockup period, etc.)
-        // THIS IS PSEUDO-CODE! This data should also be retrieved from your smart contract
-        const stakingPoolInfo = await getStakingPoolInfo(); // Your function to get general pool info
-        if (stakingPoolInfo) {
-            if (stakingApr) stakingApr.textContent = `${stakingPoolInfo.apr}%`;
-            if (minStakeAmountDisplay) minStakeAmountDisplay.textContent = `${stakingPoolInfo.minStake} AFOX`;
-            if (lockupPeriodDisplay) lockupPeriodDisplay.textContent = `${stakingPoolInfo.lockupDays} days`;
-            if (unstakeFeeDisplay) unstakeFeeDisplay.textContent = `${stakingPoolInfo.unstakeFee}%`;
-            if (rewardCalculationDisplay) rewardCalculationDisplay.textContent = stakingPoolInfo.rewardCalcMethod;
-        }
-
-    } catch (error) {
-        console.error('Error updating staking UI:', error);
-        alert('Failed to load staking data. Please check the console.');
-    }
-}
-
-// PSEUDO-FUNCTIONS for smart contract interaction
-async function getUserStakingAccount(publicKey) {
-    // This will contain the logic to read data from your staking smart contract
-    // For example, get the PDA for the user's staking account
-    // const [userStakingPda, bump] = await SolanaWeb3.PublicKey.findProgramAddress(
-    //     [publicKey.toBuffer(), Buffer.from("staking_account")],
-    //     STAKING_PROGRAM_ID
-    // );
-    // const accountInfo = await connection.getAccountInfo(userStakingPda);
-    // if (accountInfo) {
-    //     // Deserialize the account data
-    //     // return deserializedData;
-    // }
-    // For demonstration:
-    return { stakedAmount: 100, rewards: 5.25 }; // Mock data
-}
-
-async function getStakingPoolInfo() {
-    // This will contain the logic to read global staking pool parameters
-    // For example, get the PDA for the global pool account
-    // For demonstration:
-    return { apr: 15, minStake: 1, lockupDays: 0, unstakeFee: 0, rewardCalcMethod: "Daily" }; // Mock data
-}
-
-// "Stake" button handler (PSEUDO-CODE)
-if (stakeAfoxBtn) {
-    stakeAfoxBtn.addEventListener('click', async () => {
-        if (!walletPublicKey) {
-            alert('Please connect your wallet.');
-            return;
-        }
-
-        const amount = parseFloat(stakeAmountInput.value);
-        if (isNaN(amount) || amount <= 0) {
-            alert('Please enter a valid amount to stake.');
-            return;
-        }
-
-        console.log(`Attempting to stake ${amount} AFOX...`);
-
-        try {
-            // 1. Approve token spending (if your contract requires it)
-            // This is done via an SPL Token approve instruction
-            // const tokenAccount = await getAssociatedTokenAddress(AFOX_TOKEN_MINT_ADDRESS, walletPublicKey);
-            // const approveInstruction = SolanaSPL.createApproveInstruction(
-            //     tokenAccount, // User's token account
-            //     STAKING_PROGRAM_ID, // Program address we're giving approval to
-            //     walletPublicKey, // Token owner
-            //     amount * (10 ** tokenDecimals) // Amount in smallest units (e.g., lamports)
-            // );
-
-            // 2. Create the staking instruction for your contract
-            // const stakeInstruction = new SolanaWeb3.TransactionInstruction({
-            //     keys: [
-            //         { pubkey: walletPublicKey, isSigner: true, isWritable: false },
-            //         // Other keys required by your staking instruction (token accounts, PDAs, etc.)
-            //     ],
-            //     programId: STAKING_PROGRAM_ID,
-            //     data: Buffer.from([1, ...amountBytes]) // Example data for instruction (1 = "stake" instruction type)
-            // });
-
-            // 3. Assemble and send the transaction
-            // const transaction = new SolanaWeb3.Transaction().add(approveInstruction, stakeInstruction);
-            // const signature = await window.solana.sendAndConfirmTransaction(connection, transaction);
-            // console.log('Staking transaction signature:', signature);
-
-            alert(`You successfully staked ${amount} AFOX! (This function requires staking smart contract implementation)`);
-            if (stakeAmountInput) stakeAmountInput.value = '';
-            updateStakingUI(); // Update UI after transaction
-        } catch (error) {
-            console.error('Error during staking:', error);
-            alert('Failed to stake tokens. Check the console for details.');
-        }
-    });
-}
-
-// "Claim Rewards" button handler (PSEUDO-CODE)
-if (claimRewardsBtn) {
-    claimRewardsBtn.addEventListener('click', async () => {
-        if (!walletPublicKey) {
-            alert('Please connect your wallet.');
-            return;
-        }
-
-        console.log('Attempting to claim rewards...');
-
-        try {
-            // This will contain the logic to call the "claim rewards" instruction in your smart contract
-            // const transaction = new SolanaWeb3.Transaction().add(claimRewardsInstruction);
-            // const signature = await window.solana.sendAndConfirmTransaction(connection, transaction);
-            // console.log('Claim rewards transaction signature:', signature);
-
-            alert('Rewards successfully claimed! (This function requires staking smart contract implementation)');
-            updateStakingUI();
-        } catch (error) {
-            console.error('Error claiming rewards:', error);
-            alert('Failed to claim rewards. Check the console.');
-        }
-    });
-}
-
-// "Unstake Tokens" button handler (PSEUDO-CODE)
-if (unstakeAfoxBtn) {
-    unstakeAfoxBtn.addEventListener('click', async () => {
-        if (!walletPublicKey) {
-            alert('Please connect your wallet.');
-            return;
-        }
-
-        // In a more complex implementation, you might prompt for the unstake amount
-        // const amountToUnstake = prompt('How much AFOX do you want to unstake?');
-        // if (!amountToUnstake) return;
-
-        console.log('Attempting to unstake tokens...');
-
-        try {
-            // This will contain the logic to call the "unstake" instruction in your smart contract
-            // const transaction = new SolanaWeb3.Transaction().add(unstakeInstruction);
-            // const signature = await window.solana.sendAndConfirmTransaction(connection, transaction);
-            // console.log('Unstake transaction signature:', signature);
-
-            alert('Staked tokens successfully unstaked! (This function requires staking smart contract implementation)');
-            updateStakingUI();
-        } catch (error) {
-            console.error('Error unstaking tokens:', error);
-            alert('Failed to unstake tokens. Check the console.');
-        }
-    });
-}
-
-
 // --- Initial Data Load on Page Ready ---
 document.addEventListener('DOMContentLoaded', async () => {
     // Initial loads of static content and marketplace NFTs
@@ -928,9 +692,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadPosts();
     await loadMarketplaceNFTs();
 
-    // Initialize Solana connection on DOMContentLoaded
-    initializeSolanaConnection();
-
     // Attempt to auto-connect wallet if already authorized (Phantom's behavior)
     try {
         const selectedWallet = wallets[0];
@@ -939,9 +700,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             provider = selectedWallet;
             if (walletAddressDisplayWeb3) walletAddressDisplayWeb3.textContent = walletPublicKey.toBase58();
             if (walletAddressDisplayNft) walletAddressDisplayNft.textContent = walletPublicKey.toBase58();
-            if (walletAddressDisplayDao) walletAddressDisplayDao.textContent = walletPublicKey.toBase58();
+            connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(network), 'confirmed');
             await loadUserNFTs(walletPublicKey.toBase58());
-            await updateStakingUI(); // Update staking UI on auto-connect
 
             // Re-attach event listeners for auto-connected wallet
             if (provider) {
@@ -951,9 +711,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         walletPublicKey = publicKey;
                         if (walletAddressDisplayWeb3) walletAddressDisplayWeb3.textContent = walletPublicKey.toBase58();
                         if (walletAddressDisplayNft) walletAddressDisplayNft.textContent = walletPublicKey.toBase58();
-                        if (walletAddressDisplayDao) walletAddressDisplayDao.textContent = walletPublicKey.toBase58();
                         loadUserNFTs(walletPublicKey.toBase58());
-                        updateStakingUI();
                     } else {
                         console.log('Wallet account removed or locked.');
                         handleWalletDisconnect();
@@ -964,14 +722,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     handleWalletDisconnect();
                 });
             }
-        } else {
-             // If not auto-connected, ensure staking UI is reset to default (0 values)
-             updateStakingUI();
         }
     } catch (e) {
         console.warn("Auto-connect failed or wallet not found/authorized:", e);
-        // Ensure UI is reset if auto-connect fails
-        handleWalletDisconnect();
     }
 });
 
