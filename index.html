@@ -8,14 +8,9 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
-    </head>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js" type="application/javascript"></script>
+</head>
 <body>
-    <noscript>
-        <div style="text-align: center; padding: 20px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 5px; margin: 20px;">
-            Для полноценной работы этого портала требуется JavaScript. Пожалуйста, включите JavaScript в вашем браузере.
-        </div>
-    </noscript>
-
     <header class="header">
         <div class="container">
             <div class="logo">
@@ -30,21 +25,21 @@
                     <li><a href="#about-afox">About AFOX</a></li>
                     <li><a href="#tokenomics">Tokenomics</a></li>
                     <li><a href="#how-to-buy">Get AFOX</a></li>
-                    <li><a href="#aurum-nfts">NFTs Info</a></li>
+                    <li><a href="#aurum-nfts">NFTs</a></li>
                     <li><a href="#aurum-nfc">NFC</a></li>
                     <li><a href="#aurum-roadmap">Roadmap</a></li>
                     <li><a href="#aurum-news">News</a></li>
                     <li><a href="#aurum-announcements">Announcements</a></li>
                     <li><a href="#aurum-community">Community</a></li>
                     <li><a href="#contact-us">Contact</a></li>
-                    <li><a href="#games-section">Games Portal</a></li>
+                    <li><a href="#games-section">Games</a></li>
                     <li><a href="#nft-section">NFTs Portal</a></li>
-                    <li><a href="#ads-section">Ads Portal</a></li>
+                    <li><a href="#ads-section">Ads</a></li>
                     <li><a href="#dao-section">DAO</a></li>
                     <li><a href="#staking-section">Staking</a></li>
-                    <li><a href="#photo-section">Photos Hub</a></li>
-                    <li><a href="#post-section">Posts Hub</a></li>
-                    <li><a href="#portal-games-section">Mini-Games Hub</a></li>
+                    <li><a href="#photo-section">Photos</a></li>
+                    <li><a href="#post-section">Posts</a></li>
+                    <li><a href="#portal-games-section">Mini-Games</a></li>
                 </ul>
             </nav>
         </div>
@@ -138,7 +133,7 @@
                     </div>
                 </div>
                 <div class="contract-address">
-                    <p><strong>AFOX Contract Address:</strong> <span id="contractAddress" class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn" aria-label="Copy AFOX Contract Address">Copy</button></p>
+                    <p><strong>AFOX Contract Address:</strong> <span id="contractAddress" class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn">Copy</button></p>
                 </div>
                 <p class="tokenomics-note">Our tokenomics are designed for long-term sustainability and community growth.</p>
             </div>
@@ -197,12 +192,12 @@
                 </ul>
                 <div class="nft-showcase">
                     <div class="nft-card">
-                        <img src="https://via.placeholder.com/150/ffd700/000000?text=AFOX+NFT+1" alt="Aurum Fox Genesis NFT #001, rare first edition placeholder image">
+                        <img src="https://via.placeholder.com/150/ffd700/000000?text=AFOX+NFT+1" alt="Aurum Fox Genesis NFT #001, rare first edition">
                         <h4>Aurum Fox Genesis #001</h4>
                         <p>Rare first edition collectible.</p>
                     </div>
                     <div class="nft-card">
-                        <img src="https://via.placeholder.com/150/c0c0c0/000000?text=AFOX+NFT+2" alt="Aurum Fox Guardian NFT #002, grants staking bonus placeholder image">
+                        <img src="https://via.placeholder.com/150/c0c0c0/000000?text=AFOX+NFT+2" alt="Aurum Fox Guardian NFT #002, grants staking bonus">
                         <h4>Aurum Fox Guardian #002</h4>
                         <p>Grants staking bonus.</p>
                     </div>
@@ -212,6 +207,8 @@
             </div>
         </section>
 
+        ---
+
         <section id="aurum-nfc" class="section aurum-fox-section-alt">
             <div class="container">
                 <h2 class="aurum-heading">🦊 Aurum Fox NFC: Interactive Future</h2>
@@ -220,17 +217,17 @@
                 <div class="nfc-grid">
                     <div class="nfc-item">
                         <h3>AFOX NFT Authenticity</h3>
-                        <img src="https://via.placeholder.com/150?text=NFT+NFC+Scan" alt="Smartphone scanning an NFC tag on an NFT">
+                        <img src="https://via.placeholder.com/150?text=NFT+NFC+Scan" alt="Smartphone scanning an NFC tag on an NFT" class="nfc-icon">
                         <p>Verify the authenticity of your physical Aurum Fox NFT collectibles using NFC. Simply tap your smartphone to an NFC-chipped item to instantly check its blockchain status and receive exclusive information.</p>
                     </div>
                     <div class="nfc-item">
                         <h3>Exclusive Access and Events</h3>
-                        <img src="https://via.placeholder.com/150?text=Event+NFC" alt="Smartphone tapping an NFC tag for event access">
+                        <img src="https://via.placeholder.com/150?text=Event+NFC" alt="Smartphone tapping an NFC tag for event access" class="nfc-icon">
                         <p>Use NFC tags to gain access to private community meetups, airdrops, or unique content. Your physical presence unlocks digital doors!</p>
                     </div>
                     <div class="nfc-item">
                         <h3>Interactive Advertising</h3>
-                        <img src="https://via.placeholder.com/150?text=Ad+NFC+Tap" alt="Person tapping phone to an ad with NFC">
+                        <img src="https://via.placeholder.com/150?text=Ad+NFC+Tap" alt="Person tapping phone to an ad with NFC" class="nfc-icon">
                         <p>Advertisers can integrate NFC into their campaigns. Tap a physical NFC tag to be directed to interactive ads, special offers, or partner promotions directly on our portal.</p>
                     </div>
                 </div>
@@ -382,6 +379,8 @@
             </div>
         </section>
 
+        ---
+
         <section id="web3-site-home" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🎮 My Web3 Portal</h2>
@@ -424,24 +423,6 @@
                 <p>This section will display user-uploaded games.</p>
                 <button id="uploadGameBtnWeb3" class="web3-btn">Upload New Game</button>
                 <div id="game-list" class="content-area web3-content-area games-grid">
-                    <div class="game-item dynamic-game-card">
-                        <img src="https://via.placeholder.com/200x120?text=Web3+Game+1" alt="Screenshot of a blockchain-based game">
-                        <h3>Galaxy Explorer</h3>
-                        <p>Explore new planets and earn crypto rewards.</p>
-                        <button class="web3-btn play-game-btn" data-game-id="game-galaxy-explorer">Играть</button>
-                    </div>
-                    <div class="game-item dynamic-game-card">
-                        <img src="https://via.placeholder.com/200x120?text=NFT+Card+Game" alt="Image of an NFT card game interface">
-                        <h3>Crypto Cards Battle</h3>
-                        <p>Collect rare NFT cards and battle other players.</p>
-                        <button class="web3-btn play-game-btn" data-game-id="game-crypto-cards">Играть</button>
-                    </div>
-                    <div class="game-item dynamic-game-card">
-                        <img src="https://via.placeholder.com/200x120?text=AFOX+Adventure" alt="Aurum Fox character in an adventure game">
-                        <h3>Aurum Fox Adventure</h3>
-                        <p>Join AFOX on a quest for golden treasures!</p>
-                        <button class="web3-btn play-game-btn" data-game-id="game-afox-adventure">Играть</button>
-                    </div>
                     <div class="placeholder-item web3-placeholder game">Game 1: Title</div>
                     <div class="placeholder-item web3-placeholder game">Game 2: Title</div>
                     <div class="placeholder-item web3-placeholder game">Game Title 3</div>
@@ -461,29 +442,11 @@
 
                 <div class="nft-actions">
                     <button id="viewMyNftsBtn" class="web3-btn">View My NFTs</button>
-                    <button id="mintNftBtn" class="web3-btn" onclick="document.getElementById('mintNftModal').style.display='block';">Mint New NFT</button>
+                    <button id="mintNftBtn" class="web3-btn">Mint New NFT</button>
                 </div>
 
                 <h3 class="web3-subheading">Your NFTs:</h3>
                 <div id="user-nft-list" class="content-area web3-content-area nft-grid">
-                    <div class="nft-item dynamic-nft-card">
-                        <img src="https://via.placeholder.com/150/007bff/FFFFFF?text=My+NFT+1" alt="Custom NFT with abstract art">
-                        <h4>My Personal NFT Art #001</h4>
-                        <p><strong>Коллекция:</strong> Personal Creations</p>
-                        <p><strong>Минт:</strong> <span class="nft-mint-address">ExAmPlE123...456AdDrEsS</span></p>
-                        <p><strong>Владелец:</strong> <span class="nft-owner-address">Your Wallet</span></p>
-                        <button class="web3-btn small-btn view-nft-details" data-nft-id="my-nft-001">Показать детали</button>
-                        <button class="web3-btn red-btn sell-nft-btn" data-nft-id="my-nft-001">Продать</button>
-                    </div>
-                    <div class="nft-item dynamic-nft-card">
-                        <img src="https://via.placeholder.com/150/28a745/FFFFFF?text=AFOX+Badge" alt="Aurum Fox Community Badge NFT">
-                        <h4>AFOX Community Badge</h4>
-                        <p><strong>Коллекция:</strong> Aurum Fox Official</p>
-                        <p><strong>Минт:</strong> <span class="nft-mint-address">AFOX_BADGE_MINT</span></p>
-                        <p><strong>Владелец:</strong> <span class="nft-owner-address">Your Wallet</span></p>
-                        <button class="web3-btn small-btn view-nft-details" data-nft-id="afox-badge">Показать детали</button>
-                        <button class="web3-btn red-btn sell-nft-btn" data-nft-id="afox-badge">Продать</button>
-                    </div>
                     <p class="placeholder-item web3-placeholder">Connect your wallet to see your NFTs.</p>
                 </div>
 
@@ -493,8 +456,6 @@
                         <label for="nftToSell">Select NFT to sell:</label>
                         <select id="nftToSell" name="nftToSell" required>
                             <option value="">-- Please select an NFT --</option>
-                            <option value="nft-id-example-1">My Personal NFT Art #001</option>
-                            <option value="nft-id-example-2">AFOX Community Badge</option>
                         </select>
 
                         <label for="salePrice">Sale Price (SOL):</label>
@@ -509,27 +470,32 @@
 
                 <h3 class="web3-subheading">NFTs from Marketplaces:</h3>
                 <div id="marketplace-nft-list" class="content-area web3-content-area nft-grid">
-                    <div class="nft-item dynamic-nft-card">
-                        <img src="https://via.placeholder.com/150/ffc107/000000?text=Rare+Fox+NFT" alt="Rare Aurum Fox NFT on marketplace">
-                        <h4>Rare Solana Fox #789</h4>
-                        <p><strong>Коллекция:</strong> Solana Foxes</p>
-                        <p><strong>Минт:</strong> <span class="nft-mint-address">SoLanaFoX...123AbC</span></p>
-                        <p><strong>Владелец:</strong> <span class="nft-owner-address">Marketplace Listing</span></p>
-                        <p class="nft-price"><strong>Цена:</strong> 1.2 SOL</p>
-                        <button class="web3-btn small-btn view-nft-details" data-nft-id="marketplace-fox-789">Показать детали</button>
-                        <button class="web3-btn green-btn buy-nft-btn" data-nft-id="marketplace-fox-789">Купить</button>
-                    </div>
-                    <div class="nft-item dynamic-nft-card">
-                        <img src="https://via.placeholder.com/150/dc3545/FFFFFF?text=CryptoPunk+Clone" alt="A clone of a famous cryptopunk NFT">
-                        <h4>Pixel Creature #042</h4>
-                        <p><strong>Коллекция:</strong> Pixelated Pals</p>
-                        <p><strong>Минт:</strong> <span class="nft-mint-address">PiXeLPaL...DeFgHiJ</span></p>
-                        <p><strong>Владелец:</strong> <span class="nft-owner-address">Marketplace Listing</span></p>
-                        <p class="nft-price"><strong>Цена:</strong> 0.8 SOL</p>
-                        <button class="web3-btn small-btn view-nft-details" data-nft-id="marketplace-pixel-042">Показать детали</button>
-                        <button class="web3-btn green-btn buy-nft-btn" data-nft-id="marketplace-pixel-042">Купить</button>
-                    </div>
                     <p class="placeholder-item web3-placeholder">Loading NFTs from Magic Eden...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="mint-nft-section" class="section web3-section">
+            <div class="container">
+                <h2 class="web3-heading">✨ Create Your Own NFT (Minting)</h2>
+                <p>Unleash your creativity! Upload your artwork and mint it as a unique NFT on the Solana blockchain.</p>
+
+                <div class="nft-form-container">
+                    <form id="mintNftFormSection" class="web3-form" enctype="multipart/form-data"> <label for="nftFile">Upload Image/Video:</label>
+                        <input type="file" id="nftFile" name="nftFile" accept="image/*,video/*" required>
+
+                        <label for="mintNftName">NFT Name:</label>
+                        <input type="text" id="mintNftName" name="mintNftName" placeholder="e.g., My Masterpiece #1" required>
+
+                        <label for="mintNftDescription">Description:</label>
+                        <textarea id="mintNftDescription" name="mintNftDescription" rows="4" placeholder="Tell us about your NFT..." required></textarea>
+
+                        <label for="mintNftAttributes">Attributes (e.g., "Background: Blue, Eyes: Green"):</label>
+                        <textarea id="mintNftAttributes" name="mintNftAttributes" rows="3" placeholder="Enter attributes in JSON or plain text, e.g., {'Rarity': 'Rare', 'Type': 'Art'}"></textarea>
+                        <small class="form-help-text">Please use JSON format for attributes for better compatibility.</small>
+
+                        <button type="submit" class="web3-btn">Mint NFT</button>
+                    </form>
                 </div>
             </div>
         </section>
@@ -540,20 +506,6 @@
                 <p>Place your advertisements here!</p>
                 <button id="postAdBtnWeb3" class="web3-btn">Post Ad</button>
                 <div id="ad-list" class="content-area web3-content-area ad-list">
-                    <div class="ad-item dynamic-ad-card">
-                        <img src="https://via.placeholder.com/200x100?text=New+Crypto+Exchange" alt="Advertisement for a new crypto exchange">
-                        <h4>🚀 New Solana DEX Launch!</h4>
-                        <p class="ad-description">Trade SOL and tokens with lightning speed and low fees. Join now!</p>
-                        <a href="https://example.com/dex" target="_blank" rel="noopener noreferrer" class="ad-link">Visit Exchange</a>
-                        <small>Разместил: 0xAd...dress1</small>
-                    </div>
-                    <div class="ad-item dynamic-ad-card">
-                        <img src="https://via.placeholder.com/200x100?text=Web3+Dev+Services" alt="Advertisement for Web3 development services">
-                        <h4>💡 Web3 Development Services</h4>
-                        <p class="ad-description">Need a dApp or smart contract? Professional development for your project.</p>
-                        <a href="https://example.com/dev" target="_blank" rel="noopener noreferrer" class="ad-link">Learn More</a>
-                        <small>Разместил: 0xDev...loper</small>
-                    </div>
                     <div class="placeholder-item ad web3-placeholder">Ad 1: Great Products!</div>
                     <div class="placeholder-item ad web3-placeholder">Ad 2: Best Services!</div>
                 </div>
@@ -594,15 +546,7 @@
 
                 <h3 class="web3-subheading">Completed Proposals</h3>
                 <div id="completed-proposals-list" class="content-area web3-content-area dao-proposals-grid">
-                    <div class="dao-proposal-item completed-proposal-card">
-                        <h4>Proposal #0: Community Fund Allocation</h4>
-                        <p>Description: Proposal to allocate 500k AFOX to community grants.</p>
-                        <p>Создатель: <span class="dao-creator">0xCoMm...unity</span></p>
-                        <p>Статус: <strong class="status-success">Принято</strong></p>
-                        <p>Голосов ЗА: 250 | Голосов ПРОТИВ: 10</p>
-                        <small>Завершено: Июнь 15, 2025</small>
-                    </div>
-                    <p class="web3-placeholder">No other completed proposals yet.</p>
+                    <p class="web3-placeholder">No completed proposals yet.</p>
                 </div>
 
                 <div id="createProposalModal" class="modal">
@@ -672,6 +616,8 @@
             </div>
         </section>
 
+        ---
+
         <section id="multimedia-portal-home" class="section multimedia-section-alt">
             <div class="container multimedia-portal-container">
                 <h2 class="multimedia-heading">Welcome to My Portal! (Multimedia Hub)</h2>
@@ -711,25 +657,13 @@
 
                 <h3 class="multimedia-subheading">My Gallery</h3>
                 <div id="photo-gallery" class="gallery multimedia-grid photo-grid">
-                    <div class="photo-item dynamic-photo-card">
-                        <img src="https://via.placeholder.com/250x150?text=Fox+in+Forest" alt="A cute fox peeking from behind a tree in a forest.">
-                        <h3>Forest Fox</h3>
-                        <p>A beautiful shot of a fox in its natural habitat.</p>
-                        <small>Загружено: Июнь 20, 2025</small>
-                    </div>
-                    <div class="photo-item dynamic-photo-card">
-                        <img src="https://via.placeholder.com/250x150?text=Golden+Coin" alt="A shiny golden coin with a fox emblem.">
-                        <h3>Golden AFOX Coin</h3>
-                        <p>The iconic Aurum Fox coin, symbolizing prosperity.</p>
-                        <small>Загружено: Июнь 18, 2025</small>
-                    </div>
                     <div class="item multimedia-item">
-                        <img src="https://via.placeholder.com/250x150?text=Photo+1" alt="Beautiful sunset on the beach placeholder image">
+                        <img src="https://via.placeholder.com/250x150?text=Photo+1" alt="Beautiful sunset on the beach">
                         <h3>Beautiful Sunset</h3>
                         <p>This is a beautiful sunset on the beach.</p>
                     </div>
                     <div class="item multimedia-item">
-                        <img src="https://via.placeholder.com/250x150?text=Photo+2" alt="Majestic mountain landscape under clouds placeholder image">
+                        <img src="https://via.placeholder.com/250x150?text=Photo+2" alt="Majestic mountain landscape under clouds">
                         <h3>Mountain Landscape</h3>
                         <p>Majestic mountains under the clouds.</p>
                     </div>
@@ -754,18 +688,6 @@
 
                 <h3 class="multimedia-subheading">My Posts</h3>
                 <div id="posts-list" class="posts multimedia-grid post-list">
-                    <div class="post-item dynamic-post-card">
-                        <h3>The Future of Meme Coins on Solana</h3>
-                        <p>An in-depth look at how Solana is shaping the next generation of meme tokens, with a focus on AFOX.</p>
-                        <small>Опубликовано: Июнь 25, 2025</small>
-                        <a href="#" class="multimedia-btn read-more-post" data-post-id="meme-solana-future">Читать далее</a>
-                    </div>
-                    <div class="post-item dynamic-post-card">
-                        <h3>AFOX Community Highlights: May 2025</h3>
-                        <p>Recap of exciting community events, milestones, and contributions from May.</p>
-                        <small>Опубликовано: Июнь 01, 2025</small>
-                        <a href="#" class="multimedia-btn read-more-post" data-post-id="afox-may-highlights">Читать далее</a>
-                    </div>
                     <div class="item multimedia-item placeholder-item post">
                         <h3>My First Blog Post</h3>
                         <p>Welcome to my blog! Here I will share my thoughts and ideas.</p>
@@ -819,28 +741,42 @@
         </div>
     </footer>
 
-    <div id="nftDisplayModal" class="modal">
+    <div id="nftDetailsModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeNftDisplayModal">&times;</span>
-            <div id="nftDisplayContent" class="nft-detail-view">
-                <img id="nftDisplayImage" src="" alt="NFT Image" class="nft-detail-image">
-                <h3 id="nftDisplayName"></h3>
-                <p id="nftDisplayDescription"></p>
-                <p><strong>Owner:</strong> <span id="nftDisplayOwner"></span></p>
-                <p><strong>Mint Address:</strong> <span id="nftDisplayMint"></span></p>
-                <div id="nftDisplayAttributes">
+            <span class="close-button">&times;</span>
+            <div id="nftDetailsContent" class="nft-detail-view">
+                <img id="nftDetailImage" src="" alt="NFT Image" class="nft-detail-image">
+                <h3 id="nftDetailName"></h3>
+                <p id="nftDetailDescription"></p>
+                <p><strong>Owner:</strong> <span id="nftDetailOwner"></span></p>
+                <p><strong>Mint Address:</strong> <span id="nftDetailMint"></span></p>
+                <div id="nftDetailAttributes">
                     <h4>Attributes:</h4>
-                    <ul id="displayAttributesList"></ul>
+                    <ul id="attributesList"></ul>
                 </div>
-                <p><strong>Transaction History:</strong> <span id="nftDisplayHistory">(Loading...)</span></p>
-                <a id="nftDisplaySolscanLink" href="#" target="_blank" rel="noopener noreferrer" class="web3-btn small-btn">View on Solscan</a>
+                <p><strong>Transaction History:</strong> <span id="nftDetailHistory">(Loading...)</span></p>
+                <a id="nftDetailSolscanLink" href="#" target="_blank" rel="noopener noreferrer" class="web3-btn small-btn">View on Solscan</a>
 
                 <div class="nft-detail-actions">
-                    <button id="nftDisplayBuyBtn" class="web3-btn green-btn" style="display:none;">Buy NFT</button>
-                    <button id="nftDisplaySellBtn" class="web3-btn red-btn" style="display:none;">Sell NFT</button>
-                    <button id="nftDisplayTransferBtn" class="web3-btn">Transfer NFT</button>
+                    <button id="nftDetailBuyBtn" class="web3-btn green-btn" style="display:none;">Buy NFT</button>
+                    <button id="nftDetailSellBtn" class="web3-btn red-btn" style="display:none;">Sell NFT</button>
+                    <button id="nftDetailTransferBtn" class="web3-btn">Transfer NFT</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="nftModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeNftModal">&times;</span>
+            <h3 id="nftModalTitle">NFT Details</h3>
+            <img id="nftModalImage" src="" alt="NFT Image" class="modal-nft-image">
+            <p><strong>Description:</strong> <span id="nftModalDescription"></span></p>
+            <p><strong>Owner:</strong> <span id="nftModalOwner"></span></p>
+            <p><strong>Collection:</strong> <span id="nftModalCollection"></span></p>
+            <p><strong>Price:</strong> <span id="nftModalPrice"></span></p>
+            <button class="web3-btn" id="listForSaleBtn">List for Sale</button>
+            <button class="web3-btn" id="buyNftBtn">Buy NFT</button>
         </div>
     </div>
 
@@ -848,16 +784,14 @@
         <div class="modal-content">
             <span class="close-button" id="closeMintNftModal">&times;</span>
             <h3 class="web3-heading">Mint Your New NFT</h3>
-            <form id="mintNftForm" class="web3-form" enctype="multipart/form-data"> <label for="mintFormNftName">NFT Name:</label>
-                <input type="text" id="mintFormNftName" name="nftName" placeholder="Enter NFT name" required>
+            <form id="mintNftForm" class="web3-form"> <label for="nftName">NFT Name:</label>
+                <input type="text" id="nftName" name="nftName" placeholder="Enter NFT name" required>
 
-                <label for="mintFormNftDescription">Description:</label>
-                <textarea id="mintFormNftDescription" name="nftDescription" rows="4" placeholder="Describe your NFT" required></textarea>
+                <label for="nftDescription">Description:</label>
+                <textarea id="nftDescription" name="nftDescription" rows="4" placeholder="Describe your NFT" required></textarea>
 
-                <label for="mintFormNftImageFile">Image File:</label>
-                <input type="file" id="mintFormNftImageFile" name="nftImageFile" accept="image/*,video/*" required> <label for="mintFormNftAttributes">Attributes (e.g., "Background: Blue, Eyes: Green"):</label>
-                <textarea id="mintFormNftAttributes" name="nftAttributes" rows="3" placeholder="Enter attributes in JSON or plain text, e.g., {'Rarity': 'Rare', 'Type': 'Art'}"></textarea>
-                <small class="form-help-text">Please use JSON format for attributes for better compatibility.</small>
+                <label for="nftImageFile">Image File:</label>
+                <input type="file" id="nftImageFile" name="nftImageFile" accept="image/*" required>
 
                 <button type="submit" class="web3-btn">Mint NFT</button>
             </form>
