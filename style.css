@@ -1,4 +1,4 @@
-/* General Styling & Reset - Applies to all sections by default */
+/* General Styles & Reset */
 * {
     margin: 0;
     padding: 0;
@@ -6,7 +6,7 @@
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', sans-serif; /* Prioritizing Poppins from the more detailed block */
     line-height: 1.6;
     color: #E0E0E0; /* Light grey for text */
     background-color: #1a1a2e; /* Deep blue/purple for background */
@@ -16,7 +16,7 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 20px; /* Prioritizing this padding */
 }
 
 a {
@@ -33,30 +33,36 @@ ul {
     list-style: none;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 { /* Added h4 for consistency */
     font-family: 'Montserrat', sans-serif;
     color: #FFD700; /* Gold for headings */
     margin-bottom: 20px;
 }
 
 h1 {
-    font-size: 3.5em;
+    font-size: 3.5em; /* Prioritizing 3.5em for h1 */
     font-weight: 700;
     text-align: center;
     line-height: 1.2;
 }
 
 h2 {
-    font-size: 2.5em;
+    font-size: 2.5em; /* Consistent */
     font-weight: 600;
     text-align: center;
     margin-bottom: 40px;
 }
 
 h3 {
-    font-size: 1.8em;
+    font-size: 1.8em; /* Consistent */
     font-weight: 600;
     margin-bottom: 15px;
+}
+
+h4 { /* New h4 specific style */
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #FFD700;
 }
 
 p {
@@ -67,18 +73,18 @@ p {
 .header {
     background-color: rgba(18, 18, 30, 0.9); /* Slightly transparent dark background */
     color: #fff;
-    padding: 20px 0;
+    padding: 20px 0; /* Consistent */
     position: sticky;
     top: 0;
     z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Consistent */
 }
 
 .header .container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap; /* Allow wrapping on small screens */
+    flex-wrap: wrap;
 }
 
 .logo {
@@ -87,7 +93,7 @@ p {
 }
 
 .logo-img {
-    height: 40px; /* Adjust as needed */
+    height: 40px;
     margin-right: 10px;
 }
 
@@ -100,20 +106,22 @@ p {
 
 .nav ul {
     display: flex;
-    flex-wrap: wrap; /* Allow navigation items to wrap */
-    gap: 15px; /* Reduced gap for more items */
-    justify-content: center; /* Center items if they wrap */
+    flex-wrap: wrap;
+    gap: 15px; /* Prioritizing gap over margin for flexibility */
+    justify-content: center;
 }
 
 .nav a {
-    color: #fff;
-    font-weight: 600;
-    font-size: 0.95em; /* Slightly smaller font for more items */
+    color: #f0f0f0; /* Prioritizing #f0f0f0 over #fff */
+    font-weight: bold; /* Prioritizing bold over 600 */
+    font-size: 0.95em;
     position: relative;
-    padding-bottom: 5px;
+    padding: 8px 15px; /* Prioritizing padding over padding-bottom */
+    border-radius: 5px; /* New: added border-radius */
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.nav a::after {
+.nav a::after { /* Keeping the underline effect */
     content: '';
     position: absolute;
     left: 0;
@@ -129,15 +137,20 @@ p {
     width: 100%;
 }
 
-/* Hero Section (Aurum Fox Specific) */
+.nav ul li a:hover { /* Hover for background/text color */
+    background-color: #ffd700;
+    color: #1a1a2e;
+}
+
+/* Hero Section */
 .hero-section {
-    background: linear-gradient(135deg, #1a1a2e 0%, #3a0052 100%); /* Gradient background */
+    background: linear-gradient(135deg, #1a1a2e 0%, #3a0052 100%);
     color: #fff;
     padding: 80px 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 80vh; /* Make it take most of the viewport height */
+    min-height: 80vh;
     text-align: center;
 }
 
@@ -155,7 +168,7 @@ p {
 }
 
 .hero-section h1 {
-    font-size: 4em;
+    font-size: 4em; /* Prioritizing 4em for hero h1 */
     margin-bottom: 20px;
     color: #FFD700;
     text-align: left;
@@ -193,51 +206,102 @@ p {
     justify-content: flex-start;
 }
 
-.btn {
+/* Buttons (Consolidated) */
+.btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .social-btn {
     display: inline-block;
-    padding: 15px 30px;
-    border-radius: 8px;
-    font-weight: 700;
-    text-transform: uppercase;
+    padding: 15px 30px; /* Prioritizing this padding for general buttons */
+    border-radius: 8px; /* Prioritizing 8px for general buttons */
+    font-weight: 700; /* Consistent */
+    text-transform: uppercase; /* From .btn */
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Consistent */
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 1em; /* Ensuring a base font size */
+    margin: 10px; /* Added margin for spacing between buttons */
 }
 
-.btn-primary {
+.btn-primary, .primary-btn, .web3-btn, .multimedia-btn {
     background-color: #FFD700; /* Gold */
     color: #1a1a2e; /* Dark contrast */
-    border: 2px solid #FFD700;
+    border: 2px solid #FFD700; /* Consistent */
 }
 
-.btn-primary:hover {
-    background-color: #FFCC00;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+.btn-primary:hover, .primary-btn:hover, .web3-btn:hover, .multimedia-btn:hover {
+    background-color: #FFCC00; /* Darker gold */
+    transform: translateY(-3px); /* Consistent */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); /* Consistent */
 }
 
-.btn-secondary {
-    background-color: transparent;
-    color: #FFD700;
-    border: 2px solid #FFD700;
+.btn-secondary, .secondary-btn {
+    background-color: transparent; /* Consistent */
+    color: #FFD700; /* Gold */
+    border: 2px solid #FFD700; /* Consistent */
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover, .secondary-btn:hover {
     background-color: #FFD700;
     color: #1a1a2e;
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
+/* Specific Button Overrides (smaller buttons, specific colors) */
+.web3-btn.green-btn, .web3-btn.buy-btn, #stakeAfoxBtn, #claimRewardsBtn { /* Merged green buttons */
+    background-color: #28a745;
+    border: 1px solid #28a745;
+    color: white;
+}
+.web3-btn.green-btn:hover, .web3-btn.buy-btn:hover, #stakeAfoxBtn:hover, #claimRewardsBtn:hover {
+    background-color: #218838;
+}
+
+.web3-btn.red-btn, .web3-btn.danger-btn, #unstakeAfoxBtn { /* Merged red buttons */
+    background-color: #dc3545;
+    border: 1px solid #dc3545;
+    color: white;
+}
+.web3-btn.red-btn:hover, .web3-btn.danger-btn:hover, #unstakeAfoxBtn:hover {
+    background-color: #c82333;
+}
+
+.web3-btn.secondary-btn, .web3-btn.sell-btn { /* Merged orange buttons */
+    background-color: #f39c12;
+    border: none; /* Resetting border if it was added by general .btn */
+    color: white;
+}
+.web3-btn.secondary-btn:hover, .web3-btn.sell-btn:hover {
+    background-color: #e08e0b;
+}
+
+.web3-btn.transfer-btn {
+    background-color: #8e44ad; /* Purple */
+    border: none;
+    color: white;
+}
+.web3-btn.transfer-btn:hover {
+    background-color: #7b379e;
+}
+
+.web3-btn.small-btn {
+    padding: 8px 15px;
+    font-size: 0.9em;
+}
+
 /* Base Section Styling */
-.section {
-    padding: 80px 0;
+.section, .aurum-fox-section { /* Merged */
+    padding: 80px 0; /* Consistent */
     text-align: center;
     background-color: #2c2c4d; /* Slightly lighter dark blue */
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Subtle separator */
 }
 
-.section-alt {
+.section-alt, .aurum-fox-section-alt { /* Merged */
     background-color: #1a1a2e; /* Darker background for contrast */
+}
+
+.section:last-of-type {
+    border-bottom: none;
 }
 
 .section p {
@@ -260,7 +324,7 @@ p {
 }
 
 .tokenomics-item {
-    background-color: #3a3a5e;
+    background-color: #3a3a5e; /* Consistent */
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
@@ -366,33 +430,34 @@ p {
     transform: translateY(-2px);
 }
 
-.buy-steps {
+.buy-steps, .how-to-list { /* Merged */
     text-align: left;
     max-width: 900px;
     margin: 0 auto;
 }
 
-.buy-steps li {
-    background-color: #3a3a5e;
+.buy-steps li, .how-to-list li { /* Merged */
+    background-color: #3a3a5e; /* Consistent */
     padding: 25px;
     border-radius: 10px;
     margin-bottom: 20px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    border-left: 5px solid #FFD700;
+    border-left: 5px solid #FFD700; /* Used border-left */
+    color: #f0f0f0; /* Ensure text is visible */
 }
 
-.buy-steps li h3 {
+.buy-steps li h3, .how-to-list li h3 {
     color: #FFD700;
     margin-bottom: 10px;
 }
 
-.buy-steps li ul {
-    list-style: disc;
+.buy-steps li ul, .how-to-list li ul {
+    list-style: disc; /* Prioritizing disc for buy/how-to lists */
     padding-left: 20px;
     margin-top: 10px;
 }
 
-.buy-steps li ul li {
+.buy-steps li ul li, .how-to-list li ul li {
     margin-bottom: 5px;
     background-color: transparent;
     box-shadow: none;
@@ -414,7 +479,7 @@ p {
 }
 
 .roadmap-item {
-    background-color: #3a3a5e;
+    background-color: #3a3a5e; /* Consistent */
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
@@ -428,7 +493,7 @@ p {
 }
 
 .roadmap-item ul {
-    list-style: none;
+    list-style: none; /* Prioritizing none for roadmap items */
     padding-left: 0;
 }
 
@@ -470,7 +535,18 @@ p {
     font-size: 1.1em;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    background-color: #3a3a4c; /* Default social button background */
+    color: #f0f0f0; /* Default social button text */
+    border: 1px solid #f0f0f0; /* Default social button border */
 }
+
+.social-btn:hover {
+    background-color: #FFD700; /* Golden hover */
+    color: #1a1a2e; /* Dark text on hover */
+    transform: translateY(-3px); /* Consistent hover effect */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); /* Consistent shadow */
+}
+
 
 .social-icon {
     width: 24px;
@@ -479,30 +555,13 @@ p {
     vertical-align: middle;
 }
 
-.discord-btn {
-    background-color: #7289DA;
-    color: #fff;
-}
+/* Specific social button colors (override default .social-btn) */
+.discord-btn { background-color: #7289DA; color: #fff; border: none; }
+.telegram-btn { background-color: #0088CC; color: #fff; border: none; }
+.twitter-btn { background-color: #1DA1F2; color: #fff; border: none; }
+.solscan-btn { background-color: #8C52FF; color: #fff; border: none; }
+.news-btn { background-color: #f7b731; color: #1a1a2e; border: none; }
 
-.telegram-btn {
-    background-color: #0088CC;
-    color: #fff;
-}
-
-.twitter-btn {
-    background-color: #1DA1F2;
-    color: #fff;
-}
-
-.solscan-btn {
-    background-color: #8C52FF;
-    color: #fff;
-}
-
-.news-btn {
-    background-color: #f7b731;
-    color: #1a1a2e;
-}
 
 .contact-info {
     margin-top: 30px;
@@ -595,8 +654,8 @@ hr {
     margin: 40px 0;
 }
 
-.announcement-item {
-    background-color: #3a3a5e;
+.announcement-item, .news-item { /* Merged announcements and news items */
+    background-color: #3a3a5e; /* Consistent */
     border: 1px solid #4a4a7e;
     border-radius: 8px;
     padding: 20px;
@@ -608,89 +667,92 @@ hr {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-.announcement-date {
+.announcement-date, .news-item small { /* Merged date/small text */
     font-size: 0.85em;
     color: #B0B0B0;
     text-align: right;
     margin-top: 10px;
     font-style: italic;
+    display: block;
+}
+
+.announcement-item p { /* Specific for announcement item paragraphs */
+    margin: 0 0 5px 0;
 }
 
 /* Web3 Portal Specific Styles */
 .web3-section {
-    background-color: #ffffff; /* Lighter background for web3 sections */
-    color: #333;
+    background-color: #2a2a3a; /* Prioritizing this dark blue */
+    color: #f0f0f0; /* Consistent light text */
     padding: 60px 0;
 }
 
 .web3-section-alt {
-    background-color: #f4f7f6; /* Even lighter background for alt web3 sections */
-    color: #333;
+    background-color: #1a1a2e; /* Prioritizing this darker background */
+    color: #f0f0f0;
     padding: 60px 0;
 }
 
 .web3-heading {
-    color: #283747; /* Dark blue heading for web3 */
-    border-bottom: 2px solid #5cb85c; /* Green underline */
-    padding-bottom: 10px;
+    color: #8cacec; /* Blueish for Web3 headings */
+    border-bottom: none; /* Removing conflicting border */
+    padding-bottom: 0;
+    font-size: 2.2em; /* Prioritizing 2.2em */
+    margin-bottom: 20px;
+}
+
+.web3-subheading {
+    font-size: 1.6em;
+    color: #8cacec;
+    margin-top: 40px;
     margin-bottom: 20px;
 }
 
 .web3-intro {
-    color: #555;
+    color: #ccc; /* Prioritizing #ccc */
     font-size: 1.1em;
     max-width: 700px;
     margin: 0 auto 30px auto;
 }
 
-.web3-btn {
-    background-color: #007bff; /* Blue button for web3 */
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.95em;
-    margin-top: 10px;
-    transition: background-color 0.3s ease;
-}
-
-.web3-btn:hover {
-    background-color: #0056b3;
-}
-
 .web3-wallet-display {
     margin-top: 20px;
     font-size: 1.1em;
-    color: #555;
+    color: #f0f0f0; /* Consistent light text */
+    background-color: #3a3a4c; /* Consistent dark background */
+    padding: 15px;
+    border-radius: 8px;
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
 }
 
 .web3-wallet-display span {
     font-weight: bold;
-    color: #283747;
-    word-break: break-all;
+    color: #9aff9a; /* Light green for wallet address */
 }
 
-.web3-content-area {
-    margin-top: 20px;
-    border: 1px dashed #ccc;
-    padding: 15px;
+.web3-content-area, .content-area { /* Merged content areas */
+    margin-top: 30px;
+    background-color: #2a2a3a; /* Slightly darker for content within web3 sections */
+    border: 1px dashed #ccc; /* Keeping dashed border as a visual cue */
+    padding: 15px; /* Adjusting padding */
     min-height: 100px;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     align-items: flex-start;
     justify-content: flex-start;
-    background-color: #fafafa;
     border-radius: 5px;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3); /* Inner shadow */
 }
 
 .web3-placeholder {
-    background-color: #e0e0e0;
+    background-color: #4a4a5c; /* Consistent with other placeholder items */
     padding: 10px 15px;
     border-radius: 5px;
     font-style: italic;
-    color: #666;
+    color: #ccc;
 }
 
 /* Styles for NFT Forms and Grids */
@@ -702,7 +764,7 @@ hr {
 }
 
 .nft-item {
-    background-color: #f0f8ff; /* Light blue background for NFT items */
+    background-color: #3a3a4c; /* Consistent dark background for items */
     padding: 15px;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -710,9 +772,10 @@ hr {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    cursor: pointer; /* Indicate it's clickable */
+    cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #4a4a5c; /* Consistent border */
+    color: #E0E0E0; /* Ensure text visible */
 }
 
 .nft-item:hover {
@@ -725,53 +788,62 @@ hr {
     height: auto;
     border-radius: 8px;
     margin-bottom: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid #555; /* Consistent border */
 }
 
 .nft-item h4 {
     font-size: 1.1em;
-    color: #283747;
+    color: #ffd700; /* Golden for NFT titles */
     margin-bottom: 5px;
     word-break: break-word;
 }
 
 .nft-item p {
     font-size: 0.9em;
-    color: #666;
+    color: #ccc; /* Lighter text for details */
     margin: 2px 0;
     word-break: break-word;
 }
 
 /* NFT Form Container */
 .nft-form-container {
-    background-color: #fcfcfc;
+    background-color: #2a2a3a; /* Consistent dark background */
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
     margin-top: 30px;
     text-align: left;
-    border: 1px solid #eee;
+    border: 1px solid #3a3a4c; /* Consistent border */
 }
 
 .web3-form label {
     display: block;
     margin-bottom: 8px;
     font-weight: bold;
-    color: #333;
+    color: #8cacec; /* Consistent blueish for web3 labels */
 }
 
 .web3-form input[type="text"],
 .web3-form input[type="number"],
 .web3-form select,
-.web3-form textarea,
-.web3-form input[type="file"] {
+.web3-form textarea { /* Unified form inputs */
     width: 100%;
     padding: 12px;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
+    border: 1px solid #555; /* Consistent border */
     border-radius: 6px;
-    background-color: #fff;
-    color: #333;
+    background-color: #2a2a3a; /* Consistent dark background */
+    color: #f0f0f0; /* Consistent light text */
+    font-size: 1em;
+}
+
+.web3-form input[type="file"] { /* File input special handling */
+    width: 100%;
+    padding: 0; /* No padding for file input */
+    margin-bottom: 15px;
+    border: none;
+    background-color: transparent;
+    color: #f0f0f0;
     font-size: 1em;
 }
 
@@ -782,87 +854,49 @@ hr {
 
 .web3-form small.form-help-text {
     font-size: 0.85em;
-    color: #777;
+    color: #B0B0B0;
     margin-top: -10px;
     margin-bottom: 15px;
     display: block;
 }
 
-/* General button styles for Web3 (already existed, but emphasize) */
-.web3-btn {
-    background-color: #007bff; /* Blue */
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1em;
-    margin-top: 10px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.web3-btn:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
-}
-
-.web3-btn.green-btn {
-    background-color: #28a745;
-}
-.web3-btn.green-btn:hover {
-    background-color: #218838;
-}
-
-.web3-btn.red-btn {
-    background-color: #dc3545;
-}
-.web3-btn.red-btn:hover {
-    background-color: #c82333;
-}
-
-.web3-btn.small-btn {
-    padding: 8px 15px;
-    font-size: 0.9em;
-}
-
 /* Modal Styles */
 .modal {
-    display: none; /* Hidden by default - THIS IS VERY IMPORTANT TO HIDE THE MODAL BY DEFAULT */
-    position: fixed; /* Stay in place */
-    z-index: 2000; /* Sit on top */
+    display: none; /* Hidden by default - VERY IMPORTANT */
+    position: fixed;
+    z-index: 2000; /* High z-index */
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
-    /* display: flex; <--- THIS LINE HAS BEEN REMOVED! */
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.7); /* Prioritizing 0.7 opacity */
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding-top: 60px; /* Consistent padding-top */
 }
 
 .modal-content {
-    background-color: #fefefe;
-    margin: auto;
+    background-color: #2a2a3a; /* Prioritizing darker background */
+    margin: auto; /* Keeping auto for horizontal centering */
     padding: 30px;
     border: 1px solid #888;
     border-radius: 10px;
-    width: 90%;
-    max-width: 700px;
+    width: 90%; /* Consistent width */
+    max-width: 700px; /* Prioritizing 700px max-width */
     position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    color: #333; /* Ensure text is visible */
-    max-height: 90vh; /* Limit height to enable scroll if content is long */
-    overflow-y: auto; /* Enable scrolling for modal content */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5); /* Prioritizing 0.5 shadow */
+    color: #f0f0f0; /* Ensure text is visible */
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .close-button {
     color: #aaa;
     float: right;
-    font-size: 36px;
+    font-size: 36px; /* Prioritizing 36px */
     font-weight: bold;
-    position: absolute;
+    position: absolute; /* Essential for positioning */
     top: 10px;
     right: 20px;
     cursor: pointer;
@@ -870,7 +904,7 @@ hr {
 
 .close-button:hover,
 .close-button:focus {
-    color: #333;
+    color: #f0f0f0; /* Consistent hover color */
     text-decoration: none;
     cursor: pointer;
 }
@@ -885,33 +919,33 @@ hr {
     border-radius: 8px;
     margin-bottom: 20px;
     border: 1px solid #ddd;
-    display: block; /* Center image */
+    display: block;
     margin-left: auto;
     margin-right: auto;
 }
 
 .nft-detail-view h3 {
     font-size: 2em;
-    color: #283747;
+    color: #ffd700; /* Golden for NFT detail heading */
     margin-bottom: 10px;
     text-align: center;
 }
 
 .nft-detail-view p {
     font-size: 1.1em;
-    color: #555;
+    color: #ccc;
     margin-bottom: 8px;
 }
 
 .nft-detail-view strong {
-    color: #333;
+    color: #fff;
 }
 
 .nft-detail-view #nftDetailMint,
 .nft-detail-view #nftDetailOwner {
     font-size: 0.95em;
     word-break: break-all;
-    background-color: #f0f0f0;
+    background-color: #3a3a4c; /* Consistent dark background */
     padding: 5px 10px;
     border-radius: 5px;
     display: inline-block;
@@ -926,7 +960,7 @@ hr {
 
 .nft-detail-view #nftDetailAttributes h4 {
     font-size: 1.3em;
-    color: #283747;
+    color: #8cacec; /* Blueish for attributes heading */
     margin-bottom: 10px;
 }
 
@@ -936,15 +970,15 @@ hr {
 }
 
 .nft-detail-view #attributesList li {
-    background-color: #f9f9f9;
+    background-color: #3a3a5e; /* Slightly lighter dark background */
     padding: 8px 12px;
     margin-bottom: 5px;
     border-radius: 5px;
-    border: 1px solid #eee;
+    border: 1px solid #4a4a5c;
     display: flex;
     justify-content: space-between;
     font-size: 0.95em;
-    color: #444;
+    color: #E0E0E0;
 }
 
 .nft-detail-view #nftDetailSolscanLink {
@@ -960,44 +994,67 @@ hr {
 }
 
 .ad {
-    background-color: #fff3cd;
+    background-color: #fff3cd; /* Original ad color */
     border: 1px solid #ffeeba;
     color: #856404;
+}
+.ad-list { /* New grid for ads */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+.placeholder-item.ad {
+    padding: 15px;
+    background-color: #4a4a5c; /* Consistent with other placeholders */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+    color: #ccc;
+    font-style: italic;
+    margin-bottom: 10px;
+}
+.placeholder-item.ad img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin-top: 10px;
 }
 
 /* Multimedia Portal Specific Styles */
 .multimedia-section {
-    background-color: #f4f4f4; /* Light background for multimedia sections */
-    color: #333;
+    background-color: #1a1a2e; /* Consistent darker background */
+    color: #f0f0f0;
     padding: 60px 0;
 }
 
 .multimedia-section-alt {
-    background-color: #e9e9e9; /* Slightly darker light background for alt multimedia sections */
-    color: #333;
+    background-color: #2a2a3a; /* Consistent slightly lighter dark background */
+    color: #f0f0f0;
     padding: 60px 0;
 }
 
 .multimedia-portal-container {
-    background: #fff;
+    background: #2c2c4d; /* Consistent inner container background */
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    color: #f0f0f0;
 }
 
 .multimedia-heading {
-    color: #333;
+    color: #ff9933; /* Orangeish for Multimedia headings */
     text-align: center;
+    font-size: 2.2em; /* Consistent with web3 heading size */
 }
 
 .multimedia-subheading {
-    color: #333;
-    margin-top: 30px; /* Space above subheadings */
+    color: #ff9933;
+    margin-top: 30px;
 }
 
 .multimedia-intro {
     font-size: 1.1em;
-    color: #666;
+    color: #ccc;
     margin-bottom: 30px;
 }
 
@@ -1005,7 +1062,7 @@ hr {
     display: block;
     margin-bottom: 8px;
     font-weight: bold;
-    color: #333;
+    color: #ff9933; /* Orangeish for multimedia labels */
 }
 
 .multimedia-form input[type="file"],
@@ -1014,10 +1071,10 @@ hr {
     width: calc(100% - 20px);
     padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
+    border: 1px solid #555; /* Consistent dark border */
     border-radius: 4px;
-    background-color: #fff;
-    color: #333;
+    background-color: #2a2a3a; /* Consistent dark background */
+    color: #f0f0f0; /* Consistent light text */
 }
 
 .multimedia-form textarea {
@@ -1026,7 +1083,7 @@ hr {
 }
 
 .multimedia-btn {
-    background-color: #007bff; /* Blue button for multimedia */
+    background-color: #007bff; /* Default blue, can be overridden by general .btn */
     color: white;
     padding: 10px 15px;
     border: none;
@@ -1040,7 +1097,7 @@ hr {
     background-color: #0056b3;
 }
 
-.multimedia-grid {
+.multimedia-grid, .photo-grid { /* Merged multimedia grids */
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
@@ -1048,148 +1105,123 @@ hr {
 }
 
 .multimedia-item {
-    border: 1px solid #eee;
+    border: 1px solid #4a4a5c; /* Consistent dark border */
     padding: 10px;
     border-radius: 5px;
-    background-color: #fff;
+    background-color: #3a3a4c; /* Consistent dark background */
     text-align: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    color: #333; /* Ensure text is visible on light background */
+    color: #E0E0E0; /* Ensure text is visible on light background */
 }
 
 .multimedia-item img {
     max-width: 100%;
-    height: auto;
+    height: 150px; /* Fixed height for consistent image size */
+    object-fit: cover;
     border-radius: 4px;
+    margin-bottom: 10px;
+    transition: transform 0.2s ease-in-out;
+}
+.multimedia-item img:hover {
+    transform: scale(1.05);
 }
 
 .multimedia-item h3 {
     margin-top: 10px;
     font-size: 1.1em;
-    color: #333;
+    color: #ff9933; /* Orangeish for multimedia item titles */
 }
 
 .multimedia-item p {
     font-size: 0.9em;
-    color: #666;
+    color: #ccc;
 }
 
 .multimedia-item small {
     font-size: 0.8em;
-    color: #999;
-}
-
-/* Footer */
-.footer {
-    background-color: #10101a;
     color: #B0B0B0;
-    text-align: center;
-    padding: 30px 0;
-    font-size: 0.9em;
 }
 
-/* Responsive Design */
-@media (max-width: 900px) {
-    .nav ul {
-        gap: 10px;
-    }
-    .hero-section .container {
-        flex-direction: column;
-        text-align: center;
-    }
-    .hero-content {
-        text-align: center;
-    }
-    .hero-section h1, .hero-section .tagline {
-        text-align: center;
-    }
-    .hero-buttons {
-        justify-content: center;
-    }
+.multimedia-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-top: 40px;
 }
 
-@media (max-width: 768px) {
-    .header .container {
-        flex-direction: column;
-        gap: 15px;
-    }
-    .nav ul {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-    }
-    .nav a {
-        font-size: 0.9em;
-    }
-    h1 {
-        font-size: 2.8em;
-    }
-    h2 {
-        font-size: 2em;
-    }
-    h3 {
-        font-size: 1.5em;
-    }
-    .hero-section, .section, .web3-section, .multimedia-section {
-        padding: 60px 0;
-    }
-    .tokenomics-grid, .roadmap-grid, .multimedia-grid, .nfc-grid {
-        grid-template-columns: 1fr; /* Stack columns */
-    }
-    .buy-steps li {
-        padding: 20px;
-    }
-    .social-btn {
-        padding: 10px 20px;
-        font-size: 1em;
-    }
-
-    #aurum-announcements .container, .multimedia-portal-container {
-        padding: 20px;
-    }
-    textarea#announcementInput {
-        width: 100%;
-        padding: 10px;
-    }
-    button#publishButton {
-        width: 100%;
-    }
-    .multimedia-form input, .multimedia-form textarea {
-        width: 100%;
-    }
-    .multimedia-btn {
-        width: 100%;
-    }
+.multimedia-link {
+    display: inline-block;
+    margin-top: 15px;
+    color: #ffd700;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
 }
 
-@media (max-width: 480px) {
-    .hero-section h1 {
-        font-size: 2.2em;
-    }
-    .hero-section .tagline {
-        font-size: 1.2em;
-    }
-    .hero-buttons {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .btn {
-        width: 100%;
-        padding: 12px 20px;
-    }
-    .nav a {
-        font-size: 0.9em;
-    }
-    .social-btn {
-        width: 100%;
-        justify-content: center;
-    }
+.multimedia-link:hover {
+    color: #e0b300;
+}
+
+.post-list {
+    display: grid;
+    gap: 20px;
+}
+
+.placeholder-item.post {
+    text-align: left;
+    height: auto;
+    background-color: #4a4a5c;
+    padding: 25px;
+    border-radius: 8px;
+    color: #E0E0E0;
+}
+
+.placeholder-item.post h3 {
+    color: #ff9933;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.placeholder-item.post small {
+    display: block;
+    margin-top: 10px;
+    color: #aaa;
+}
+
+.portal-games-grid, .games-grid { /* Merged game grids */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Prioritizing 250px minmax */
+    gap: 20px;
+}
+
+.placeholder-item.portal-game, .placeholder-item.game { /* Merged game placeholders */
+    background-color: #4a4a5c;
+    text-align: left;
+    height: auto;
+    padding: 25px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #E0E0E0;
+}
+
+.placeholder-item.portal-game h3, .placeholder-item.game h3 {
+    color: #ff9933;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.placeholder-item.portal-game .multimedia-btn, .placeholder-item.game .multimedia-btn {
+    align-self: flex-start;
+    margin-top: 15px;
 }
 
 /* Aurum Fox NFC Section */
 #aurum-nfc {
-    background-color: #2c2c4d; /* Use existing section background */
+    background-color: #2c2c4d;
     color: #E0E0E0;
+    padding: 80px 0; /* Ensures consistent section padding */
 }
 
 #aurum-nfc h2 {
@@ -1218,17 +1250,17 @@ hr {
 }
 
 .nfc-item .nfc-icon {
-    width: 100px; /* Adjust size as needed */
+    width: 100px;
     height: auto;
     margin-bottom: 20px;
-    border-radius: 8px; /* Slightly rounded corners for icons */
+    border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .nfc-item p {
     font-size: 1em;
     line-height: 1.5;
-    margin-bottom: 0; /* Remove default paragraph margin */
+    margin-bottom: 0;
 }
 
 .nfc-note {
@@ -1238,510 +1270,14 @@ hr {
     font-style: italic;
     text-align: center;
 }
-/* General Styles */
-/* Note: The following general styles largely duplicate or conflict with the earlier "General Styling & Reset".
-   In a real project, you would consolidate these to avoid redundancy and prioritize consistency.
-   For this request, I am including them as provided, but marking them for potential review. */
-/* REVIEW: Potentially redundant/conflicting with earlier general styles. Consolidate in production. */
-body {
-    font-family: 'Arial', sans-serif; /* REVIEW: Conflicts with Poppins in earlier global styles */
-    margin: 0;
-    padding: 0;
-    background-color: #1a1a2e; /* Dark background - consistent */
-    color: #f0f0f0; /* Light text - similar to E0E0E0 */
-    line-height: 1.6; /* Consistent */
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px; /* Conflicts with 0 20px in earlier global styles */
-}
-
-.section {
-    padding: 80px 20px; /* Conflicts with 80px 0 in earlier .section */
-    text-align: center;
-    border-bottom: 1px solid #333; /* Separator for sections - NEW */
-}
-
-.section:last-of-type {
-    border-bottom: none;
-}
-
-.main-heading {
-    font-size: 3em; /* Conflicts with h1 (3.5em) in earlier global styles */
-    color: #ffd700; /* Golden color for main headings - consistent */
-    margin-bottom: 20px;
-}
-
-.intro-text {
-    font-size: 1.2em;
-    color: #ccc;
-    margin-bottom: 40px;
-}
-
-/* Navigation Bar */
-/* REVIEW: Largely redundant/conflicting with earlier .header and .nav styles. Consolidate in production. */
-.nav {
-    background-color: #2a2a3a; /* Darker navy - new color value */
-    padding: 15px 0; /* Different from 20px 0 for .header */
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Different shadow */
-}
-
-.nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.nav ul li {
-    margin: 0 15px; /* Conflicts with gap: 15px for .nav ul */
-}
-
-.nav ul li a {
-    color: #f0f0f0; /* Conflicts with #fff for .nav a */
-    text-decoration: none;
-    font-weight: bold; /* Conflicts with 600 for .nav a */
-    padding: 8px 15px; /* Different padding */
-    border-radius: 5px;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.nav ul li a:hover {
-    background-color: #ffd700; /* Golden hover - consistent */
-    color: #1a1a2e; /* Dark text on hover - consistent */
-}
-
-/* Buttons */
-/* REVIEW: Many of these button styles duplicate or conflict with earlier .btn styles. Consolidate. */
-.primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .social-btn {
-    background-color: #ffd700; /* Golden - consistent */
-    color: #1a1a2e; /* Dark text - consistent */
-    padding: 12px 25px; /* Different from .btn padding */
-    border: none;
-    border-radius: 5px; /* Different from .btn border-radius */
-    font-size: 1em; /* Different from .btn font-size */
-    cursor: pointer;
-    margin: 10px; /* New margin */
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.primary-btn:hover, .web3-btn:hover, .multimedia-btn:hover {
-    background-color: #e0b300; /* Darker golden - new color */
-    transform: translateY(-2px); /* Consistent */
-}
-
-.secondary-btn {
-    background-color: #3a3a4c; /* Darker navy - new color */
-    color: #ffd700; /* Golden text - consistent */
-    border: 1px solid #ffd700; /* New border */
-}
-
-.secondary-btn:hover, .social-btn:hover {
-    background-color: #ffd700;
-    color: #1a1a2e;
-    transform: translateY(-2px);
-}
-
-.social-btn {
-    background-color: #3a3a4c;
-    color: #f0f0f0;
-    border: 1px solid #f0f0f0;
-}
-
-/* Aurum Fox Specific Sections */
-/* REVIEW: These styles largely mirror earlier Aurum Fox styles, but with slightly different values or added properties.
-   Consolidate these into the existing blocks for #about-afox, .tokenomics-item, .roadmap-item, etc. */
-.aurum-fox-section {
-    background-color: #1a1a2e; /* Consistent */
-}
-
-.aurum-fox-section-alt {
-    background-color: #2a2a3a; /* New color */
-}
-
-.aurum-heading {
-    font-size: 2.5em; /* Consistent with h2 */
-    color: #ffd700; /* Consistent */
-    margin-bottom: 30px;
-}
-
-.tokenomics-details {
-    background-color: #3a3a4c; /* New color */
-    padding: 30px;
-    border-radius: 10px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Different shadow */
-}
-
-.tokenomics-details p {
-    font-size: 1.1em;
-    margin: 10px 0;
-    color: #ccc;
-}
-
-.tokenomics-details strong {
-    color: #ffd700;
-}
-
-.tokenomics-note {
-    font-style: italic;
-    color: #aaa;
-}
-
-.how-to-list {
-    list-style: none;
-    padding: 0;
-    text-align: left;
-    max-width: 600px;
-    margin: 0 auto 30px auto;
-}
-
-.how-to-list li {
-    background-color: #3a3a4c; /* New color */
-    margin-bottom: 15px;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    color: #f0f0f0;
-}
-
-.how-to-list li strong {
-    color: #ffd700;
-}
-
-.nft-showcase {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 30px;
-    margin-bottom: 40px;
-}
-
-.nft-card {
-    background-color: #3a3a4c; /* New color */
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    width: 200px;
-    text-align: center;
-    transition: transform 0.2s ease-in-out;
-}
-
-.nft-card:hover {
-    transform: translateY(-5px);
-}
-
-.nft-card img {
-    max-width: 100%;
-    border-radius: 8px;
-    margin-bottom: 15px;
-}
-
-.nft-card h4 {
-    color: #ffd700; /* Consistent */
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-/* Roadmap Grid: This is a duplicate. Use the existing .roadmap-grid */
-.roadmap-grid { /* DUPLICATE */
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
-}
-
-/* Roadmap Item: This is a duplicate. Use the existing .roadmap-item */
-.roadmap-item { /* DUPLICATE */
-    background-color: #3a3a4c; /* New color */
-    border-radius: 10px;
-    padding: 25px;
-    text-align: left;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.roadmap-item h3 {
-    color: #ffd700;
-    margin-top: 0;
-    margin-bottom: 15px;
-}
-
-.roadmap-item ul {
-    list-style: disc; /* Conflicts with list-style: none earlier */
-    padding-left: 20px;
-    color: #ccc;
-}
-
-.news-list, .announcements-list {
-    max-width: 800px;
-    margin: 0 auto;
-    text-align: left;
-}
-
-.news-item, .announcement-item {
-    background-color: #3a3a4c; /* New color */
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.news-item h4, .announcement-item h4 {
-    color: #ffd700;
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-.news-item small, .announcement-item small {
-    display: block;
-    margin-top: 10px;
-    color: #aaa;
-    font-style: italic;
-}
-
-/* Social Links: This duplicates earlier .social-links, but with slightly different button styles. Consolidate. */
-.social-links { /* DUPLICATE, but with specific button override */
-    margin-top: 30px;
-}
-
-/* Contact Section */
-.contact-section {
-    background-color: #1a1a2e; /* Consistent */
-}
-
-.contact-form {
-    max-width: 600px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.contact-form input,
-.contact-form textarea {
-    padding: 12px;
-    border: 1px solid #555; /* New border color */
-    border-radius: 5px;
-    background-color: #2a2a3a; /* New background color */
-    color: #f0f0f0;
-    font-size: 1em;
-}
-
-.contact-form input::placeholder,
-.contact-form textarea::placeholder {
-    color: #888;
-}
-
-/* Web3 Portal Specific Sections */
-/* REVIEW: Many of these Web3 styles are duplicates or minor variations of earlier .web3-section and related elements. Consolidate. */
-.web3-section { /* DUPLICATE */
-    background-color: #2a2a3a; /* New color */
-}
-
-.web3-section-alt { /* DUPLICATE */
-    background-color: #1a1a2e; /* Consistent */
-}
-
-.web3-heading { /* DUPLICATE */
-    font-size: 2.2em; /* Different from 2.5em / 2em earlier h2/web3-heading */
-    color: #8cacec; /* Blueish for Web3 headings - new color */
-    margin-bottom: 20px;
-}
-
-.web3-subheading {
-    font-size: 1.6em; /* New font size */
-    color: #8cacec;
-    margin-top: 40px;
-    margin-bottom: 20px;
-}
-
-.web3-intro { /* DUPLICATE */
-    font-size: 1.1em;
-    color: #ccc; /* Different color */
-    margin-bottom: 30px;
-}
-
-.web3-wallet-display { /* DUPLICATE */
-    background-color: #3a3a4c; /* New color */
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 20px;
-    display: inline-block;
-    color: #f0f0f0;
-    font-family: 'Courier New', monospace; /* New font */
-    word-break: break-all;
-}
-
-.web3-wallet-display span {
-    color: #9aff9a; /* Light green for wallet address - new color */
-    font-weight: bold;
-}
-
-.web3-features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 25px;
-    margin-top: 40px;
-}
-
-.feature-card {
-    background-color: #3a3a4c; /* New color */
-    border-radius: 10px;
-    padding: 25px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease-in-out;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-}
-
-.feature-card h3 {
-    color: #8cacec; /* New color */
-    margin-top: 0;
-    margin-bottom: 15px;
-}
-
-.web3-link {
-    display: inline-block;
-    margin-top: 15px;
-    color: #ffd700; /* Golden link - consistent */
-    text-decoration: none;
-    font-weight: bold;
-    transition: color 0.2s ease;
-}
-
-.web3-link:hover {
-    color: #e0b300;
-}
-
-.content-area {
-    margin-top: 30px;
-    background-color: #3a3a4c; /* New color */
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.web3-content-area { /* DUPLICATE (partial override) */
-    background-color: #2a2a3a; /* Slightly darker for content within web3 sections - new color */
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3); /* Inner shadow - NEW */
-}
-
-.games-grid, .nft-grid, .ad-list { /* .nft-grid DUPLICATE */
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-}
-
-.placeholder-item {
-    background-color: #4a4a5c; /* New color */
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    color: #ccc;
-    height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* NFT Specific Styles */
-.nft-actions {
-    margin-top: 30px;
-    margin-bottom: 30px;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-/* Modals */
-/* REVIEW: These modal styles largely duplicate or override earlier .modal styles. Consolidate. */
-.modal { /* DUPLICATE */
-    display: none;
-    position: fixed;
-    z-index: 1001; /* Different z-index */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.7); /* Different opacity */
-    padding-top: 60px; /* New padding */
-}
-
-.modal-content { /* DUPLICATE */
-    background-color: #2a2a3a; /* Different background color */
-    margin: 5% auto; /* Different margin */
-    padding: 30px;
-    border: 1px solid #888;
-    width: 80%; /* Different width */
-    max-width: 500px; /* Different max-width */
-    border-radius: 10px;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5); /* Different shadow */
-    color: #f0f0f0; /* Different text color */
-}
-
-.close-button { /* DUPLICATE */
-    color: #aaa;
-    float: right;
-    font-size: 28px; /* Different font-size */
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close-button:hover,
-.close-button:focus {
-    color: #f0f0f0; /* Different hover color */
-    text-decoration: none;
-}
-
-.modal-nft-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.web3-form { /* DUPLICATE (partial override) */
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.web3-form label { /* DUPLICATE (partial override) */
-    text-align: left;
-    font-weight: bold;
-    color: #8cacec; /* New color */
-}
-
-.web3-form input[type="text"],
-.web3-form textarea,
-.web3-form input[type="file"] { /* DUPLICATE (partial override) */
-    padding: 10px; /* Different padding */
-    border: 1px solid #555; /* New border color */
-    background-color: #3a3a4c; /* New background color */
-    color: #f0f0f0; /* New text color */
-    border-radius: 5px;
-}
-
-.web3-form input[type="file"] {
-    background-color: transparent;
-    border: none;
-    padding: 0;
-}
 
 /* DAO Section Specific Styles */
+#dao-section {
+    background-color: #2c2c4d; /* Consistent background */
+    color: #E0E0E0;
+    padding: 60px 0; /* Consistent padding */
+}
+
 #dao-section .web3-intro {
     margin-bottom: 20px;
 }
@@ -1763,7 +1299,7 @@ body {
 }
 
 .dao-proposal-item {
-    background-color: #3a3a4c; /* New color */
+    background-color: #3a3a4c;
     border-radius: 10px;
     padding: 25px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -1794,7 +1330,7 @@ body {
 
 .dao-proposal-item .dao-creator {
     font-weight: 600;
-    color: #9aff9a; /* New color */
+    color: #9aff9a;
     word-break: break-all;
 }
 
@@ -1871,7 +1407,8 @@ body {
 /* Staking Section Specific Styles */
 #staking-section {
     padding: 60px 0;
-    background-color: #2a2a3a; /* Match web3-section background */
+    background-color: #2a2a3a;
+    color: #E0E0E0;
 }
 
 #staking-section .web3-intro {
@@ -1887,7 +1424,7 @@ body {
 }
 
 .staking-info-grid .info-card {
-    background-color: #3a3a4c; /* New color */
+    background-color: #3a3a4c;
     border-radius: 10px;
     padding: 25px;
     text-align: center;
@@ -1913,7 +1450,7 @@ body {
 }
 
 .staking-actions {
-    background-color: #3a3a4c; /* New color */
+    background-color: #3a3a4c;
     border-radius: 10px;
     padding: 30px;
     margin-bottom: 40px;
@@ -1947,7 +1484,7 @@ body {
     font-size: 1em;
 }
 
-.staking-actions .web3-btn { /* Uses existing .web3-btn but with specific colors */
+.staking-actions .web3-btn {
     padding: 12px 25px;
     font-size: 1em;
     border-radius: 5px;
@@ -1956,38 +1493,8 @@ body {
     margin: 5px;
 }
 
-.staking-actions #stakeAfoxBtn {
-    background-color: #007bff;
-    border: 1px solid #007bff;
-    color: white;
-}
-
-.staking-actions #stakeAfoxBtn:hover {
-    background-color: #0056b3;
-}
-
-.staking-actions #claimRewardsBtn {
-    background-color: #28a745;
-    border: 1px solid #28a745;
-    color: white;
-}
-
-.staking-actions #claimRewardsBtn:hover {
-    background-color: #218838;
-}
-
-.staking-actions #unstakeAfoxBtn {
-    background-color: #dc3545;
-    border: 1px solid #dc3545;
-    color: white;
-}
-
-.staking-actions #unstakeAfoxBtn:hover {
-    background-color: #c82333;
-}
-
 .staking-details {
-    background-color: #2a2a3a; /* New color */
+    background-color: #2a2a3a;
     border-radius: 10px;
     padding: 30px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -2023,125 +1530,13 @@ body {
     text-align: center;
 }
 
-/* Multimedia Portal Specific Sections */
-/* REVIEW: Many of these Multimedia styles are duplicates or minor variations of earlier .multimedia-section and related elements. Consolidate. */
-.multimedia-section { /* DUPLICATE */
-    background-color: #1a1a2e; /* Consistent */
-}
-
-.multimedia-section-alt { /* DUPLICATE */
-    background-color: #2a2a3a; /* New color */
-}
-
-.multimedia-heading { /* DUPLICATE */
-    font-size: 2.2em; /* Different from 2.5em / 2em earlier h2/multimedia-heading */
-    color: #ff9933; /* Orangeish for Multimedia headings - new color */
-    margin-bottom: 20px;
-}
-
-.multimedia-intro { /* DUPLICATE */
-    font-size: 1.1em;
-    color: #ccc; /* Different color */
-    margin-bottom: 30px;
-}
-
-.multimedia-features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 25px;
-    margin-top: 40px;
-}
-
-.multimedia-link {
-    display: inline-block;
-    margin-top: 15px;
-    color: #ffd700;
-    text-decoration: none;
-    font-weight: bold;
-    transition: color 0.2s ease;
-}
-
-.multimedia-link:hover {
-    color: #e0b300;
-}
-
-.photo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-}
-
-.photo-grid img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 8px;
-    transition: transform 0.2s ease-in-out;
-}
-
-.photo-grid img:hover {
-    transform: scale(1.05);
-}
-
-.post-list {
-    display: grid;
-    gap: 20px;
-}
-
-.placeholder-item.post {
-    text-align: left;
-    height: auto;
-    background-color: #4a4a5c;
-    padding: 25px;
-    border-radius: 8px;
-}
-
-.placeholder-item.post h3 {
-    color: #ff9933;
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-.placeholder-item.post small {
-    display: block;
-    margin-top: 10px;
-    color: #aaa;
-}
-
-.portal-games-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-}
-
-.placeholder-item.portal-game {
-    background-color: #4a4a5c;
-    text-align: left;
-    height: auto;
-    padding: 25px;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.placeholder-item.portal-game h3 {
-    color: #ff9933;
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-.placeholder-item.portal-game .multimedia-btn {
-    align-self: flex-start;
-    margin-top: 15px;
-}
 
 /* Footer */
-.footer { /* DUPLICATE (partial override) */
-    background-color: #2a2a3a; /* Different background color */
-    color: #ccc; /* Different text color */
-    padding: 20px 0; /* Different padding */
+.footer {
+    background-color: #10101a; /* Prioritizing this darker footer background */
+    color: #B0B0B0; /* Prioritizing this text color */
     text-align: center;
+    padding: 30px 0; /* Prioritizing this padding */
     font-size: 0.9em;
 }
 
@@ -2149,46 +1544,120 @@ body {
     margin: 5px 0;
 }
 
-/* Responsive Adjustments */
-@media (max-width: 768px) { /* DUPLICATE/EXPANDS EARLIER MEDIA QUERY */
+/* Responsive Design */
+@media (max-width: 900px) {
     .nav ul {
+        gap: 10px;
+    }
+    .hero-section .container {
         flex-direction: column;
+        text-align: center;
+    }
+    .hero-content {
+        text-align: center;
+    }
+    .hero-section h1, .hero-section .tagline {
+        text-align: center;
+    }
+    .hero-buttons {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .header .container {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        flex-direction: column; /* Stack nav items on small screens */
         align-items: center;
     }
-
-    .nav ul li {
-        margin: 10px 0;
+    .nav a {
+        font-size: 0.9em;
+        margin: 10px 0; /* Adjust margin for stacked items */
     }
-
-    .main-heading {
-        font-size: 2.2em;
+    h1 {
+        font-size: 2.8em;
     }
-
-    .aurum-heading, .web3-heading, .multimedia-heading {
+    h2 {
+        font-size: 2em;
+    }
+    h3 {
+        font-size: 1.5em;
+    }
+    .aurum-heading, .web3-heading, .multimedia-heading { /* Consistent heading adjustment */
         font-size: 1.8em;
     }
+    .hero-section, .section, .web3-section, .multimedia-section {
+        padding: 60px 0;
+    }
+    .tokenomics-grid, .roadmap-grid, .multimedia-grid, .nfc-grid, .nft-grid, .games-grid, .dao-proposals-grid, .staking-info-grid, .portal-games-grid { /* Combined all grids to stack */
+        grid-template-columns: 1fr;
+    }
+    .buy-steps li {
+        padding: 20px;
+    }
+    .social-btn {
+        padding: 10px 20px;
+        font-size: 1em;
+    }
 
+    #aurum-announcements .container, .multimedia-portal-container {
+        padding: 20px;
+    }
+    textarea#announcementInput {
+        width: 100%;
+        padding: 10px;
+    }
+    button#publishButton {
+        width: 100%;
+    }
+    .multimedia-form input, .multimedia-form textarea {
+        width: 100%;
+    }
+    .multimedia-btn {
+        width: 100%;
+    }
     .staking-actions .input-group {
         flex-direction: column;
         gap: 10px;
     }
-
     .staking-actions input[type="number"] {
         max-width: 100%;
     }
+    .modal-content { /* Adjust modal for smaller screens */
+        width: 95%;
+        padding: 20px;
+    }
 }
 
-@media (max-width: 480px) { /* DUPLICATE/EXPANDS EARLIER MEDIA QUERY */
-    .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .social-btn {
+@media (max-width: 480px) {
+    .hero-section h1 {
+        font-size: 2.2em;
+    }
+    .hero-section .tagline {
+        font-size: 1.2em;
+    }
+    .hero-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .social-btn { /* Make buttons full width */
         width: 100%;
+        padding: 12px 20px;
         margin: 5px 0;
     }
-
     .container {
         padding: 10px;
     }
-
     .section {
         padding: 40px 10px;
+    }
+    .nft-item img { /* Adjust NFT image size for very small screens */
+        height: 150px;
     }
 }
