@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aurum Fox Portal: Web3 & Multimedia Ecosystem</title>
-    <meta name="description" content="Official portal for Aurum Fox meme coin, integrating Web3 features (Games, NFTs, Ads, DAO, Staking) and a Multimedia hub (Photos, Posts, Mini-Games). Your gateway to the AFOX ecosystem on Solana.">
+    <meta name="description" content="Official portal of the Aurum Fox meme coin, combining Web3 functions (Games, NFTs, Advertising, DAO, Staking) and a multimedia hub (Photos, Posts, Mini-Games). Your gateway to the AFOX ecosystem on Solana.">
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
@@ -24,28 +24,29 @@
                 <span class="logo-text">Aurum Fox Portal</span>
             </div>
             <nav class="nav">
-                <ul>
+                <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0">
+                    <div class="hamburger"></div>
+                </div>
+                <ul id="mainNav" class="main-nav" role="navigation" aria-hidden="true">
+                    <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
+
                     <li><a href="#aurum-fox-home">Aurum Fox</a></li>
-                    <li><a href="#web3-site-home">Web3</a></li>
-                    <li><a href="#multimedia-portal-home">Multimedia</a></li>
                     <li><a href="#about-afox">About AFOX</a></li>
                     <li><a href="#tokenomics">Tokenomics</a></li>
-                    <li><a href="#how-to-buy">Get AFOX</a></li>
-                    <li><a href="#aurum-nfts">NFTs</a></li>
-                    <li><a href="#aurum-nfc">NFC</a></li>
+                    <li><a href="#how-to-buy">Acquire AFOX</a></li>
+                    <li><a href="#aurum-nfts">Aurum NFTs</a></li>
+                    <li><a href="#aurum-nfc">Aurum NFC</a></li>
                     <li><a href="#aurum-roadmap">Roadmap</a></li>
                     <li><a href="#aurum-news">News</a></li>
                     <li><a href="#aurum-announcements">Announcements</a></li>
                     <li><a href="#aurum-community">Community</a></li>
-                    <li><a href="#contact-us">Contact</a></li>
+                    <li><a href="#contact-us">Contact Us</a></li>
+                    <li><a href="#web3-site-home">Web3 Portal</a></li>
                     <li><a href="#games-section">Games</a></li>
-                    <li><a href="#nft-section">NFTs Portal</a></li>
-                    <li><a href="#ads-section">Ads</a></li>
+                    <li><a href="#nft-section">NFT Portal</a></li>
+                    <li><a href="#ads-section">Advertising</a></li>
                     <li><a href="#dao-section">DAO</a></li>
                     <li><a href="#staking-section">Staking</a></li>
-                    <li><a href="#photo-section">Photos</a></li>
-                    <li><a href="#post-section">Posts</a></li>
-                    <li><a href="#portal-games-section">Mini-Games</a></li>
                 </ul>
             </nav>
         </div>
@@ -189,7 +190,6 @@
             <div class="container">
                 <h2 class="aurum-heading">Aurum Fox NFT: Unleashing Digital Treasures</h2>
                 <p>Beyond being a meme token, Aurum Fox aims to delve into the exciting world of Non-Fungible Tokens (NFTs). Our vision includes creating exclusive Aurum Fox NFT collections that embody the spirit of luck, prosperity, and the cunning of the fox.</p>
-                <p>These NFTs will serve as unique digital collectibles, offering holders special benefits within the Aurum Fox ecosystem. This may include:</p>
                 <ul>
                     <li>Exclusive access to community events or channels.</li>
                     <li>Staking opportunities to earn additional AFOX tokens.</li>
@@ -212,8 +212,6 @@
                 <button class="web3-btn">View Collection on Magic Eden</button>
             </div>
         </section>
-
-        ---
 
         <section id="aurum-nfc" class="section aurum-fox-section-alt">
             <div class="container">
@@ -385,8 +383,6 @@
                 <p class="disclaimer"><i>Disclaimer: Aurum Fox (AFOX) is a meme token. The cryptocurrency market is highly volatile, and investments in meme tokens carry high risks. Always conduct your own research (DYOR).</i></p>
             </div>
         </section>
-
-        ---
 
         <section id="web3-site-home" class="section web3-section-alt">
             <div class="container">
@@ -620,121 +616,6 @@
                         <li><strong>Reward calculation:</strong> <span id="rewardCalculation">Daily</span></li>
                     </ul>
                     <p class="web3-note">Please connect your wallet to see live data and interact with staking.</p>
-                </div>
-            </div>
-        </section>
-
-        ---
-
-        <section id="multimedia-portal-home" class="section multimedia-section-alt">
-            <div class="container multimedia-portal-container">
-                <h2 class="multimedia-heading">Welcome to My Portal! (Multimedia Hub)</h2>
-                <p class="multimedia-intro">Upload and view photos, create blogs, and play simple games right here.</p>
-                <div class="multimedia-features-grid">
-                    <div class="feature-card">
-                        <h3>📸 Photos</h3>
-                        <p>Upload and view community photos.</p>
-                        <a href="#photo-section" class="multimedia-link">View Photos</a>
-                    </div>
-                    <div class="feature-card">
-                        <h3>📝 Posts</h3>
-                        <p>Read and create blogs or articles.</p>
-                        <a href="#post-section" class="multimedia-link">Read Posts</a>
-                    </div>
-                    <div class="feature-card">
-                        <h3>🕹️ Portal Games</h3>
-                        <p>Play simple, fun games directly on the portal.</p>
-                        <a href="#portal-games-section" class="multimedia-link">Play Games</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="photo-section" class="section multimedia-section">
-            <div class="container multimedia-portal-container">
-                <h2 class="multimedia-heading">Upload Photos</h2>
-                <form id="photoUploadForm" class="upload-form multimedia-form" enctype="multipart/form-data">
-                    <label for="photo-upload">Select File:</label>
-                    <input type="file" id="photo-upload" name="photo" accept="image/*">
-                    <label for="photo-title">Photo Title:</label>
-                    <input type="text" id="photo-title" name="photo_title" placeholder="Enter photo title">
-                    <label for="photo-description">Description:</label>
-                    <textarea id="photo-description" name="photo_description" rows="3" placeholder="Enter photo description"></textarea>
-                    <button type="submit" class="multimedia-btn">Upload Photo</button>
-                </form>
-
-                <h3 class="multimedia-subheading">My Gallery</h3>
-                <div id="photo-gallery" class="gallery multimedia-grid photo-grid">
-                    <div class="item multimedia-item">
-                        <img src="https://via.placeholder.com/250x150?text=Photo+1" alt="Beautiful sunset on the beach">
-                        <h3>Beautiful Sunset</h3>
-                        <p>This is a beautiful sunset on the beach.</p>
-                    </div>
-                    <div class="item multimedia-item">
-                        <img src="https://via.placeholder.com/250x150?text=Photo+2" alt="Majestic mountain landscape under clouds">
-                        <h3>Mountain Landscape</h3>
-                        <p>Majestic mountains under the clouds.</p>
-                    </div>
-                    <img src="https://via.placeholder.com/150/007bff/FFFFFF?text=Photo+1" alt="Placeholder photo 1" class="placeholder-item photo">
-                    <img src="https://via.placeholder.com/150/28a745/FFFFFF?text=Photo+2" alt="Placeholder photo 2" class="placeholder-item photo">
-                    <img src="https://via.placeholder.com/150/ffc107/FFFFFF?text=Photo+3" alt="Placeholder photo 3" class="placeholder-item photo">
-                    <img src="https://via.placeholder.com/150/dc3545/FFFFFF?text=Photo+4" alt="Placeholder photo 4" class="placeholder-item photo">
-                </div>
-            </div>
-        </section>
-
-        <section id="post-section" class="section multimedia-section-alt">
-            <div class="container multimedia-portal-container">
-                <h2 class="multimedia-heading">Create New Post</h2>
-                <form id="postForm" class="upload-form multimedia-form">
-                    <label for="post-title">Post Title:</label>
-                    <input type="text" id="post-title" name="post_title" placeholder="Enter post title">
-                    <label for="post-content">Post Content:</label>
-                    <textarea id="post-content" name="post_content" rows="10" placeholder="Write your post here..."></textarea>
-                    <button type="submit" class="multimedia-btn">Publish Post</button>
-                </form>
-
-                <h3 class="multimedia-subheading">My Posts</h3>
-                <div id="posts-list" class="posts multimedia-grid post-list">
-                    <div class="item multimedia-item placeholder-item post">
-                        <h3>My First Blog Post</h3>
-                        <p>Welcome to my blog! Here I will share my thoughts and ideas.</p>
-                        <small>Published: June 24, 2025</small>
-                    </div>
-                    <div class="item multimedia-item placeholder-item post">
-                        <h3>Programming Tips</h3>
-                        <p>Some useful tips for beginner programmers.</p>
-                        <small>Published: June 20, 2025</small>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="portal-games-section" class="section multimedia-section">
-            <div class="container multimedia-portal-container">
-                <h2 class="multimedia-heading">Games</h2>
-                <h3 class="multimedia-subheading">My Game Collection</h3>
-                <div class="games multimedia-grid portal-games-grid">
-                    <div class="item multimedia-item" id="guess-number-game">
-                        <h3>Simple Guess the Number Game</h3>
-                        <p>Try to guess a number from 1 to 100.</p>
-                        <div class="game-content">
-                            <p id="guess-message">Enter your guess:</p>
-                            <input type="number" id="user-guess" min="1" max="100">
-                            <button class="multimedia-btn" id="submit-guess">Guess</button>
-                            <button class="multimedia-btn" id="reset-game" style="display:none;">Play Again</button>
-                        </div>
-                    </div>
-                    <div class="item multimedia-item placeholder-item portal-game">
-                        <h3>Mini Puzzle</h3>
-                        <p>Assemble this engaging picture.</p>
-                        <a href="#" class="multimedia-btn">Play</a>
-                    </div>
-                    <div class="placeholder-item portal-game">
-                        <h3>Find the Pair</h3>
-                        <p>Test your memory skills by finding pairs.</p>
-                        <button class="multimedia-btn">Play Now</button>
-                    </div>
                 </div>
             </div>
         </section>
