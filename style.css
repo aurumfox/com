@@ -1,0 +1,2326 @@
+/* ==========================================================================
+   CSS Variables (Design Tokens) - Объединены и очищены
+   Используйте эти переменные для согласованности дизайна
+========================================================================== */
+:root {
+    /* Brand Colors */
+    --primary-color: #ffd700; /* Gold */
+    --secondary-color: #8b0000; /* Dark Red/Fox */
+    --accent-color: #007bff; /* E.g., for buttons, links (blue for web3, original for others) */
+
+    /* Text Colors */
+    --text-color-light: #E0E0E0; /* For dark backgrounds */
+    --text-color-dark: #333; /* For light backgrounds (e.g., specific cards or sections) */
+    --link-color: var(--primary-color); /* Gold for links */
+    --link-hover-color: #FFCC00; /* Slightly darker gold on hover */
+    --text-color-dimmed: #B0B0B0; /* Dimmed text */
+    --text-color-white: #fff; /* Pure white text */
+
+    /* Background Colors */
+    --background-color-light: #ffffff; /* Light primary background (used for specific light elements) */
+    --background-color-dark: #2c2c2c; /* Dark background for some sections/elements */
+    --section-bg-light: #f9f9f9; /* Slightly darker than primary light */
+    --section-bg-dark: #222222; /* Slightly lighter than primary dark */
+    --color-bg-dark: #1a1a2e; /* Deep blue/purple for primary dark background */
+    --color-bg-light: #2c2c4d; /* Slightly lighter dark blue for alternate dark sections */
+    --color-bg-card: #3a3a5e; /* Dark background for elements/cards */
+    --color-bg-input: #2a2a3a; /* Background for inputs and some content areas */
+    --color-modal-overlay: rgba(0,0,0,0.7);
+
+    /* State Colors */
+    --success-color: #28a745; /* Green */
+    --error-color: #dc3545; /* Red */
+    --info-color: #17a2b8; /* Light Blue */
+    --warning-color: #ffc107; /* Orange */
+    --color-green-success: #28a745;
+    --color-green-success-hover: color-mix(in srgb, var(--color-green-success) 90%, black);
+    --color-red-danger: #dc3545;
+    --color-red-danger-hover: color-mix(in srgb, var(--color-red-danger) 90%, black);
+    --color-blue-info: #007bff; /* Blue for informational notifications */
+    --color-purple-transfer: #8e44ad; /* Purple for "Transfer" button */
+    --color-purple-transfer-hover: color-mix(in srgb, var(--color-purple-transfer) 90%, black);
+
+    /* Colors for specific sections */
+    --color-blue-web3: #8cacec; /* Bluish for Web3 headings/labels */
+    --color-orange-multimedia: #ff9933; /* Orangish for Multimedia headings/labels */
+    --color-highlight-green: #39FF14; /* Bright green for "Revoked" */
+    --color-wallet-address: #9aff9a; /* Light green for wallet address */
+
+    /* Fonts */
+    --font-primary: 'Montserrat', sans-serif;
+    --font-secondary: 'Poppins', sans-serif;
+    --font-size-base: 16px;
+
+    /* Spacing and Sizes */
+    --spacing-xs: 5px;
+    --spacing-sm: 10px;
+    --spacing-md: 20px;
+    --spacing-lg: 40px;
+    --spacing-xl: 80px;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 5px 15px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+    --box-shadow-light: 0 2px 10px rgba(0, 0, 0, 0.5);
+    --box-shadow-medium: 0 5px 15px rgba(0, 0, 0, 0.3);
+    --box-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.4);
+    --box-shadow-inset: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+    --box-shadow-item: 0 4px 10px rgba(0,0,0,0.2);
+    --box-shadow-item-hover: 0 6px 15px rgba(0,0,0,0.15);
+
+
+    /* Border Radius */
+    --border-radius: 8px;
+    --border-radius-base: 8px;
+    --border-radius-small: 5px;
+}
+
+/* ==========================================================================
+   Base Styles
+   Общие стили для всего сайта (сброс, типографика, обертки)
+========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth; /* Плавная прокрутка к якорям */
+}
+
+body {
+    font-family: var(--font-secondary);
+    line-height: 1.6;
+    color: var(--text-color-light); /* Светлый текст по умолчанию */
+    background-color: var(--color-bg-dark); /* Темный фон по умолчанию */
+    overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md); /* 20px по бокам */
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Убирает дополнительный отступ под изображением */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-primary);
+    color: var(--primary-color); /* Золотой для заголовков */
+    margin-bottom: var(--spacing-md); /* Общий отступ для заголовков */
+    line-height: 1.2;
+    text-align: center; /* Центрировать заголовки по умолчанию */
+}
+
+h1 { font-size: 3.5em; font-weight: 700;}
+h2 { font-size: 2.5em; font-weight: 600;}
+h3 { font-size: 1.8em; font-weight: 600; margin-bottom: var(--spacing-sm);}
+h4 { font-size: 1.3em; font-weight: 600; color: var(--primary-color);}
+
+
+p {
+    margin-bottom: var(--spacing-sm);
+}
+
+ul, ol {
+    margin-bottom: var(--spacing-sm);
+    padding-left: var(--spacing-lg); /* Отступ для маркеров/номеров */
+}
+
+li {
+    margin-bottom: var(--spacing-xs);
+}
+
+/* ==========================================================================
+   Header and Navigation
+========================================================================== */
+.header {
+    background-color: rgba(18, 18, 30, 0.9); /* Темный фон хедера с небольшой прозрачностью */
+    padding: var(--spacing-md) 0;
+    color: var(--text-color-white);
+    box-shadow: var(--box-shadow-light);
+    position: sticky; /* Липкий хедер */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* Хедер над контентом */
+}
+
+.header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.logo-img {
+    height: 40px; /* Размер логотипа */
+    width: auto;
+}
+
+.logo-text {
+    font-family: var(--font-primary);
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Навигация для десктопа */
+.nav ul.main-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex; /* Flexbox для горизонтального расположения */
+    gap: 15px; /* Отступ между элементами */
+    transition: transform 0.3s ease-in-out; /* Анимация для мобильного меню */
+}
+
+.nav ul.main-nav li a {
+    color: var(--text-color-light);
+    font-family: var(--font-primary);
+    font-weight: bold;
+    padding: 8px 15px;
+    position: relative; /* Для подчеркивания при наведении */
+    border-radius: var(--border-radius-small);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.nav ul.main-nav li a:hover {
+    color: var(--color-bg-dark);
+    background-color: var(--primary-color);
+}
+
+/* Анимация подчеркивания при наведении */
+.nav ul.main-nav li a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease-out;
+}
+
+.nav ul.main-nav li a:hover::after,
+.nav ul.main-nav li a.active::after {
+    width: 100%;
+}
+
+/* Переключатель гамбургер-меню (скрыт по умолчанию на десктопе) */
+.menu-toggle {
+    display: none;
+    cursor: pointer;
+    z-index: 1001; /* Над другими элементами */
+    padding: var(--spacing-sm); /* Для удобства нажатия */
+}
+
+.hamburger {
+    width: 30px;
+    height: 3px;
+    background-color: var(--primary-color);
+    position: relative;
+    transition: all 0.3s ease-in-out;
+    border-radius: 2px;
+}
+
+.hamburger::before,
+.hamburger::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    background-color: var(--primary-color);
+    transition: all 0.3s ease-in-out;
+    border-radius: 2px;
+}
+
+.hamburger::before {
+    transform: translateY(-10px);
+}
+
+.hamburger::after {
+    transform: translateY(10px);
+}
+
+/* Кнопка закрытия меню (скрыта по умолчанию) */
+.close-menu-button {
+    display: none;
+    font-size: 2.5em; /* Немного больше для удобства */
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    cursor: pointer;
+    color: var(--text-color-light); /* Цвет для кнопки закрытия в мобильном меню */
+    z-index: 1002;
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1; /* Убрать дополнительный интервал */
+}
+.close-menu-button:hover,
+.close-menu-button:focus {
+    color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Sections and Layout
+========================================================================== */
+.section, .aurum-fox-section {
+    padding: var(--spacing-xl) 0; /* Большой вертикальный отступ для секций */
+    text-align: center;
+    background-color: var(--color-bg-light);
+    color: var(--text-color-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.section-alt, .aurum-fox-section-alt {
+    background-color: var(--color-bg-dark);
+}
+
+.section:last-of-type {
+    border-bottom: none;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, var(--color-bg-dark) 0%, #3a0052 100%);
+    color: var(--text-color-white);
+    padding: var(--spacing-xl) 0;
+    text-align: center;
+    min-height: 80vh; /* Минимальная высота для героической секции */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-section .container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap; /* Для адаптивности */
+}
+
+.hero-content {
+    flex: 1;
+    min-width: 300px;
+    text-align: left;
+}
+
+.hero-image {
+    flex: 1;
+    min-width: 250px;
+    display: flex; /* Для центрирования изображения */
+    justify-content: center;
+    align-items: center;
+}
+
+.hero-image img {
+    max-width: 100%; /* Изображение не занимает всю ширину */
+    height: auto;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: pulse 2s infinite alternate; /* Простая анимация */
+    transition: transform 0.3s ease-in-out;
+}
+.hero-image img:hover {
+    transform: translateY(-10px);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+}
+
+.hero-content h1 {
+    font-size: 4em;
+    margin-bottom: var(--spacing-sm);
+    color: var(--primary-color);
+    text-align: left;
+}
+
+.hero-content .tagline {
+    font-size: 1.5em;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-color-light);
+    opacity: 0.9;
+    text-align: left;
+}
+
+.call-to-action, .hero-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+/* Чередующиеся фоны секций для визуального разделения */
+.aurum-fox-section {
+    background-color: var(--background-color-light); /* Светлый фон */
+    color: var(--text-color-dark); /* Темный текст */
+}
+
+.aurum-fox-section-alt {
+    background-color: var(--section-bg-light); /* Светлый оттенок серого */
+    color: var(--text-color-dark); /* Темный текст */
+}
+
+.web3-section {
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+
+.web3-section-alt {
+    background-color: var(--color-bg-dark);
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+
+.multimedia-section {
+    background-color: var(--background-color-light);
+    color: var(--text-color-dark);
+    padding: 60px 0;
+}
+
+.multimedia-section-alt {
+    background-color: var(--section-bg-light);
+    color: var(--text-color-dark);
+}
+
+.aurum-heading, .web3-heading, .multimedia-heading, .main-heading {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    font-size: 2.5em;
+    color: var(--primary-color);
+    position: relative;
+    padding-bottom: var(--spacing-sm);
+}
+
+.web3-heading {
+    color: var(--color-blue-web3);
+    font-size: 2.2em;
+}
+
+.multimedia-heading {
+    color: var(--color-orange-multimedia);
+    font-size: 2.2em;
+}
+
+
+.aurum-heading::after, .web3-heading::after, .multimedia-heading::after, .main-heading::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0;
+    width: 60px;
+    height: 4px;
+    background-color: var(--secondary-color);
+    border-radius: 2px;
+}
+
+.web3-subheading, .multimedia-subheading {
+    font-size: 1.6em;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+    text-align: center;
+}
+.web3-subheading {
+    color: var(--color-blue-web3);
+}
+.multimedia-subheading {
+    color: var(--color-orange-multimedia);
+}
+
+/* ==========================================================================
+   Buttons
+========================================================================== */
+.btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .social-btn {
+    display: inline-block;
+    padding: 15px 30px;
+    border-radius: var(--border-radius-base);
+    font-weight: 700;
+    font-size: 1em;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    margin: 10px;
+}
+
+.btn-primary, .primary-btn {
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover, .primary-btn:hover {
+    background-color: var(--link-hover-color);
+    color: var(--text-color-dark);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.btn-secondary, .secondary-btn {
+    background-color: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-secondary:hover, .secondary-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+/* Web3 Buttons */
+.web3-btn {
+    background-color: var(--accent-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.web3-btn:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
+}
+
+.web3-btn.green-btn, .web3-btn.buy-btn, #stakeAfoxBtn, #claimRewardsBtn {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--text-color-white);
+}
+
+.web3-btn.green-btn:hover, .web3-btn.buy-btn:hover, #stakeAfoxBtn:hover, #claimRewardsBtn:hover {
+    background-color: var(--color-green-success-hover);
+}
+
+.web3-btn.red-btn, .web3-btn.danger-btn, #unstakeAfoxBtn {
+    background-color: var(--error-color);
+    border-color: var(--error-color);
+    color: var(--text-color-white);
+}
+
+.web3-btn.red-btn:hover, .web3-btn.danger-btn:hover, #unstakeAfoxBtn:hover {
+    background-color: var(--color-red-danger-hover);
+}
+
+.web3-btn.sell-btn {
+    background-color: #f39c12;
+    color: var(--text-color-white);
+}
+.web3-btn.sell-btn:hover {
+    background-color: color-mix(in srgb, #f39c12 90%, black);
+}
+
+.web3-btn.transfer-btn {
+    background-color: var(--color-purple-transfer);
+    color: var(--text-color-white);
+}
+.web3-btn.transfer-btn:hover {
+    background-color: var(--color-purple-transfer-hover);
+}
+
+
+.web3-btn.small-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85em;
+}
+
+/* Multimedia Buttons */
+.multimedia-btn {
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    display: inline-block;
+}
+
+.multimedia-btn:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+/* Copy Button */
+.copy-btn {
+    background-color: var(--accent-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: 8px 15px;
+    border-radius: var(--border-radius-small);
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.copy-btn:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   Specific Section Styles
+========================================================================== */
+
+/* About AFOX */
+#about-afox p {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: justify; /* Выравнивание по ширине */
+    font-size: 1.1em;
+}
+
+/* Tokenomics */
+.tokenomics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    text-align: left;
+}
+
+.tokenomics-item {
+    background-color: var(--color-bg-card);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    border-top: 5px solid var(--primary-color);
+}
+
+.tokenomics-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.tokenomics-item .highlight {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text-color-white);
+    margin-bottom: var(--spacing-sm);
+    display: block;
+}
+
+.tokenomics-item .highlight-text-small {
+    font-weight: 600;
+    color: var(--color-highlight-green);
+    font-size: 1.2em;
+    margin-top: var(--spacing-xs);
+    display: block;
+}
+
+.tokenomics-item ul {
+    list-style: disc;
+    padding-left: var(--spacing-md);
+}
+
+.tokenomics-item ul li {
+    margin-bottom: 8px;
+}
+
+.table-responsive {
+    overflow-x: auto; /* Для таблиц на маленьких экранах */
+    margin-top: var(--spacing-md);
+}
+
+.tokenomics-item table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-sm);
+    font-size: 0.95em;
+    color: var(--text-color-light);
+}
+
+.tokenomics-item th,
+.tokenomics-item td {
+    border: 1px solid #4a4a7e;
+    padding: 12px 15px;
+    text-align: left;
+}
+
+.tokenomics-item th {
+    background-color: #4a4a7e;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+.tokenomics-item tr:nth-child(even) {
+    background-color: var(--color-bg-card);
+}
+.tokenomics-item tr:hover {
+    background-color: #4a4a7e;
+}
+
+.tokenomics-item .small-text {
+    font-size: 0.9em;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-md);
+}
+
+.contract-address {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    background-color: var(--color-bg-input); /* Изменено на dark-theme compatible */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--text-color-light);
+}
+
+.contract-address p {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.contract-address .highlight-text {
+    color: var(--primary-color); /* Золотой для контракта */
+    word-break: break-all; /* Разрыв слова для длинных слов */
+}
+
+/* How to Buy */
+.buy-steps, .how-to-list {
+    list-style: none; /* Убрать маркеры по умолчанию */
+    padding: 0;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.buy-steps li, .how-to-list li {
+    background-color: var(--color-bg-card);
+    padding: 25px;
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    position: relative;
+    padding-left: 60px; /* Отступ для номера */
+    border-left: 5px solid var(--primary-color);
+    color: var(--text-color-light);
+}
+
+.buy-steps li::before {
+    counter-increment: step-counter;
+    content: counter(step-counter);
+    position: absolute;
+    left: var(--spacing-md);
+    top: var(--spacing-md);
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.buy-steps h3 {
+    color: var(--accent-color);
+    margin-top: 0;
+}
+
+.buy-steps ul, .how-to-list ul { /* Стили для вложенного списка */
+    list-style: disc;
+    margin-top: var(--spacing-sm);
+    padding-left: var(--spacing-md);
+}
+.buy-steps li ul li, .how-to-list li ul li {
+    background-color: transparent;
+    box-shadow: none;
+    border-left: none;
+    padding: 0;
+}
+
+.tip {
+    font-style: italic;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-md);
+    text-align: center;
+}
+
+/* NFT Showcase */
+.nft-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    justify-content: center;
+}
+
+.nft-card {
+    background-color: var(--color-bg-card); /* Изменено на dark-theme compatible */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-item); /* Изменено на dark-theme compatible */
+    text-align: center;
+    transition: transform 0.3s ease;
+    color: var(--text-color-light); /* Обеспечить светлый текст на темной карточке */
+}
+
+.nft-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow-item-hover);
+}
+
+.nft-card img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid #4a4a5c; /* Добавлен легкий бордер */
+}
+
+.nft-card h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Aurum NFC */
+#aurum-nfc {
+    background-color: var(--color-bg-light);
+    color: var(--text-color-light);
+    padding: var(--spacing-xl) 0;
+}
+#aurum-nfc h2 {
+    color: var(--primary-color);
+}
+
+.nfc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    text-align: center;
+}
+
+.nfc-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    color: var(--text-color-light);
+    border-top: 5px solid var(--primary-color);
+}
+
+.nfc-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.nfc-icon {
+    width: 100px;
+    height: auto;
+    margin: 0 auto var(--spacing-md);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.nfc-note {
+    font-style: italic;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-lg);
+    text-align: center;
+}
+
+/* Roadmap */
+.roadmap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.roadmap-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    text-align: left;
+    border-bottom: 5px solid var(--primary-color);
+}
+
+.roadmap-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.roadmap-item ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.roadmap-item li {
+    position: relative;
+    padding-left: 25px;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-color-light);
+}
+.roadmap-item li::before {
+    content: '✅';
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+}
+
+.roadmap-item strong {
+    color: var(--accent-color);
+}
+
+.roadmap-disclaimer {
+    text-align: center;
+    font-style: italic;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-lg);
+    font-size: 0.95em;
+}
+
+/* News and Announcements */
+#aurum-announcements .container {
+    background-color: var(--color-bg-light);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 900px;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+#aurum-announcements h2, #aurum-announcements h3 {
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.news-list, .announcements-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.news-item, .announcement-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-item);
+    border: 1px solid #4a4a7e;
+    font-size: 1em;
+    line-height: 1.5;
+    color: var(--text-color-light);
+    word-wrap: break-word;
+}
+
+.news-item h4, .announcement-item h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.news-item small, .announcement-item small, .announcement-date {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--text-color-dimmed);
+    font-size: 0.9em;
+    font-style: italic;
+    text-align: right;
+}
+.announcement-item p {
+    margin: 0 0 5px 0;
+}
+
+.admin-announcement-section {
+    background-color: var(--color-bg-card);
+    padding: 25px;
+    border-radius: var(--border-radius-base);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--box-shadow-medium);
+    border-left: 5px solid var(--primary-color);
+}
+
+.admin-announcement-section h3 {
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color); /* Изменено на primary-color для темной темы */
+}
+
+.admin-announcement-section textarea, textarea#announcementInput {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid #4a4a7e;
+    border-radius: var(--border-radius-base);
+    min-height: 120px;
+    font-family: inherit;
+    font-size: 1em;
+    background-color: var(--color-bg-dark);
+    color: var(--text-color-light);
+    box-shadow: var(--box-shadow-inset);
+    resize: vertical;
+}
+
+.admin-announcement-section textarea::placeholder, textarea#announcementInput::placeholder {
+    color: var(--text-color-dimmed);
+}
+
+.admin-announcement-section button, button#publishButton {
+    width: auto;
+    padding: var(--spacing-sm);
+    font-size: 1.1em;
+    background-color: var(--primary-color);
+    color: var(--color-bg-dark);
+    border: none;
+    border-radius: var(--border-radius-base);
+    cursor: pointer;
+    font-weight: 700;
+    display: block;
+    margin: 0 auto;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+.admin-announcement-section button:hover, button#publishButton:hover {
+    background-color: var(--link-hover-color);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #4a4a7e;
+    margin: var(--spacing-lg) 0;
+}
+
+
+/* Community */
+.social-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.social-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 12px 25px;
+    border-radius: var(--border-radius-base);
+    color: var(--text-color-light);
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    background-color: #3a3a4c;
+    border: 1px solid var(--text-color-light);
+}
+
+.social-btn:hover {
+    text-decoration: none;
+    transform: translateY(-3px);
+    background-color: var(--primary-color);
+    color: var(--color-bg-dark);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.social-icon {
+    width: 24px;
+    height: 24px;
+    fill: currentColor; /* Использует цвет текста кнопки */
+    margin-right: var(--spacing-xs);
+}
+
+.discord-btn { background-color: #7289DA; color: var(--text-color-white); border: none;}
+.discord-btn:hover { background-color: color-mix(in srgb, #7289DA 90%, black); }
+
+.telegram-btn { background-color: #0088cc; color: var(--text-color-white); border: none;}
+.telegram-btn:hover { background-color: color-mix(in srgb, #0088cc 90%, black); }
+
+.twitter-btn { background-color: #1DA1F2; color: var(--text-color-white); border: none;}
+.twitter-btn:hover { background-color: color-mix(in srgb, #1DA1F2 90%, black); }
+
+.solscan-btn { background-color: #8C52FF; color: var(--text-color-white); border: none;} /* Пример цвета для Solscan */
+.solscan-btn:hover { background-color: color-mix(in srgb, #8C52FF 90%, black); }
+
+.news-btn { background-color: #f7b731; color: var(--color-bg-dark); border: none;} /* Произвольный цвет для "Announcements" */
+.news-btn:hover { background-color: color-mix(in srgb, #f7b731 90%, black); }
+
+
+/* Contact Us */
+.contact-section {
+    background-color: var(--section-bg-dark);
+    color: var(--text-color-light);
+    padding-bottom: var(--spacing-xl); /* Дополнительный отступ, чтобы не сливалось с футером */
+}
+
+.contact-info {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+.contact-info p {
+    font-size: 1.1em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.contact-info a {
+    color: var(--primary-color);
+}
+
+.contact-form {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: var(--background-color-dark); /* Темнее, чем секция */
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+}
+
+.contact-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid #555;
+    border-radius: 5px;
+    background-color: #444;
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.contact-form input[type="text"]::placeholder,
+.contact-form input[type="email"]::placeholder,
+.contact-form textarea::placeholder {
+    color: #bbb;
+}
+
+.contact-form button[type="submit"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1.2em;
+}
+
+.disclaimer {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ==========================================================================
+   Web3 Portal Sections
+========================================================================== */
+.web3-intro {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    font-size: 1.1em;
+    color: #ccc;
+    max-width: 700px;
+    margin: 0 auto var(--spacing-lg) auto;
+}
+
+.web3-wallet-display {
+    text-align: center;
+    margin-top: var(--spacing-md);
+    font-size: 1.1em;
+    color: var(--text-color-light);
+    background-color: #3a3a4c;
+    padding: 15px;
+    border-radius: var(--border-radius-base);
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+}
+
+.web3-wallet-display span {
+    font-weight: bold;
+    color: var(--color-wallet-address);
+}
+
+.web3-features-grid,
+.games-grid,
+.nft-grid,
+.ad-list,
+.dao-proposals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+.nft-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.feature-card,
+.placeholder-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    text-align: center;
+    color: var(--text-color-light);
+    border: 1px solid #3a3a3a; /* Добавить легкий бордер */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.feature-card h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.feature-card .web3-link {
+    display: inline-block;
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--accent-color);
+    color: var(--text-color-light);
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.feature-card .web3-link:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
+    text-decoration: none;
+}
+
+.web3-content-area, .content-area {
+    min-height: 200px;
+    background-color: var(--color-bg-input);
+    padding: 15px;
+    border-radius: var(--border-radius-small);
+    margin-top: var(--spacing-md);
+    border: 1px dashed #ccc;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+}
+.web3-placeholder {
+    background-color: #4a4a5c;
+    padding: 10px 15px;
+    border-radius: var(--border-radius-small);
+    font-style: italic;
+    color: #ccc;
+}
+
+
+/* NFT Specific Styles */
+.nft-actions {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.nft-item {
+    background-color: #3a3a4c;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: var(--box-shadow-item);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #4a4a5c;
+    color: var(--text-color-light);
+}
+
+.nft-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow-item-hover);
+}
+
+.nft-item img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius-base);
+    margin-bottom: 10px;
+    border: 1px solid #555;
+}
+
+.nft-item h4 {
+    font-size: 1.1em;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    word-break: break-word;
+}
+
+.nft-item p {
+    font-size: 0.9em;
+    color: #ccc;
+    margin: 2px 0;
+    word-break: break-word;
+}
+
+
+.nft-form-container {
+    max-width: 500px;
+    margin: var(--spacing-lg) auto;
+    background-color: var(--color-bg-input);
+    padding: var(--spacing-lg);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    color: var(--text-color-light);
+    text-align: left;
+    border: 1px solid #3a3a4c;
+}
+
+.web3-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--color-blue-web3);
+}
+
+.web3-form input[type="text"],
+.web3-form input[type="number"],
+.web3-form textarea,
+.web3-form select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: var(--spacing-md);
+    border: 1px solid #555;
+    border-radius: 6px;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.web3-form input[type="file"] {
+    width: 100%;
+    padding: 0;
+    margin-bottom: var(--spacing-md);
+    border: none;
+    background-color: transparent;
+    color: var(--text-color-light);
+    font-size: 1em;
+}
+
+.web3-form input[type="text"]::placeholder,
+.web3-form input[type="number"]::placeholder,
+.web3-form textarea::placeholder {
+    color: #bbb;
+}
+
+.web3-form .form-help-text {
+    font-size: 0.9em;
+    color: var(--text-color-dimmed);
+    margin-top: -10px;
+    margin-bottom: var(--spacing-md);
+    display: block;
+}
+
+.nft-detail-view {
+    text-align: left;
+    padding: var(--spacing-md);
+    color: var(--text-color-light); /* Изменено для темной темы */
+}
+
+.nft-detail-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    border: 1px solid #ddd;
+}
+
+.nft-detail-view h3 {
+    color: var(--primary-color);
+    text-align: center;
+    font-size: 2em;
+    margin-bottom: var(--spacing-sm);
+}
+
+.nft-detail-view p {
+    font-size: 1.1em;
+    color: #ccc;
+    margin-bottom: 8px;
+}
+.nft-detail-view p strong {
+    color: var(--text-color-white);
+}
+
+.nft-detail-view #nftDetailMint,
+.nft-detail-view #nftDetailOwner {
+    font-size: 0.95em;
+    word-break: break-all;
+    background-color: #3a3a4c;
+    padding: 5px 10px;
+    border-radius: var(--border-radius-small);
+    display: inline-block;
+    margin-top: 5px;
+}
+
+#attributesList {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--spacing-sm);
+}
+
+#attributesList li {
+    background-color: var(--color-bg-card);
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: var(--border-radius-small);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95em;
+    border: 1px solid #4a4a5c;
+    color: var(--text-color-light);
+}
+
+.nft-detail-actions {
+    margin-top: var(--spacing-lg);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.ad-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+.placeholder-item.ad {
+    padding: 15px;
+    background-color: #4a4a5c;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius-small);
+    text-align: center;
+    color: #ccc;
+    font-style: italic;
+    margin-bottom: 10px;
+}
+.placeholder-item.ad img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius-small);
+    margin-top: 10px;
+}
+
+
+/* DAO Section */
+#dao-section {
+    background-color: var(--color-bg-light);
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+#dao-section .web3-intro {
+    margin-bottom: var(--spacing-md);
+}
+
+.dao-actions {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.dao-proposals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: var(--spacing-md);
+}
+
+.dao-proposal-item {
+    background-color: #3a3a4c;
+    padding: var(--spacing-md);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    color: var(--text-color-light);
+    border: 1px solid #3a3a3a;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.dao-proposal-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dao-proposal-item h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+    font-size: 1.3em;
+}
+
+.dao-proposal-item p {
+    font-size: 0.95em;
+    margin-bottom: var(--spacing-sm);
+    color: #ccc;
+    line-height: 1.5;
+}
+
+.dao-proposal-item .dao-creator {
+    font-family: monospace; /* Моноширинный шрифт для адреса */
+    color: var(--color-wallet-address);
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.dao-proposal-item .dao-votes-for {
+    color: var(--success-color);
+    font-weight: 700;
+}
+.dao-proposal-item .dao-votes-against {
+    color: var(--error-color);
+    font-weight: 700;
+}
+
+.dao-vote-btn {
+    margin-right: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    width: 100%;
+    padding: 12px;
+    font-size: 1em;
+    border-radius: var(--border-radius-small);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.dao-vote-btn[data-vote-type="for"] {
+    background-color: var(--success-color);
+    border: 1px solid var(--success-color);
+    color: var(--text-color-white);
+}
+
+.dao-vote-btn[data-vote-type="for"]:hover {
+    background-color: var(--color-green-success-hover);
+}
+
+.dao-vote-btn[data-vote-type="against"] {
+    background-color: var(--error-color);
+    border: 1px solid var(--error-color);
+    color: var(--text-color-white);
+}
+
+.dao-vote-btn[data-vote-type="against"]:hover {
+    background-color: var(--color-red-danger-hover);
+}
+
+
+/* Staking Section */
+#staking-section {
+    padding: 60px 0;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+}
+#staking-section .web3-intro {
+    margin-bottom: var(--spacing-lg);
+}
+
+.staking-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.info-card {
+    background-color: #3a3a4c;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    color: var(--text-color-light);
+    border: 1px solid #3a3a3a;
+    transition: transform 0.2s ease-in-out;
+}
+.info-card:hover {
+    transform: translateY(-5px);
+}
+
+.info-card h3 {
+    color: var(--primary-color);
+    font-size: 1.2em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.info-card .info-value {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text-color-light);
+    margin: 0;
+}
+
+.staking-actions {
+    background-color: #3a3a4c;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    color: var(--text-color-light);
+    margin-bottom: var(--spacing-lg);
+}
+.staking-actions .web3-subheading {
+    margin-top: 0;
+    margin-bottom: 25px;
+    color: var(--primary-color);
+    font-size: 1.5em;
+}
+
+.staking-actions .input-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap; /* Для мобильных */
+}
+
+.staking-actions input[type="number"] {
+    flex-grow: 1;
+    max-width: 300px;
+    padding: 12px 15px;
+    border: 1px solid #555;
+    border-radius: 5px;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.staking-details {
+    background-color: var(--color-bg-input);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    color: var(--text-color-light);
+    border: 1px solid #3a3a3a;
+}
+.staking-details .web3-subheading {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+    font-size: 1.5em;
+}
+
+.staking-details ul {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--spacing-md);
+    color: #ccc;
+    line-height: 1.8;
+}
+
+.staking-details li {
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.1em;
+}
+
+.staking-details li strong {
+    color: var(--primary-color);
+}
+
+.staking-details .web3-note {
+    font-style: italic;
+    font-size: 0.9em;
+    color: #aaa;
+    text-align: center;
+    margin-top: var(--spacing-md);
+}
+
+
+/* ==========================================================================
+   Multimedia Hub Sections
+========================================================================== */
+.multimedia-portal-container {
+    text-align: center; /* Центрировать заголовки и вступительный текст */
+    color: var(--text-color-light); /* Изменено на light для темной темы */
+    background: var(--color-bg-dark); /* Изменено на dark для темной темы */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Переопределение цветов для темных мультимедийных разделов */
+.multimedia-section-alt .multimedia-heading,
+.multimedia-section-alt .multimedia-intro,
+.multimedia-section-alt .multimedia-subheading,
+.multimedia-section-alt .item,
+.multimedia-section-alt .placeholder-item {
+    color: var(--text-color-light); /* Для светлого текста на темном фоне */
+}
+
+.multimedia-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+/* Стили карточек функций переиспользуются, просто убедитесь, что цвета соответствуют разделу */
+.multimedia-features-grid .feature-card {
+    background-color: var(--color-bg-card); /* Изменено на dark-theme compatible */
+    color: var(--text-color-light);
+    border: 1px solid #3a3a4c; /* Темный бордер */
+}
+
+.multimedia-features-grid .feature-card h3 {
+    color: var(--primary-color); /* Отлично сочетается с темной темой */
+}
+
+.multimedia-features-grid .feature-card .multimedia-link {
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.multimedia-features-grid .feature-card .multimedia-link:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+.upload-form {
+    max-width: 700px;
+    margin: var(--spacing-lg) auto;
+    background-color: var(--color-bg-input); /* Изменено на dark-theme compatible */
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    text-align: left; /* Текст формы выровнен по левому краю */
+    color: var(--text-color-light); /* Текст формы светлый */
+}
+
+.upload-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--primary-color); /* Золотой для лейблов */
+}
+
+.upload-form input[type="text"],
+.upload-form input[type="file"],
+.upload-form textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid #4a4a7e; /* Темный бордер */
+    border-radius: 5px;
+    background-color: #2a2a3a; /* Темный фон */
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.upload-form input[type="file"] {
+    background-color: #3a3a4c; /* Темнее для инпута файла */
+    border: 1px solid #555;
+}
+
+.upload-form input[type="text"]::placeholder,
+.upload-form textarea::placeholder {
+    color: #bbb;
+}
+
+.upload-form button[type="submit"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+.gallery, .posts, .games, .multimedia-grid, .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    justify-content: center;
+}
+
+.multimedia-item {
+    background-color: #3a3a4c;
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-small);
+    box-shadow: var(--box-shadow-item);
+    text-align: center;
+    transition: transform 0.2s ease;
+    border: 1px solid #4a4a5c;
+    color: var(--text-color-light);
+}
+
+.multimedia-item:hover {
+    transform: translateY(-3px);
+}
+
+.multimedia-item img {
+    max-width: 100%;
+    height: 150px; /* Фиксированная высота для единообразного размера изображений */
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: var(--spacing-sm);
+    transition: transform 0.2s ease-in-out;
+}
+.multimedia-item img:hover {
+    transform: scale(1.05);
+}
+
+.multimedia-item h3 {
+    color: var(--color-orange-multimedia);
+    margin-bottom: var(--spacing-xs);
+    margin-top: var(--spacing-sm);
+}
+
+.multimedia-item p {
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+.multimedia-item small {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--text-color-dimmed);
+    font-size: 0.8em;
+}
+
+.game-content {
+    margin-top: var(--spacing-md);
+}
+
+.game-content input[type="number"] {
+    width: calc(100% - 100px); /* Чтобы уместить кнопку */
+    padding: var(--spacing-sm);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: var(--spacing-sm);
+    text-align: center;
+    background-color: var(--color-bg-input); /* Изменено для темной темы */
+    color: var(--text-color-light);
+}
+
+.game-content button {
+    margin-top: var(--spacing-sm); /* Отступ для кнопок */
+}
+
+.multimedia-link {
+    display: inline-block;
+    margin-top: 15px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.multimedia-link:hover {
+    color: var(--link-hover-color);
+}
+
+.post-list {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.placeholder-item.post {
+    text-align: left;
+    height: auto;
+    background-color: #4a4a5c;
+    padding: 25px;
+    border-radius: var(--border-radius-base);
+    color: var(--text-color-light);
+}
+
+.placeholder-item.post h3 {
+    color: var(--color-orange-multimedia);
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.placeholder-item.post small {
+    display: block;
+    margin-top: var(--spacing-sm);
+    color: #aaa;
+}
+
+.portal-games-grid, .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.placeholder-item.portal-game, .placeholder-item.game {
+    background-color: #4a4a5c;
+    text-align: left;
+    height: auto;
+    padding: 25px;
+    border-radius: var(--border-radius-base);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--text-color-light);
+}
+
+.placeholder-item.portal-game h3, .placeholder-item.game h3 {
+    color: var(--color-orange-multimedia);
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.placeholder-item.portal-game .multimedia-btn, .placeholder-item.game .multimedia-btn {
+    align-self: flex-start;
+    margin-top: 15px;
+}
+
+
+/* ==========================================================================
+   Footer
+========================================================================== */
+.footer {
+    background-color: #10101a;
+    color: var(--text-color-dimmed);
+    text-align: center;
+    padding: 30px 0;
+    border-top: 1px solid #3a3a3a;
+    font-size: 0.9em;
+}
+
+.footer p {
+    margin: var(--spacing-xs) 0;
+    font-size: 0.9em;
+}
+
+.footer .copy-btn {
+    background-color: var(--secondary-color); /* Другой цвет, чем у хедера */
+}
+
+.footer .copy-btn:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+.footer .highlight-text {
+    color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Modals
+========================================================================== */
+.modal {
+    display: none; /* Скрыто по умолчанию */
+    position: fixed; /* Позиция поверх всего */
+    z-index: 2000; /* Высокий z-index */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Включить прокрутку, если контент слишком большой */
+    background-color: var(--color-modal-overlay); /* Полупрозрачный черный фон */
+    display: flex; /* Для центрирования контента */
+    align-items: center;
+    justify-content: center;
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: var(--color-bg-input);
+    margin: auto;
+    padding: var(--spacing-lg);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    position: relative;
+    max-width: 700px;
+    width: 90%; /* Адаптивная ширина */
+    animation: fadeInScale 0.3s ease-out; /* Анимация появления */
+    color: var(--text-color-light); /* Цвет текста для модального окна */
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid #888;
+}
+
+.modal-content h3 {
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.modal-content .web3-form {
+    background: none; /* Удалить фон формы, так как у модального окна уже есть */
+    box-shadow: none; /* Удалить тень формы */
+    padding: 0; /* Удалить отступы формы */
+}
+
+.modal-content .modal-nft-image {
+    max-width: 80%;
+    height: auto;
+    display: block;
+    margin: 0 auto var(--spacing-md);
+    border-radius: var(--border-radius);
+}
+
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 36px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: var(--text-color-light);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Keyframes для анимации модального окна */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ==========================================================================
+   Notification Container
+========================================================================== */
+#notificationContainer {
+    position: fixed;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 10000; /* Высокий z-index, чтобы быть поверх всего */
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    pointer-events: none; /* Позволяет кликать сквозь контейнер, если он пуст */
+}
+
+.notification {
+    background-color: #444;
+    color: var(--text-color-light);
+    padding: 15px 20px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    min-width: 280px; /* Минимальная ширина для уведомлений */
+    text-align: center;
+    pointer-events: all; /* Включить pointer-events для самого уведомления */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95em;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.info {
+    background-color: var(--info-color);
+}
+
+.notification.success {
+    background-color: var(--success-color);
+}
+
+.notification.error {
+    background-color: var(--error-color);
+}
+
+@keyframes fadeInSlideUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   Media Queries for Responsiveness (Additional)
+========================================================================== */
+@media (max-width: 992px) {
+    h1 { font-size: 2.5em; }
+    h2 { font-size: 2em; }
+    .hero-content h1 { font-size: 3em; }
+
+    .nav ul.main-nav {
+        gap: var(--spacing-sm);
+    }
+}
+
+@media (max-width: 768px) {
+    /* Стили для мобильного меню уже определены выше */
+    .header .container {
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align: center;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .logo {
+        margin-bottom: var(--spacing-md); /* Отступ между логотипом и гамбургером */
+        width: 100%;
+        justify-content: center;
+    }
+
+    .nav {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end; /* Переместить гамбургер вправо */
+    }
+
+    /* Стили для мобильной навигации */
+    .nav ul.main-nav {
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        right: -100%; /* Увеличена ширина мобильного меню */
+        width: 100%;
+        height: 100%;
+        background-color: var(--color-bg-dark);
+        padding: 60px var(--spacing-md) var(--spacing-md); /* Отступ сверху для кнопки закрытия */
+        box-shadow: -8px 0 20px rgba(0, 0, 0, 0.3);
+        transform: translateX(100%);
+        z-index: 1000;
+        overflow-y: auto;
+        align-items: center; /* Центрировать элементы */
+    }
+
+    .nav ul.main-nav.open, .nav ul.main-nav.active {
+        transform: translateX(0);
+        right: 0;
+    }
+
+    .nav ul.main-nav li {
+        width: 100%; /* Элементы меню на всю ширину */
+        text-align: center;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .nav ul.main-nav li a {
+        font-size: 1.3em;
+        display: block; /* Ссылка занимает всю ширину элемента */
+        padding: var(--spacing-sm) 0;
+        color: var(--text-color-light); /* Убедиться, что цвет светлый */
+    }
+
+    /* Убрать подчеркивание для мобильных ссылок при наведении, если применимо */
+    .nav ul.main-nav li a::after {
+        display: none;
+    }
+
+    .menu-toggle {
+        display: block;
+        position: absolute; /* Позиционировать гамбургер относительно хедера */
+        right: var(--spacing-md);
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .close-menu-button {
+        display: block;
+        color: var(--text-color-dimmed);
+    }
+    .close-menu-button:hover {
+        color: var(--primary-color);
+    }
+
+    /* Корректировка героической секции */
+    .hero-section .container {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .hero-content {
+        text-align: center;
+        order: 2; /* Контент под изображением */
+    }
+
+    .hero-image {
+        order: 1; /* Изображение над контентом */
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .call-to-action, .hero-buttons {
+        justify-content: center; /* Центрировать кнопки на мобильных устройствах */
+    }
+
+    h1 { font-size: 2.8em; }
+    h2 { font-size: 2em; }
+    .hero-content h1 { font-size: 2.8em; }
+    .aurum-heading, .web3-heading, .multimedia-heading {
+        font-size: 1.8em;
+    }
+
+    .hero-section, .section, .web3-section, .multimedia-section {
+        padding: 60px 0;
+    }
+
+    .tokenomics-grid,
+    .nft-showcase,
+    .nfc-grid,
+    .roadmap-grid,
+    .news-list,
+    .announcements-list,
+    .web3-features-grid,
+    .games-grid,
+    .nft-grid,
+    .ad-list,
+    .dao-proposals-grid,
+    .staking-info-grid,
+    .multimedia-features-grid,
+    .gallery,
+    .posts,
+    .games {
+        grid-template-columns: 1fr; /* Одна колонка на мобильных устройствах */
+    }
+    .buy-steps li {
+        padding: 20px;
+    }
+
+
+    .contact-form, .nft-form-container, .upload-form {
+        padding: var(--spacing-md);
+    }
+    #aurum-announcements .container, .multimedia-portal-container {
+        padding: var(--spacing-md);
+    }
+    textarea#announcementInput {
+        width: 100%;
+        padding: 10px;
+    }
+    button#publishButton {
+        width: 100%;
+    }
+    .multimedia-form input, .multimedia-form textarea {
+        width: 100%;
+    }
+    .multimedia-btn {
+        width: 100%;
+    }
+
+    .staking-actions .input-group {
+        flex-direction: column; /* Элементы группы ввода в столбец */
+        align-items: center;
+        gap: 10px;
+    }
+
+    .staking-actions input[type="number"] {
+        max-width: 100%; /* Занимает всю ширину */
+        margin-right: 0;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: var(--spacing-md);
+    }
+}
+
+@media (max-width: 480px) {
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.6em; }
+    .hero-content h1 { font-size: 2.4em; }
+    .hero-content .tagline { font-size: 1.1em; }
+    .btn {
+        padding: var(--spacing-sm);
+        font-size: 0.9em;
+    }
+    .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn {
+        width: 100%; /* Социальные кнопки на всю ширину */
+        justify-content: center;
+        padding: 12px 20px;
+        margin: 5px 0;
+    }
+    .container {
+        padding: var(--spacing-xs);
+    }
+    .section {
+        padding: var(--spacing-lg) var(--spacing-xs);
+    }
+    .nft-item img {
+        height: 150px;
+    }
+}
