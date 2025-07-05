@@ -92,7 +92,7 @@ const upload = multer({
 // Create a .env file in your project root and add:
 // MONGODB_URI=mongodb://localhost:27017/solana_dapp_db
 //
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI;//localhost:27017/solana_dapp_db
 
 if (!MONGODB_URI) {
     console.error('FATAL ERROR: MONGODB_URI is not defined in environment variables. Please set it in your .env file or directly in your environment.');
