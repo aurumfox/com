@@ -1,0 +1,31 @@
+// middleware/errorMiddleware.js
+const errorHandler = (err, req, res, next) => {
+    console.error(err.stack); // Log the full stack trace for debugging
+
+    // Default status and message
+    let statusCode = err.statusCode || 500;
+    let message = err.message || 'An unexpected error occurred.';
+
+    // Handle Mongoose validation errors
+    if (err.name === 'ValidationError') {
+        statusCode = 400;
+        message = Object.values(err.errors).map(val => val.message).join('; ');
+    }
+    // Handle Multer errors specifically
+    if (err.code === 'LIMIT_FILE_SIZE') {
+        statusCode = 400;
+        message = `File size too large. Max ${require('../config').uploadLimitBytes / (1024 * 1024)}MB.`;
+    } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        statusCode = 400;
+        message = 'Too many files uploaded or unexpected field name.';
+    }
+
+    // Don't expose detailed errors in production
+    if (process.env.NODE_ENV === 'production' && statusCode === 500) {
+        message = 'An internal server error occurred.';
+    }
+
+    res.status(statusCode).json({ error: message });
+};
+
+module.exports = errorHandler;
