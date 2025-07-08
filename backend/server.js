@@ -8,20 +8,16 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises; // Use fs.promises for async file operations
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken'); // For JWT authentication
 
-// --- IMPORTANT: For real Solana blockchain interactions, uncomment and configure these. ---
+// IMPORTANT: For real Solana blockchain interactions, uncomment and configure these.
 // const { Connection, Keypair, PublicKey, clusterApiUrl, SystemProgram } = require('@solana/web3.js');
 // const { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, createTransferInstruction, TOKEN_PROGRAM_ID } = require('@solana/spl-token');
 // const bs58 = require('bs58'); // For working with base58 keys, if needed
-// const { TOKEN_METADATA_PROGRAM_ID } = require('@metaplex-foundation/mpl-token-metadata'); // For advanced NFT metadata interactions
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/solana_dapp_db_default';
-const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://127.0.0.1:5500', 'http://localhost:5500']; // Default for local dev
-const JWT_SECRET = process.env.JWT_SECRET || 'YOUR_SUPER_STRONG_JWT_SECRET_HERE'; // *** REPLACE THIS IN PRODUCTION ***
-const SERVER_BASE_URL = process.env.SERVER_BASE_URL || `http://localhost:${PORT}`; // Base URL for uploaded files and metadata
+const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://127.0.0.1:5500']; // Default for local dev
 
 // --- Middlewares ---
 
@@ -48,7 +44,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Multer Setup for File Uploads ---
-const uploadDir = 'uploads/'; // Local directory for file uploads
+const uploadDir = 'uploads/';
 
 // Ensure the upload directory exists
 async function ensureUploadDir() {
@@ -57,7 +53,8 @@ async function ensureUploadDir() {
         console.log(`Upload directory '${uploadDir}' ensured.`);
     } catch (err) {
         console.error(`Error ensuring upload directory '${uploadDir}':`, err);
-        process.exit(1); // Critical error, server cannot function without upload dir
+        // It's critical for the server to not start if uploads cannot be managed
+        process.exit(1);
     }
 }
 
@@ -76,8 +73,8 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB file size limit
     fileFilter: (req, file, cb) => {
         const allowedMimeTypes = [
-            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-            'video/mp4', 'video/webm', 'video/ogg',
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp', // Common image types
+            'video/mp4', 'video/webm', 'video/ogg', // Common video types
             'application/json', // For NFT metadata
             'text/html', 'application/javascript', 'application/x-javascript' // For game files (html/js)
         ];
@@ -94,7 +91,8 @@ mongoose.connect(MONGODB_URI)
     .then(() => console.log('MongoDB connected successfully!'))
     .catch(err => {
         console.error('MongoDB connection error:', err);
-        process.exit(1); // Exit if DB connection fails
+        // In production, consider using a proper logging library (e.g., Winston)
+        process.exit(1); // Exit the process if unable to connect to the DB
     });
 
 // --- Mongoose Schemas and Models ---
@@ -110,7 +108,7 @@ const photoSchema = new mongoose.Schema({
     description: { type: String, trim: true },
     imageUrl: { type: String, required: true },
     date: { type: Date, default: Date.now },
-    creatorWallet: { type: String, required: true, trim: true },
+    creatorWallet: { type: String, required: true, trim: true }, // Add validation for Solana address format
 });
 const Photo = mongoose.model('Photo', photoSchema);
 
@@ -118,27 +116,27 @@ const postSchema = new mongoose.Schema({
     title: { type: String, required: true, trim: true },
     content: { type: String, required: true, trim: true },
     date: { type: Date, default: Date.now },
-    authorWallet: { type: String, required: true, trim: true },
+    authorWallet: { type: String, required: true, trim: true }, // Add validation for Solana address format
 });
 const Post = mongoose.model('Post', postSchema);
 
 const nftSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
-    image: { type: String, required: true }, // URL to the NFT image/media
-    mint: { type: String, required: true, unique: true, index: true, trim: true }, // The actual Solana NFT Mint address
-    owner: { type: String, required: true, trim: true }, // Current owner's Solana wallet address
+    image: { type: String, required: true },
+    mint: { type: String, required: true, unique: true, index: true, trim: true },
+    owner: { type: String, required: true, trim: true },
     isListed: { type: Boolean, default: false },
-    price: { type: Number, min: 0 }, // Price in SOL (for display) or lamports (for internal use)
+    price: { type: Number, min: 0 },
     listedAt: Date,
-    listingDuration: Number, // Duration in seconds or hours (needs frontend logic to enforce)
-    listedBy: { type: String, trim: true }, // Wallet address that listed the NFT
+    listingDuration: Number, // Duration in days, hours, etc. (needs clarification for actual use)
+    listedBy: { type: String, trim: true },
     attributes: [{ trait_type: { type: String, trim: true }, value: { type: String, trim: true } }],
     history: [{
         type: { type: String, enum: ['Mint', 'Transfer', 'Sale', 'List', 'Delist'], required: true },
-        from: { type: String, trim: true }, // Optional, for transfer/sale
-        to: { type: String, trim: true },   // Optional, for transfer/sale
-        price: Number, // Optional, for sale
+        from: { type: String, trim: true },
+        to: { type: String, trim: true },
+        price: Number,
         timestamp: { type: Date, default: Date.now }
     }]
 });
@@ -161,106 +159,57 @@ const adSchema = new mongoose.Schema({
 });
 const Ad = mongoose.model('Ad', adSchema);
 
-// --- Utility Functions ---
+// --- Utility Functions / Placeholders for Auth ---
 
 /**
- * Basic Solana public key validation.
- * For robust validation in production, uncomment and use @solana/web3.js.
+ * Basic Solana public key validation (placeholder).
+ * In a real dApp, you'd use @solana/web3.js for robust validation.
+ * e.g., `return PublicKey.isOnCurve(new PublicKey(address));`
  */
 function isValidSolanaAddress(address) {
     if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
-        return false;
+        return false; // Basic length check for Solana addresses
     }
-    // TODO: For PRODUCTION, uncomment this section and install @solana/web3.js
+    // More robust check if @solana/web3.js is uncommented:
     // try {
-    //     // Ensure PublicKey is imported: const { PublicKey } = require('@solana/web3.js');
     //     new PublicKey(address);
     //     return true;
     // } catch (e) {
     //     return false;
     // }
-    return true; // DANGER: Placeholder for development only. REPLACE WITH REAL VALIDATION.
+    return true; // Placeholder for actual validation
 }
 
 /**
- * Middleware for authentication using JWT.
- * It expects a 'Bearer Token' in the Authorization header.
- * Attaches user info (e.g., wallet address, role) to req.user.
+ * Placeholder middleware for authentication.
+ * In production, this would verify a JWT token or similar.
  */
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // const authHeader = req.headers['authorization'];
+    // const token = authHeader && authHeader.split(' ')[1];
+    // if (token == null) return res.status(401).json({ error: 'Authentication token required.' });
 
-    if (token == null) {
-        return res.status(401).json({ error: 'Authentication token required.' });
-    }
+    // // Placeholder: In a real app, verify the token
+    // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    //     if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
+    //     req.user = user; // Attach user info to request
+    //     next();
+    // });
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            // console.error('JWT verification failed:', err); // Log for debugging
-            return res.status(403).json({ error: 'Invalid or expired token.' });
-        }
-        req.user = user; // Attach user payload (e.g., { walletAddress: '...', role: '...' })
-        next();
-    });
+    console.warn("WARNING: Authentication is not implemented for this endpoint. Access is open.");
+    next(); // For development, allow all access
 };
 
 /**
- * Middleware for authorization (role-based access control).
- * Requires authenticateToken to run before it.
+ * Placeholder middleware for authorization (role-based access control).
  */
 const authorizeRole = (requiredRole) => (req, res, next) => {
-    if (!req.user || !req.user.role || req.user.role !== requiredRole) {
-        return res.status(403).json({ error: `Access denied. Requires '${requiredRole}' role.` });
-    }
-    next();
+    // if (!req.user || req.user.role !== requiredRole) {
+    //     return res.status(403).json({ error: `Access denied. Requires '${requiredRole}' role.` });
+    // }
+    console.warn(`WARNING: Authorization for role '${requiredRole}' is not implemented. Access is open.`);
+    next(); // For development, allow all access
 };
-
-// --- Authentication Endpoint (Simulated Login) ---
-// In a real dApp, this would involve a wallet signature verification.
-app.post('/api/auth/login', async (req, res) => {
-    const { walletAddress, signature, message } = req.body; // Expect walletAddress and a signed message
-
-    if (!walletAddress || !isValidSolanaAddress(walletAddress)) {
-        return res.status(400).json({ error: 'Valid Solana wallet address is required.' });
-    }
-
-    // TODO: REAL AUTHENTICATION LOGIC HERE:
-    // 1. On client, generate a unique message (e.g., nonce + "Sign in to Aurum Fox").
-    // 2. Client signs this message with their wallet and sends (walletAddress, signature, message) here.
-    // 3. On backend, use @solana/web3.js to VERIFY the signature against the walletAddress and message.
-    //    Example:
-    //    const { message, signature } = req.body;
-    //    const messageBytes = new TextEncoder().encode(message);
-    //    const signatureBytes = bs58.decode(signature); // If signature is base58 encoded
-    //    const publicKey = new PublicKey(walletAddress);
-    //    const isVerified = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKey.toBytes()); // Requires 'tweetnacl'
-
-    // DANGER: Currently, this is a SIMULATION. Any walletAddress will get a token.
-    console.warn('WARNING: /api/auth/login is simulated. No real signature verification happens.');
-
-    // Simulate user roles (you'd fetch this from a DB based on walletAddress)
-    let userRole = 'user';
-    if (walletAddress === 'SIMULATED_ADMIN_WALLET') { // Replace with a real admin wallet in your DB
-        userRole = 'admin';
-    } else if (walletAddress === 'SIMULATED_DEVELOPER_WALLET') { // Replace with a real developer wallet
-        userRole = 'developer';
-    } else if (walletAddress === 'SIMULATED_ADVERTISER_WALLET') { // Replace with a real advertiser wallet
-        userRole = 'advertiser';
-    }
-
-    const token = jwt.sign(
-        { walletAddress: walletAddress, role: userRole },
-        JWT_SECRET,
-        { expiresIn: '1h' } // Token expires in 1 hour
-    );
-
-    res.json({
-        message: 'Login successful (simulated).',
-        token,
-        user: { walletAddress, role: userRole }
-    });
-});
 
 // --- API Endpoints ---
 
@@ -308,15 +257,20 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
     if (!title || title.trim().length === 0 ||
         !description || description.trim().length === 0 ||
         !developer || developer.trim().length === 0) {
-        if (req.file) { try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up file:', e); } }
+        // Clean up uploaded file if required fields are missing
+        if (req.file) {
+            try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up file:', e); }
+        }
         return res.status(400).json({ error: 'Title, description, and developer are required to add a game.' });
     }
 
     let gameUrl = externalUrl ? externalUrl.trim() : null;
 
     if (req.file) {
-        // In production, replace this with upload to IPFS/Arweave or S3
-        gameUrl = `${SERVER_BASE_URL}/uploads/${req.file.filename}`;
+        // If a file is uploaded, prioritize serving it from our server
+        gameUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+        // In production, replace localhost with your actual domain
+        // gameUrl = `https://your-domain.com/uploads/${req.file.filename}`;
     } else if (!gameUrl) {
         return res.status(400).json({ error: 'Either a game file must be uploaded or a valid external URL must be provided.' });
     }
@@ -332,7 +286,9 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
         res.status(201).json({ message: 'Game added successfully', game: newGame });
     } catch (error) {
         console.error('Error adding game:', error);
-        if (req.file) { try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up file on DB error:', e); } }
+        if (req.file) { // Clean up if DB save fails
+            try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up file on DB error:', e); }
+        }
         res.status(500).json({ error: 'Failed to add game.' });
     }
 });
@@ -355,14 +311,17 @@ app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.sing
     if (!title || title.trim().length === 0 ||
         !content || content.trim().length === 0 ||
         !advertiser || advertiser.trim().length === 0) {
-        if (req.file) { try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up file:', e); } }
+        if (req.file) {
+            try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up file:', e); }
+        }
         return res.status(400).json({ error: 'Title, content, and advertiser are required to post an ad.' });
     }
 
     let imageUrl = null;
     if (req.file) {
-        // In production, replace this with upload to IPFS/Arweave or S3
-        imageUrl = `${SERVER_BASE_URL}/uploads/${req.file.filename}`;
+        imageUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+        // In production, replace localhost with your actual domain
+        // imageUrl = `https://your-domain.com/uploads/${req.file.filename}`;
     }
 
     try {
@@ -377,7 +336,9 @@ app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.sing
         res.status(201).json({ message: 'Ad posted successfully', ad: newAd });
     } catch (error) {
         console.error('Error posting ad:', error);
-        if (req.file) { try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up file on DB error:', e); } }
+        if (req.file) { // Clean up if DB save fails
+            try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up file on DB error:', e); }
+        }
         res.status(500).json({ error: 'Failed to post ad.' });
     }
 });
@@ -398,9 +359,7 @@ app.post('/api/photos/upload', authenticateToken, upload.single('photo'), async 
     if (!req.file) {
         return res.status(400).json({ error: 'No photo file uploaded.' });
     }
-    const { title, description } = req.body;
-    // creatorWallet should come from authenticated user (req.user.walletAddress) for security
-    const creatorWallet = req.user ? req.user.walletAddress : req.body.creatorWallet; // Fallback for dev
+    const { title, description, creatorWallet } = req.body;
 
     if (!title || title.trim().length === 0 ||
         !creatorWallet || creatorWallet.trim().length === 0) {
@@ -413,8 +372,9 @@ app.post('/api/photos/upload', authenticateToken, upload.single('photo'), async 
         return res.status(400).json({ error: 'Invalid Solana wallet address format for creatorWallet.' });
     }
 
-    // In production, replace this with upload to IPFS/Arweave or S3
-    const imageUrl = `${SERVER_BASE_URL}/uploads/${req.file.filename}`;
+    const imageUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+    // In production, replace localhost with your actual domain
+    // const imageUrl = `https://your-domain.com/uploads/${req.file.filename}`;
 
     try {
         const newPhoto = new Photo({
@@ -444,10 +404,7 @@ app.get('/api/posts', async (req, res) => {
 });
 
 app.post('/api/posts', authenticateToken, authorizeRole('publisher'), async (req, res) => {
-    const { title, content } = req.body;
-    // authorWallet should come from authenticated user (req.user.walletAddress) for security
-    const authorWallet = req.user ? req.user.walletAddress : req.body.authorWallet; // Fallback for dev
-
+    const { title, content, authorWallet } = req.body;
     if (!title || title.trim().length === 0 ||
         !content || content.trim().length === 0 ||
         !authorWallet || authorWallet.trim().length === 0) {
@@ -472,15 +429,15 @@ app.post('/api/posts', authenticateToken, authorizeRole('publisher'), async (req
 });
 
 
-// NFTs API (Simulated Blockchain Interaction with Integration Points)
+// NFTs API (Simulated Blockchain Interaction)
 
 // GET all NFTs, including those listed on the marketplace
 app.get('/api/nfts/marketplace', async (req, res) => {
     try {
         const nfts = await Nft.find();
-        // TODO: Replace with your actual marketplace/escrow wallet address for your program.
-        const MARKETPLACE_ESCROW_WALLET_ADDRESS = "YOUR_SOLANA_MARKETPLACE_PROGRAM_PDA_OR_WALLET_ADDRESS";
-        res.json({ nfts: nfts, marketplaceOwnerWallet: MARKETPLACE_ESCROW_WALLET_ADDRESS });
+        // IMPORTANT: Replace with your actual marketplace/escrow wallet address in production
+        // This address would be a PDA (Program Derived Address) or a dedicated escrow wallet for your program.
+        res.json({ nfts: nfts, marketplaceOwnerWallet: "MARKETPLACE_ESCROW_WALLET_ADDRESS_HERE" });
     } catch (error) {
         console.error('Error fetching marketplace NFTs:', error);
         res.status(500).json({ error: 'Failed to fetch marketplace NFTs.' });
@@ -492,9 +449,7 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
     if (!req.file) {
         return res.status(400).json({ error: 'No NFT file uploaded.' });
     }
-    const { name, description, attributes } = req.body;
-    // creatorWallet should come from authenticated user (req.user.walletAddress)
-    const creatorWallet = req.user.walletAddress;
+    const { name, description, attributes, creatorWallet } = req.body;
 
     if (!name || name.trim().length === 0 ||
         !description || description.trim().length === 0 ||
@@ -507,24 +462,24 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
         return res.status(400).json({ error: 'Invalid Solana wallet address format for creatorWallet.' });
     }
 
-    // TODO: In PRODUCTION, upload `req.file.path` to IPFS/Arweave or S3.
-    // The `contentUrl` below would then be the URL from that service.
-    const contentUrl = `${SERVER_BASE_URL}/uploads/${req.file.filename}`;
+    const contentUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+    // In production, replace localhost with your actual domain
+    // const contentUrl = `https://your-domain.com/uploads/${req.file.filename}`;
 
     const nftMetadata = {
         name: name.trim(),
         symbol: "AFOXNFT", // Example symbol for your collection
         description: description.trim(),
-        image: contentUrl, // This should be the IPFS/Arweave/S3 URL in production
+        image: contentUrl,
         properties: {
             files: [{
-                uri: contentUrl, // This should be the IPFS/Arweave/S3 URL in production
+                uri: contentUrl,
                 type: req.file.mimetype,
             }],
-            category: req.file.mimetype.startsWith('image') ? 'image' : 'video',
+            category: req.file.mimetype.startsWith('image') ? 'image' : 'video', // Or other categories like 'audio', 'html', etc.
             creators: [{
                 address: creatorWallet.trim(),
-                share: 100 // Adjust royalty share as needed
+                share: 100 // Example: Creator gets 100% royalty in this simulation
             }]
         },
         attributes: []
@@ -535,18 +490,21 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
         if (attributes && typeof attributes === 'string') {
             const parsedAttributes = JSON.parse(attributes);
             if (Array.isArray(parsedAttributes)) {
+                // Validate individual attribute objects if needed: { trait_type: string, value: string }
                 nftMetadata.attributes = parsedAttributes.map(attr => ({
                     trait_type: String(attr.trait_type || '').trim(),
                     value: String(attr.value || '').trim()
                 })).filter(attr => attr.trait_type.length > 0 && attr.value.length > 0);
+            } else {
+                console.warn("NFT preparation: 'attributes' field was provided but not a valid JSON array.");
             }
         }
     } catch (e) {
         console.warn("NFT preparation: Could not parse attributes JSON:", e.message);
+        // Do not fail the request if attributes parsing fails, just ignore them.
     }
 
-    // Save metadata JSON locally (for development)
-    // TODO: In PRODUCTION, upload this metadata JSON to IPFS/Arweave or S3 as well.
+    // Save metadata JSON to the 'uploads' folder
     const metadataFileName = `${path.basename(req.file.filename, path.extname(req.file.filename))}.json`;
     metadataFilePath = path.join(__dirname, uploadDir, metadataFileName);
 
@@ -558,71 +516,50 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
         return res.status(500).json({ error: 'Failed to save NFT metadata file.' });
     }
 
-    // This `metadataUri` should be the IPFS/Arweave/S3 URL of the JSON in production
-    const metadataUri = `${SERVER_BASE_URL}/uploads/${metadataFileName}`;
+    const metadataUri = `http://localhost:${PORT}/uploads/${metadataFileName}`;
+    // In production, replace localhost with your actual domain
+    // const metadataUri = `https://your-domain.com/uploads/${metadataFileName}`;
 
-    // --- TODO: REAL SOLANA MINTING TRANSACTION PREPARATION ---
-    // This is where you would prepare the actual Solana transaction
-    // to mint the NFT using the `metadataUri`.
-    // The client would then sign and send this transaction.
-    // DANGER: The `simulatedMintAddress` is NOT a real Solana address.
+    // Simulate a unique Solana mint address.
+    // IN A REAL PRODUCTION APP: This mint address is generated on the blockchain during actual minting.
+    // The server would typically return a transaction (or instructions) for the client to sign and send.
     const simulatedMintAddress = `SIMULATED_MINT_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
-    // Pseudocode for real transaction:
-    /*
-    const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
-    const payerKeypair = Keypair.generate(); // In real app, this might be a backend key or client's payer
-    const mintKeypair = Keypair.generate(); // The keypair for the new NFT mint account
-    const tokenAccount = await getAssociatedTokenAddress(mintKeypair.publicKey, new PublicKey(creatorWallet));
-
-    // Instructions to create mint account, initialize mint, create associated token account, mint to, set metadata, etc.
-    // This requires @solana/web3.js and @metaplex-foundation/js or similar libraries.
-    // Example (very simplified, using Metaplex JS SDK usually):
-    // const { createNft } = require('@metaplex-foundation/mpl-token-metadata');
-    // const transactionBuilder = createNft(umi, { ... }); // Umi is Metaplex context
-
-    // const transaction = new Transaction().add(...instructions);
-    // transaction.feePayer = new PublicKey(creatorWallet);
-    // transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
-    // const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
-    */
-    // --- END REAL SOLANA MINTING ---
-
     try {
-        // Only save to DB *after* confirming a real blockchain transaction succeeded
         const newNft = new Nft({
             name: nftMetadata.name,
             description: nftMetadata.description,
-            image: nftMetadata.image, // URL to the main asset
-            mint: simulatedMintAddress, // DANGER: Replace with actual mint address from blockchain
-            owner: creatorWallet.trim(), // The initial owner
+            image: nftMetadata.image,
+            mint: simulatedMintAddress,
+            owner: nftMetadata.properties.creators[0].address,
             isListed: false,
             attributes: nftMetadata.attributes,
-            history: [{ type: 'Mint', to: creatorWallet.trim() }]
+            history: [{ type: 'Mint', to: nftMetadata.properties.creators[0].address }] // Add minting history
         });
         await newNft.save();
 
         res.status(201).json({
-            message: 'NFT assets prepared and simulated mint data saved. Await client blockchain interaction.',
-            uri: metadataUri, // URL to the metadata JSON
-            imageUrl: contentUrl, // URL to the main NFT asset
-            mintAddress: simulatedMintAddress, // DANGER: Client will get real mint from tx
-            // For real: serializedTransaction: serializedTransaction,
-            nft: newNft // Return the DB record for the simulated NFT
+            message: 'NFT assets prepared and simulated mint successful.',
+            uri: metadataUri,
+            mintAddress: simulatedMintAddress,
+            imageUrl: contentUrl,
+            signature: 'SIMULATED_TRANSACTION_SIGNATURE_FROM_BACKEND', // Placeholder
+            nft: newNft // Return the full NFT object
         });
     } catch (error) {
         console.error('Error preparing/simulating NFT mint and saving to DB:', error);
+        // Clean up both uploaded file and metadata file if DB save fails
         try { await fs.unlink(req.file.path); } catch (e) { console.error('Error cleaning up NFT file:', e); }
-        if (metadataFilePath) { try { await fs.unlink(metadataFilePath); } catch (e) { console.error('Error cleaning up NFT metadata file:', e); } }
+        if (metadataFilePath) {
+            try { await fs.unlink(metadataFilePath); } catch (e) { console.error('Error cleaning up NFT metadata file:', e); }
+        }
         res.status(500).json({ error: 'Failed to prepare/simulate NFT mint.' });
     }
 });
 
-// Endpoint for listing NFT (Blockchain-triggered Update)
+// Endpoint for listing NFT (simulation)
 app.post('/api/nfts/list', authenticateToken, async (req, res) => {
-    const { mintAddress, price, duration } = req.body;
-    // sellerWallet should come from authenticated user (req.user.walletAddress)
-    const sellerWallet = req.user.walletAddress;
+    const { mintAddress, price, duration, sellerWallet } = req.body;
 
     if (!mintAddress || mintAddress.trim().length === 0 ||
         !price || isNaN(price) || Number(price) <= 0 ||
@@ -633,14 +570,6 @@ app.post('/api/nfts/list', authenticateToken, async (req, res) => {
     if (!isValidSolanaAddress(sellerWallet.trim())) {
         return res.status(400).json({ error: 'Invalid Solana wallet address format for sellerWallet.' });
     }
-
-    // --- TODO: REAL SOLANA LISTING TRANSACTION PREPARATION & CONFIRMATION ---
-    // 1. Client initiates list action.
-    // 2. Backend prepares transaction (e.g., transfer NFT to marketplace PDA, set price).
-    // 3. Client signs and sends.
-    // 4. Backend receives confirmation (via webhook or polling) OR client sends confirmation to a new endpoint.
-    // DANGER: The update below happens immediately, assuming blockchain success.
-    // In production, this DB update MUST only happen AFTER the Solana transaction confirms.
 
     try {
         // Find the NFT by its mint address and confirm the seller is the owner and it's not already listed
@@ -653,7 +582,7 @@ app.post('/api/nfts/list', authenticateToken, async (req, res) => {
                     listedAt: new Date(),
                     listingDuration: Number(duration),
                     listedBy: sellerWallet.trim(),
-                    // In real dApp: The `owner` field might change to a marketplace escrow account/PDA here
+                    // IN A REAL dApp: The `owner` might change to a marketplace escrow account here
                 },
                 $push: { history: { type: 'List', from: sellerWallet.trim(), timestamp: new Date() } }
             },
@@ -664,7 +593,7 @@ app.post('/api/nfts/list', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'NFT not found, you are not the owner, or it is already listed.' });
         }
 
-        console.log(`NFT ${mintAddress} listed by ${sellerWallet} for ${price} SOL (simulated update).`);
+        console.log(`NFT ${mintAddress} listed by ${sellerWallet} for ${price} SOL (simulated).`);
         res.status(200).json({ message: `NFT ${mintAddress} listed for sale for ${price} SOL (simulated).`, nft });
     } catch (error) {
         console.error('Error listing NFT:', error);
@@ -672,11 +601,9 @@ app.post('/api/nfts/list', authenticateToken, async (req, res) => {
     }
 });
 
-// Endpoint for buying NFT (Blockchain-triggered Update)
+// Endpoint for buying NFT (simulation)
 app.post('/api/nfts/buy', authenticateToken, async (req, res) => {
-    const { mintAddress, sellerWallet, price } = req.body;
-    // buyerWallet should come from authenticated user (req.user.walletAddress)
-    const buyerWallet = req.user.walletAddress;
+    const { mintAddress, buyerWallet, sellerWallet, price } = req.body;
 
     if (!mintAddress || mintAddress.trim().length === 0 ||
         !buyerWallet || buyerWallet.trim().length === 0 ||
@@ -691,15 +618,8 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res) => {
         return res.status(400).json({ error: 'Invalid Solana wallet address format for buyerWallet or sellerWallet.' });
     }
 
-    // --- TODO: REAL SOLANA BUYING TRANSACTION PREPARATION & CONFIRMATION ---
-    // 1. Client initiates buy action.
-    // 2. Backend prepares transaction (e.g., transfer SOL from buyer to seller, NFT from seller/marketplace to buyer).
-    // 3. Client signs and sends.
-    // 4. Backend receives confirmation (via webhook or polling) OR client sends confirmation to a new endpoint.
-    // DANGER: The update below happens immediately, assuming blockchain success.
-    // In production, this DB update MUST only happen AFTER the Solana transaction confirms.
-
     try {
+        // Find the NFT, ensure it's listed for sale, and the owner matches the sellerWallet and price
         const nft = await Nft.findOneAndUpdate(
             { mint: mintAddress.trim(), owner: sellerWallet.trim(), isListed: true, price: Number(price) },
             {
@@ -720,18 +640,88 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'NFT not found, not listed, or seller/price mismatch.' });
         }
 
-        console.log(`NFT ${nft.name} successfully purchased (simulated update).`);
+        // --- REAL PRODUCTION SOLANA TRANSACTION LOGIC (Pseudocode) ---
+        // This is where you'd construct and serialize the Solana transaction(s).
+        // The client would then sign and send this serialized transaction to the Solana network.
+        /*
+        const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+        const buyerPubKey = new PublicKey(buyerWallet);
+        const sellerPubKey = new PublicKey(sellerWallet);
+        const nftMintPubKey = new PublicKey(mintAddress);
+
+        let instructions = [];
+
+        // 1. Get or create Associated Token Account for the buyer for this NFT mint
+        const buyerTokenAccount = await getAssociatedTokenAddress(nftMintPubKey, buyerPubKey);
+        const buyerAtaInfo = await connection.getAccountInfo(buyerTokenAccount);
+        if (!buyerAtaInfo) {
+            instructions.push(createAssociatedTokenAccountInstruction(
+                buyerPubKey, // Payer of the ATA creation transaction
+                buyerTokenAccount,
+                buyerPubKey, // Owner of the ATA
+                nftMintPubKey
+            ));
+        }
+
+        // 2. Get the seller's Associated Token Account for this NFT mint
+        // In a real marketplace, the NFT might be held by an escrow PDA.
+        // For direct transfers, find the seller's ATA.
+        const sellerTokenAccounts = await connection.getParsedTokenAccountsByOwner(sellerPubKey, { mint: nftMintPubKey });
+        if (!sellerTokenAccounts.value || sellerTokenAccounts.value.length === 0) {
+            throw new Error('Seller does not hold this NFT in an accessible account.');
+        }
+        const sellerTokenAccount = sellerTokenAccounts.value[0].pubkey;
+
+        // 3. Add NFT transfer instruction
+        instructions.push(createTransferInstruction(
+            sellerTokenAccount, // From (ATA of seller)
+            buyerTokenAccount,  // To (ATA of buyer)
+            sellerPubKey,       // Owner (seller's wallet as signer for transfer)
+            1                   // Amount (always 1 for NFTs)
+        ));
+
+        // 4. Add SOL transfer instruction (for payment)
+        instructions.push(SystemProgram.transfer({
+            fromPubkey: buyerPubKey,
+            toPubkey: sellerPubKey,
+            lamports: price * LAMPORTS_PER_SOL,
+        }));
+
+        const transaction = new Transaction().add(...instructions);
+        transaction.feePayer = buyerPubKey; // Buyer pays transaction fees
+        transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
+
+        // The transaction needs to be signed by the seller (for NFT transfer)
+        // and by the buyer (for SOL transfer and fees).
+        // In this backend context, you would typically only sign if the backend holds keys
+        // (e.g., for a marketplace escrow account), then serialize and send to client for final user signature.
+        // If seller is just a regular user, seller's wallet signs on frontend.
+        // For simplicity, we'll assume direct transfer and buyer + seller both sign on client side after receiving instructions.
+
+        const serializedTransaction = transaction.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
+
+        res.status(200).json({
+            message: `NFT ${nft.name} purchase simulated. Transaction prepared for signing.`,
+            nft,
+            serializedTransaction: serializedTransaction
+        });
+        */
+        // --- END OF REAL PRODUCTION SOLANA TRANSACTION LOGIC ---
+
+        // For now, return a simulated transaction response
         res.status(200).json({
             message: `NFT ${nft.name} successfully purchased (simulated).`,
             nft,
-            // For real: serializedTransaction: serializedTransaction // Return prepared tx for client to sign
+            serializedTransaction: 'SIMULATED_TRANSACTION_BASE64_FOR_CLIENT_SIGNING'
         });
+        console.log(`NFT ${nft.name} transferred from ${sellerWallet} to ${buyerWallet} for ${price} SOL (simulated).`);
 
     } catch (error) {
         console.error('Error buying NFT:', error);
         res.status(500).json({ error: 'Failed to buy NFT.' });
     }
 });
+
 
 // Endpoint for NFT history
 app.get('/api/nfts/:mint/history', async (req, res) => {
@@ -768,14 +758,25 @@ async function seedInitialData() {
 
         const photoCount = await Photo.countDocuments();
         if (photoCount === 0) {
+            // Create placeholder image files if they don't exist
             const placeholderPhoto1Path = path.join(uploadDir, 'photo_placeholder_1.png');
             const placeholderPhoto2Path = path.join(uploadDir, 'photo_placeholder_2.png');
-            try { await fs.access(placeholderPhoto1Path); } catch (err) { await fs.writeFile(placeholderPhoto1Path, Buffer.from([])); console.log(`Created placeholder: ${placeholderPhoto1Path}`); }
-            try { await fs.access(placeholderPhoto2Path); } catch (err) { await fs.writeFile(placeholderPhoto2Path, Buffer.from([])); console.log(`Created placeholder: ${placeholderPhoto2Path}`); }
+            try {
+                await fs.access(placeholderPhoto1Path);
+            } catch (err) {
+                await fs.writeFile(placeholderPhoto1Path, Buffer.from([])); // Create an empty file
+                console.log(`Created placeholder: ${placeholderPhoto1Path}`);
+            }
+            try {
+                await fs.access(placeholderPhoto2Path);
+            } catch (err) {
+                await fs.writeFile(placeholderPhoto2Path, Buffer.from([]));
+                console.log(`Created placeholder: ${placeholderPhoto2Path}`);
+            }
 
             await Photo.insertMany([
-                { title: 'First Day in Office', description: 'Getting started with Aurum Fox.', imageUrl: `${SERVER_BASE_URL}/uploads/photo_placeholder_1.png`, date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), creatorWallet: "SIMULATED_WALLET_A" },
-                { title: 'Aurum Fox Team', description: 'Our dedicated team.', imageUrl: `${SERVER_BASE_URL}/uploads/photo_placeholder_2.png`, date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), creatorWallet: "SIMULATED_WALLET_B" }
+                { title: 'First Day in Office', description: 'Getting started with Aurum Fox.', imageUrl: `http://localhost:${PORT}/uploads/photo_placeholder_1.png`, date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), creatorWallet: "SIMULATED_WALLET_A" },
+                { title: 'Aurum Fox Team', description: 'Our dedicated team.', imageUrl: `http://localhost:${PORT}/uploads/photo_placeholder_2.png`, date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), creatorWallet: "SIMULATED_WALLET_B" }
             ]);
             console.log('  Initial photos seeded.');
         }
@@ -791,6 +792,7 @@ async function seedInitialData() {
 
         const nftCount = await Nft.countDocuments();
         if (nftCount === 0) {
+            // Create placeholder image files if they don't exist
             const nftPlaceholder1Path = path.join(uploadDir, 'nft_marketplace_1.png');
             const nftPlaceholder2Path = path.join(uploadDir, 'nft_marketplace_2.png');
             const nftUserOwnedPath = path.join(uploadDir, 'nft_user_owned.png');
@@ -800,15 +802,15 @@ async function seedInitialData() {
 
             await Nft.insertMany([
                 {
-                    name: "Rare Fox", description: "A very rare golden fox NFT.", image: `${SERVER_BASE_URL}/uploads/nft_marketplace_1.png`, mint: "SOME_MARKETPLACE_NFT_MINT_1", owner: "YOUR_SOLANA_MARKETPLACE_PROGRAM_PDA_OR_WALLET_ADDRESS", isListed: true, price: 0.8, listedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), listingDuration: 30, listedBy: "YOUR_SOLANA_MARKETPLACE_PROGRAM_PDA_OR_WALLET_ADDRESS", attributes: [{ trait_type: "Rarity", value: "Rare" }],
-                    history: [{ type: 'Mint', to: "YOUR_SOLANA_MARKETPLACE_PROGRAM_PDA_OR_WALLET_ADDRESS", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }, { type: 'List', from: "YOUR_SOLANA_MARKETPLACE_PROGRAM_PDA_OR_WALLET_ADDRESS", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) }]
+                    name: "Rare Fox", description: "A very rare golden fox NFT.", image: `http://localhost:${PORT}/uploads/nft_marketplace_1.png`, mint: "SOME_MARKETPLACE_NFT_MINT_1", owner: "MARKETPLACE_ESCROW_WALLET_ADDRESS_HERE", isListed: true, price: 0.8, listedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), listingDuration: 30, listedBy: "MARKETPLACE_ESCROW_WALLET_ADDRESS_HERE", attributes: [{ trait_type: "Rarity", value: "Rare" }],
+                    history: [{ type: 'Mint', to: "MARKETPLACE_ESCROW_WALLET_ADDRESS_HERE", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }, { type: 'List', from: "MARKETPLACE_ESCROW_WALLET_ADDRESS_HERE", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) }]
                 },
                 {
-                    name: "Cunning Fox", description: "A cunning fox ready to pounce.", image: `${SERVER_BASE_URL}/uploads/nft_marketplace_2.png`, mint: "SOME_MARKETPLACE_NFT_MINT_2", owner: "ANOTHER_SELLER_WALLET_ADDRESS", isListed: true, price: 0.3, listedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), listingDuration: 60, listedBy: "ANOTHER_SELLER_WALLET_ADDRESS", attributes: [{ trait_type: "Expression", value: "Wink" }],
+                    name: "Cunning Fox", description: "A cunning fox ready to pounce.", image: `http://localhost:${PORT}/uploads/nft_marketplace_2.png`, mint: "SOME_MARKETPLACE_NFT_MINT_2", owner: "ANOTHER_SELLER_WALLET_ADDRESS", isListed: true, price: 0.3, listedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), listingDuration: 60, listedBy: "ANOTHER_SELLER_WALLET_ADDRESS", attributes: [{ trait_type: "Expression", value: "Wink" }],
                     history: [{ type: 'Mint', to: "ANOTHER_SELLER_WALLET_ADDRESS", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) }, { type: 'List', from: "ANOTHER_SELLER_WALLET_ADDRESS", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) }]
                 },
                 {
-                    name: "User Owned Fox", description: "An NFT owned by a user, not yet listed.", image: `${SERVER_BASE_URL}/uploads/nft_user_owned.png`, mint: "USER_OWNED_NFT_MINT_1", owner: "SIMULATED_USER_WALLET_ADDRESS", isListed: false, price: null, attributes: [{ trait_type: "Color", value: "Blue" }],
+                    name: "User Owned Fox", description: "An NFT owned by a user, not yet listed.", image: `http://localhost:${PORT}/uploads/nft_user_owned.png`, mint: "USER_OWNED_NFT_MINT_1", owner: "SIMULATED_USER_WALLET_ADDRESS", isListed: false, price: null, attributes: [{ trait_type: "Color", value: "Blue" }],
                     history: [{ type: 'Mint', to: "SIMULATED_USER_WALLET_ADDRESS", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }]
                 }
             ]);
@@ -830,7 +832,7 @@ async function seedInitialData() {
             try { await fs.access(adPlaceholderPath); } catch (err) { await fs.writeFile(adPlaceholderPath, Buffer.from([])); console.log(`Created placeholder: ${adPlaceholderPath}`); }
 
             await Ad.insertMany([
-                { title: "Buy My Awesome Project!", content: "Check out our new dApp, it's great!", imageUrl: `${SERVER_BASE_URL}/uploads/ad_placeholder.png`, link: "https://myawesomedapp.com", advertiser: "ProjectX" }
+                { title: "Buy My Awesome Project!", content: "Check out our new dApp, it's great!", imageUrl: `http://localhost:${PORT}/uploads/ad_placeholder.png`, link: "https://myawesomedapp.com", advertiser: "ProjectX" }
             ]);
             console.log('  Initial ads seeded.');
         }
@@ -840,39 +842,17 @@ async function seedInitialData() {
     }
 }
 
-// --- Centralized Error Handling Middleware ---
-app.use((err, req, res, next) => {
-    console.error('An unhandled error occurred:', err);
-
-    if (err instanceof multer.MulterError) {
-        return res.status(400).json({ error: `File upload error: ${err.message}. Limit: ${req.app.get('multerLimits')?.fileSize / (1024 * 1024)}MB` });
-    }
-    if (err.message && err.message.startsWith('Invalid file type')) {
-        return res.status(400).json({ error: err.message });
-    }
-
-    res.status(err.status || 500).json({
-        error: err.message || 'An unexpected server error occurred.'
-    });
-});
-
 // --- Server Start ---
 // Ensure upload directory exists before starting the server and seeding data
 ensureUploadDir().then(() => {
     app.listen(PORT, () => {
-        console.log(`Backend server listening at ${SERVER_BASE_URL}`);
+        console.log(`Backend server listening at http://localhost:${PORT}`);
         console.log(`MongoDB URI: ${MONGODB_URI}`);
         console.log(`CORS allowed origins: ${ALLOWED_CORS_ORIGINS.join(', ')}`);
-        console.log(`\n--- PRODUCTION CHECKLIST ---`);
-        console.log(`1. REPLACE 'YOUR_SUPER_STRONG_JWT_SECRET_HERE' in .env with a strong, random secret!`);
-        console.log(`2. REPLACE 'http://localhost:${PORT}' with your actual domain in SERVER_BASE_URL in .env! (e.g., https://api.your-domain.com)`);
-        console.log(`3. IMPLEMENT REAL SOLANA WALLET SIGNATURE VERIFICATION in /api/auth/login!`);
-        console.log(`4. INTEGRATE REAL SOLANA BLOCKCHAIN TXS for NFT mint/list/buy. Ensure DB updates ONLY after confirmed blockchain success!`);
-        console.log(`5. CONFIGURE CLOUD STORAGE (IPFS/Arweave/S3) for all uploads. Update file handling logic.`);
-        console.log(`6. REPLACE placeholder wallet addresses ('YOUR_SOLANA_MARKETPLACE_PROGRAM_PDA_OR_WALLET_ADDRESS', etc.) with real ones.`);
-        console.log(`7. Consider using a production-ready logging library (Winston, Morgan).`);
-        console.log(`8. Ensure proper HTTPS setup on your server/proxy.`);
-
+        console.log(`Your frontend should be configured to fetch from http://localhost:${PORT}`);
+        console.log(`\nIMPORTANT: For production, uncomment and implement proper authentication (JWT) and Solana Web3 integration.`);
         seedInitialData(); // Calls the data seeding function when the server starts
     });
 });
+
+
