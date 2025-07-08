@@ -1,0 +1,220 @@
+// controllers/nftController.js
+const Nft = require('../models/Nft');
+const config = require('../config');
+const { deleteFile } = require('../utils/fileUtils');
+const { isValidSolanaAddress } = require('../utils/solanaUtils');
+const path = require('path');
+const fs = require('fs').promises;
+
+// Get all NFTs (marketplace view)
+exports.getMarketplaceNfts = async (req, res, next) => {
+    try {
+        const nfts = await Nft.find();
+        res.json({ nfts: nfts, marketplaceOwnerWallet: config.marketplaceEscrowWallet });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Prepare NFT mint (upload assets, generate metadata URI)
+exports.prepareNftMint = async (req, res, next) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No NFT file uploaded.' });
+    }
+    const { name, description, attributes, creatorWallet } = req.body;
+
+    // Basic validation (more comprehensive validation is in the Mongoose schema)
+    if (!name || !description || !creatorWallet) {
+        await deleteFile(req.file.path);
+        return res.status(400).json({ error: 'Name, description, and creator wallet are required for NFT preparation.' });
+    }
+    if (!isValidSolanaAddress(creatorWallet)) {
+        await deleteFile(req.file.path);
+        return res.status(400).json({ error: 'Invalid Solana wallet address format for creatorWallet.' });
+    }
+
+    const contentUrl = `http://localhost:${config.port}/uploads/${req.file.filename}`; // Or your cloud URL
+    // const contentUrl = `https://your-domain.com/uploads/${req.file.filename}`; // For production
+
+    const nftMetadata = {
+        name: name.trim(),
+        symbol: "AFOXNFT",
+        description: description.trim(),
+        image: contentUrl,
+        properties: {
+            files: [{ uri: contentUrl, type: req.file.mimetype }],
+            category: req.file.mimetype.startsWith('image') ? 'image' : (req.file.mimetype.startsWith('video') ? 'video' : 'other'),
+            creators: [{ address: creatorWallet.trim(), share: 100 }]
+        },
+        attributes: []
+    };
+
+    let metadataFilePath;
+    try {
+        if (attributes && typeof attributes === 'string') {
+            const parsedAttributes = JSON.parse(attributes);
+            if (Array.isArray(parsedAttributes)) {
+                nftMetadata.attributes = parsedAttributes.map(attr => ({
+                    trait_type: String(attr.trait_type || '').trim(),
+                    value: String(attr.value || '').trim()
+                })).filter(attr => attr.trait_type.length > 0 && attr.value.length > 0);
+            }
+        }
+    } catch (e) {
+        console.warn("NFT preparation: Could not parse attributes JSON. Proceeding without them.", e.message);
+    }
+
+    const metadataFileName = `${path.basename(req.file.filename, path.extname(req.file.filename))}.json`;
+    metadataFilePath = path.join(config.uploadDir, metadataFileName);
+
+    try {
+        await fs.writeFile(metadataFilePath, JSON.stringify(nftMetadata, null, 2));
+    } catch (error) {
+        await deleteFile(req.file.path);
+        return next(error); // Pass error to centralized handler
+    }
+
+    const metadataUri = `http://localhost:${config.port}/uploads/${metadataFileName}`; // Or your cloud URL
+    // const metadataUri = `https://your-domain.com/uploads/${metadataFileName}`; // For production
+
+    // Simulate a unique Solana mint address. In REAL PRODUCTION, this comes from on-chain minting.
+    const simulatedMintAddress = `SIMULATED_MINT_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+    try {
+        const newNft = new Nft({
+            name: nftMetadata.name,
+            description: nftMetadata.description,
+            image: nftMetadata.image,
+            mint: simulatedMintAddress,
+            owner: nftMetadata.properties.creators[0].address,
+            isListed: false,
+            attributes: nftMetadata.attributes,
+            history: [{ type: 'Mint', to: nftMetadata.properties.creators[0].address }]
+        });
+        await newNft.save();
+
+        res.status(201).json({
+            message: 'NFT assets prepared and simulated mint successful.',
+            uri: metadataUri,
+            mintAddress: simulatedMintAddress,
+            imageUrl: contentUrl,
+            signature: 'SIMULATED_TRANSACTION_SIGNATURE_FROM_BACKEND', // Placeholder for actual transaction ID
+            nft: newNft
+        });
+    } catch (error) {
+        // Clean up uploaded files if DB save fails
+        await deleteFile(req.file.path);
+        if (metadataFilePath) await deleteFile(metadataFilePath);
+        next(error);
+    }
+};
+
+// List NFT (simulation)
+exports.listNft = async (req, res, next) => {
+    const { mintAddress, price, duration, sellerWallet } = req.body;
+
+    if (!price || isNaN(price) || Number(price) <= 0 || !duration || isNaN(duration) || Number(duration) <= 0 || !isValidSolanaAddress(sellerWallet)) {
+        return res.status(400).json({ error: 'Invalid price, duration, or seller wallet.' });
+    }
+
+    try {
+        // Find the NFT by its mint address and confirm the seller is the owner and it's not already listed
+        const nft = await Nft.findOneAndUpdate(
+            { mint: mintAddress, owner: sellerWallet, isListed: false },
+            {
+                $set: {
+                    isListed: true,
+                    price: Number(price),
+                    listedAt: new Date(),
+                    listingDuration: Number(duration),
+                    listedBy: sellerWallet,
+                },
+                $push: { history: { type: 'List', from: sellerWallet, timestamp: new Date() } }
+            },
+            { new: true, runValidators: true } // Run schema validators on update
+        );
+
+        if (!nft) {
+            return res.status(404).json({ error: 'NFT not found, you are not the owner, or it is already listed.' });
+        }
+
+        console.log(`NFT ${mintAddress} listed by ${sellerWallet} for ${price} SOL (simulated).`);
+        res.status(200).json({ message: `NFT ${mintAddress} listed for sale for ${price} SOL (simulated).`, nft });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Buy NFT (simulation)
+exports.buyNft = async (req, res, next) => {
+    const { mintAddress, buyerWallet, sellerWallet, price } = req.body;
+
+    if (!price || isNaN(price) || Number(price) <= 0) {
+        return res.status(400).json({ error: 'Invalid price for buying NFT.' });
+    }
+    if (buyerWallet === sellerWallet) {
+        return res.status(400).json({ error: 'Cannot buy your own NFT.' });
+    }
+    if (!isValidSolanaAddress(buyerWallet) || !isValidSolanaAddress(sellerWallet)) {
+        return res.status(400).json({ error: 'Invalid Solana wallet address format for buyer or seller.' });
+    }
+
+    try {
+        const nft = await Nft.findOneAndUpdate(
+            { mint: mintAddress, owner: sellerWallet, isListed: true, price: Number(price) },
+            {
+                $set: {
+                    owner: buyerWallet,
+                    isListed: false,
+                    price: null,
+                    listedAt: null,
+                    listingDuration: null,
+                    listedBy: null
+                },
+                $push: { history: { type: 'Sale', from: sellerWallet, to: buyerWallet, price: Number(price), timestamp: new Date() } }
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!nft) {
+            return res.status(404).json({ error: 'NFT not found, not listed, or seller/price mismatch.' });
+        }
+
+        // --- REAL PRODUCTION SOLANA TRANSACTION LOGIC (Pseudocode) ---
+        // This is where you'd use @solana/web3.js to build the actual transaction.
+        // It would likely involve:
+        // 1. Fetching a recent blockhash
+        // 2. Creating instructions for SPL token transfer (NFT) and System Program transfer (SOL payment)
+        // 3. Potentially creating associated token accounts if they don't exist for the buyer
+        // 4. Building a Transaction object
+        // 5. Serializing the transaction (partially signed by backend if it holds keys for escrow)
+        //    for the client to sign with their wallet.
+        // --- END OF REAL PRODUCTION SOLANA TRANSACTION LOGIC ---
+
+        res.status(200).json({
+            message: `NFT ${nft.name} successfully purchased (simulated).`,
+            nft,
+            serializedTransaction: 'SIMULATED_TRANSACTION_BASE64_FOR_CLIENT_SIGNING' // Client receives this to sign
+        });
+        console.log(`NFT ${nft.name} transferred from ${sellerWallet} to ${buyerWallet} for ${price} SOL (simulated).`);
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get NFT history
+exports.getNftHistory = async (req, res, next) => {
+    const { mint } = req.params;
+    try {
+        const nft = await Nft.findOne({ mint: mint });
+        if (!nft) {
+            return res.status(404).json({ error: 'NFT not found.' });
+        }
+        res.json(nft.history);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ... (Create similar controllers for Game, Ad, Photo, and Post with proper error handling and input validation)
