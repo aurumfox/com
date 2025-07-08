@@ -1,0 +1,11 @@
+
+node_modules 
+npm-debug.log 
+.env 
+.git 
+.gitignore 
+Dockerfil
+docker-compose. yml 
+uploads # If you want to keep uploads out of the image, but 
+still mount them as а volume
+logs
