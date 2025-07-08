@@ -1,0 +1,28 @@
+// controllers/announcementController.js
+const Announcement = require('../models/Announcement');
+
+// Get all announcements
+exports.getAllAnnouncements = async (req, res, next) => {
+    try {
+        const announcements = await Announcement.find().sort({ date: -1 });
+        res.json(announcements);
+    } catch (error) {
+        next(error); // Pass errors to the centralized error handler
+    }
+};
+
+// Create a new announcement
+exports.createAnnouncement = async (req, res, next) => {
+    const { text } = req.body;
+    // Mongoose schema will handle required, trim, and minlength validation
+    try {
+        const newAnnouncement = new Announcement({ text: text });
+        await newAnnouncement.save();
+        console.log('New announcement published:', newAnnouncement);
+        res.status(201).json({ message: 'Announcement published successfully', announcement: newAnnouncement });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ... (Other CRUD operations like update, delete for announcements if needed)
