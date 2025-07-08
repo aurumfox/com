@@ -1,0 +1,83 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb_aurum_fox
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: redis_aurum_fox
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  rabbitmq: # NEW Service
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq_aurum_fox
+    ports:
+      - "5672:5672" # AMQP protocol port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aurum_fox_backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules # Exclude node_modules from host bind mount
+      - ./uploads:/app/uploads # Persist uploads
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      MONGODB_URI: mongodb://mongodb:27017/solana_dapp_db # Use service name 'mongodb'
+      REDIS_URI: redis://redis:6379 # Use service name 'redis'
+      RABBITMQ_URI: amqp://rabbitmq # Use service name 'rabbitmq'
+      JWT_SECRET: ${JWT_SECRET:-your_super_secret_jwt_key_please_change_this_in_production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:5500,http://localhost:5500,http://localhost:3000}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-adminpassword}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq: # NEW dependency
+        condition: service_healthy
+    command: npm run dev # Use nodemon for development auto-reloads
+
+volumes:
+  mongo_data:
+  redis_data:
+  rabbitmq_data: # NEW volume
