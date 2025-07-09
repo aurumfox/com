@@ -1,17 +1,18 @@
-# docker-compose.yml
+# docker-compose.yml (PRODUCTION VARIANT - SENSITIVE DATA COMES FROM .env OR ENVIRONMENT)
 version: '3.8'
 
 services:
   mongodb:
     image: mongo:6.0
     container_name: mongodb_aurum_fox
-    ports:
-      - "27017:27017"
+    # ports: # REMOVE for production if external access is not needed
+    #   - "27017:27017"
     volumes:
       - mongo_data:/data/db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+      # These values should be overridden via .env or host environment variables
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
@@ -21,8 +22,8 @@ services:
   redis:
     image: redis:6.2-alpine
     container_name: redis_aurum_fox
-    ports:
-      - "6379:6379"
+    # ports: # REMOVE for production
+    #   - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -31,17 +32,18 @@ services:
       timeout: 2s
       retries: 5
 
-  rabbitmq: # NEW Service
+  rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: rabbitmq_aurum_fox
-    ports:
-      - "5672:5672" # AMQP protocol port
-      - "15672:15672" # Management UI port
+    # ports: # REMOVE for production if external access is not needed
+    #   - "5672:5672" # AMQP protocol port
+    #   - "15672:15672" # Management UI port
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      # These values should be overridden
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 5s
@@ -52,32 +54,34 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Or use image: your_registry/your_app_name:tag for production
     container_name: aurum_fox_backend
     ports:
-      - "3000:3000"
+      - "3000:3000" # This port can be exposed for incoming requests
     volumes:
       - .:/app
       - /app/node_modules # Exclude node_modules from host bind mount
       - ./uploads:/app/uploads # Persist uploads
     environment:
-      NODE_ENV: development
+      NODE_ENV: production # EXTREMELY IMPORTANT!
       PORT: 3000
-      MONGODB_URI: mongodb://mongodb:27017/solana_dapp_db # Use service name 'mongodb'
-      REDIS_URI: redis://redis:6379 # Use service name 'redis'
-      RABBITMQ_URI: amqp://rabbitmq # Use service name 'rabbitmq'
-      JWT_SECRET: ${JWT_SECRET:-your_super_secret_jwt_key_please_change_this_in_production}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:5500,http://localhost:5500,http://localhost:3000}
-      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-adminpassword}
+      MONGODB_URI: mongodb://mongodb:27017/solana_dapp_db
+      REDIS_URI: redis://redis:6379
+      RABBITMQ_URI: amqp://rabbitmq
+      # These values should be overridden
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://your-production-frontend.com} # Change to your production domain
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD}
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
-      rabbitmq: # NEW dependency
+      rabbitmq:
         condition: service_healthy
-    command: npm run dev # Use nodemon for development auto-reloads
+    command: node dist/server.js # Or npm start, for production without nodemon
 
 volumes:
   mongo_data:
   redis_data:
-  rabbitmq_data: # NEW volume
+  rabbitmq_data:
