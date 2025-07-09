@@ -1,182 +1,216 @@
-// backend/routes/posts.js
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose'); // Still needed for joiObjectId custom validator
+const Joi = require('joi'); // For robust request body validation
 const Post = require('../models/Post'); // Import the Post Mongoose model
 
-// Assuming isValidSolanaAddress is now exported from '../models/Post.js'
-// or ideally, it should be in a separate utility file.
-// For this example, we import it directly from the Post model file.
-const { isValidSolanaAddress } = require('../models/Post'); 
+// --- Centralized Middleware & Utilities ---
+const { authenticateToken } = require('../middleware/authMiddleware'); // For JWT authentication
+const { validate, schemas } = require('../middleware/validationMiddleware'); // Joi validation middleware and schemas
+const { isValidSolanaAddress } = require('../utils/validators'); // Centralized Solana address validator
+// If formatMongooseErrors is needed, it should be in a shared utility like `utils/errorHandler.js`
+// const { formatMongooseErrors } = require('../utils/errorHandler'); // Example of external helper
 
-// Helper function to format Mongoose validation errors into a more readable object.
-// This function is useful for returning structured error messages to the client.
-// In a larger application, this helper could be extracted into a shared `utils/errorHandler.js` file.
-const formatMongooseErrors = (err) => {
-    const errors = {};
-    for (let field in err.errors) {
-        errors[field] = err.errors[field].message;
+// --- Custom Joi Validators (if not already in validationMiddleware.js) ---
+// These are defined here for clarity but should ideally reside in `validationMiddleware.js`
+// or a shared Joi extension for reusability across all schemas.
+const joiSolanaAddress = Joi.string().trim().required().custom((value, helpers) => {
+    if (!isValidSolanaAddress(value)) {
+        return helpers.message('Must be a valid Solana wallet address format.');
     }
-    return errors;
+    return value;
+});
+
+const joiObjectId = Joi.string().trim().required().custom((value, helpers) => {
+    if (!mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.message('Invalid ID format.');
+    }
+    return value;
+});
+
+
+// --- Joi Schemas for Post Operations ---
+
+// Schema for creating a new post (POST /api/posts)
+const createPostSchema = Joi.object({
+    title: Joi.string().trim().min(3).max(200).required()
+        .messages({
+            'string.empty': 'Post title cannot be empty.',
+            'string.min': 'Post title must be at least 3 characters long.',
+            'string.max': 'Post title cannot exceed 200 characters.',
+            'any.required': 'Post title is required.'
+        }),
+    content: Joi.string().trim().min(10).max(10000).required()
+        .messages({
+            'string.empty': 'Post content cannot be empty.',
+            'string.min': 'Post content must be at least 10 characters long.',
+            'string.max': 'Post content cannot exceed 10000 characters.',
+            'any.required': 'Post content is required.'
+        }),
+    authorWallet: joiSolanaAddress.messages({
+        'any.required': 'Author wallet address is required.'
+    })
+});
+
+// Schema for updating an existing post (PUT /api/posts/:id)
+const updatePostSchema = Joi.object({
+    title: Joi.string().trim().min(3).max(200).optional() // Make optional for partial updates
+        .messages({
+            'string.empty': 'Post title cannot be empty.',
+            'string.min': 'Post title must be at least 3 characters long.',
+            'string.max': 'Post title cannot exceed 200 characters.'
+        }),
+    content: Joi.string().trim().min(10).max(10000).optional() // Make optional for partial updates
+        .messages({
+            'string.empty': 'Post content cannot be empty.',
+            'string.min': 'Post content must be at least 10 characters long.',
+            'string.max': 'Post content cannot exceed 10000 characters.'
+        }),
+    // authorWallet should NOT be updatable via PUT, but may be passed for authorization check if not using JWT wallet
+    // If you pass it, validate it, but ensure it's not saved to the DB via `findByIdAndUpdate`
+    requesterWallet: joiSolanaAddress.optional() // Wallet of the person making the request for in-route authorization
+}).or('title', 'content') // At least one of title or content must be present for update
+.messages({
+    'object.missing': 'At least one field (title or content) is required for updating the post.'
+});
+
+
+// --- Authorization Middleware for Post Ownership ---
+// This middleware ensures that the authenticated user (from JWT) is the author of the post.
+const authorizePostOwnership = async (req, res, next) => {
+    try {
+        const postId = req.params.id;
+        // Validate ID format early
+        if (!mongoose.Types.ObjectId.isValid(postId)) {
+            return res.status(400).json({ message: 'Invalid Post ID format.' });
+        }
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found.' });
+        }
+
+        // `req.user` comes from `authenticateToken` middleware, carrying authenticated user's data (e.g., walletAddress).
+        if (!req.user || post.authorWallet.toLowerCase() !== req.user.walletAddress.toLowerCase()) {
+            // Also allow an admin role to bypass this check if you have authorizeRole middleware.
+            // if (!req.user.role || req.user.role !== ROLES.ADMIN) { ... }
+            return res.status(403).json({ message: 'Forbidden: You are not authorized to perform this action on this post.' });
+        }
+
+        // Attach the post to the request object so subsequent middleware/route handlers don't refetch it.
+        req.post = post;
+        next();
+    } catch (err) {
+        console.error('Error in authorizePostOwnership middleware:', err);
+        res.status(500).json({ message: 'Internal server error during authorization.' });
+    }
 };
 
-// GET /api/posts
-// Route to fetch all posts.
-// Posts are sorted by their creation date in descending order (newest first).
+
+// --- GET All Posts ---
 router.get('/', async (req, res) => {
     try {
-        // Use `createdAt` for sorting, which is automatically added by `timestamps: true` in the Post schema.
         const posts = await Post.find().sort({ createdAt: -1 });
-        res.json(posts); // Respond with the fetched posts.
+        res.json(posts);
     } catch (err) {
-        console.error('Error fetching posts:', err); // Log the detailed error for server-side debugging.
-        // Send a generic 500 Internal Server Error response to the client for unexpected errors.
+        console.error('Error fetching posts:', err);
         res.status(500).json({ message: 'Internal Server Error: Could not retrieve posts.' });
     }
 });
 
-// GET /api/posts/:id
-// Route to fetch a single post by its MongoDB `_id`.
-router.get('/:id', async (req, res) => {
+// --- GET Single Post by ID ---
+router.get('/:id', validate(schemas.params.id || Joi.object({ id: joiObjectId })), async (req, res) => {
+    // req.params.id is already validated by Joi middleware if schemas.params.id exists, or by inline Joi.
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
-            // If no post is found with the given ID, return a 404 Not Found status.
             return res.status(404).json({ message: 'Post not found.' });
         }
-        res.json(post); // Respond with the found post.
+        res.json(post);
     } catch (err) {
-        // Handle `CastError` specifically, which occurs if the provided `id` is not a valid MongoDB ObjectId format.
-        if (err.name === 'CastError') {
-            return res.status(400).json({ message: 'Invalid Post ID format. Please provide a valid ObjectId.' });
-        }
+        // CastError for invalid ID format is now handled by Joi validation earlier.
         console.error(`Error fetching post with ID ${req.params.id}:`, err);
         res.status(500).json({ message: 'Internal Server Error: Could not retrieve post.' });
     }
 });
 
-// POST /api/posts
-// Route to create a new post.
-// IMPORTANT: For a production application, robust user authentication and authorization
-// mechanisms are crucial here. You should verify that `authorWallet` truly belongs
-// to the authenticated user attempting to create the post.
-router.post('/', async (req, res) => {
-    const { title, content, authorWallet } = req.body;
 
-    // Basic pre-validation: Check for the presence of required fields.
-    // Mongoose schema validation will provide more detailed error messages.
-    if (!title || !content || !authorWallet) {
-        return res.status(400).json({ message: 'Title, content, and author wallet are all required fields.' });
+// --- POST Create a New Post ---
+// Requires authentication to know who the `authorWallet` is.
+router.post(
+    '/',
+    authenticateToken,                       // 1. Authenticate the user (populates req.user with walletAddress from JWT)
+    validate(createPostSchema),              // 2. Validate request body (title, content, authorWallet from body)
+    async (req, res) => {
+        const { title, content, authorWallet } = req.validatedBody; // Joi validated body
+
+        // CRITICAL SECURITY CHECK: Ensure the `authorWallet` in the request body
+        // matches the wallet of the authenticated user from the JWT token.
+        if (authorWallet.toLowerCase() !== req.user.walletAddress.toLowerCase()) {
+            return res.status(403).json({ message: 'Forbidden: You can only create posts for your own wallet address.' });
+        }
+
+        const newPost = new Post({ title, content, authorWallet });
+
+        try {
+            const savedPost = await newPost.save();
+            res.status(201).json(savedPost);
+        } catch (err) {
+            console.error('Error creating post:', err);
+            if (err.name === 'ValidationError') {
+                const errors = Object.values(err.errors).map(e => e.message);
+                return res.status(400).json({ message: 'Validation Error: Please check your input fields.', errors });
+            }
+            res.status(500).json({ message: 'Internal Server Error: Could not create post.' });
+        }
     }
+);
 
-    // Additional direct validation for `authorWallet` format.
-    // This provides an immediate response without relying solely on Mongoose schema validation for this specific format.
-    if (!isValidSolanaAddress(authorWallet)) {
-        return res.status(400).json({ message: 'Invalid author wallet address format. Please provide a valid Solana address.' });
+// --- PUT Update an Existing Post ---
+// Requires authentication and authorization (only author or admin can update).
+router.put(
+    '/:id',
+    authenticateToken,                       // 1. Authenticate the user
+    authorizePostOwnership,                  // 2. Authorize: check if user owns the post (populates req.post)
+    validate(updatePostSchema),              // 3. Validate request body (title, content, requesterWallet)
+    async (req, res) => {
+        const { title, content } = req.validatedBody; // Joi validated body
+        const post = req.post; // Post document already fetched by authorizePostOwnership
+
+        try {
+            if (title !== undefined) post.title = title;
+            if (content !== undefined) post.content = content;
+
+            const updatedPost = await post.save();
+            res.json(updatedPost);
+        } catch (err) {
+            console.error(`Error updating post with ID ${req.params.id}:`, err);
+            if (err.name === 'ValidationError') {
+                const errors = Object.values(err.errors).map(e => e.message);
+                return res.status(400).json({ message: 'Validation Error: Invalid data provided for update.', errors });
+            }
+            res.status(500).json({ message: 'Internal Server Error: Could not update post.' });
+        }
     }
+);
 
-    // Create a new Post document instance.
-    const newPost = new Post({ title, content, authorWallet });
+// --- DELETE a Post ---
+// Requires authentication and authorization (only author or admin can delete).
+router.delete(
+    '/:id',
+    authenticateToken,                       // 1. Authenticate the user
+    authorizePostOwnership,                  // 2. Authorize: check if user owns the post (populates req.post)
+    async (req, res) => {
+        const post = req.post; // Post document already fetched by authorizePostOwnership
 
-    try {
-        const savedPost = await newPost.save(); // Attempt to save the new post to the database.
-        // On successful creation, respond with 201 Created status and the saved post data.
-        res.status(201).json(savedPost);
-    } catch (err) {
-        console.error('Error creating post:', err); // Log the detailed error.
-        if (err.name === 'ValidationError') {
-            // If the error is a Mongoose `ValidationError` (e.g., due to schema constraints),
-            // return a 400 Bad Request with specific validation error details.
-            return res.status(400).json({
-                message: 'Validation Error: Please check your input fields.',
-                errors: formatMongooseErrors(err)
-            });
+        try {
+            await Post.deleteOne({ _id: post._id }); // Use the _id from the fetched post object
+            res.json({ message: 'Post successfully deleted.' });
+        } catch (err) {
+            console.error(`Error deleting post with ID ${req.params.id}:`, err);
+            res.status(500).json({ message: 'Internal Server Error: Could not delete post.' });
         }
-        // For any other unexpected errors during save, return a generic 500 Internal Server Error.
-        res.status(500).json({ message: 'Internal Server Error: Could not create post.' });
     }
-});
-
-// PUT /api/posts/:id
-// Route to update an existing post by its ID.
-// IMPORTANT: Authentication and authorization checks are paramount here.
-// Only the original author or an authorized administrator should be able to update a post.
-router.put('/:id', async (req, res) => {
-    // Destructure fields that can be updated. `authorWallet` is generally not meant to be updated via PUT.
-    const { title, content } = req.body;
-    // For authorization purposes, you might pass the `authorWallet` from the frontend
-    // but its value should be verified against the authenticated user's identity.
-    const { authorWallet } = req.body; // Keeping it for the authorization check example below.
-
-    // Allow partial updates: at least one field (title or content) must be provided.
-    if (!title && !content) {
-        return res.status(400).json({ message: 'At least one field (title or content) is required for updating the post.' });
-    }
-
-    try {
-        const post = await Post.findById(req.params.id);
-        if (!post) {
-            return res.status(404).json({ message: 'Post not found.' });
-        }
-
-        // Basic Authorization Check (should be replaced with proper authentication/authorization middleware):
-        // This checks if the `authorWallet` provided in the request body matches the post's recorded author.
-        // A real system would use a JWT or session to determine the authenticated user's wallet.
-        if (authorWallet && post.authorWallet.toLowerCase() !== authorWallet.toLowerCase()) {
-             return res.status(403).json({ message: 'Forbidden: You are not authorized to update this post.' });
-        }
-
-        // Update fields only if they are present in the request body.
-        if (title !== undefined) post.title = title;
-        if (content !== undefined) post.content = content;
-        // The `updatedAt` timestamp will be automatically updated by `timestamps: true` on `save()`.
-
-        const updatedPost = await post.save(); // Save the updated post. Mongoose schema validation will run here.
-        res.json(updatedPost); // Respond with the updated post.
-    } catch (err) {
-        console.error(`Error updating post with ID ${req.params.id}:`, err);
-        if (err.name === 'CastError') {
-            return res.status(400).json({ message: 'Invalid Post ID format.' });
-        }
-        if (err.name === 'ValidationError') {
-            // If validation fails during save (e.g., new title/content violates schema rules).
-            return res.status(400).json({
-                message: 'Validation Error: Invalid data provided for update.',
-                errors: formatMongooseErrors(err)
-            });
-        }
-        res.status(500).json({ message: 'Internal Server Error: Could not update post.' });
-    }
-});
-
-// DELETE /api/posts/:id
-// Route to delete a post by its ID.
-// IMPORTANT: Authentication and authorization checks are crucial here.
-// Only the original author or an authorized administrator should be able to delete a post.
-router.delete('/:id', async (req, res) => {
-    try {
-        const post = await Post.findById(req.params.id);
-        if (!post) {
-            return res.status(404).json({ message: 'Post not found.' });
-        }
-
-        // Basic Authorization Check (similar to PUT route, should be proper middleware):
-        // You might pass a `requesterWallet` in the body or extract it from an auth token.
-        // For demonstration, uncommenting this and passing `requesterWallet` in body:
-        // if (req.body.requesterWallet && post.authorWallet.toLowerCase() !== req.body.requesterWallet.toLowerCase()) {
-        //     return res.status(403).json({ message: 'Forbidden: You are not authorized to delete this post.' });
-        // }
-
-        // Use `deleteOne` on the model or `findByIdAndDelete` for a more direct approach.
-        await Post.deleteOne({ _id: req.params.id });
-        // Respond with a success message. No content (204 No Content) is also a valid response for DELETE.
-        res.json({ message: 'Post successfully deleted.' });
-    } catch (err) {
-        console.error(`Error deleting post with ID ${req.params.id}:`, err);
-        if (err.name === 'CastError') {
-            return res.status(400).json({ message: 'Invalid Post ID format.' });
-        }
-        res.status(500).json({ message: 'Internal Server Error: Could not delete post.' });
-    }
-});
+);
 
 module.exports = router;
