@@ -1,8 +1,30 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { ROLES } = require('../config/constants'); // Import roles
+
+// --- Recommended: Extract roles into a separate configuration file ---
+// Example: ../config/constants.js
+// export const ROLES = {
+//   USER: 'user',
+//   ADMIN: 'admin',
+//   DEVELOPER: 'developer',
+//   ADVERTISER: 'advertiser',
+//   PUBLISHER: 'publisher',
+// };
+// Assuming ROLES is imported from '../config/constants'
+const { ROLES } = require('../config/constants'); 
 
 const userSchema = new mongoose.Schema({
+    // Username can be optional if the primary identifier is the wallet
+    username: {
+        type: String,
+        required: false, // Can be optional if user registers via wallet
+        unique: true,
+        sparse: true, // Allows multiple documents to have a null unique value (for optional fields)
+        trim: true,
+        minlength: 3,
+        maxlength: 30 // Limit maximum length
+    },
+    // walletAddress will be the primary identifier for the dApp
     walletAddress: {
         type: String,
         required: true,
@@ -10,26 +32,45 @@ const userSchema = new mongoose.Schema({
         trim: true,
         minlength: 32, // Solana public keys are 32-44 chars (base58)
         maxlength: 44,
-        index: true // NEW: Add index for faster lookups
+        index: true // Add an index for faster lookups by wallet address
     },
-    password: {
+    password: { // Will store the hashed password
         type: String,
         required: true,
-        minlength: 8
+        minlength: 8 // Increase minimum password length for better security
     },
-    role: {
+    role: { // User's role
         type: String,
-        enum: Object.values(ROLES), // Ensure role is one of the defined roles
-        default: ROLES.USER
+        enum: Object.values(ROLES), // Ensures the role is one of the predefined roles
+        default: ROLES.USER,
+        required: true // Role should always be present
     },
-    // Add more user-related fields as needed
-    // e.g., profilePicture: String, bio: String, email: String (if applicable)
+    // Additional user-related fields as needed
+    // For example:
+    // email: {
+    //     type: String,
+    //     unique: true,
+    //     sparse: true, // Allows multiple documents to have a null unique value
+    //     trim: true,
+    //     lowercase: true,
+    //     match: [/.+@.+\..+/, 'Please enter a valid email address']
+    // },
+    // profilePicture: {
+    //     type: String, // URL to the profile picture
+    //     default: 'https://example.com/default-avatar.png' 
+    // },
+    // bio: {
+    //     type: String,
+    //     trim: true,
+    //     maxlength: 500
+    // }
 }, {
-    timestamps: true // Adds createdAt and updatedAt fields
+    timestamps: true // Automatically adds createdAt and updatedAt fields
 });
 
-// Hash password before saving
-userSchema.pre('save', async function (next) {
+// --- Pre-save hook: Hash password before saving ---
+userSchema.pre('save', async function(next) {
+    // Only hash the password if it has been modified (or is new)
     if (!this.isModified('password')) {
         return next();
     }
@@ -38,20 +79,24 @@ userSchema.pre('save', async function (next) {
     next();
 });
 
-// Method to compare passwords
-userSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
+// --- Method for comparing passwords ---
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Configure toJSON to remove sensitive fields and transform _id
+// --- Configure toJSON to remove sensitive fields and transform _id ---
+// This ensures that when user data is sent to the client,
+// the password is not included, and _id is transformed to id.
 userSchema.set('toJSON', {
-    virtuals: true,
+    virtuals: true, // Includes virtual fields (e.g., 'id')
     transform: (doc, ret) => {
-        delete ret._id;
-        delete ret.__v;
-        delete ret.password; // Remove password from response
+        delete ret._id;       // Remove the internal _id
+        delete ret.__v;       // Remove the document version key
+        delete ret.password;  // Remove the hashed password from the response
         return ret;
     }
 });
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
