@@ -1,59 +1,78 @@
-// backend/models/Game.js
 const mongoose = require('mongoose');
 
-// Can be extracted to a separate utility file if used repeatedly
-const isValidSolanaAddress = (address) => {
-    // Basic validation for Solana address format (base58)
-    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
-};
+// --- Recommended: Extract validators into a separate utilities file ---
+// This promotes reusability and keeps your models clean.
+// Example content for backend/utils/validators.js:
+// const { PublicKey } = require('@solana/web3.js'); // Make sure 'web3.js' is installed
+// const isURL = require('validator/lib/isURL');    // Make sure 'validator' is installed (npm install validator)
+
+// function isValidSolanaAddress(address) {
+//     if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
+//         return false;
+//     }
+//     try {
+//         new PublicKey(address); // Uses Solana SDK for robust cryptographic validation
+//         return true;
+//     } catch (e) {
+//         return false;
+//     }
+// }
+//
+// function isValidURL(url) {
+//     if (url === '') return true; // Allow empty string
+//     return isURL(url, { require_protocol: true }); // Require http/https
+// }
+//
+// module.exports = { isValidSolanaAddress, isValidURL };
+
+// Assuming isValidSolanaAddress and isValidURL are imported from '../utils/validators'
+const { isValidSolanaAddress, isValidURL } = require('../utils/validators'); 
 
 const gameSchema = new mongoose.Schema({
-    // Title of the game
+    // Title of the game. Required.
     title: {
         type: String,
-        required: [true, 'Game title is required.'], // Custom error message
-        trim: true, // Remove leading/trailing whitespace
-        minlength: [3, 'Game title must be at least 3 characters long.'], // Minimum length for meaningful titles
-        maxlength: [100, 'Game title cannot exceed 100 characters.'] // Maximum length to prevent excessively long titles
+        required: [true, 'Game title is required.'],
+        trim: true,
+        minlength: [3, 'Game title must be at least 3 characters long.'],
+        maxlength: [100, 'Game title cannot exceed 100 characters.']
     },
-    // Detailed description of the game
+    // Detailed description of the game. Required.
     description: {
         type: String,
-        required: [true, 'Game description is required.'], // Custom error message
+        required: [true, 'Game description is required.'],
         trim: true,
-        minlength: [20, 'Game description must be at least 20 characters long.'], // Minimum length for detailed descriptions
-        maxlength: [5000, 'Game description cannot exceed 5000 characters.'] // Generous maximum length for comprehensive descriptions
+        minlength: [20, 'Game description must be at least 20 characters long.'],
+        maxlength: [5000, 'Game description cannot exceed 5000 characters.']
     },
-    // The wallet address of the developer. Assumed to be a Solana public key.
+    // The Solana wallet address of the developer. Required.
     developer: {
         type: String,
-        required: [true, 'Developer wallet address is required.'], // Custom error message
+        required: [true, 'Developer wallet address is required.'],
         trim: true,
         validate: {
-            validator: isValidSolanaAddress, // Using the validation function
-            message: props => `${props.value} is not a valid Solana wallet address format for the developer!` // Custom validation error message
+            validator: isValidSolanaAddress, // Using the centralized Solana address validator
+            message: props => `${props.value} is not a valid Solana wallet address for the developer!`
         }
     },
-    // URL of the game's page or official website
+    // URL of the game's page or official website.
     url: {
         type: String,
         trim: true,
-        default: '', // Defaults to an empty string
-        maxlength: [500, 'URL cannot exceed 500 characters.'], // Maximum length for URL
-        // Basic URL validation (more strict regex or npm packages can be used)
+        default: '',
+        maxlength: [500, 'URL cannot exceed 500 characters.'],
         validate: {
-            validator: function(v) {
-                if (v === '') return true; // Empty string is allowed by default
-                return /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(v); // Regex for basic URL format
-            },
-            message: props => `${props.value} is not a valid URL.` // Custom validation error message
+            validator: isValidURL, // Using the centralized URL validator
+            message: props => `${props.value} is not a valid URL.`
         }
     },
-    // Release date of the game (if not the record creation date in the DB)
-    releaseDate: { // Renamed for clarity
+    // Release date of the game. Defaults to the current date if not provided.
+    // This field serves a different purpose than 'createdAt' (which is when the record was added to DB).
+    releaseDate: {
         type: Date,
-        default: Date.now, // Defaults to the current date
-        // Optional: Add validation that the date is not in the future, if it's a release date
+        default: Date.now,
+        // Optional: Add validation that the date is not in the future, if it's a past release date.
+        // Uncomment the following if you want to enforce this.
         // validate: {
         //     validator: function(value) {
         //         return value <= Date.now();
@@ -61,40 +80,52 @@ const gameSchema = new mongoose.Schema({
         //     message: 'Release date cannot be in the future.'
         // }
     },
-    // Additional fields
+    // Genres the game belongs to. Array of predefined strings.
     genres: {
-        type: [String], // Array of strings for game genres
-        default: [], // Defaults to an empty array
+        type: [String],
+        default: [],
         enum: {
-            values: ['Action', 'Adventure', 'RPG', 'Strategy', 'Simulation', 'Sports', 'Puzzle', 'Horror', 'Sci-Fi', 'Fantasy', 'Indie', 'MMO', 'Racing', 'Fighting'], // Example of possible genres
-            message: '{VALUE} is not a valid genre.' // Custom error message for invalid enum value
+            values: ['Action', 'Adventure', 'RPG', 'Strategy', 'Simulation', 'Sports', 'Puzzle', 'Horror', 'Sci-Fi', 'Fantasy', 'Indie', 'MMO', 'Racing', 'Fighting', 'Casual', 'Educational', 'Party', 'Board Game'], // Expanded example genres
+            message: '{VALUE} is not a valid genre.'
         }
     },
+    // Platforms the game is available on. Array of predefined strings.
     platforms: {
-        type: [String], // Array of strings for platforms
-        default: [], // Defaults to an empty array
+        type: [String],
+        default: [],
         enum: {
-            values: ['PC', 'PlayStation', 'Xbox', 'Nintendo Switch', 'Mobile (iOS)', 'Mobile (Android)', 'Browser'], // Example of platforms
-            message: '{VALUE} is not a valid platform.' // Custom error message for invalid enum value
+            values: ['PC', 'PlayStation', 'Xbox', 'Nintendo Switch', 'Mobile (iOS)', 'Mobile (Android)', 'Browser', 'VR', 'Mac', 'Linux'], // Expanded example platforms
+            message: '{VALUE} is not a valid platform.'
         }
     },
+    // Array of URL strings for game screenshots.
     screenshots: {
-        type: [String], // Array of URL strings for screenshots
-        default: [], // Defaults to an empty array
+        type: [String],
+        default: [],
         validate: {
             validator: function(urls) {
                 if (!urls || urls.length === 0) return true; // Empty array is valid
-                return urls.every(url => /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(url)); // Validate each URL in the array
+                return urls.every(isValidURL); // Validate each URL using the shared utility
             },
-            message: 'One or more screenshot URLs are invalid.' // Custom error message for array validation
+            message: 'One or more screenshot URLs are invalid.'
         }
-    }
+    },
+    // Optional: Game rating (e.g., from 1-5 stars, or an ESRB/PEGI rating)
+    // rating: {
+    //     type: Number,
+    //     min: 1,
+    //     max: 5,
+    //     default: null // Can be null if not rated yet
+    // },
+    // Optional: Status of the game (e.g., 'released', 'in development', 'early access')
+    // status: {
+    //     type: String,
+    //     enum: ['released', 'in development', 'early access', 'cancelled'],
+    //     default: 'released'
+    // }
 }, {
     // Schema options:
-    // `timestamps: true` automatically adds `createdAt` and `updatedAt` fields to your documents.
-    // `createdAt` stores the timestamp when the document was first created.
-    // `updatedAt` stores the timestamp of the last update to the document.
-    // This is a standard and highly recommended practice for tracking document lifecycle.
+    // `timestamps: true` automatically adds `createdAt` and `updatedAt` fields.
     timestamps: true
 });
 
