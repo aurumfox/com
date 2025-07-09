@@ -1,15 +1,57 @@
-# Dependencies installed inside the container
-node_modules/
+# Node.js specific
+node_modules             # Crucial: node_modules will be installed *inside* the container during build.
+                         # Copying it from the host is slow and can cause platform incompatibilities.
+npm-debug.log* # Debug logs
+yarn-debug.log*
+.npm/
+.pnpm-store/
 
-# Git metadata
-.git/
-.gitignore
+# Environment variables (sensitive data - NEVER include in image)
+.env                     # Local environment variables
+.env.* # Any environment variable files
 
-# Environment variables (passed as build args or runtime env vars)
-.env
-*.env
-
-# Local development specific
-npm-debug.log*
+# Logs (not needed in the final image, typically handled by logging drivers)
 logs/
-uploads/ # Exclude if you're using a volume for this
+*.log
+
+# Uploaded files (if user uploads are saved on host, don't include in image)
+# If uploads are managed via a Docker volume (as in your docker-compose.yml),
+# you don't want them in the build context.
+uploads/
+
+# Git specific (not needed in the image)
+.git                     # The entire Git repository history
+.gitignore
+.gitmodules
+.gitattributes
+
+# Build artifacts from host (will be rebuilt inside the container if needed, or already copied as build output)
+dist/                    # If you have a build step that generates 'dist' locally
+build/                   # If you have a build step that generates 'build' locally
+coverage/                # Test coverage reports (not needed for runtime)
+
+# Editor and IDE specific files (not needed in the image)
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Other temporary/config files
+*.swp
+*.swo
+*.swn
+*.bak
+*~
+.jest-cache/
+.eslintcache
+.nyc_output
+
+# Docker-specific files themselves (they are read by the Docker client, not needed in the image)
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+
+# If you have a dedicated test folder that's not part of your app's runtime code
+# tests/
+# __tests__/
