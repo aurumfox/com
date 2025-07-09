@@ -1,51 +1,74 @@
-// backend/models/DaoProposal.js
 const mongoose = require('mongoose');
 
+// --- Recommended: Extract validators into a separate utilities file ---
+// This promotes reusability and keeps your models clean.
+// Example content for backend/utils/validators.js:
+// const { PublicKey } = require('@solana/web3.js'); // Make sure 'web3.js' is installed
+// const isURL = require('validator/lib/isURL');    // Make sure 'validator' is installed (npm install validator)
+
+// function isValidSolanaAddress(address) {
+//     if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
+//         return false;
+//     }
+//     try {
+//         new PublicKey(address); // Uses Solana SDK for robust cryptographic validation
+//         return true;
+//     } catch (e) {
+//         return false;
+//     }
+// }
+//
+// function isValidURL(url) {
+//     if (url === '') return true; // Allow empty string
+//     return isURL(url, { require_protocol: true }); // Require http/https
+// }
+//
+// module.exports = { isValidSolanaAddress, isValidURL };
+
+
+// Assuming isValidSolanaAddress is imported from '../utils/validators'
+const { isValidSolanaAddress } = require('../utils/validators'); 
+
 const daoProposalSchema = new mongoose.Schema({
-    // Title of the DAO proposal.
+    // Title of the DAO proposal. Required.
     title: {
         type: String,
-        required: [true, 'Proposal title is required.'], // Custom error message for clarity
-        trim: true, // Removes leading/trailing whitespace
-        minlength: [5, 'Proposal title must be at least 5 characters long.'], // Minimum length for meaningful titles
-        maxlength: [200, 'Proposal title cannot exceed 200 characters.'] // Maximum length to prevent excessively long titles
+        required: [true, 'Proposal title is required.'],
+        trim: true,
+        minlength: [5, 'Proposal title must be at least 5 characters long.'],
+        maxlength: [200, 'Proposal title cannot exceed 200 characters.']
     },
-    // Detailed description of the DAO proposal.
+    // Detailed description of the DAO proposal. Required.
     description: {
         type: String,
-        required: [true, 'Proposal description is required.'], // Custom error message
+        required: [true, 'Proposal description is required.'],
         trim: true,
-        minlength: [20, 'Proposal description must be at least 20 characters long.'], // Minimum length for detailed descriptions
-        maxlength: [5000, 'Proposal description cannot exceed 5000 characters.'] // Generous maximum length for comprehensive proposals
+        minlength: [20, 'Proposal description must be at least 20 characters long.'],
+        maxlength: [5000, 'Proposal description cannot exceed 5000 characters.']
     },
-    // The wallet address of the proposal's creator. This should be a Solana public key.
+    // The Solana wallet address of the proposal's creator. Required.
     creatorWallet: {
         type: String,
-        required: [true, 'Creator wallet address is required.'], // Custom error message
+        required: [true, 'Creator wallet address is required.'],
         trim: true,
-        // Basic format validation for a Solana public key (base58 encoded).
-        // Actual authentication (e.g., signature verification) should happen in the route/service layer.
         validate: {
-            validator: function(v) {
-                // Regex checks for typical length and characters of a base58 encoded Solana public key.
-                return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v);
-            },
-            message: props => `${props.value} is not a valid Solana wallet address format for the creator!` // Custom validation error message
+            validator: isValidSolanaAddress, // Using the centralized Solana address validator
+            message: props => `${props.value} is not a valid Solana wallet address format for the creator!`
         }
     },
     // Count of 'for' votes received.
     votesFor: {
         type: Number,
-        default: 0, // Defaults to zero
-        min: [0, 'Votes for cannot be negative.'] // Ensures the count is non-negative
+        default: 0,
+        min: [0, 'Votes for cannot be negative.']
     },
     // Count of 'against' votes received.
     votesAgainst: {
         type: Number,
-        default: 0, // Defaults to zero
-        min: [0, 'Votes against cannot be negative.'] // Ensures the count is non-negative
+        default: 0,
+        min: [0, 'Votes against cannot be negative.']
     },
-    // An array of wallet addresses that have already voted on this proposal.
+    // An array of unique wallet addresses that have already voted on this proposal.
     // This helps in preventing duplicate votes from the same wallet.
     voters: {
         type: [String], // An array where each element is a string (wallet address)
@@ -55,22 +78,27 @@ const daoProposalSchema = new mongoose.Schema({
                 // If the array is empty or null, it's valid (no voters yet).
                 if (!votersArray || votersArray.length === 0) return true;
                 // Otherwise, validate that every wallet address in the array conforms to the Solana format.
-                return votersArray.every(wallet => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(wallet));
+                const allWalletsValid = votersArray.every(isValidSolanaAddress); // Use the shared utility
+                if (!allWalletsValid) return false;
+
+                // Ensure no duplicate wallets within the array itself
+                const uniqueVoters = new Set(votersArray);
+                return uniqueVoters.size === votersArray.length;
             },
-            message: 'One or more wallet addresses in the voters list are not in a valid Solana address format.' // Custom error message for array validation
+            message: 'Voters list contains invalid Solana wallet addresses or duplicates.' // Updated message
         }
     },
     // The date and time when the voting period for the proposal ends.
     expiresAt: {
         type: Date,
-        required: [true, 'The expiration date for the proposal is required.'], // Must be provided
+        required: [true, 'The expiration date for the proposal is required.'],
         validate: {
             validator: function(value) {
                 // When creating a new proposal, the expiration date must be in the future.
-                // This check applies specifically at the time of document creation/validation.
+                // This validation applies at the time of document creation/validation.
                 return value > Date.now();
             },
-            message: props => `The expiration date (${props.value}) must be in the future for an active proposal.` // Custom validation error message
+            message: props => `The expiration date (${props.value}) must be in the future for an active proposal.`
         }
     },
     // The current status of the proposal, restricting it to predefined values.
@@ -78,16 +106,16 @@ const daoProposalSchema = new mongoose.Schema({
         type: String,
         enum: {
             values: ['active', 'completed'], // Only 'active' or 'completed' are allowed statuses
-            message: 'Proposal status must be either "active" or "completed".' // Custom error message for invalid enum value
+            message: 'Proposal status must be either "active" or "completed".'
         },
-        default: 'active' // New proposals default to 'active'
+        default: 'active', // New proposals default to 'active'
+        index: true // Add an index for faster lookups by status
     }
 }, {
     // Schema options:
-    // `timestamps: true` automatically adds `createdAt` and `updatedAt` fields to your documents.
+    // `timestamps: true` automatically adds `createdAt` and `updatedAt` fields.
     // `createdAt` stores the timestamp when the document was first created.
     // `updatedAt` stores the timestamp of the last update to the document.
-    // This is a standard and highly recommended practice for tracking document lifecycle.
     timestamps: true
 });
 
