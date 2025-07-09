@@ -1,9 +1,21 @@
+/**
+ * @file Configures and exports a Winston logger instance for the application.
+ * Sets up logging to console in development and to daily rotating files in production,
+ * including a separate file for error logs.
+ */
+
 const winston = require('winston');
-require('winston-daily-rotate-file');
+require('winston-daily-rotate-file'); // Required for daily file rotation
 
+// Environment variable check for log level and file paths
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const LOG_LEVEL = process.env.LOG_LEVEL || (NODE_ENV === 'production' ? 'info' : 'debug'); // Default level based on environment
+const LOG_FILE_PATH = process.env.LOG_FILE_PATH || 'logs/application'; // Base path for general logs
+const ERROR_LOG_FILE_PATH = process.env.ERROR_LOG_FILE_PATH || 'logs/error'; // Base path for error logs
 
-// Define custom log levels if needed, or stick to npm levels
+// Define custom log levels if needed, or stick to npm levels.
+// Using `npm` levels as default is often sufficient and widely understood.
+// If your application requires more granular control, these custom levels are fine.
 const levels = {
     error: 0,
     warn: 1,
@@ -14,6 +26,7 @@ const levels = {
     silly: 6
 };
 
+// Define colors for console output for better readability
 const colors = {
     error: 'red',
     warn: 'yellow',
@@ -24,62 +37,89 @@ const colors = {
     silly: 'grey'
 };
 
+// Add custom colors to Winston
 winston.addColors(colors);
 
-const logFormat = winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.errors({ stack: true }),
-    winston.format.splat(),
-    // NEW: Use json format for production for easier parsing by log aggregators
-    winston.format.json()
+// --- Formats ---
+
+// Format for file transports (JSON for production, easier parsing by log aggregators)
+const fileLogFormat = winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), // Timestamp
+    winston.format.errors({ stack: true }), // Include stack trace for errors
+    winston.format.splat(), // Interpolate %j, %d, etc.
+    winston.format.json() // Output as JSON
 );
 
-const consoleFormat = winston.format.combine(
-    winston.format.colorize({ all: true }),
+// Format for console transport (human-readable)
+const consoleLogFormat = winston.format.combine(
+    winston.format.colorize({ all: true }), // Apply colors to level and message
     winston.format.printf(
-        ({ timestamp, level, message, stack }) => {
+        ({ timestamp, level, message, stack, ...meta }) => { // Include meta for extra data
+            let logMessage = `${timestamp} [${level}] ${message}`;
             if (stack) {
-                return `${timestamp} [${level}] ${message}\n${stack}`;
+                logMessage += `\n${stack}`;
             }
-            return `${timestamp} [${level}] ${message}`;
+            // If there's extra metadata, stringify it (e.g., from `logger.info('User action', { userId: '123' })`)
+            if (Object.keys(meta).length > 0) {
+                logMessage += ` ${JSON.stringify(meta)}`;
+            }
+            return logMessage;
         }
     )
 );
 
+// --- Transports ---
 const transports = [
+    // Daily rotating file for general logs (info and above)
     new winston.transports.DailyRotateFile({
-        filename: 'logs/application-%DATE%.log',
+        filename: `${LOG_FILE_PATH}-%DATE%.log`,
         datePattern: 'YYYY-MM-DD',
-        zippedArchive: true,
-        maxSize: '20m',
-        maxFiles: '14d',
-        level: 'info', // Log info and above to this file
-        format: logFormat
+        zippedArchive: true, // Compress old log files
+        maxSize: '20m', // Max file size before rotation
+        maxFiles: '14d', // Retain logs for 14 days
+        level: LOG_LEVEL, // Use configurable log level
+        format: fileLogFormat,
+        handleExceptions: true // Capture uncaught exceptions to this file
     }),
+    // Daily rotating file specifically for errors
     new winston.transports.DailyRotateFile({
-        filename: 'logs/error-%DATE%.log',
+        filename: `${ERROR_LOG_FILE_PATH}-%DATE%.log`,
         datePattern: 'YYYY-MM-DD',
         zippedArchive: true,
         maxSize: '20m',
-        maxFiles: '14d',
-        level: 'error', // Only log errors to this file
-        format: logFormat
+        maxFiles: '30d', // Keep error logs longer, maybe 30 days
+        level: 'error', // Only log 'error' level messages here
+        format: fileLogFormat,
+        handleExceptions: true // Crucial: Capture uncaught exceptions to this file
     })
 ];
 
-if (NODE_ENV === 'development') {
+// Add console transport only in non-production environments
+if (NODE_ENV !== 'production') {
     transports.push(
         new winston.transports.Console({
-            level: 'debug',
-            format: consoleFormat
+            level: LOG_LEVEL, // Use configurable log level
+            format: consoleLogFormat,
+            handleExceptions: true, // Also capture exceptions to console
+            silent: process.env.NODE_ENV === 'test' // Silence logs during tests if needed
         })
     );
 }
 
+// Create the logger instance
 const logger = winston.createLogger({
-    levels: levels, // Use custom levels
+    levels: levels, // Assign custom levels
     transports: transports,
-    exitOnError: false,
+    exitOnError: false, // Do not exit on handled exceptions, let middleware/process handle it
+    // Default format for all transports if not overridden
+    format: winston.format.json() // Default to JSON, can be overridden per transport
+});
+
+// For unhandled promise rejections (important for async code)
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Optionally, depending on criticality, you might want to exit the process
+    // process.exit(1);
 });
 
 module.exports = logger;
