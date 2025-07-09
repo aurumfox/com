@@ -1,43 +1,56 @@
-// backend/models/Announcement.js
 const mongoose = require('mongoose');
 
+// --- Recommended: Extract validators into a separate utilities file ---
+// This promotes reusability and keeps your models clean.
+// Example content for backend/utils/validators.js:
+// const { PublicKey } = require('@solana/web3.js'); // Make sure 'web3.js' is installed
+//
+// function isValidSolanaAddress(address) {
+//     if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
+//         return false;
+//     }
+//     try {
+//         new PublicKey(address); // Uses Solana SDK for robust cryptographic validation
+//         return true;
+//     } catch (e) {
+//         return false;
+//     }
+// }
+//
+// module.exports = { isValidSolanaAddress };
+
+// Assuming isValidSolanaAddress is imported from '../utils/validators'
+const { isValidSolanaAddress } = require('../utils/validators'); 
+
 const announcementSchema = new mongoose.Schema({
-    // The main text content of the announcement. Must be a string and is required.
+    // The main text content of the announcement.
     text: {
         type: String,
-        required: [true, 'Announcement text is required.'], // Custom error message for validation failure
-        trim: true, // Automatically removes leading/trailing whitespace
-        minlength: [5, 'Announcement text must be at least 5 characters long.'], // Enforce minimum length
-        maxlength: [1000, 'Announcement text cannot exceed 1000 characters.'] // Enforce maximum length
+        required: [true, 'Announcement text is required.'],
+        trim: true,
+        minlength: [5, 'Announcement text must be at least 5 characters long.'],
+        maxlength: [1000, 'Announcement text cannot exceed 1000 characters.']
     },
-    // The wallet address of the author/admin who posted the announcement.
-    // This field holds the public key string.
+    // The Solana wallet address of the admin/publisher who created the announcement.
+    // This field is required and includes schema-level validation for a valid Solana address format.
     authorWallet: {
         type: String,
-        required: [true, 'Author wallet address is required.'], // Custom error message
+        required: [true, 'Author wallet address is required.'],
         trim: true,
-        // Basic validation: Ensures the string loosely matches the format of a Solana public key (base58 encoded).
-        // More robust authorization (e.g., checking against a whitelist of admin wallets,
-        // verifying cryptographic signatures) should be performed in the backend routes/service layer.
         validate: {
-            validator: function(v) {
-                // Regex for typical base58 encoded Solana public key length (32 bytes usually results in 44 characters).
-                return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v);
-            },
-            message: props => `${props.value} is not a valid Solana wallet address format!` // Custom validation error message
+            validator: isValidSolanaAddress, // Using the centralized Solana address validator
+            message: props => `${props.value} is not a valid Solana wallet address!`
         }
-    },
-    // Optional: Original creation date of the announcement.
-    // Consider whether `createdAt` (automatically added by `timestamps: true`) is sufficient for your needs.
-    // If this 'date' field has a distinct business purpose (e.g., a scheduled publish date), keep it.
-    date: {
-        type: Date,
-        default: Date.now // Defaults to the current date/time
     }
+    // Removed the 'date' field. The 'createdAt' field from 'timestamps: true'
+    // serves the same purpose of recording the creation date of the announcement.
+    // If you had a specific need for a *scheduled* or *publish* date distinct from creation,
+    // you would add a field like 'publishDate: { type: Date }' instead.
 }, {
     // Schema options:
-    // timestamps: true automatically adds `createdAt` and `updatedAt` fields to your documents.
-    // `createdAt` stores the creation timestamp, and `updatedAt` stores the last modification timestamp.
+    // `timestamps: true` automatically adds `createdAt` and `updatedAt` fields.
+    // `createdAt` records the exact time the document was created.
+    // `updatedAt` records the time of the last modification.
     timestamps: true
 });
 
