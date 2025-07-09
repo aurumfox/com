@@ -1,5 +1,31 @@
-// backend/models/Ad.js
 const mongoose = require('mongoose');
+
+// --- Recommended: Extract validators into a separate utilities file ---
+// Example: backend/utils/validators.js
+// const { PublicKey } = require('@solana/web3.js'); // Ensure 'web3.js' is installed
+// const isURL = require('validator/lib/isURL');    // Ensure 'validator' is installed (npm install validator)
+
+// function isValidSolanaAddress(address) {
+//     if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
+//         return false;
+//     }
+//     try {
+//         new PublicKey(address); // Uses Solana SDK for robust validation
+//         return true;
+//     } catch (e) {
+//         return false;
+//     }
+// }
+
+// function isValidURL(url) {
+//     if (url === '') return true; // Allow empty string
+//     return isURL(url, { require_protocol: true }); // Require http/https
+// }
+
+// module.exports = { isValidSolanaAddress, isValidURL };
+
+// Assuming validators are imported from '../utils/validators'
+const { isValidSolanaAddress, isValidURL } = require('../utils/validators'); 
 
 const adSchema = new mongoose.Schema({
     // Title of the advertisement. Must be a string and is required.
@@ -19,54 +45,35 @@ const adSchema = new mongoose.Schema({
         maxlength: [500, 'Ad content cannot exceed 500 characters.'] // Reasonable length for ad content
     },
     // The wallet address of the advertiser. This should typically be a Solana public key.
-    // Stored as a String, with a basic validator for base58 format.
+    // Stored as a String, with a validator for base58 format.
     advertiser: {
         type: String,
         required: [true, 'Advertiser wallet address is required.'],
         trim: true,
         validate: {
-            validator: function(v) {
-                // Basic regex for a base58 string typical of Solana public keys (32 bytes / 44 chars base58).
-                // For cryptographic validation, implement checks in your service layer using Solana's SDK.
-                return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v);
-            },
+            validator: isValidSolanaAddress, // Uses the shared validation utility
             message: props => `${props.value} is not a valid Solana wallet address!`
         }
     },
     // Optional URL link associated with the advertisement.
     link: {
         type: String,
-        default: '',
+        default: '', // Empty string by default
         trim: true,
         validate: {
-            validator: function(v) {
-                if (v === '') return true; // Allow empty string
-                // Simple regex for URL validation. Consider 'validator' package for more robust checks.
-                return /^(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/[a-zA-Z0-9]+\.[^\s]{2,}|[a-zA-Z0-9]+\.[^\s]{2,})$/i.test(v);
-            },
+            validator: isValidURL, // Uses the shared URL validation utility
             message: props => `${props.value} is not a valid URL!`
         }
     },
     // Optional URL to an image for the advertisement.
     imageUrl: {
         type: String,
-        default: '',
+        default: '', // Empty string by default
         trim: true,
         validate: {
-            validator: function(v) {
-                if (v === '') return true; // Allow empty string
-                // Same simple URL regex as above.
-                return /^(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/[a-zA-Z0-9]+\.[^\s]{2,}|[a-zA-Z0-9]+\.[^\s]{2,})$/i.test(v);
-            },
+            validator: isValidURL, // Uses the shared URL validation utility
             message: props => `${props.value} is not a valid image URL!`
         }
-    },
-    // Original creation date of the advertisement.
-    // Note: The `timestamps: true` option below will also add `createdAt` and `updatedAt`.
-    // You can remove this `date` field if `createdAt` suffices for your needs.
-    date: {
-        type: Date,
-        default: Date.now
     }
 }, {
     timestamps: true // Automatically adds `createdAt` (creation date) and `updatedAt` (last modification date) fields.
