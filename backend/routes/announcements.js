@@ -1,65 +1,80 @@
-// backend/routes/announcements.js
 const express = require('express');
 const router = express.Router();
+const Joi = require('joi'); // For robust request body validation
 const Announcement = require('../models/Announcement');
-const { PublicKey } = require('@solana/web3.js'); // Required for Solana public key format validation
 
-// --- External Utilities and Configuration (IMPORTANT: You need to set these up) ---
+// --- Centralized Utilities and Configuration ---
+// These files MUST be created and properly implemented in your backend/utils directory.
 
-// 1. Solana Utility for Signature Verification:
-//    You MUST create this file (e.g., backend/utils/solanaUtils.js)
-//    Example content for backend/utils/solanaUtils.js:
-/*
-    const { PublicKey } = require('@solana/web3.js');
-    const bs58 = require('bs58');
-    const nacl = require('tweetnacl'); // For Ed25519 verification
+// 1. Solana Utility for Signature Verification (backend/utils/solanaUtils.js)
+//    - This is CRUCIAL for proving actual wallet ownership and preventing spoofing.
+//    - Make sure it's implemented to verify a message signed by a Solana wallet.
+const { verifySignature } = require('../utils/solanaUtils'); // Ensure this file exists and is functional
 
-    async function verifySignature(publicKeyString, message, signatureString) {
-        try {
-            const publicKey = new PublicKey(publicKeyString);
-            const signature = bs58.decode(signatureString);
-            const messageBytes = new TextEncoder().encode(message); // Ensure message encoding matches frontend
+// 2. Validators for Solana Addresses (backend/utils/validators.js)
+//    - For consistent validation logic across all models and routes.
+const { isValidSolanaAddress } = require('../utils/validators'); 
 
-            // Perform cryptographic verification using nacl (Ed25519 for Solana)
-            const isVerified = nacl.sign.detached.verify(
-                messageBytes,
-                signature,
-                publicKey.toBytes()
-            );
-            return isVerified;
-        } catch (error) {
-            console.error('Error during signature verification:', error);
-            // In production, handle specific errors (e.g., malformed signature)
-            return false;
-        }
-    }
-    module.exports = { verifySignature };
-*/
-// Uncomment the line below once you have created and implemented the utility:
-// const { verifySignature } = require('../utils/solanaUtils');
+// 3. Admin Wallets Configuration:
+//    - LOAD THIS SECURELY, E.G., FROM ENVIRONMENT VARIABLES (process.env.ADMIN_WALLETS).
+//    - For demonstration, we'll keep it hardcoded, but this is NOT PRODUCTION-READY.
+//    - ADMIN_WALLETS should be a comma-separated string in your .env (e.g., "ADDR1,ADDR2")
+const ADMIN_WALLETS_ENV = process.env.ADMIN_WALLETS;
+const AUTHORIZED_ADMIN_WALLETS = ADMIN_WALLETS_ENV 
+    ? ADMIN_WALLETS_ENV.split(',').map(addr => addr.trim()) 
+    : [
+        "YOUR_ADMIN_SOLANA_WALLET_ADDRESS_1", // <<--- REPLACE WITH REAL ADMIN WALLET ADDRESSES
+        "YOUR_ADMIN_SOLANA_WALLET_ADDRESS_2"  // <<--- IMPORTANT: DO NOT USE IN PRODUCTION WITHOUT SECURE LOADING
+    ];
+if (AUTHORIZED_ADMIN_WALLETS.includes("YOUR_ADMIN_SOLANA_WALLET_ADDRESS_1")) {
+    console.warn("\nWARNING: ADMIN_WALLETS are still placeholders. Please configure ADMIN_WALLETS environment variable securely for production.\n");
+}
 
-// 2. Admin Wallets Configuration:
-//    This should be loaded securely, ideally from environment variables.
-//    In your .env, you'd have something like: ADMIN_WALLETS=address1,address2,address3
-//    Then, in your main app.js or a config file, you'd load it:
-//    const ADMIN_WALLETS_ENV = process.env.ADMIN_WALLETS;
-//    const AUTHORIZED_ADMIN_WALLETS = ADMIN_WALLETS_ENV ? ADMIN_WALLETS_ENV.split(',') : [];
-const AUTHORIZED_ADMIN_WALLETS = [
-    "YOUR_ADMIN_SOLANA_WALLET_ADDRESS_1", // <<--- REPLACE WITH REAL ADMIN WALLET ADDRESSES
-    "YOUR_ADMIN_SOLANA_WALLET_ADDRESS_2"  // <<--- MAKE SURE THESE MATCH YOUR DEPLOYED ADMIN WALLETS
-];
+
+// --- Joi Schema for Announcement Creation Request Body Validation ---
+// This schema defines the expected structure and validation rules for the incoming request body.
+const announcementCreationSchema = Joi.object({
+    text: Joi.string().trim().min(5).max(1000).required()
+        .messages({
+            'string.empty': 'Announcement text cannot be empty.',
+            'string.min': 'Announcement text must be at least 5 characters long.',
+            'string.max': 'Announcement text cannot exceed 1000 characters.',
+            'any.required': 'Announcement text is required.'
+        }),
+    authorWallet: Joi.string().trim().required()
+        .custom((value, helpers) => { // Custom Joi validation using our utility
+            if (!isValidSolanaAddress(value)) {
+                return helpers.message('The provided author wallet address is not a valid Solana public key format.');
+            }
+            return value;
+        })
+        .messages({
+            'string.empty': 'Author wallet address cannot be empty.',
+            'any.required': 'Author wallet address is required.'
+        }),
+    signature: Joi.string().trim().required() // Signature is required for Web3 auth
+        .messages({
+            'string.empty': 'Wallet signature cannot be empty.',
+            'any.required': 'Wallet signature is required for authentication.'
+        })
+});
 
 
 // --- Middleware for Admin Authorization ---
 // This middleware checks if the requesting wallet is an authorized administrator
-// and optionally verifies the wallet's signature.
+// AND verifies the wallet's signature for the request.
 const authorizeAdmin = async (req, res, next) => {
-    const { authorWallet, signature } = req.body;
-
-    // Ensure authorWallet is provided for authorization attempt
-    if (!authorWallet) {
-        return res.status(401).json({ message: 'Authorization required: Author wallet address is missing in the request body.' });
+    // Validate request body for authorization details first
+    const { error, value } = announcementCreationSchema.validate(req.body);
+    if (error) {
+        console.warn('Joi validation failed during admin authorization:', error.details.map(d => d.message));
+        return res.status(400).json({ 
+            message: 'Invalid request data for authorization.', 
+            errors: error.details.map(d => d.message) 
+        });
     }
+
+    const { text, authorWallet, signature } = value; // Use the validated values
 
     // 1. Whitelist Check: Verify if the provided wallet address is in the list of authorized admins.
     if (!AUTHORIZED_ADMIN_WALLETS.includes(authorWallet)) {
@@ -69,15 +84,8 @@ const authorizeAdmin = async (req, res, next) => {
 
     // 2. Web3 Signature Verification (CRUCIAL for proving actual wallet ownership)
     // This step verifies that the request was cryptographically signed by the 'authorWallet'.
-    /*
-    // Uncomment this entire block after implementing verifySignature utility
-    if (!signature) {
-        return res.status(401).json({ message: 'Authentication failed: Wallet signature is missing for this admin action.' });
-    }
-
-    // The message that was signed by the frontend. This must exactly match what was signed.
-    // Consider adding a nonce for replay attack protection in production scenarios.
-    const messageToVerify = JSON.stringify({ text, authorWallet }); // Example: Signing relevant data
+    // For production, consider using a nonce to prevent replay attacks.
+    const messageToVerify = JSON.stringify({ text, authorWallet }); // Signing the relevant data
 
     try {
         const isSignatureValid = await verifySignature(authorWallet, messageToVerify, signature);
@@ -86,12 +94,12 @@ const authorizeAdmin = async (req, res, next) => {
             return res.status(403).json({ message: 'Authentication failed: Invalid wallet signature.' });
         }
     } catch (sigError) {
-        console.error('Server error during signature verification:', sigError);
+        console.error('Server error during signature verification in authorizeAdmin:', sigError);
         return res.status(500).json({ message: 'Internal server error during signature verification. Please try again later.' });
     }
-    */
 
-    // If all checks pass (whitelist and optional signature), proceed to the route handler
+    // If all checks pass (Joi validation, whitelist, and signature), proceed
+    req.validatedBody = value; // Attach validated data to request object for reuse in route
     next();
 };
 
@@ -100,62 +108,48 @@ const authorizeAdmin = async (req, res, next) => {
 // Fetches all announcements from the database, sorted by their creation date (newest first).
 router.get('/', async (req, res) => {
     try {
-        // Using 'createdAt' for sorting, which is automatically added by Mongoose's `timestamps: true`
         const announcements = await Announcement.find().sort({ createdAt: -1 });
         res.json(announcements);
     } catch (error) {
-        console.error('Error fetching announcements:', error); // Log full error on the server
-        res.status(500).json({ message: 'Failed to retrieve announcements. An unexpected error occurred.' }); // Generic message for client
+        console.error('Error fetching announcements:', error);
+        res.status(500).json({ message: 'Failed to retrieve announcements. An unexpected error occurred.' });
     }
 });
 
 
 // --- Route: Post a New Announcement ---
-// This route is protected by the `authorizeAdmin` middleware.
-// Requires: 'text' (content of the announcement) and 'authorWallet' (admin's public key).
-// Assumes 'signature' is also provided in the request body for verification by `authorizeAdmin`.
+// This route is protected by the `authorizeAdmin` middleware, which handles
+// request body validation (Joi) and Web3 signature verification.
 router.post('/', authorizeAdmin, async (req, res) => {
-    const { text, authorWallet } = req.body; // 'signature' is consumed by authorizeAdmin middleware
+    // The request body has already been validated and authorized by `authorizeAdmin` middleware.
+    // We can directly use `req.validatedBody` which contains the clean, validated data.
+    const { text, authorWallet } = req.validatedBody; 
 
-    // 1. Basic Input Validation (early exit for obviously missing data)
-    // Mongoose schema validation will catch more detailed issues.
-    if (!text || !authorWallet) {
-        return res.status(400).json({ message: 'Announcement text and author wallet address are both required fields.' });
-    }
-
-    // 2. Validate Solana Public Key Format: Ensure 'authorWallet' is syntactically correct.
-    try {
-        new PublicKey(authorWallet); // Throws an error if 'authorWallet' is not a valid base58-encoded 32-byte public key.
-    } catch (pkError) {
-        console.error('Invalid Solana wallet address format provided:', pkError.message);
-        return res.status(400).json({ message: 'The provided author wallet address is not a valid Solana public key format.' });
-    }
-
-    // 3. Create a new Announcement document based on the Mongoose model.
+    // 1. Create a new Announcement document based on the Mongoose model.
     const newAnnouncement = new Announcement({
         text,
         authorWallet
-        // 'createdAt' and 'updatedAt' will be automatically populated by Mongoose due to `timestamps: true`
-        // The 'date' field will default to `Date.now` as per your schema. Consider if `createdAt` suffices.
+        // `createdAt` and `updatedAt` will be automatically populated by Mongoose.
     });
 
-    // 4. Save the new announcement to the database.
+    // 2. Save the new announcement to the database.
     try {
         const savedAnnouncement = await newAnnouncement.save();
         res.status(201).json({
-            message: 'Announcement successfully posted and saved!',
-            announcement: savedAnnouncement // Return the newly created announcement object
+            message: 'Announcement successfully posted!',
+            announcement: savedAnnouncement
         });
     } catch (error) {
-        // 5. Handle Mongoose Validation Errors (e.g., from min/max length, custom validators in schema)
+        // 3. Handle Mongoose Validation Errors (e.g., if any schema-level consistency checks fail)
+        // Joi catches most errors upfront, but Mongoose might catch edge cases or DB-specific issues.
         if (error.name === 'ValidationError') {
             const errors = Object.values(error.errors).map(err => err.message);
-            console.warn('Mongoose validation failed for new announcement:', errors);
-            return res.status(400).json({ message: 'Validation failed for announcement data.', errors });
+            console.warn('Mongoose validation failed during save for new announcement:', errors);
+            return res.status(400).json({ message: 'Database validation failed for announcement data.', errors });
         }
-        // 6. Handle Other Potential Server-Side Errors during the save operation.
+        // 4. Handle Other Potential Server-Side Errors during the save operation.
         console.error('Error saving new announcement to database:', error);
-        res.status(500).json({ message: 'Failed to post announcement due to an unexpected server error. Please try again.' });
+        res.status(500).json({ message: 'Failed to post announcement due to an unexpected server error. Please try again.', error: error.message });
     }
 });
 
