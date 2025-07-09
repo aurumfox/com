@@ -1,119 +1,90 @@
-const request = require('supertest');
-const app = require('../../app'); // Your main express app
-const mongoose = require('mongoose');
-const User = require('../../models/User');
-const Announcement = require('../../models/Announcement');
-const { generateToken } = require('../../utils/auth');
-const { ROLES } = require('../../config/constants');
+const jwt = require('jsonwebtoken');
+const logger = require('../config/logger');
+const ApiError = require('../utils/ApiError'); // Import your custom ApiError
+const { ROLES } = require('../config/constants'); // Import ROLES constant (assuming you have this)
 
-// Use a separate test database
-const MONGODB_TEST_URI = process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/solana_dapp_test_db';
+/**
+ * Middleware to authenticate JWT (JSON Web Token).
+ * Extracts the token from the Authorization header and verifies it.
+ * If valid, attaches the decoded user payload to `req.user`.
+ *
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {function} next - Express next middleware function.
+ */
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    // Expected format: "Bearer TOKEN"
+    const token = authHeader && authHeader.split(' ')[1]; 
 
-let adminToken;
-let userToken;
-let adminUser;
-let regularUser;
+    if (!token) {
+        logger.warn('Authentication attempt blocked: No token provided in Authorization header.');
+        // Use ApiError for consistent error responses, e.g., 401 Unauthorized
+        return next(ApiError.unauthorized('Authentication token required.'));
+    }
 
-beforeAll(async () => {
-    // Connect to test DB
-    await mongoose.connect(MONGODB_TEST_URI);
-    console.log('Connected to test DB');
+    // IMPORTANT: Ensure JWT_SECRET is defined in your environment variables.
+    // This is a critical security parameter.
+    if (!process.env.JWT_SECRET) {
+        logger.error('JWT_SECRET environment variable is not defined!');
+        // This is a critical server misconfiguration. Alert immediately.
+        return next(ApiError.internal('Server configuration error: JWT secret missing.'));
+    }
 
-    // Clean up DB before tests
-    await User.deleteMany({});
-    await Announcement.deleteMany({});
-
-    // Create test users
-    adminUser = await User.create({
-        walletAddress: 'TEST_ADMIN_WALLET',
-        password: 'adminpassword',
-        role: ROLES.ADMIN
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            // Handle specific JWT errors for clearer client feedback
+            if (err.name === 'TokenExpiredError') {
+                logger.warn(`Authentication failed: Token expired for user ${user ? user.id : 'unknown'}.`);
+                return next(ApiError.unauthorized('Authentication token has expired. Please log in again.'));
+            }
+            // For any other JWT verification errors (e.g., malformed, invalid signature)
+            logger.warn(`Authentication failed: Invalid token. Error: ${err.message}`);
+            // Use 403 Forbidden as the token is "forbidden" due to its invalidity, not just missing.
+            return next(ApiError.forbidden('Invalid authentication token. Access denied.')); 
+        }
+        
+        // Attach the decoded user payload to the request object.
+        // Ensure your JWT payload includes necessary user data like 'id', 'walletAddress', 'role'.
+        req.user = user; 
+        logger.debug(`User authenticated: ${req.user.walletAddress} (Role: ${req.user.role})`);
+        next(); // Proceed to the next middleware or route handler
     });
-    regularUser = await User.create({
-        walletAddress: 'TEST_USER_WALLET',
-        password: 'userpassword',
-        role: ROLES.USER
-    });
+};
 
-    adminToken = generateToken(adminUser._id);
-    userToken = generateToken(regularUser._id);
-});
+/**
+ * Middleware to authorize access based on user role(s).
+ * This middleware *must* be used after `authenticateToken`, as it relies on `req.user` being populated.
+ *
+ * @param {string|string[]} allowedRoles - A single role string (e.g., 'admin')
+ * or an array of role strings (e.g., ['admin', 'publisher']) that are allowed to access the route.
+ * It's highly recommended to use constants from your `ROLES` object (e.g., `ROLES.ADMIN`).
+ * @returns {function} Express middleware function.
+ */
+const authorizeRole = (allowedRoles) => (req, res, next) => {
+    // Crucial check: Ensure `req.user` exists and has a `role` property.
+    // If not, it suggests `authenticateToken` failed or was skipped.
+    if (!req.user || !req.user.role) {
+        logger.error('Authorization failed: User not authenticated or role missing on token payload. Ensure authenticateToken runs before authorizeRole.');
+        // This indicates a severe logical flow error or a malformed token.
+        return next(ApiError.internal('Authentication context missing for authorization check.')); 
+    }
 
-afterAll(async () => {
-    // Clean up DB after tests
-    await User.deleteMany({});
-    await Announcement.deleteMany({});
-    // Disconnect from DB
-    await mongoose.connection.close();
-    console.log('Disconnected from test DB');
-});
+    // Ensure `allowedRoles` is an array for consistent checking, even if a single role is passed.
+    const rolesToCheck = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 
-describe('Announcements API', () => {
-    it('should get all announcements (public access)', async () => {
-        await Announcement.create({ text: 'Test Announcement 1' });
-        await Announcement.create({ text: 'Test Announcement 2' });
+    // Check if the authenticated user's role is included in the list of allowed roles.
+    if (!rolesToCheck.includes(req.user.role)) {
+        logger.warn(`Authorization denied for user ${req.user.walletAddress} (Role: ${req.user.role}): Required roles: [${rolesToCheck.join(', ')}].`);
+        // Use 403 Forbidden as the user is authenticated but not authorized for this specific resource.
+        return next(ApiError.forbidden(`Access denied. Requires one of the following roles: ${rolesToCheck.join(', ')}.`));
+    }
 
-        const res = await request(app).get('/api/v1/announcements');
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.success).toBe(true);
-        expect(res.body.data.length).toBeGreaterThanOrEqual(2);
-    });
+    logger.debug(`Authorization granted for user ${req.user.walletAddress} (Role: ${req.user.role}) for route requiring [${rolesToCheck.join(', ')}].`);
+    next(); // User is authorized, proceed to the next middleware or route handler.
+};
 
-    it('should allow admin to create an announcement', async () => {
-        const res = await request(app)
-            .post('/api/v1/announcements')
-            .set('Authorization', `Bearer ${adminToken}`)
-            .send({ text: 'New Announcement by Admin' });
-
-        expect(res.statusCode).toEqual(201);
-        expect(res.body.success).toBe(true);
-        expect(res.body.data.text).toEqual('New Announcement by Admin');
-    });
-
-    it('should prevent regular user from creating an announcement', async () => {
-        const res = await request(app)
-            .post('/api/v1/announcements')
-            .set('Authorization', `Bearer ${userToken}`)
-            .send({ text: 'New Announcement by User' });
-
-        expect(res.statusCode).toEqual(403); // Forbidden
-        expect(res.body.success).toBe(false);
-        expect(res.body.message).toContain('Not authorized as admin');
-    });
-
-    it('should prevent unauthenticated user from creating an announcement', async () => {
-        const res = await request(app)
-            .post('/api/v1/announcements')
-            .send({ text: 'New Announcement by Guest' });
-
-        expect(res.statusCode).toEqual(401); // Unauthorized
-        expect(res.body.success).toBe(false);
-        expect(res.body.message).toContain('Not authorized, no token');
-    });
-
-    it('should allow admin to update an announcement', async () => {
-        const announcement = await Announcement.create({ text: 'Original Text' });
-        const res = await request(app)
-            .put(`/api/v1/announcements/${announcement._id}`)
-            .set('Authorization', `Bearer ${adminToken}`)
-            .send({ text: 'Updated Text by Admin' });
-
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.success).toBe(true);
-        expect(res.body.data.text).toEqual('Updated Text by Admin');
-    });
-
-    it('should allow admin to delete an announcement', async () => {
-        const announcement = await Announcement.create({ text: 'To be deleted' });
-        const res = await request(app)
-            .delete(`/api/v1/announcements/${announcement._id}`)
-            .set('Authorization', `Bearer ${adminToken}`);
-
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.success).toBe(true);
-        expect(res.body.message).toContain('deleted successfully');
-
-        const check = await Announcement.findById(announcement._id);
-        expect(check).toBeNull();
-    });
-});
+module.exports = {
+    authenticateToken,
+    authorizeRole
+};
