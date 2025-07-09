@@ -1,135 +1,157 @@
-// backend/models/NFT.js
 const mongoose = require('mongoose');
 
-// Helper function for Solana address validation
-// It's highly recommended to move this into a shared utility file (e.g., `utils/validators.js`)
-// if you plan to use it across multiple Mongoose models (like DaoProposal and Game).
-const isValidSolanaAddress = (address) => {
-    // Basic validation for Solana public key format.
-    // Solana addresses are base58 encoded and typically between 32 and 44 characters long.
-    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
-};
+// --- Recommended: Extract validators into a separate utilities file ---
+// This promotes reusability and keeps your models clean.
+// Example content for backend/utils/validators.js:
+// const { PublicKey } = require('@solana/web3.js'); // Make sure 'web3.js' is installed
+// const isURL = require('validator/lib/isURL');    // Make sure 'validator' is installed (npm install validator)
+
+// function isValidSolanaAddress(address) {
+//     if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
+//         return false;
+//     }
+//     try {
+//         new PublicKey(address); // Uses Solana SDK for robust cryptographic validation
+//         return true;
+//     } catch (e) {
+//         return false;
+//     }
+// }
+//
+// function isValidURL(url) {
+//     if (url === '') return true; // Allow empty string
+//     return isURL(url, { require_protocol: true }); // Require http/https
+// }
+//
+// module.exports = { isValidSolanaAddress, isValidURL };
+
+// Assuming isValidSolanaAddress and isValidURL are imported from '../utils/validators'
+const { isValidSolanaAddress, isValidURL } = require('../utils/validators'); 
 
 // Define the Mongoose schema for an NFT
 const nftSchema = new mongoose.Schema({
-    // Name of the NFT (e.g., "My Awesome NFT #1")
+    // Name of the NFT (e.g., "My Awesome NFT #1"). Required.
     name: {
         type: String,
-        required: [true, 'NFT name is required.'], // Name is mandatory
-        trim: true, // Remove leading/trailing whitespace
-        minlength: [1, 'NFT name must not be empty.'], // Ensure the name is not just whitespace
-        maxlength: [100, 'NFT name cannot exceed 100 characters.'] // Limit name length for consistency
+        required: [true, 'NFT name is required.'],
+        trim: true,
+        minlength: [1, 'NFT name must not be empty.'],
+        maxlength: [100, 'NFT name cannot exceed 100 characters.']
     },
-    // Detailed description of the NFT, providing context and unique features
+    // Detailed description of the NFT, providing context and unique features. Required.
     description: {
         type: String,
-        required: [true, 'NFT description is required.'], // Description is mandatory
+        required: [true, 'NFT description is required.'],
         trim: true,
-        minlength: [10, 'NFT description must be at least 10 characters long.'], // Ensure a meaningful description
-        maxlength: [2000, 'NFT description cannot exceed 2000 characters.'] // Generous length for detailed descriptions
+        minlength: [10, 'NFT description must be at least 10 characters long.'],
+        maxlength: [2000, 'NFT description cannot exceed 2000 characters.']
     },
-    // URL pointing to the NFT's image (e.g., IPFS gateway link, Arweave URL, or your server's path)
+    // URL pointing to the NFT's image (e.g., IPFS gateway link, Arweave URL, or your server's path). Required.
     image: {
         type: String,
-        required: [true, 'NFT image URL is required.'], // Image URL is mandatory
+        required: [true, 'NFT image URL is required.'],
         trim: true,
-        maxlength: [500, 'Image URL cannot exceed 500 characters.'], // Limit URL length
+        maxlength: [500, 'Image URL cannot exceed 500 characters.'],
         validate: {
-            validator: function(v) {
-                // Basic regex validation for a URL format.
-                // This does not guarantee the URL is accessible or points to an image.
-                return /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(v);
-            },
-            message: props => `${props.value} is not a valid image URL.` // Custom error for invalid URL format
+            validator: isValidURL, // Using the centralized URL validator
+            message: props => `${props.value} is not a valid image URL.`
         }
     },
-    // The unique Solana mint address (public key) for this NFT.
-    // This is the on-chain identifier for the NFT.
+    // The unique Solana mint address (public key) for this NFT. On-chain identifier. Required.
     mint: {
         type: String,
         unique: true, // Ensures every NFT document has a unique mint address
-        required: [true, 'NFT mint address is required.'], // Mint address is mandatory
+        required: [true, 'NFT mint address is required.'],
         trim: true,
         validate: {
-            validator: isValidSolanaAddress, // Validate format using the helper function
-            message: props => `${props.value} is not a valid Solana mint address format.` // Custom error message
+            validator: isValidSolanaAddress, // Using the centralized Solana address validator
+            message: props => `${props.value} is not a valid Solana mint address format.`
         }
     },
-    // The Solana wallet address of the current owner of this NFT.
+    // The Solana wallet address of the current owner of this NFT. Required.
     owner: {
         type: String,
-        required: [true, 'NFT owner wallet address is required.'], // Owner address is mandatory
+        required: [true, 'NFT owner wallet address is required.'],
         trim: true,
         validate: {
-            validator: isValidSolanaAddress, // Validate format using the helper function
-            message: props => `${props.value} is not a valid Solana owner wallet address format.` // Custom error message
+            validator: isValidSolanaAddress, // Using the centralized Solana address validator
+            message: props => `${props.value} is not a valid Solana owner wallet address format.`
         }
     },
-    // The Solana wallet address of the original creator of the NFT.
+    // The Solana wallet address of the original creator of the NFT. Required.
     creatorWallet: {
         type: String,
-        required: [true, 'NFT creator wallet address is required.'], // Creator address is mandatory
+        required: [true, 'NFT creator wallet address is required.'],
         trim: true,
         validate: {
-            validator: isValidSolanaAddress, // Validate format using the helper function
-            message: props => `${props.value} is not a valid Solana creator wallet address format.` // Custom error message
+            validator: isValidSolanaAddress, // Using the centralized Solana address validator
+            message: props => `${props.value} is not a valid Solana creator wallet address format.`
         }
     },
-    // NFT attributes, typically stored as an array of objects (e.g., [{ "trait_type": "Color", "value": "Red" }]).
-    // Using `mongoose.Schema.Types.Mixed` provides flexibility to store arbitrary data structures.
-    // If attributes have a fixed structure, consider defining a sub-schema or a more specific array of objects.
+    // NFT attributes, typically an array of objects like [{ "trait_type": "Color", "value": "Red" }].
+    // Using `mongoose.Schema.Types.Mixed` offers flexibility.
     attributes: {
-        type: [mongoose.Schema.Types.Mixed], // Array of mixed types allows varied attribute objects
-        default: [], // Defaults to an empty array if no attributes are provided
-        // Optional: Add custom validation here if you need to enforce specific structures for each attribute object.
-        // For example, to ensure each attribute has `trait_type` and `value`.
+        type: [mongoose.Schema.Types.Mixed],
+        default: [],
+        // Optional: Add custom validation if you need to enforce specific structures for each attribute object.
+        // For example, to ensure each attribute has 'trait_type' and 'value'.
+        // This is a common pattern for NFT metadata validation.
+        validate: {
+            validator: function(attrs) {
+                if (!attrs || attrs.length === 0) return true; // Empty array is valid
+                return attrs.every(attr => 
+                    typeof attr === 'object' && 
+                    attr !== null && 
+                    'trait_type' in attr && typeof attr.trait_type === 'string' && attr.trait_type.trim().length > 0 &&
+                    'value' in attr && (typeof attr.value === 'string' || typeof attr.value === 'number') // Value can be string or number
+                );
+            },
+            message: 'Each attribute must be an object with non-empty "trait_type" (string) and "value" (string or number).'
+        }
     },
     // Boolean flag indicating whether the NFT is currently listed for sale on a marketplace.
     isListed: {
         type: Boolean,
-        default: false // NFTs are not listed by default
+        default: false
     },
     // The price of the NFT in SOL (or other cryptocurrency) if it is listed for sale.
     price: {
         type: Number,
-        default: null, // Price is null if not listed
-        min: [0, 'Price cannot be negative.'], // Price must be zero or positive
+        default: null,
+        min: [0, 'Price cannot be negative.'],
         // Custom validator to enforce logical consistency between `isListed` and `price`.
-        // If `isListed` is true, `price` must be a non-null number.
-        // If `isListed` is false, `price` must be null.
         validate: {
             validator: function(value) {
                 if (this.isListed && (value === null || value === undefined)) {
                     return false; // If listed, price cannot be null or undefined
                 }
                 if (!this.isListed && (value !== null && value !== undefined)) {
-                    return false; // If not listed, price must be null or undefined
+                    // If not listed, price must be null. Allow 0 if it represents "not listed"
+                    // or explicit handling for "free" NFTs. For now, enforcing null.
+                    return false; 
                 }
                 return true;
             },
-            message: 'Price must be specified if listed for sale, and null if not listed.' // Custom error message
+            message: 'Price must be a number if listed for sale, and null if not listed.'
         }
     },
     // Date representing when the NFT was minted or acquired by the initial owner.
-    // This is distinct from `createdAt` which tracks when the record was added to *this* database.
+    // This is distinct from `createdAt` (when the record was added to *this* database).
     acquisitionDate: {
         type: Date,
-        default: Date.now // Defaults to the current date if not provided
+        default: Date.now
     }
 }, {
     // Schema options:
-    // `timestamps: true` automatically adds two fields:
-    // `createdAt`: Date the document was first created.
-    // `updatedAt`: Date the document was last updated.
-    // These are invaluable for tracking changes and auditing.
+    // `timestamps: true` automatically adds `createdAt` and `updatedAt` fields.
     timestamps: true
 });
 
 // Define indexes to improve query performance on frequently searched fields.
 // Mongoose automatically creates a unique index for `mint` due to `unique: true`.
-nftSchema.index({ owner: 1 }); // Index for efficient lookup of NFTs by owner
-nftSchema.index({ creatorWallet: 1 }); // Index for efficient lookup of NFTs by creator
-// Compound index for querying listed NFTs by price (e.g., for marketplace listings)
-nftSchema.index({ isListed: 1, price: 1 });
+nftSchema.index({ owner: 1 });
+nftSchema.index({ creatorWallet: 1 });
+nftSchema.index({ isListed: 1, price: 1 }); // Compound index for marketplace listings
+nftSchema.index({ name: 1 }); // Adding an index on name for search/sorting
 
 module.exports = mongoose.model('NFT', nftSchema);
