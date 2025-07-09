@@ -1,81 +1,82 @@
-// backend/routes/nfts.js
 const express = require('express');
 const router = express.Router();
 
 // --- Import Controller Functions ---
-// These functions contain the core logic for handling each NFT-related request,
-// including database interactions, Solana blockchain calls, and error handling.
+// These functions encapsulate the business logic for each NFT-related operation.
 const {
     getMarketplaceNfts,   // Retrieves all NFTs listed for sale
     getUserNfts,          // Retrieves NFTs owned by a specific user wallet
     getNftListingDetails, // Retrieves details of a single NFT listing
-    mintNft,              // Handles minting a new NFT (blockchain + DB)
-    listNftForSale,       // Handles listing an NFT for sale
-    buyNft,               // Handles purchasing an NFT
-    transferNft,          // Handles transferring an NFT
-    // Optional Admin/Dev CRUD operations (uncomment as needed in router)
-    // getNfts,             // For getting all NFTs (e.g., for admin panel)
-    // updateNft,           // For updating NFT metadata
-    // deleteNft            // For deleting an NFT record
+    mintNft,              // Handles minting a new NFT (blockchain interaction + DB record creation)
+    listNftForSale,       // Handles listing an existing NFT for sale on the marketplace
+    buyNft,               // Handles the purchase of an NFT
+    transferNft,          // Handles updating NFT ownership in DB after an on-chain transfer
+    // Optional Admin/Dev CRUD operations (uncomment and implement as needed in controller)
+    // getNfts,
+    // updateNft,
+    // deleteNft
 } = require('../controllers/nftController');
 
 // --- Import Middleware & Utilities ---
-// Centralized authentication, authorization, file upload, and validation.
+// Essential components for authentication, authorization, file handling, and validation.
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
-const upload = require('../utils/multer'); // Configured Multer instance for file uploads
+const upload = require('../utils/multer'); // Configured Multer instance for handling file uploads
 const { ROLES } = require('../utils/constants'); // Constants for user roles (e.g., ADMIN, DEVELOPER)
-const { validate, schemas } = require('../middleware/validationMiddleware'); // Joi schemas for request body validation
+const { validate, schemas } = require('../middleware/validationMiddleware'); // Joi schemas and validation middleware
 
 // --- Public NFT Endpoints ---
-// These routes are accessible without authentication.
+// These routes do not require any user authentication.
 router.get('/marketplace', getMarketplaceNfts);
-router.get('/user/:walletAddress', getUserNfts);
-router.get('/listing/:nftId', getNftListingDetails);
+router.get('/user/:walletAddress', getUserNfts); // :walletAddress should be validated in controller or a Joi param schema
+router.get('/listing/:nftId', getNftListingDetails); // :nftId should be validated in controller or a Joi param schema
 
-// --- Authenticated NFT Endpoints ---
+// --- Authenticated & Authorized NFT Endpoints ---
 // These routes require a valid JWT token. Some also require specific user roles.
 
 // POST /api/nfts/mint
 // Handles the minting of a new NFT. Requires an image file upload and specific roles.
+// Expects 'nftFile' as the field name for the file in multipart/form-data.
 router.post(
     '/mint',
-    authenticateToken,                             // Ensures user is logged in
-    authorizeRole([ROLES.ADMIN, ROLES.DEVELOPER]), // Restricts access to Admin/Developer
-    upload.single('nftFile'),                      // Handles single file upload with field name 'nftFile'
-    validate(schemas.nfts.create),                 // Validates the request body for NFT creation
-    mintNft                                        // Calls the controller function to execute minting logic
+    authenticateToken,                             // 1. Authenticate the requesting user.
+    authorizeRole([ROLES.ADMIN, ROLES.DEVELOPER]), // 2. Authorize based on roles.
+    upload.single('nftFile'),                      // 3. Process file upload. File details are in req.file.
+    validate(schemas.nfts.create),                 // 4. Validate request body (e.g., title, description, creatorWallet).
+                                                   //    req.body is available here even with multer.
+                                                   //    req.validatedBody will contain the validated non-file fields.
+    mintNft                                        // 5. Controller handles the minting logic, accessing req.file and req.validatedBody.
 );
 
 // POST /api/nfts/list
 // Endpoint to list an NFT for sale. Requires authentication.
 router.post(
     '/list',
-    authenticateToken,                      // Ensures user is logged in
-    validate(schemas.nfts.list),            // Validates the request body for listing (nftId, price, sellerWallet)
-    listNftForSale                          // Calls the controller function to handle listing logic
+    authenticateToken,                      // 1. Authenticate the requesting user.
+    validate(schemas.nfts.list),            // 2. Validate request body (e.g., nftId, price, sellerWallet, and CRITICALLY, a signature).
+    listNftForSale                          // 3. Controller handles listing logic, including on-chain signature verification if required.
 );
 
 // POST /api/nfts/buy
-// Processes the purchase of an NFT. Requires authentication and transaction signature.
+// Processes the purchase of an NFT. Requires authentication.
 router.post(
     '/buy',
-    authenticateToken,                      // Ensures user is logged in
-    validate(schemas.nfts.buy),             // Validates the request body for purchase (nftId, newOwnerWallet, transactionSignature)
-    buyNft                                  // Calls the controller function to handle purchase logic
+    authenticateToken,                      // 1. Authenticate the requesting user.
+    validate(schemas.nfts.buy),             // 2. Validate request body (e.g., nftId, newOwnerWallet, CRITICALLY, transactionSignature).
+    buyNft                                  // 3. Controller handles purchase logic, including on-chain transaction verification.
 );
 
 // POST /api/nfts/transfer
-// Updates NFT ownership after an on-chain transfer. Requires authentication and transaction signature.
+// Updates NFT ownership after an on-chain transfer. Requires authentication.
 router.post(
     '/transfer',
-    authenticateToken,                      // Ensures user is logged in
-    validate(schemas.nfts.transfer),        // Validates the request body for transfer
-    transferNft                             // Calls the controller function to handle transfer logic
+    authenticateToken,                      // 1. Authenticate the requesting user.
+    validate(schemas.nfts.transfer),        // 2. Validate request body (e.g., nftId, fromWallet, toWallet, CRITICALLY, transactionSignature).
+    transferNft                             // 3. Controller handles transfer logic, including on-chain transaction verification.
 );
 
 // --- Optional Admin/Developer NFT Management Endpoints ---
 // These routes provide full CRUD operations, typically for administrative purposes.
-// Uncomment and implement in `nftController.js` if you need these functionalities.
+// Uncomment and implement in `nftController.js` and extend your Joi schemas if you need these functionalities.
 
 /*
 // GET /api/nfts/ - Retrieves all NFTs (potentially including unlisted ones for admin view)
@@ -86,16 +87,18 @@ router.get(
 );
 
 // PUT /api/nfts/:id - Updates NFT metadata (e.g., description, image, attributes)
+// :id would need to be validated, potentially via a Joi params schema or directly in the controller.
 router.put(
     '/:id',
     authenticateToken,
     authorizeRole([ROLES.ADMIN, ROLES.DEVELOPER]),
     upload.single('image'), // If allowing image updates
-    validate(schemas.nfts.update),
+    validate(schemas.nfts.update), // Schema should validate fields like title, description, new image URL, etc.
     updateNft
 );
 
 // DELETE /api/nfts/:id - Deletes an NFT record from the database. Use with extreme caution.
+// :id would need to be validated.
 router.delete(
     '/:id',
     authenticateToken,
