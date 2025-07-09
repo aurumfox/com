@@ -6,16 +6,32 @@
   "scripts": {
     "start": "node app.js",
     "dev": "NODE_ENV=development nodemon app.js",
-    "test": "cross-env NODE_ENV=test jest --detectOpenHandles --forceExit",
-    "test:watch": "cross-env NODE_ENV=test jest --watchAll --detectOpenHandles --forceExit",
+    "test": "cross-env NODE_ENV=test jest --detectOpenHandles --forceExit --runInBand",
+    "test:watch": "cross-env NODE_ENV=test jest --watchAll --detectOpenHandles --forceExit --runInBand",
     "lint": "eslint .",
     "seed": "node scripts/seed.js",
     "stop-db": "docker-compose down"
   },
-  "keywords": [],
+  "keywords": [
+    "solana",
+    "web3",
+    "backend",
+    "nodejs",
+    "express",
+    "mongodb",
+    "redis",
+    "graphql",
+    "nft",
+    "marketplace",
+    "dapp"
+  ],
   "author": "Aurum Fox Team",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-kms": "^3.609.0",  # OPTIONAL: If using AWS KMS for private keys
+    "@aws-sdk/client-secrets-manager": "^3.609.0", # OPTIONAL: If using AWS Secrets Manager
+    "@solana/web3.js": "^1.91.0", # NEW: For actual Solana interactions
+    "awilix": "^10.0.1", # NEW: For your DI container (Awilix)
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -39,7 +55,9 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@types/node": "^20.14.9", # OPTIONAL: If you plan to use TypeScript
     "cross-env": "^7.0.3",
+    "eslint": "^8.57.0", # NEW: Add ESLint for code quality
     "jest": "^29.7.0",
     "nodemon": "^3.1.3",
     "supertest": "^7.0.0"
