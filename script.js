@@ -1,147 +1,193 @@
-// --- CONSTANTS AND SETTINGS ---
-const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd'); // Replace with your actual AFOX mint address
-const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f'); // REPLACE WITH YOUR ACTUAL STAKING PROGRAM ID
-const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // V6 API from Jupiter
+// --- Imports (Conceptual, if using ES6 Modules) ---
+// In a real-world scenario with a build system (Webpack, Rollup, Vite),
+// these would be proper ES6 imports. For a browser-only script,
+// we assume they are globally available via script tags.
+const SolanaWeb3 = window.SolanaWeb3;
+const SolanaWalletAdapterPhantom = window.SolanaWalletAdapterPhantom;
+const SolanaToken = window.SolanaToken;
+const BN = window.BN; // Assuming BN.js is available globally
 
-// Addresses of popular Solana tokens (MINT ADDRESSES)
+// --- CONSTANTS AND SETTINGS ---
+const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
+const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
+const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
+const API_BASE_URL = 'http://localhost:3000'; // For local development
+
+// Mint addresses for tokens supported in the swap functionality
 const TOKEN_MINT_ADDRESSES = {
-    'SOL': new SolanaWeb3.PublicKey('So11111111111111111111111111111111111111112'), // Native SOL "mint"
+    'SOL': new SolanaWeb3.PublicKey('So11111111111111111111111111111111111111112'),
     'AFOX': AFOX_TOKEN_MINT_ADDRESS,
-    // Add other tokens as needed
-    // 'USDC': new SolanaWeb3.PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapT8G4AV6Z6P5YDgJLK'),
+    // Add other tokens here, e.g., 'USDC': new SolanaWeb3.PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapT8G4AV6Z6P5YDgJLK'),
 };
 
-const afoxDecimals = 6; // Standard number of decimal places for SPL tokens like AFOX
+const AFOX_DECIMALS = 6; // Standard decimal places for AFOX and assumed default for other SPL tokens
+const SOL_DECIMALS = 9;
+
+const NETWORK = SolanaWeb3.WalletAdapterNetwork.Devnet; // Change to 'Mainnet-beta' for production
 
 // --- GLOBAL WALLET & CONNECTION STATE ---
-let walletPublicKey = null; // Stores the public key of the connected wallet
-let provider = null; // For accessing the Phantom/Solflare window (the wallet adapter instance)
+let walletPublicKey = null;
+let provider = null; // Phantom/Solflare wallet adapter instance
 let connection = null; // Solana connection object
-const network = SolanaWeb3.WalletAdapterNetwork.Devnet; // Change to 'Mainnet-beta' for production
-const wallets = [
+const WALLETS = [
     new SolanaWalletAdapterPhantom.PhantomWalletAdapter(),
-    // Add other wallets here if desired, e.g.:
-    // new SolanaWalletAdapterWallets.SolflareWalletAdapter({ network }),
+    // Add other wallet adapters here if desired (e.g., SolflareWalletAdapter)
 ];
-let areProviderListenersAttached = false; // Flag to ensure provider listeners are attached only once
+let areProviderListenersAttached = false; // Flag to manage event listener attachment
+let currentJupiterQuote = null; // Stores the last quote from Jupiter for swap execution
+let currentOpenNft = null; // Stores the NFT object currently displayed in the details modal
 
-// ### API BASE URL CONFIGURATION ###
-const API_BASE_URL = 'http://localhost:3000'; // THIS ADDRESS IS USED FOR LOCAL DEVELOPMENT.
+// --- UI ELEMENT CACHING ---
+// It's good practice to cache DOM elements to avoid repeated lookups.
+const uiElements = {
+    // General Wallet & Display
+    connectWalletButtons: [],
+    walletAddressDisplays: [],
+    // Modals
+    nftDetailsModal: null, nftModal: null, mintNftModal: null, createProposalModal: null,
+    closeModalButtons: {}, // Store close buttons by their modal name
+    closeMainMenuCross: null,
+    // Menu Elements
+    mainNav: null, menuToggle: null, navLinks: [],
+    // NFT Section
+    userNftList: null, nftToSellSelect: null, listNftForm: null, mintNftForm: null, marketplaceNftList: null,
+    // NFT Details Modal elements
+    nftDetailImage: null, nftDetailName: null, nftDetailDescription: null, nftDetailOwner: null,
+    nftDetailMint: null, attributesList: null, nftDetailSolscanLink: null, nftDetailBuyBtn: null,
+    nftDetailSellBtn: null, nftDetailTransferBtn: null, nftDetailHistory: null,
+    // Announcements Section
+    announcementsList: null, announcementInput: null, publishButton: null,
+    // Games & Ads Section
+    gameList: null, uploadGameBtnWeb3: null, adList: null, postAdBtnWeb3: null,
+    // Staking Section Elements
+    userAfoxBalance: null, userStakedAmount: null, userRewardsAmount: null, stakingApr: null,
+    stakeAmountInput: null, stakeAfoxBtn: null, claimRewardsBtn: null, unstakeAfoxBtn: null,
+    minStakeAmountDisplay: null, lockupPeriodDisplay: null, unstakeFeeDisplay: null, rewardCalculationDisplay: null,
+    // SWAP SECTION UI ELEMENTS
+    swapFromAmountInput: null, swapFromTokenSelect: null, swapFromBalanceSpan: null,
+    swapDirectionBtn: null, swapToAmountInput: null, swapToTokenSelect: null, priceImpactSpan: null,
+    lpFeeSpan: null, minReceivedSpan: null, getQuoteBtn: null, executeSwapBtn: null, maxAmountBtns: [],
+    // Copy Button (generic)
+    copyButtons: [],
+    // Contact Form
+    contactForm: null, contactNameInput: null, contactEmailInput: null, contactSubjectInput: null, contactMessageInput: null,
+    notificationContainer: null,
+};
 
-// --- UI ELEMENTS ---
-// General Wallet & Display
-const connectWalletBtnWeb3 = document.getElementById('connectWalletBtnWeb3');
-const walletAddressDisplayWeb3 = document.getElementById('walletAddressDisplayWeb3');
-const walletAddressDisplayNft = document.getElementById('walletAddressDisplayNft');
-const walletAddressDisplayDao = document.getElementById('walletAddressDisplayDao');
-const connectWalletNftBtn = document.getElementById('connectWalletNftBtn'); // Assuming this is the same as connectWalletBtnWeb3 for consistency
+/**
+ * Initializes UI element references. Called once on DOMContentLoaded.
+ */
+function cacheUIElements() {
+    // Filter out nulls to ensure no errors if an element is missing
+    uiElements.connectWalletButtons = [
+        document.getElementById('connectWalletBtnWeb3'),
+        document.getElementById('connectWalletNftBtn'),
+        document.getElementById('connectWalletSwapBtn'),
+    ].filter(Boolean);
 
-// Modals
-const nftDetailsModal = document.getElementById('nftDetailsModal');
-const nftModal = document.getElementById('nftModal');
-const mintNftModal = document.getElementById('mintNftModal');
-const createProposalModal = document.getElementById('createProposalModal');
+    uiElements.walletAddressDisplays = [
+        document.getElementById('walletAddressDisplayWeb3'),
+        document.getElementById('walletAddressDisplayNft'),
+        document.getElementById('walletAddressDisplayDao'),
+        document.getElementById('walletAddressDisplaySwap'),
+    ].filter(Boolean);
 
-// Close buttons for modals
-const closeNftDetailsModalCross = document.getElementById('closeNftDetailsModalCross');
-const closeNftModalCross = document.getElementById('closeNftModalCross');
-const closeMintNftModalCross = document.getElementById('closeMintNftModalCross');
-const closeProposalModalCross = document.getElementById('closeProposalModalCross');
-const closeMainMenuCross = document.getElementById('closeMainMenuCross'); // NEW: Close button for Main Menu
+    uiElements.nftDetailsModal = document.getElementById('nftDetailsModal');
+    uiElements.nftModal = document.getElementById('nftModal');
+    uiElements.mintNftModal = document.getElementById('mintNftModal');
+    uiElements.createProposalModal = document.getElementById('createProposalModal');
 
-// Menu Elements
-const mainNav = document.querySelector('.nav ul') || document.getElementById('mainNav');
-const menuToggle = document.getElementById('menuToggle');
-const navLinks = mainNav ? mainNav.querySelectorAll('a') : [];
+    uiElements.closeModalButtons = {
+        nftDetails: document.getElementById('closeNftDetailsModalCross'),
+        nft: document.getElementById('closeNftModalCross'),
+        mintNft: document.getElementById('closeMintNftModalCross'),
+        createProposal: document.getElementById('closeProposalModalCross'),
+    };
+    uiElements.closeMainMenuCross = document.getElementById('closeMainMenuCross');
 
-// NFT Section
-const userNftList = document.getElementById('user-nft-list');
-const nftToSellSelect = document.getElementById('nftToSell');
-const listNftForm = document.getElementById('listNftForm');
-const mintNftForm = document.getElementById('mintNftForm');
-const marketplaceNftList = document.getElementById('marketplace-nft-list');
+    // Use querySelector for more flexible selection if IDs are not consistently applied
+    uiElements.mainNav = document.querySelector('.nav ul') || document.getElementById('mainNav');
+    uiElements.menuToggle = document.getElementById('menuToggle');
+    if (uiElements.mainNav) {
+        uiElements.navLinks = Array.from(uiElements.mainNav.querySelectorAll('a'));
+    }
 
-// NFT Details Modal elements
-const nftDetailImage = document.getElementById('nftDetailImage');
-const nftDetailName = document.getElementById('nftDetailName');
-const nftDetailDescription = document.getElementById('nftDetailDescription');
-const nftDetailOwner = document.getElementById('nftDetailOwner');
-const nftDetailMint = document.getElementById('nftDetailMint');
-const attributesList = document.getElementById('attributesList');
-const nftDetailSolscanLink = document.getElementById('nftDetailSolscanLink');
-const nftDetailBuyBtn = document.getElementById('nftDetailBuyBtn');
-const nftDetailSellBtn = document.getElementById('nftDetailSellBtn');
-const nftDetailTransferBtn = document.getElementById('nftDetailTransferBtn');
-const nftDetailHistory = document.getElementById('nftDetailHistory');
+    uiElements.userNftList = document.getElementById('user-nft-list');
+    uiElements.nftToSellSelect = document.getElementById('nftToSell');
+    uiElements.listNftForm = document.getElementById('listNftForm');
+    uiElements.mintNftForm = document.getElementById('mintNftForm');
+    uiElements.marketplaceNftList = document.getElementById('marketplace-nft-list');
 
-// Copy Button (generic)
-const copyBtn = document.querySelector('.copy-btn');
+    uiElements.nftDetailImage = document.getElementById('nftDetailImage');
+    uiElements.nftDetailName = document.getElementById('nftDetailName');
+    uiElements.nftDetailDescription = document.getElementById('nftDetailDescription');
+    uiElements.nftDetailOwner = document.getElementById('nftDetailOwner');
+    uiElements.nftDetailMint = document.getElementById('nftDetailMint');
+    uiElements.attributesList = document.getElementById('attributesList');
+    uiElements.nftDetailSolscanLink = document.getElementById('nftDetailSolscanLink');
+    uiElements.nftDetailBuyBtn = document.getElementById('nftDetailBuyBtn');
+    uiElements.nftDetailSellBtn = document.getElementById('nftDetailSellBtn');
+    uiElements.nftDetailTransferBtn = document.getElementById('nftDetailTransferBtn');
+    uiElements.nftDetailHistory = document.getElementById('nftDetailHistory');
 
-// Announcements Section
-const announcementsList = document.getElementById('announcementsList');
-const announcementInput = document.getElementById('announcementInput');
-const publishButton = document.getElementById('publishButton');
+    uiElements.announcementsList = document.getElementById('announcementsList');
+    uiElements.announcementInput = document.getElementById('announcementInput');
+    uiElements.publishButton = document.getElementById('publishButton');
 
-// Games & Ads Section
-const gameList = document.getElementById('game-list');
-const uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
-const adList = document.getElementById('ad-list');
-const postAdBtnWeb3 = document.getElementById('postAdBtnWeb3');
+    uiElements.gameList = document.getElementById('game-list');
+    uiElements.uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
+    uiElements.adList = document.getElementById('ad-list');
+    uiElements.postAdBtnWeb3 = document.getElementById('postAdBtnWeb3');
 
-// Staking Section Elements
-const userAfoxBalance = document.getElementById('userAfoxBalance');
-const userStakedAmount = document.getElementById('userStakedAmount');
-const userRewardsAmount = document.getElementById('userRewardsAmount');
-const stakingApr = document.getElementById('stakingApr');
-const stakeAmountInput = document.getElementById('stakeAmountInput');
-const stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
-const claimRewardsBtn = document.getElementById('claimRewardsBtn');
-const unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
-const minStakeAmountDisplay = document.getElementById('minStakeAmount');
-const lockupPeriodDisplay = document.getElementById('lockupPeriod');
-const unstakeFeeDisplay = document.getElementById('unstakeFee');
-const rewardCalculationDisplay = document.getElementById('rewardCalculation');
+    uiElements.userAfoxBalance = document.getElementById('userAfoxBalance');
+    uiElements.userStakedAmount = document.getElementById('userStakedAmount');
+    uiElements.userRewardsAmount = document.getElementById('userRewardsAmount');
+    uiElements.stakingApr = document.getElementById('stakingApr');
+    uiElements.stakeAmountInput = document.getElementById('stakeAmountInput');
+    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
+    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
+    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
+    uiElements.minStakeAmountDisplay = document.getElementById('minStakeAmount');
+    uiElements.lockupPeriodDisplay = document.getElementById('lockupPeriod');
+    uiElements.unstakeFeeDisplay = document.getElementById('unstakeFee');
+    uiElements.rewardCalculationDisplay = document.getElementById('rewardCalculation');
 
-// SWAP SECTION UI ELEMENTS
-const connectWalletSwapBtn = document.getElementById('connectWalletSwapBtn');
-const walletAddressDisplaySwap = document.getElementById('walletAddressDisplaySwap');
-const swapFromAmountInput = document.getElementById('swapFromAmount');
-const swapFromTokenSelect = document.getElementById('swapFromToken');
-const swapFromBalanceSpan = document.getElementById('swapFromBalance');
-const swapDirectionBtn = document.getElementById('swapDirectionBtn');
-const swapToAmountInput = document.getElementById('swapToAmount');
-const swapToTokenSelect = document.getElementById('swapToToken');
-const priceImpactSpan = document.getElementById('priceImpact');
-const lpFeeSpan = document.getElementById('lpFee');
-const minReceivedSpan = document.getElementById('minReceived');
-const getQuoteBtn = document.getElementById('getQuoteBtn');
-const executeSwapBtn = document.getElementById('executeSwapBtn');
-const maxAmountBtns = document.querySelectorAll('.max-amount-btn');
+    uiElements.swapFromAmountInput = document.getElementById('swapFromAmount');
+    uiElements.swapFromTokenSelect = document.getElementById('swapFromToken');
+    uiElements.swapFromBalanceSpan = document.getElementById('swapFromBalance');
+    uiElements.swapDirectionBtn = document.getElementById('swapDirectionBtn');
+    uiElements.swapToAmountInput = document.getElementById('swapToAmount');
+    uiElements.swapToTokenSelect = document.getElementById('swapToToken');
+    uiElements.priceImpactSpan = document.getElementById('priceImpact');
+    uiElements.lpFeeSpan = document.getElementById('lpFee');
+    uiElements.minReceivedSpan = document.getElementById('minReceived');
+    uiElements.getQuoteBtn = document.getElementById('getQuoteBtn');
+    uiElements.executeSwapBtn = document.getElementById('executeSwapBtn');
+    uiElements.maxAmountBtns = Array.from(document.querySelectorAll('.max-amount-btn'));
 
-let currentQuote = null; // Will store the last quote received from Jupiter
-let currentOpenNft = null; // Store the currently open NFT for modal actions
+    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
 
-// --- Arrays for convenient modal management ---
-const allModals = [
-    { element: nftDetailsModal, closeBtn: closeNftDetailsModalCross },
-    { element: nftModal, closeBtn: closeNftModalCross },
-    { element: mintNftModal, closeBtn: closeMintNftModalCross },
-    { element: createProposalModal, closeBtn: closeProposalModalCross }
-].filter(m => m.element); // Filter out any modals that weren't found in the DOM
+    uiElements.contactForm = document.getElementById('contactForm');
+    uiElements.contactNameInput = document.getElementById('contact-name');
+    uiElements.contactEmailInput = document.getElementById('contact-email');
+    uiElements.contactSubjectInput = document.getElementById('contact-subject');
+    uiElements.contactMessageInput = document.getElementById('contact-message');
 
-// --- HELPER FUNCTIONS ---
+    uiElements.notificationContainer = document.getElementById('notificationContainer');
+}
+
+// --- HELPER UTILITIES ---
 
 /**
  * Universal function to display notifications.
  * @param {string} message The message to display.
- * @param {string} type The type of notification ('info', 'success', 'warning', 'error').
+ * @param {'info' | 'success' | 'warning' | 'error'} type The type of notification.
  * @param {number} duration The display duration in ms (default 3000).
  */
 function showNotification(message, type = 'info', duration = 3000) {
-    const notificationContainer = document.getElementById('notificationContainer');
-    if (!notificationContainer) {
+    if (!uiElements.notificationContainer) {
         console.warn('Notification container not found. Cannot display notification.');
-        alert(message); // Fallback to alert if container not found
+        alert(message); // Fallback
         return;
     }
 
@@ -149,66 +195,103 @@ function showNotification(message, type = 'info', duration = 3000) {
     notification.className = `notification ${type}`;
     notification.textContent = message;
 
-    notificationContainer.prepend(notification); // Add to the top
+    uiElements.notificationContainer.prepend(notification); // Add to top
 
-    // Automatically remove notification
     setTimeout(() => {
         notification.remove();
     }, duration);
 }
 
 /**
- * Formats a BigInt amount given its decimals.
+ * Formats a BigNumber amount given its decimals.
  * @param {BN | string | number} amount - The amount as BN, string, or number.
  * @param {number} decimals - The number of decimal places for the token.
  * @returns {string} The formatted number as a string.
  */
 function formatBigInt(amount, decimals) {
-    if (!amount || !decimals) return '0';
-    const bnAmount = (typeof amount === 'string' || typeof amount === 'number') ? new BN(amount) : amount;
+    if (amount === undefined || amount === null || decimals === undefined || decimals === null || isNaN(decimals)) return '0';
+    let bnAmount;
+    try {
+        bnAmount = new BN(amount);
+    } catch (e) {
+        console.error("Invalid amount for BN conversion:", amount, e);
+        return '0';
+    }
 
     let str = bnAmount.toString();
+    // Pad with leading zeros if amount is smaller than 1.0
     if (str.length <= decimals) {
-        str = '0.'.padEnd(decimals - str.length + 2, '0') + str;
+        str = '0.' + '0'.repeat(decimals - str.length) + str;
     } else {
         str = str.slice(0, str.length - decimals) + '.' + str.slice(str.length - decimals);
     }
     // Remove trailing zeros and decimal point if it's an integer
-    str = str.replace(/\.?0+$/, '');
-    return str;
+    return str.replace(/\.?0+$/, '');
 }
 
 /**
  * Closes all open modals and the main navigation menu.
  */
 function closeAllPopups() {
-    allModals.forEach(modalItem => {
-        if (modalItem.element && modalItem.element.style.display === 'flex') {
-            modalItem.element.style.display = 'none';
+    // Array of modals to close
+    const modals = [
+        uiElements.nftDetailsModal,
+        uiElements.nftModal,
+        uiElements.mintNftModal,
+        uiElements.createProposalModal
+    ].filter(Boolean); // Filter out any null elements if they don't exist in the DOM
+
+    modals.forEach(modal => {
+        if (modal.style.display === 'flex') {
+            modal.style.display = 'none';
         }
     });
 
-    if (mainNav && mainNav.classList.contains('active')) {
-        mainNav.classList.remove('active');
-        if (menuToggle) menuToggle.classList.remove('active');
+    if (uiElements.mainNav && uiElements.mainNav.classList.contains('active')) {
+        uiElements.mainNav.classList.remove('active');
+        if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
     }
 }
 
 // --- WALLET CONNECTION & STATE MANAGEMENT ---
 
 /**
- * Handles changes in the wallet's public key (e.g., user switches accounts).
+ * Updates all wallet address display elements across the UI.
+ * @param {string | null} address - The wallet public key as a string, or null if disconnected.
  */
-function handlePublicKeyChange(publicKey) {
+function updateWalletUI(address) {
+    const displayAddress = address ? `${address.substring(0, 4)}...${address.substring(address.length - 4)}` : 'Not Connected';
+    const connectedState = address !== null;
+
+    uiElements.walletAddressDisplays.forEach(display => {
+        if (display) { // Check if element exists before manipulating
+            display.textContent = displayAddress;
+            display.style.display = connectedState ? 'block' : 'none';
+        }
+    });
+
+    uiElements.connectWalletButtons.forEach(btn => {
+        if (btn) btn.style.display = connectedState ? 'none' : 'block';
+    });
+}
+
+/**
+ * Handles changes in the wallet's public key (e.g., user switches accounts).
+ * @param {SolanaWeb3.PublicKey | null} publicKey
+ */
+async function handlePublicKeyChange(publicKey) {
     if (publicKey) {
         walletPublicKey = publicKey;
         updateWalletUI(publicKey.toBase58());
-        // Trigger reloads for all sections
-        loadUserNFTs(walletPublicKey.toBase58());
-        updateStakingUI();
-        updateSwapBalances();
+        // Trigger reloads for all sections with a slight delay to avoid UI flicker
+        await Promise.all([
+            loadUserNFTs(walletPublicKey.toBase58()),
+            updateStakingUI(),
+            updateSwapBalances()
+        ]);
         showNotification('Wallet account changed!', 'info');
     } else {
+        // If publicKey is null, it means the wallet disconnected or switched to no account
         handleWalletDisconnect();
     }
 }
@@ -226,16 +309,12 @@ function handleDisconnect() {
  * Registers event listeners for the wallet provider.
  */
 function registerProviderListeners() {
-    if (areProviderListenersAttached && provider) {
-        try {
+    if (provider) {
+        // Detach existing listeners to prevent duplicates
+        if (areProviderListenersAttached) {
             provider.off('publicKey', handlePublicKeyChange);
             provider.off('disconnect', handleDisconnect);
-        } catch (e) {
-            console.warn("Failed to detach old provider listeners:", e);
         }
-    }
-
-    if (provider) {
         provider.on('publicKey', handlePublicKeyChange);
         provider.on('disconnect', handleDisconnect);
         areProviderListenersAttached = true;
@@ -247,41 +326,25 @@ function registerProviderListeners() {
 }
 
 /**
- * Updates all wallet address display elements across the UI.
- * @param {string} address - The wallet public key as a string.
- */
-function updateWalletUI(address) {
-    const displayAddress = address ? `${address.substring(0, 4)}...${address.substring(address.length - 4)}` : 'Not Connected';
-
-    if (walletAddressDisplayWeb3) walletAddressDisplayWeb3.textContent = displayAddress;
-    if (walletAddressDisplayNft) walletAddressDisplayNft.textContent = displayAddress;
-    if (walletAddressDisplayDao) walletAddressDisplayDao.textContent = displayAddress;
-    if (walletAddressDisplaySwap) walletAddressDisplaySwap.textContent = displayAddress;
-
-    // Show/hide connect buttons vs. address display
-    const connectedState = address !== null;
-    [connectWalletBtnWeb3, connectWalletNftBtn, connectWalletSwapBtn].forEach(btn => {
-        if (btn) btn.style.display = connectedState ? 'none' : 'block';
-    });
-    [walletAddressDisplayWeb3, walletAddressDisplayNft, walletAddressDisplayDao, walletAddressDisplaySwap].forEach(display => {
-        if (display) display.style.display = connectedState ? 'block' : 'none';
-    });
-}
-
-/**
  * Central function to connect a Solana wallet.
  */
 async function connectWallet() {
     try {
-        if (typeof SolanaWeb3 === 'undefined' || typeof SolanaWalletAdapterPhantom === 'undefined') {
+        if (!SolanaWeb3 || !SolanaWalletAdapterPhantom) {
             showNotification('Solana Web3 or Wallet Adapter libraries not loaded. Check script imports.', 'error');
             return;
         }
 
-        const selectedWallet = wallets[0]; // For simplicity, always pick Phantom
+        const selectedWallet = WALLETS[0]; // Currently always picking Phantom
         if (!selectedWallet) {
             showNotification('Wallet adapter not found. Make sure Phantom is installed and enabled.', 'error');
             return;
+        }
+
+        // Initialize connection here if not already done.
+        // It's good to have a single connection instance that persists.
+        if (!connection) {
+            connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(NETWORK), 'confirmed');
         }
 
         if (selectedWallet.connected && selectedWallet.publicKey) {
@@ -295,28 +358,22 @@ async function connectWallet() {
             console.log('Wallet connected:', walletPublicKey.toBase58());
         }
 
-        // Initialize Solana Connection (or re-use if already initialized)
-        if (!connection) {
-            connection = new SolanaWeb3.Connection(
-                SolanaWeb3.clusterApiUrl(network),
-                'confirmed'
-            );
-        }
-
         updateWalletUI(walletPublicKey.toBase58());
         registerProviderListeners();
 
         // Load data for all sections
-        await loadUserNFTs(walletPublicKey.toBase58());
-        await updateStakingUI();
-        await updateSwapBalances(); // Update swap balances on connect
+        await Promise.all([
+            loadUserNFTs(walletPublicKey.toBase58()),
+            updateStakingUI(),
+            updateSwapBalances()
+        ]);
 
         showNotification('Wallet successfully connected!', 'success');
 
     } catch (error) {
         console.error('Failed to connect wallet:', error);
         showNotification(`Failed to connect wallet: ${error.message || error}`, 'error');
-        handleWalletDisconnect();
+        handleWalletDisconnect(); // Ensure UI reflects disconnected state on error
     }
 }
 
@@ -326,25 +383,25 @@ async function connectWallet() {
 function handleWalletDisconnect() {
     walletPublicKey = null;
     provider = null;
-    connection = null;
-    updateWalletUI(null); // Reset all wallet displays
+    connection = null; // Reset connection to force re-initialization on next connect
+    updateWalletUI(null);
 
     // Reset NFT section
-    if (userNftList) userNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Connect your wallet to see your NFTs.</p>';
-    if (nftToSellSelect) nftToSellSelect.innerHTML = '<option value="">-- Select NFT --</option>';
+    if (uiElements.userNftList) uiElements.userNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Connect your wallet to see your NFTs.</p>';
+    if (uiElements.nftToSellSelect) uiElements.nftToSellSelect.innerHTML = '<option value="">-- Select NFT --</option>';
 
     // Reset Staking section
     updateStakingUI(); // This function handles resetting itself if walletPublicKey is null
 
     // Reset Swap section
-    swapFromBalanceSpan.textContent = '0';
-    swapFromAmountInput.value = '';
-    swapToAmountInput.value = '';
-    priceImpactSpan.textContent = '0%';
-    lpFeeSpan.textContent = '0';
-    minReceivedSpan.textContent = '0';
-    executeSwapBtn.style.display = 'none';
-    currentQuote = null;
+    if (uiElements.swapFromBalanceSpan) uiElements.swapFromBalanceSpan.textContent = '0';
+    if (uiElements.swapFromAmountInput) uiElements.swapFromAmountInput.value = '';
+    if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
+    if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = '0%';
+    if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = '0';
+    if (uiElements.minReceivedSpan) uiElements.minReceivedSpan.textContent = '0';
+    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
+    currentJupiterQuote = null;
 
     // Detach listeners on disconnect
     if (areProviderListenersAttached && provider) {
@@ -362,25 +419,47 @@ function handleWalletDisconnect() {
 // --- SWAP FUNCTIONS ---
 
 /**
+ * Fetches the token decimals for a given mint address.
+ * In a real app, this might involve fetching from a token list or a dedicated API.
+ * For this example, we use predefined decimals or a fallback.
+ * @param {SolanaWeb3.PublicKey} mintAddress
+ * @returns {number}
+ */
+function getTokenDecimals(mintAddress) {
+    if (mintAddress.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
+        return SOL_DECIMALS;
+    }
+    if (mintAddress.equals(AFOX_TOKEN_MINT_ADDRESS)) {
+        return AFOX_DECIMALS;
+    }
+    // Fallback for other SPL tokens not explicitly defined
+    console.warn(`Decimals for mint ${mintAddress.toBase58()} not explicitly defined. Using default ${AFOX_DECIMALS}.`);
+    return AFOX_DECIMALS;
+}
+
+/**
  * Updates balances for the "From" token in the swap section.
  */
 async function updateSwapBalances() {
-    if (!walletPublicKey) {
-        swapFromBalanceSpan.textContent = '0';
+    if (!walletPublicKey || !connection) {
+        if (uiElements.swapFromBalanceSpan) uiElements.swapFromBalanceSpan.textContent = '0';
         return;
     }
 
-    if (!connection) { // Ensure connection is established
-        connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(network), 'confirmed');
+    const fromTokenMint = TOKEN_MINT_ADDRESSES[uiElements.swapFromTokenSelect.value];
+    if (!fromTokenMint) {
+        console.error('Selected "From" token mint address not found.');
+        if (uiElements.swapFromBalanceSpan) uiElements.swapFromBalanceSpan.textContent = '0';
+        return;
     }
 
-    const fromTokenMint = TOKEN_MINT_ADDRESSES[swapFromTokenSelect.value];
-
-    if (fromTokenMint.toBase58() === TOKEN_MINT_ADDRESSES['SOL'].toBase58()) {
-        const solBalance = await connection.getBalance(walletPublicKey);
-        swapFromBalanceSpan.textContent = `${(solBalance / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
-    } else {
-        try {
+    try {
+        if (fromTokenMint.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
+            const solBalance = await connection.getBalance(walletPublicKey);
+            if (uiElements.swapFromBalanceSpan) {
+                uiElements.swapFromBalanceSpan.textContent = `${(solBalance / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
+            }
+        } else {
             const tokenAccount = await connection.getParsedTokenAccountsByOwner(
                 walletPublicKey,
                 { mint: fromTokenMint }
@@ -388,14 +467,19 @@ async function updateSwapBalances() {
             if (tokenAccount.value.length > 0) {
                 const amount = tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount;
                 const decimals = tokenAccount.value[0].account.data.parsed.info.tokenAmount.decimals;
-                swapFromBalanceSpan.textContent = `${formatBigInt(new BN(amount), decimals)} ${swapFromTokenSelect.value}`;
+                if (uiElements.swapFromBalanceSpan) {
+                    uiElements.swapFromBalanceSpan.textContent = `${formatBigInt(new BN(amount), decimals)} ${uiElements.swapFromTokenSelect.value}`;
+                }
             } else {
-                swapFromBalanceSpan.textContent = `0 ${swapFromTokenSelect.value}`;
+                if (uiElements.swapFromBalanceSpan) {
+                    uiElements.swapFromBalanceSpan.textContent = `0 ${uiElements.swapFromTokenSelect.value}`;
+                }
             }
-        } catch (error) {
-            console.error('Error fetching token balance:', error);
-            swapFromBalanceSpan.textContent = `Error ${swapFromTokenSelect.value}`;
         }
+    } catch (error) {
+        console.error('Error fetching token balance:', error);
+        showNotification(`Error fetching ${uiElements.swapFromTokenSelect.value} balance.`, 'error');
+        if (uiElements.swapFromBalanceSpan) uiElements.swapFromBalanceSpan.textContent = `Error`;
     }
 }
 
@@ -407,72 +491,70 @@ async function getQuote() {
         showNotification('Please connect your wallet first.', 'warning');
         return;
     }
+    if (!uiElements.swapFromTokenSelect || !uiElements.swapToTokenSelect || !uiElements.swapFromAmountInput) {
+        console.error("Swap UI elements not found.");
+        showNotification("Swap functionality UI is not fully initialized.", "error");
+        return;
+    }
 
-    const fromMint = TOKEN_MINT_ADDRESSES[swapFromTokenSelect.value];
-    const toMint = TOKEN_MINT_ADDRESSES[swapToTokenSelect.value];
-    const amount = parseFloat(swapFromAmountInput.value);
+    const fromMint = TOKEN_MINT_ADDRESSES[uiElements.swapFromTokenSelect.value];
+    const toMint = TOKEN_MINT_ADDRESSES[uiElements.swapToTokenSelect.value];
+    const amount = parseFloat(uiElements.swapFromAmountInput.value);
 
     if (isNaN(amount) || amount <= 0) {
         showNotification('Please enter a valid amount for the swap.', 'warning');
         return;
     }
 
-    // Determine the number of decimal places for the input token dynamically
-    let decimalsFrom;
-    if (fromMint.toBase58() === TOKEN_MINT_ADDRESSES['SOL'].toBase58()) {
-        decimalsFrom = 9; // SOL has 9 decimals
-    } else if (fromMint.toBase58() === AFOX_TOKEN_MINT_ADDRESS.toBase58()) {
-        decimalsFrom = afoxDecimals;
-    } else {
-        // Attempt to get decimals from the token mint directly if needed, or assume a default
-        // For simplicity, hardcode for known tokens or fetch dynamically via API if complex.
-        // For now, let's assume all other SPL tokens also have `afoxDecimals` or define them in TOKEN_MINT_ADDRESSES.
-        decimalsFrom = afoxDecimals; // Placeholder, refine if other tokens have different decimals
+    if (!fromMint || !toMint) {
+        showNotification('Please select valid tokens for the swap.', 'warning');
+        return;
     }
+
+    if (fromMint.equals(toMint)) {
+        showNotification('Cannot swap between the same tokens.', 'warning');
+        return;
+    }
+
+    const decimalsFrom = getTokenDecimals(fromMint);
+    // Convert float amount to BigNumber string for Jupiter API
     const inputAmountLamports = new BN(amount * (10 ** decimalsFrom)).toString();
 
     showNotification('Getting the best swap quote...', 'info');
-    getQuoteBtn.disabled = true;
-    executeSwapBtn.style.display = 'none';
+    if (uiElements.getQuoteBtn) uiElements.getQuoteBtn.disabled = true;
+    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
 
     try {
-        const response = await fetch(`${JUPITER_API_URL}/quote?inputMint=${fromMint.toBase55()}&outputMint=${toMint.toBase55()}&amount=${inputAmountLamports}&slippageBps=50`);
+        const response = await fetch(`${JUPITER_API_URL}/quote?inputMint=${fromMint.toBase58()}&outputMint=${toMint.toBase58()}&amount=${inputAmountLamports}&slippageBps=50`); // 0.5% slippage
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(`Failed to get quote: ${errorData.error || response.statusText}`);
         }
         const data = await response.json();
-        currentQuote = data;
+        currentJupiterQuote = data;
 
-        let outputDecimals;
-        if (toMint.toBase58() === TOKEN_MINT_ADDRESSES['SOL'].toBase58()) {
-            outputDecimals = 9; // SOL has 9 decimals
-        } else if (toMint.toBase58() === AFOX_TOKEN_MINT_ADDRESS.toBase58()) {
-            outputDecimals = afoxDecimals;
-        } else {
-            outputDecimals = afoxDecimals; // Placeholder
-        }
+        const outputDecimals = getTokenDecimals(toMint);
 
-        const formattedOutput = formatBigInt(new BN(currentQuote.outAmount), outputDecimals);
-
-        swapToAmountInput.value = formattedOutput;
-        priceImpactSpan.textContent = `${(currentQuote.priceImpactPct * 100).toFixed(2)}%`;
-        lpFeeSpan.textContent = `${formatBigInt(new BN(currentQuote.lpFee.amount), outputDecimals)} ${swapToTokenSelect.value}`;
-        minReceivedSpan.textContent = `${formatBigInt(new BN(currentQuote.otherAmountThreshold), outputDecimals)} ${swapToTokenSelect.value}`;
+        if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = formatBigInt(new BN(currentJupiterQuote.outAmount), outputDecimals);
+        if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = `${(currentJupiterQuote.priceImpactPct * 100).toFixed(2)}%`;
+        if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = `${formatBigInt(new BN(currentJupiterQuote.lpFee.amount), outputDecimals)} ${uiElements.swapToTokenSelect.value}`;
+        // Jupiter's `otherAmountThreshold` is already in "lamports" based on output token decimals
+        if (uiElements.minReceivedSpan) uiElements.minReceivedSpan.textContent = `${formatBigInt(new BN(currentJupiterQuote.otherAmountThreshold), outputDecimals)} ${uiElements.swapToTokenSelect.value}`;
 
         showNotification('Quote successfully received!', 'success');
-        executeSwapBtn.style.display = 'block';
+        if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'block';
     } catch (error) {
         console.error('Error fetching quote:', error);
-        showNotification(`Error fetching quote: ${error.message}`, 'error');
-        currentQuote = null;
-        swapToAmountInput.value = '';
-        priceImpactSpan.textContent = '0%';
-        lpFeeSpan.textContent = '0';
-        minReceivedSpan.textContent = '0';
-        executeSwapBtn.style.display = 'none';
+        showNotification(`Error fetching quote: ${error.message}. Please try again.`, 'error');
+        currentJupiterQuote = null;
+        // Clear all quote-related display fields
+        if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
+        if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = '0%';
+        if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = '0';
+        if (uiElements.minReceivedSpan) uiElements.minReceivedSpan.textContent = '0';
+        if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
     } finally {
-        getQuoteBtn.disabled = false;
+        if (uiElements.getQuoteBtn) uiElements.getQuoteBtn.disabled = false;
     }
 }
 
@@ -480,7 +562,7 @@ async function getQuote() {
  * Executes the swap transaction via Jupiter Aggregator.
  */
 async function executeSwap() {
-    if (!currentQuote) {
+    if (!currentJupiterQuote) {
         showNotification('Please get a quote first.', 'warning');
         return;
     }
@@ -488,18 +570,26 @@ async function executeSwap() {
         showNotification('Wallet not connected.', 'warning');
         return;
     }
+    if (!provider) {
+        showNotification('Wallet provider not found. Please reconnect your wallet.', 'error');
+        return;
+    }
+    // Ensure connection is established, though it should be if wallet is connected
+    if (!connection) {
+        connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(NETWORK), 'confirmed');
+    }
 
     showNotification('Preparing swap transaction...', 'info');
-    executeSwapBtn.disabled = true;
+    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.disabled = true;
 
     try {
         const response = await fetch(`${JUPITER_API_URL}/swap`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                quoteResponse: currentQuote,
+                quoteResponse: currentJupiterQuote,
                 userPublicKey: walletPublicKey.toBase58(),
-                wrapUnwrapSOL: true,
+                wrapUnwrapSOL: true, // Handle SOL wrapping/unwrapping automatically for convenience
             }),
         });
 
@@ -509,55 +599,59 @@ async function executeSwap() {
         }
 
         const { swapTransaction } = await response.json();
-
         const transactionBuf = Buffer.from(swapTransaction, 'base64');
         const transaction = SolanaWeb3.Transaction.from(transactionBuf);
 
-        // Ensure the connection is initialized
-        if (!connection) {
-             connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(network), 'confirmed');
-        }
+        // Fetch recent blockhash dynamically for transaction
+        transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
+        transaction.feePayer = walletPublicKey; // Set the fee payer to the user's wallet
 
-        // Phantom Wallet requires signAndSendTransaction
-        const signedTransaction = await provider.signAndSendTransaction(transaction);
+        // Sign and send the transaction using the connected wallet
+        const signature = await provider.sendAndConfirm(transaction);
 
-        showNotification('Transaction sent! Waiting for confirmation...', 'info');
-        console.log('Swap transaction sent:', signedTransaction.signature);
+        showNotification('Transaction sent! Waiting for confirmation...', 'info', 10000); // Longer duration for network confirmation
+        console.log('Swap transaction sent:', signature);
 
-        const confirmation = await connection.confirmTransaction(signedTransaction.signature, 'confirmed');
+        // Confirm the transaction
+        const confirmation = await connection.confirmTransaction(signature, 'confirmed');
 
         if (confirmation.value.err) {
-            throw new Error('Transaction failed: ' + confirmation.value.err.toString());
+            throw new Error(`Transaction failed: ${confirmation.value.err.toString()}`);
         }
 
         showNotification('Swap successfully executed!', 'success');
-        console.log('Swap confirmed:', signedTransaction.signature);
+        console.log('Swap confirmed:', signature);
 
         // Clear fields and update balances after successful swap
-        swapFromAmountInput.value = '';
-        swapToAmountInput.value = '';
-        priceImpactSpan.textContent = '0%';
-        lpFeeSpan.textContent = '0';
-        minReceivedSpan.textContent = '0';
-        executeSwapBtn.style.display = 'none';
-        currentQuote = null;
-        updateSwapBalances();
+        if (uiElements.swapFromAmountInput) uiElements.swapFromAmountInput.value = '';
+        if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
+        if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = '0%';
+        if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = '0';
+        if (uiElements.minReceivedSpan) uiElements.minReceivedSpan.textContent = '0';
+        if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
+        currentJupiterQuote = null;
+        await updateSwapBalances(); // Refresh balances
 
     } catch (error) {
         console.error('Error during swap execution:', error);
-        showNotification(`Swap failed: ${error.message}`, 'error');
+        showNotification(`Swap failed: ${error.message}. Check console for details.`, 'error');
     } finally {
-        executeSwapBtn.disabled = false;
+        if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.disabled = false;
     }
 }
 
+
 // --- NFT DISPLAY & ACTIONS ---
 
+/**
+ * Loads and displays NFTs owned by the connected user.
+ * @param {string} walletAddress - The public key of the connected wallet.
+ */
 async function loadUserNFTs(walletAddress) {
-    if (!userNftList) return;
+    if (!uiElements.userNftList) return;
 
-    userNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Loading your NFTs...</p>';
-    if (nftToSellSelect) nftToSellSelect.innerHTML = '<option value="">-- Select NFT --</option>';
+    uiElements.userNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Loading your NFTs...</p>';
+    if (uiElements.nftToSellSelect) uiElements.nftToSellSelect.innerHTML = '<option value="">-- Select NFT --</option>';
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/nfts/marketplace`);
@@ -565,11 +659,13 @@ async function loadUserNFTs(walletAddress) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        const userOwnedNfts = data.nfts.filter(nft => nft.owner === walletAddress && !nft.isListed);
+        // Ensure data.nfts exists and is an array before filtering
+        const userOwnedNfts = Array.isArray(data.nfts) ? data.nfts.filter(nft => nft.owner === walletAddress && !nft.isListed) : [];
 
-        userNftList.innerHTML = '';
+        uiElements.userNftList.innerHTML = ''; // Clear loading message
+
         if (userOwnedNfts.length === 0) {
-            userNftList.innerHTML = '<p class="placeholder-item web3-placeholder">No NFTs found in your wallet.</p>';
+            uiElements.userNftList.innerHTML = '<p class="placeholder-item web3-placeholder">No NFTs found in your wallet.</p>';
             return;
         }
 
@@ -577,32 +673,36 @@ async function loadUserNFTs(walletAddress) {
             const nftItem = document.createElement('div');
             nftItem.className = 'nft-item';
             nftItem.innerHTML = `
-                <img src="${nft.image || 'https://via.placeholder.com/180x180?text=NFT'}" alt="${nft.name}">
-                <h4>${nft.name}</h4>
+                <img src="${nft.image || 'https://via.placeholder.com/180x180?text=NFT'}" alt="${nft.name || 'NFT Image'}">
+                <h4>${nft.name || 'Untitled NFT'}</h4>
                 <p>${nft.description || 'No description'}</p>
-                <p>Mint: <span style="font-size:0.8em; word-break:break-all;">${nft.mint.substring(0, 10)}...</span></p>
+                <p>Mint: <span style="font-size:0.8em; word-break:break-all;">${nft.mint ? `${nft.mint.substring(0, 6)}...${nft.mint.substring(nft.mint.length - 4)}` : 'N/A'}</span></p>
             `;
-            nftItem.addEventListener('click', () => showNftDetails(nft)); // Pass the NFT object
-            userNftList.appendChild(nftItem);
+            nftItem.addEventListener('click', () => showNftDetails(nft));
+            uiElements.userNftList.appendChild(nftItem);
 
-            if (nftToSellSelect) {
+            if (uiElements.nftToSellSelect) {
                 const option = document.createElement('option');
                 option.value = nft.mint;
                 option.textContent = nft.name;
-                nftToSellSelect.appendChild(option);
+                uiElements.nftToSellSelect.appendChild(option);
             }
         });
 
     } catch (error) {
         console.error('Error loading user NFTs:', error);
-        userNftList.innerHTML = `<p class="placeholder-item web3-placeholder">Error loading NFTs: ${error.message}.</p>`;
+        showNotification(`Failed to load your NFTs: ${error.message}.`, 'error');
+        uiElements.userNftList.innerHTML = `<p class="placeholder-item web3-placeholder">Error loading NFTs: ${error.message}.</p>`;
     }
 }
 
+/**
+ * Loads and displays NFTs listed on the marketplace.
+ */
 async function loadMarketplaceNFTs() {
-    if (!marketplaceNftList) return;
+    if (!uiElements.marketplaceNftList) return;
 
-    marketplaceNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Loading marketplace NFTs...</p>';
+    uiElements.marketplaceNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Loading marketplace NFTs...</p>';
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/nfts/marketplace`);
@@ -610,11 +710,12 @@ async function loadMarketplaceNFTs() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        const listedNfts = data.nfts.filter(nft => nft.price && nft.isListed);
+        const listedNfts = Array.isArray(data.nfts) ? data.nfts.filter(nft => nft.price && nft.isListed) : [];
 
-        marketplaceNftList.innerHTML = '';
+        uiElements.marketplaceNftList.innerHTML = ''; // Clear loading message
+
         if (listedNfts.length === 0) {
-            marketplaceNftList.innerHTML = '<p class="placeholder-item web3-placeholder">No NFTs listed on the marketplace yet.</p>';
+            uiElements.marketplaceNftList.innerHTML = '<p class="placeholder-item web3-placeholder">No NFTs listed on the marketplace yet.</p>';
             return;
         }
 
@@ -622,19 +723,20 @@ async function loadMarketplaceNFTs() {
             const nftItem = document.createElement('div');
             nftItem.className = 'nft-item';
             nftItem.innerHTML = `
-                <img src="${nft.image || 'https://via.placeholder.com/180x180?text=NFT'}" alt="${nft.name}">
-                <h4>${nft.name}</h4>
+                <img src="${nft.image || 'https://via.placeholder.com/180x180?text=NFT'}" alt="${nft.name || 'NFT Image'}">
+                <h4>${nft.name || 'Untitled NFT'}</h4>
                 <p>${nft.description || 'No description'}</p>
-                <p>Price: <strong>${nft.price} SOL</strong></p>
-                <p>Mint: <span style="font-size:0.8em; word-break:break-all;">${nft.mint.substring(0, 10)}...</span></p>
+                <p>Price: <strong>${nft.price ? `${nft.price} SOL` : 'N/A'}</strong></p>
+                <p>Mint: <span style="font-size:0.8em; word-break:break-all;">${nft.mint ? `${nft.mint.substring(0, 6)}...${nft.mint.substring(nft.mint.length - 4)}` : 'N/A'}</span></p>
             `;
             nftItem.addEventListener('click', () => showNftDetails(nft));
-            marketplaceNftList.appendChild(nftItem);
+            uiElements.marketplaceNftList.appendChild(nftItem);
         });
 
     } catch (error) {
         console.error('Error loading marketplace NFTs:', error);
-        marketplaceNftList.innerHTML = `<p class="placeholder-item web3-placeholder">Error loading marketplace NFTs: ${error.message}.</p>`;
+        showNotification(`Failed to load marketplace NFTs: ${error.message}.`, 'error');
+        uiElements.marketplaceNftList.innerHTML = `<p class="placeholder-item web3-placeholder">Error loading marketplace NFTs: ${error.message}.</p>`;
     }
 }
 
@@ -643,56 +745,58 @@ async function loadMarketplaceNFTs() {
  * @param {object} nft - The NFT object to display.
  */
 window.showNftDetails = async function(nft) {
-    if (!nftDetailsModal) return;
+    if (!uiElements.nftDetailsModal) return;
 
     closeAllPopups();
-    currentOpenNft = nft; // Store the NFT object
+    currentOpenNft = nft; // Store the NFT object for actions
 
-    if (nftDetailImage) nftDetailImage.src = nft.image || 'https://via.placeholder.com/250x150?text=NFT';
-    if (nftDetailName) nftDetailName.textContent = nft.name || 'Untitled NFT';
-    if (nftDetailDescription) nftDetailDescription.textContent = nft.description || 'No description provided.';
-    if (nftDetailOwner) nftDetailOwner.textContent = nft.owner || 'Unknown';
-    if (nftDetailMint) nftDetailMint.textContent = nft.mint || 'N/A';
-    if (nftDetailSolscanLink) {
-        nftDetailSolscanLink.href = `https://solscan.io/token/${nft.mint}?cluster=${network.toLowerCase()}`;
-        nftDetailSolscanLink.style.display = nft.mint ? 'inline-block' : 'none';
+    // Populate static NFT details
+    if (uiElements.nftDetailImage) uiElements.nftDetailImage.src = nft.image || 'https://via.placeholder.com/250x150?text=NFT';
+    if (uiElements.nftDetailName) uiElements.nftDetailName.textContent = nft.name || 'Untitled NFT';
+    if (uiElements.nftDetailDescription) uiElements.nftDetailDescription.textContent = nft.description || 'No description provided.';
+    if (uiElements.nftDetailOwner) uiElements.nftDetailOwner.textContent = nft.owner || 'Unknown';
+    if (uiElements.nftDetailMint) uiElements.nftDetailMint.textContent = nft.mint || 'N/A';
+    if (uiElements.nftDetailSolscanLink) {
+        uiElements.nftDetailSolscanLink.href = nft.mint ? `https://solscan.io/token/${nft.mint}?cluster=${NETWORK.toLowerCase()}` : '#';
+        uiElements.nftDetailSolscanLink.style.display = nft.mint ? 'inline-block' : 'none';
     }
 
-    if (attributesList) {
-        attributesList.innerHTML = '';
-        if (nft.attributes && Array.isArray(nft.attributes)) {
+    // Populate attributes list
+    if (uiElements.attributesList) {
+        uiElements.attributesList.innerHTML = '';
+        if (nft.attributes && Array.isArray(nft.attributes) && nft.attributes.length > 0) {
             nft.attributes.forEach(attr => {
                 const li = document.createElement('li');
-                li.textContent = `${attr.trait_type || attr.key}: ${attr.value}`;
-                attributesList.appendChild(li);
+                li.textContent = `${attr.trait_type || attr.key || 'Trait'}: ${attr.value || 'N/A'}`;
+                uiElements.attributesList.appendChild(li);
             });
         } else {
-            attributesList.innerHTML = '<li>No attributes.</li>';
+            uiElements.attributesList.innerHTML = '<li>No attributes.</li>';
         }
     }
 
     // Show/hide action buttons based on ownership and listing status
-    if (nftDetailBuyBtn) nftDetailBuyBtn.style.display = 'none';
-    if (nftDetailSellBtn) nftDetailSellBtn.style.display = 'none';
-    if (nftDetailTransferBtn) nftDetailTransferBtn.style.display = 'none';
+    // Set all to none first to ensure correct state
+    if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.style.display = 'none';
+    if (uiElements.nftDetailSellBtn) uiElements.nftDetailSellBtn.style.display = 'none';
+    if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.style.display = 'none';
 
     const currentUserWalletAddress = walletPublicKey ? walletPublicKey.toBase58() : null;
 
     if (currentUserWalletAddress && nft.owner === currentUserWalletAddress) {
-        if (nftDetailTransferBtn) nftDetailTransferBtn.style.display = 'inline-block';
-        if (!nft.isListed && nftDetailSellBtn) {
-            nftDetailSellBtn.style.display = 'inline-block';
+        if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.style.display = 'inline-block';
+        if (!nft.isListed && uiElements.nftDetailSellBtn) {
+            uiElements.nftDetailSellBtn.style.display = 'inline-block';
         }
-    } else if (nft.isListed && nftDetailBuyBtn) {
-        nftDetailBuyBtn.style.display = 'inline-block';
+    } else if (nft.isListed && uiElements.nftDetailBuyBtn) {
+        uiElements.nftDetailBuyBtn.style.display = 'inline-block';
     }
 
-    // Attach event listeners for actions (defined below in DOMContentLoaded)
-    nftDetailsModal.style.display = 'flex';
+    uiElements.nftDetailsModal.style.display = 'flex'; // Display the modal
 
     // Load NFT transaction history
-    if (nftDetailHistory && nft.mint) {
-        nftDetailHistory.textContent = 'Loading history...';
+    if (uiElements.nftDetailHistory && nft.mint) {
+        uiElements.nftDetailHistory.textContent = 'Loading history...';
         try {
             const historyResponse = await fetch(`${API_BASE_URL}/api/nfts/${nft.mint}/history`);
             if (!historyResponse.ok) {
@@ -702,31 +806,43 @@ window.showNftDetails = async function(nft) {
             const historyData = await historyResponse.json();
 
             if (historyData && historyData.length > 0) {
-                nftDetailHistory.innerHTML = '<h4>Transaction History:</h4>';
+                uiElements.nftDetailHistory.innerHTML = '<h4>Transaction History:</h4>';
+                // Sort by date in descending order (most recent first)
                 historyData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
                 historyData.forEach(event => {
                     const p = document.createElement('p');
                     let eventText = `${new Date(event.timestamp).toLocaleString()}: `;
+                    // Use optional chaining and nullish coalescing for robustness
+                    const from = event.from ? `${event.from.substring(0, 6)}...${event.from.substring(event.from.length - 4)}` : 'N/A';
+                    const to = event.to ? `${event.to.substring(0, 6)}...${event.to.substring(event.to.length - 4)}` : 'N/A';
+
                     switch (event.type) {
-                        case "Mint": eventText += `Minted to address ${event.to.substring(0, 6)}...`; break;
-                        case "Transfer": eventText += `Transferred from ${event.from.substring(0, 6)}... to ${event.to.substring(0, 6)}...`; break;
-                        case "Sale": eventText += `Sold from ${event.from.substring(0, 6)}... to ${event.to.substring(0, 6)}... for ${event.price} SOL`; break;
+                        case "Mint":
+                            eventText += `Minted to address ${to}`;
+                            break;
+                        case "Transfer":
+                            eventText += `Transferred from ${from} to ${to}`;
+                            break;
+                        case "Sale":
+                            eventText += `Sold from ${from} to ${to} for ${event.price || 'N/A'} SOL`;
+                            break;
                         default:
                             eventText += `Event: ${event.type}`;
-                            if (event.from) eventText += ` from ${event.from.substring(0, 6)}...`;
-                            if (event.to) eventText += ` to ${event.to.substring(0, 6)}...`;
+                            if (event.from) eventText += ` from ${from}`;
+                            if (event.to) eventText += ` to ${to}`;
                             break;
                     }
                     p.textContent = eventText;
-                    nftDetailHistory.appendChild(p);
+                    uiElements.nftDetailHistory.appendChild(p);
                 });
             } else {
-                nftDetailHistory.textContent = 'No transaction history for this NFT.';
+                uiElements.nftDetailHistory.textContent = 'No transaction history for this NFT.';
             }
         } catch (error) {
             console.error('Error loading NFT history for modal:', error);
-            nftDetailHistory.textContent = `Error loading history: ${error.message}.`;
+            showNotification(`Error loading NFT history: ${error.message}.`, 'error');
+            uiElements.nftDetailHistory.textContent = `Error loading history: ${error.message}.`;
         }
     }
 };
@@ -737,25 +853,32 @@ window.showNftDetails = async function(nft) {
  * Updates all staking data in the UI.
  */
 async function updateStakingUI() {
+    // Reset UI if wallet is disconnected or no data can be fetched
     if (!walletPublicKey) {
-        if (userAfoxBalance) userAfoxBalance.textContent = '0 AFOX';
-        if (userStakedAmount) userStakedAmount.textContent = '0 AFOX';
-        if (userRewardsAmount) userRewardsAmount.textContent = '0 AFOX';
-        if (stakingApr) stakingApr.textContent = '--%';
-        if (minStakeAmountDisplay) minStakeAmountDisplay.textContent = '1 AFOX';
-        if (lockupPeriodDisplay) lockupPeriodDisplay.textContent = '0 days (flexible)';
-        if (unstakeFeeDisplay) unstakeFeeDisplay.textContent = '0%';
-        if (rewardCalculationDisplay) rewardCalculationDisplay.textContent = 'Daily';
+        if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = '0 AFOX';
+        if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = '0 AFOX';
+        if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = '0 AFOX';
+        if (uiElements.stakingApr) uiElements.stakingApr.textContent = '--%';
+        if (uiElements.minStakeAmountDisplay) uiElements.minStakeAmountDisplay.textContent = '1 AFOX';
+        if (uiElements.lockupPeriodDisplay) uiElements.lockupPeriodDisplay.textContent = '0 days (flexible)';
+        if (uiElements.unstakeFeeDisplay) uiElements.unstakeFeeDisplay.textContent = '0%';
+        if (uiElements.rewardCalculationDisplay) uiElements.rewardCalculationDisplay.textContent = 'Daily';
         return;
     }
 
-    if (!connection) { // Ensure connection is established
-        connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(network), 'confirmed');
+    // Ensure connection is active
+    if (!connection) {
+        connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(NETWORK), 'confirmed');
     }
 
     try {
+        // Fetch AFOX balance
         let afoxBalance = 0;
         try {
+            const userAfoxTokenAccountPubKey = await SolanaToken.getAssociatedTokenAddress(
+                AFOX_TOKEN_MINT_ADDRESS,
+                walletPublicKey
+            );
             const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
                 walletPublicKey,
                 { mint: AFOX_TOKEN_MINT_ADDRESS }
@@ -765,42 +888,50 @@ async function updateStakingUI() {
                 afoxBalance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
             }
         } catch (tokenError) {
-            console.warn('Failed to get AFOX token balance (possibly none):', tokenError);
+            // This warning is fine if the user simply doesn't have an AFOX token account yet.
+            console.warn('Failed to get AFOX token balance (possibly no token account):', tokenError.message);
             afoxBalance = 0;
         }
-        if (userAfoxBalance) userAfoxBalance.textContent = `${afoxBalance} AFOX`;
+        if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = `${afoxBalance} AFOX`;
 
+        // Fetch user staking account info
         const userStakingAccount = await getUserStakingAccount(walletPublicKey);
         if (userStakingAccount) {
-            if (userStakedAmount) userStakedAmount.textContent = `${userStakingAccount.stakedAmount} AFOX`;
-            if (userRewardsAmount) userRewardsAmount.textContent = `${userStakingAccount.rewards} AFOX`;
+            if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = `${userStakingAccount.stakedAmount} AFOX`;
+            if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = `${userStakingAccount.rewards} AFOX`;
         } else {
-            if (userStakedAmount) userStakedAmount.textContent = '0 AFOX';
-            if (userRewardsAmount) userRewardsAmount.textContent = '0 AFOX';
+            // Set to zero if account does not exist or fetch failed
+            if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = '0 AFOX';
+            if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = '0 AFOX';
         }
 
+        // Fetch staking pool info
         const stakingPoolInfo = await getStakingPoolInfo();
         if (stakingPoolInfo) {
-            if (stakingApr) stakingApr.textContent = `${stakingPoolInfo.apr}%`;
-            if (minStakeAmountDisplay) minStakeAmountDisplay.textContent = `${stakingPoolInfo.minStake} AFOX`;
-            if (lockupPeriodDisplay) lockupPeriodDisplay.textContent = `${stakingPoolInfo.lockupDays} days`;
-            if (unstakeFeeDisplay) unstakeFeeDisplay.textContent = `${stakingPoolInfo.unstakeFee}%`;
-            if (rewardCalculationDisplay) rewardCalculationDisplay.textContent = stakingPoolInfo.rewardCalcMethod;
+            if (uiElements.stakingApr) uiElements.stakingApr.textContent = `${stakingPoolInfo.apr}%`;
+            if (uiElements.minStakeAmountDisplay) uiElements.minStakeAmountDisplay.textContent = `${stakingPoolInfo.minStake} AFOX`;
+            if (uiElements.lockupPeriodDisplay) uiElements.lockupPeriodDisplay.textContent = `${stakingPoolInfo.lockupDays} days`;
+            if (uiElements.unstakeFeeDisplay) uiElements.unstakeFeeDisplay.textContent = `${stakingPoolInfo.unstakeFee}%`;
+            if (uiElements.rewardCalculationDisplay) uiElements.rewardCalculationDisplay.textContent = stakingPoolInfo.rewardCalcMethod;
         }
 
     } catch (error) {
         console.error('Error updating staking UI:', error);
-        showNotification('Failed to load staking data. Check console.', 'error');
+        showNotification('Failed to load staking data. Check console for details.', 'error');
     }
 }
 
 /**
  * PSEUDO-FUNCTION: Gets user's staking account information.
- * REPLACE WITH YOUR ACTUAL SMART CONTRACT INTERACTION LOGIC.
+ * This needs to be replaced with actual Solana program interaction (e.g., using Anchor or raw Web3.js).
+ * @param {SolanaWeb3.PublicKey} userPublicKey
+ * @returns {Promise<{stakedAmount: number, rewards: number} | null>}
  */
 async function getUserStakingAccount(userPublicKey) {
+    if (!connection) return null; // Ensure connection is available
+
     try {
-        const [userStakingAccountPubKey] = await SolanaWeb3.PublicKey.findProgramAddress(
+        const [userStakingAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync(
             [userPublicKey.toBuffer(), Buffer.from("stake_account_seed")],
             STAKING_PROGRAM_ID
         );
@@ -808,31 +939,37 @@ async function getUserStakingAccount(userPublicKey) {
         const accountInfo = await connection.getAccountInfo(userStakingAccountPubKey);
 
         if (accountInfo && accountInfo.data) {
-            // Replace with actual deserialization based on your smart contract's account structure
-            console.warn("Staking data deserialization not implemented. Returning placeholder data.");
-            // Example if you have an Anchor program instance named `program`:
+            // !!! IMPORTANT: Replace this with actual deserialization based on your smart contract's account structure.
+            // Example for an Anchor program:
+            // const program = new Anchor.Program(idl, STAKING_PROGRAM_ID, provider);
             // const decodedAccount = await program.account.userStakeAccount.fetch(userStakingAccountPubKey);
             // return {
-            //     stakedAmount: decodedAccount.stakedAmount.toNumber() / (10 ** afoxDecimals),
-            //     rewards: decodedAccount.pendingRewards.toNumber() / (10 ** afoxDecimals),
+            //     stakedAmount: decodedAccount.stakedAmount.toNumber() / (10 ** AFOX_DECIMALS),
+            //     rewards: decodedAccount.pendingRewards.toNumber() / (10 ** AFOX_DECIMALS),
             // };
-            return { stakedAmount: 0, rewards: 0 };
+            console.warn("Staking user account data deserialization is a placeholder. Implement actual smart contract interaction.");
+            // Mock data for demonstration:
+            return { stakedAmount: 100, rewards: 1.5 }; // Example mock
         } else {
+            // Return default/zero values if account doesn't exist
             return { stakedAmount: 0, rewards: 0 };
         }
     } catch (error) {
-        console.error("Error getting user staking account:", error);
-        return { stakedAmount: 0, rewards: 0 };
+        console.error("Error getting user staking account (might not exist or deserialization issue):", error);
+        return null;
     }
 }
 
 /**
  * PSEUDO-FUNCTION: Gets staking pool information.
- * REPLACE WITH YOUR ACTUAL SMART CONTRACT INTERACTION LOGIC.
+ * This needs to be replaced with actual Solana program interaction.
+ * @returns {Promise<{apr: number, minStake: number, lockupDays: number, unstakeFee: number, rewardCalcMethod: string} | null>}
  */
 async function getStakingPoolInfo() {
+    if (!connection) return null; // Ensure connection is available
+
     try {
-        const [poolAccountPubKey] = await SolanaWeb3.PublicKey.findProgramAddress(
+        const [poolAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync(
             [Buffer.from("pool_config_seed")],
             STAKING_PROGRAM_ID
         );
@@ -840,24 +977,27 @@ async function getStakingPoolInfo() {
         const accountInfo = await connection.getAccountInfo(poolAccountPubKey);
 
         if (accountInfo && accountInfo.data) {
-            // Replace with actual deserialization based on your smart contract's account structure
-            console.warn("Staking pool data deserialization not implemented. Returning placeholder data.");
-            // Example if you have an Anchor program instance named `program`:
+            // !!! IMPORTANT: Replace this with actual deserialization based on your smart contract's account structure.
+            // Example for an Anchor program:
+            // const program = new Anchor.Program(idl, STAKING_PROGRAM_ID, provider);
             // const decodedPool = await program.account.stakingPool.fetch(poolAccountPubKey);
             // return {
-            //     apr: decodedPool.apr / 100,
-            //     minStake: decodedPool.minStake.toNumber() / (10 ** afoxDecimals),
+            //     apr: decodedPool.apr / 100, // Assuming APR is stored as a percentage, adjust as per your contract
+            //     minStake: decodedPool.minStake.toNumber() / (10 ** AFOX_DECIMALS),
             //     lockupDays: decodedPool.lockupPeriodDays,
-            //     unstakeFee: decodedPool.unstakeFeeBps / 100,
-            //     rewardCalcMethod: decodedPool.rewardCalcMethod
+            //     unstakeFee: decodedPool.unstakeFeeBps / 100, // Assuming basis points
+            //     rewardCalcMethod: decodedPool.rewardCalcMethod // e.g., "Daily", "PerBlock"
             // };
-            return { apr: 0, minStake: 0, lockupDays: 0, unstakeFee: 0, rewardCalcMethod: "N/A" };
+            console.warn("Staking pool data deserialization is a placeholder. Implement actual smart contract interaction.");
+            // Mock data for demonstration:
+            return { apr: 10, minStake: 5, lockupDays: 30, unstakeFee: 0.5, rewardCalcMethod: "Daily" }; // Example mock
         } else {
+            // Return default values if pool config doesn't exist
             return { apr: 0, minStake: 0, lockupDays: 0, unstakeFee: 0, rewardCalcMethod: "N/A" };
         }
     } catch (error) {
-        console.error("Error getting staking pool information:", error);
-        return { apr: 0, minStake: 0, lockupDays: 0, unstakeFee: 0, rewardCalcMethod: "N/A" };
+        console.error("Error getting staking pool information (might not exist or deserialization issue):", error);
+        return null;
     }
 }
 
@@ -865,780 +1005,1044 @@ async function getStakingPoolInfo() {
 // --- DYNAMIC CONTENT LOADING (ANNOUNCEMENTS, GAMES, ADS) ---
 
 async function loadAnnouncements() {
-    if (!announcementsList) return;
-    announcementsList.innerHTML = '<p class="placeholder-item">Loading announcements...</p>';
+    if (!uiElements.announcementsList) return;
+    uiElements.announcementsList.innerHTML = '<p class="placeholder-item">Loading announcements...</p>';
     try {
         const response = await fetch(`${API_BASE_URL}/api/announcements`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
-        announcementsList.innerHTML = '';
-        if (data.length === 0) {
-            announcementsList.innerHTML = '<p class="placeholder-item">No announcements yet.</p>';
+        uiElements.announcementsList.innerHTML = ''; // Clear loading message
+
+        if (!Array.isArray(data) || data.length === 0) {
+            uiElements.announcementsList.innerHTML = '<p class="placeholder-item">No announcements yet.</p>';
             return;
         }
-        data.reverse().forEach(announcement => {
+        // Sort by date in descending order (most recent first)
+        data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        data.forEach(announcement => {
             const div = document.createElement('div');
             div.className = 'announcement-item';
             div.innerHTML = `
-                <p>${announcement.text}</p>
-                <p class="announcement-date">${new Date(announcement.date).toLocaleString()}</p>
+                <p>${announcement.text || 'No text'}</p>
+                <p class="announcement-date">${announcement.date ? new Date(announcement.date).toLocaleString() : 'N/A'}</p>
             `;
-            announcementsList.appendChild(div);
+            uiElements.announcementsList.appendChild(div);
         });
     } catch (error) {
         console.error('Error loading announcements:', error);
-        announcementsList.innerHTML = '<p class="placeholder-item">Failed to load announcements.</p>';
+        showNotification(`Failed to load announcements: ${error.message}.`, 'error');
+        uiElements.announcementsList.innerHTML = '<p class="placeholder-item">Failed to load announcements.</p>';
     }
 }
 
 async function loadGames() {
-    if (!gameList) return;
-    gameList.innerHTML = '<p class="placeholder-item web3-placeholder">Loading games...</p>';
+    if (!uiElements.gameList) return;
+    uiElements.gameList.innerHTML = '<p class="placeholder-item web3-placeholder">Loading games...</p>';
     try {
         const response = await fetch(`${API_BASE_URL}/api/games`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
-        gameList.innerHTML = '';
-        if (data.length === 0) {
-            gameList.innerHTML = '<p class="placeholder-item web3-placeholder">No games uploaded yet.</p>';
+        uiElements.gameList.innerHTML = ''; // Clear loading message
+
+        if (!Array.isArray(data) || data.length === 0) {
+            uiElements.gameList.innerHTML = '<p class="placeholder-item web3-placeholder">No games uploaded yet.</p>';
             return;
         }
         data.forEach(game => {
             const div = document.createElement('div');
-            div.className = 'placeholder-item web3-placeholder';
+            div.className = 'game-item web3-placeholder'; // Specific class for games
             div.innerHTML = `
-                <h3>${game.title}</h3>
-                <p>${game.description}</p>
-                ${game.url ? `<a href="${game.url}" target="_blank" class="web3-btn small-btn">Play</a>` : ''}
+                <h3>${game.title || 'Untitled Game'}</h3>
+                <p>${game.description || 'No description'}</p>
+                ${game.url ? `<a href="${game.url}" target="_blank" rel="noopener noreferrer" class="web3-btn small-btn">Play</a>` : ''}
             `;
-            gameList.appendChild(div);
+            uiElements.gameList.appendChild(div);
         });
     } catch (error) {
         console.error('Error loading games:', error);
-        gameList.innerHTML = '<p class="placeholder-item web3-placeholder">Failed to load games.</p>';
+        showNotification(`Failed to load games: ${error.message}.`, 'error');
+        uiElements.gameList.innerHTML = '<p class="placeholder-item web3-placeholder">Failed to load games.</p>';
     }
 }
 
 async function loadAds() {
-    if (!adList) return;
-    adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Loading ads...</p>';
+    if (!uiElements.adList) return;
+    uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Loading ads...</p>';
     try {
         const response = await fetch(`${API_BASE_URL}/api/ads`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
-        adList.innerHTML = '';
-        if (data.length === 0) {
-            adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">No ads yet.</p>';
+        uiElements.adList.innerHTML = ''; // Clear loading message
+
+        if (!Array.isArray(data) || data.length === 0) {
+            uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">No ads yet.</p>';
             return;
         }
         data.forEach(ad => {
             const div = document.createElement('div');
-            div.className = 'placeholder-item ad web3-placeholder';
+            div.className = 'ad-item web3-placeholder'; // Specific class for ads
             div.innerHTML = `
-                <h3>${ad.title}</h3>
-                <p>${ad.content}</p>
+                <h3>${ad.title || 'Untitled Ad'}</h3>
+                <p>${ad.content || 'No content'}</p>
                 ${ad.imageUrl ? `<img src="${ad.imageUrl}" alt="Advertisement image" style="max-width:100%; height:auto; margin-top:10px; border-radius:5px;">` : ''}
-                ${ad.link ? `<a href="${ad.link}" target="_blank" class="web3-btn small-btn" style="margin-top:10px;">Learn more</a>` : ''}
+                ${ad.link ? `<a href="${ad.link}" target="_blank" rel="noopener noreferrer" class="web3-btn small-btn" style="margin-top:10px;">Learn more</a>` : ''}
             `;
-            adList.appendChild(div);
+            uiElements.adList.appendChild(div);
         });
     } catch (error) {
         console.error('Error loading ads:', error);
-        adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Failed to load ads.</p>';
+        showNotification(`Failed to load ads: ${error.message}.`, 'error');
+        uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Failed to load ads.</p>';
+    }
+}
+
+
+// --- EVENT LISTENERS INITIALIZATION ---
+
+/**
+ * Initializes all global event listeners.
+ */
+function initializeEventListeners() {
+    // Modal close buttons
+    Object.values(uiElements.closeModalButtons).forEach(btn => {
+        if (btn) btn.addEventListener('click', closeAllPopups);
+    });
+
+    // Main menu close button
+    if (uiElements.closeMainMenuCross) {
+        uiElements.closeMainMenuCross.addEventListener('click', () => {
+            if (uiElements.mainNav) {
+                uiElements.mainNav.classList.remove('active');
+                if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
+            }
+        });
+    }
+
+    // Close modals/menu on outside click
+    window.addEventListener('click', (event) => {
+        const modals = [uiElements.nftDetailsModal, uiElements.nftModal, uiElements.mintNftModal, uiElements.createProposalModal].filter(Boolean);
+        let popupClosed = false;
+        for (const modal of modals) {
+            // Check if the click occurred directly on the modal background (not inside the modal content)
+            if (modal.style.display === 'flex' && event.target === modal) {
+                modal.style.display = 'none';
+                popupClosed = true;
+                break;
+            }
+        }
+        // Close main nav if open and click is outside of it or its toggle button
+        if (!popupClosed && uiElements.mainNav && uiElements.mainNav.classList.contains('active') &&
+            !uiElements.mainNav.contains(event.target) && !(uiElements.menuToggle && uiElements.menuToggle.contains(event.target))) {
+            uiElements.mainNav.classList.remove('active');
+            if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
+        }
+    });
+
+    // Close popups/menu on Escape key
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeAllPopups();
+        }
+    });
+
+    // Menu toggle
+    if (uiElements.menuToggle) {
+        uiElements.menuToggle.addEventListener('click', () => {
+            // If mainNav is not already active, close other popups before opening
+            if (uiElements.mainNav && !uiElements.mainNav.classList.contains('active')) {
+                closeAllPopups();
+            }
+            if (uiElements.mainNav) uiElements.mainNav.classList.toggle('active');
+            uiElements.menuToggle.classList.toggle('active');
+        });
+    }
+
+    // Nav links (for closing menu after click)
+    uiElements.navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            if (uiElements.mainNav && uiElements.mainNav.classList.contains('active')) {
+                uiElements.mainNav.classList.remove('active');
+                if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
+            }
+        });
+    });
+
+    // Wallet Connect Buttons
+    uiElements.connectWalletButtons.forEach(btn => {
+        if (btn) btn.addEventListener('click', connectWallet);
+    });
+
+    // Mint NFT Form Submission
+    if (uiElements.mintNftForm) {
+        uiElements.mintNftForm.addEventListener('submit', handleMintNftSubmit);
+    }
+
+    // List NFT Form Submission
+    if (uiElements.listNftForm) {
+        uiElements.listNftForm.addEventListener('submit', handleListNftSubmit);
+    }
+
+    // Announcement Publish Button
+    if (uiElements.publishButton) {
+        uiElements.publishButton.addEventListener('click', handlePublishAnnouncement);
+    }
+
+    // Game Upload & Ad Post Buttons (Placeholders)
+    if (uiElements.uploadGameBtnWeb3) {
+        uiElements.uploadGameBtnWeb3.addEventListener('click', () => {
+            showNotification('Game upload is a placeholder. Implement backend logic for file uploads and database storage.', 'info', 5000);
+        });
+    }
+    if (uiElements.postAdBtnWeb3) {
+        uiElements.postAdBtnWeb3.addEventListener('click', () => {
+            showNotification('Ad posting is a placeholder. Implement backend logic for handling ad creatives and details.', 'info', 5000);
+        });
+    }
+
+    // Staking Button Handlers
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
+    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
+
+    // NFT Buy button handler
+    if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.addEventListener('click', handleBuyNft);
+
+    // NFT Sell button handler (direct link to list form)
+    if (uiElements.nftDetailSellBtn) {
+        uiElements.nftDetailSellBtn.addEventListener('click', () => {
+            if (currentOpenNft && uiElements.nftToSellSelect) {
+                uiElements.nftToSellSelect.value = currentOpenNft.mint;
+            }
+            closeAllPopups();
+            const nftSection = document.getElementById('nft-section'); // Scroll to NFT section
+            if (nftSection) nftSection.scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+
+    // NFT Transfer button handler
+    if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.addEventListener('click', handleTransferNft);
+
+    // Contract Address Copy Functionality
+    uiElements.copyButtons.forEach(button => {
+        button.addEventListener('click', handleCopyText);
+    });
+
+    // SWAP SECTION EVENT HANDLERS
+    if (uiElements.swapDirectionBtn) uiElements.swapDirectionBtn.addEventListener('click', handleSwapDirection);
+    // Listen for input and change events to clear quote
+    if (uiElements.swapFromAmountInput) uiElements.swapFromAmountInput.addEventListener('input', clearSwapQuote);
+    if (uiElements.swapFromTokenSelect) uiElements.swapFromTokenSelect.addEventListener('change', updateSwapSection);
+    if (uiElements.swapToTokenSelect) uiElements.swapToTokenSelect.addEventListener('change', clearSwapQuote);
+    if (uiElements.getQuoteBtn) uiElements.getQuoteBtn.addEventListener('click', getQuote);
+    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.addEventListener('click', executeSwap);
+    uiElements.maxAmountBtns.forEach(button => {
+        button.addEventListener('click', handleMaxAmount);
+    });
+
+    // DAO/Proposal Modals
+    const createProposalBtn = document.getElementById('createProposalBtn');
+    if (createProposalBtn) {
+        createProposalBtn.addEventListener('click', () => {
+            if (uiElements.createProposalModal) {
+                closeAllPopups();
+                uiElements.createProposalModal.style.display = 'flex';
+            }
+        });
+    }
+
+    // Mint NFT Open Modal Button
+    const mintNftOpenBtn = document.getElementById('mintNftOpenBtn');
+    if (mintNftOpenBtn) {
+        mintNftOpenBtn.addEventListener('click', () => {
+            if (uiElements.mintNftModal) {
+                closeAllPopups();
+                uiElements.mintNftModal.style.display = 'flex';
+            }
+        });
+    }
+
+    // Contact Form Validation
+    if (uiElements.contactForm) {
+        uiElements.contactForm.addEventListener('submit', handleContactFormSubmit);
+    }
+}
+
+// --- Specific Event Handler Functions ---
+
+async function handleMintNftSubmit(e) {
+    e.preventDefault();
+    if (!walletPublicKey) {
+        showNotification('Please connect your Solana wallet first to mint an NFT.', 'warning');
+        return;
+    }
+    if (!uiElements.mintNftForm) {
+        showNotification('Mint NFT form not found.', 'error');
+        return;
+    }
+
+    const formData = new FormData(uiElements.mintNftForm);
+    formData.append('creatorWallet', walletPublicKey.toBase58());
+
+    try {
+        showNotification('Minting NFT (simulation)...', 'info', 5000);
+        const response = await fetch(`${API_BASE_URL}/api/nfts/prepare-mint`, {
+            method: 'POST',
+            body: formData, // FormData sends as multipart/form-data
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        showNotification(`NFT successfully minted (simulation)! Metadata URI: ${result.uri}, Mint Address: ${result.mintAddress}`, 'success', 7000);
+        uiElements.mintNftForm.reset();
+        await Promise.all([
+            loadUserNFTs(walletPublicKey.toBase58()),
+            loadMarketplaceNFTs()
+        ]);
+        if (uiElements.mintNftModal) uiElements.mintNftModal.style.display = 'none'; // Close modal after successful mint
+    } catch (error) {
+        console.error('Error minting NFT:', error);
+        showNotification(`Failed to mint NFT: ${error.message}`, 'error');
+    }
+}
+
+async function handleListNftSubmit(e) {
+    e.preventDefault();
+    if (!walletPublicKey) {
+        showNotification('Please connect your Solana wallet first to list an NFT for sale.', 'warning');
+        return;
+    }
+    if (!uiElements.nftToSellSelect || !document.getElementById('salePrice') || !document.getElementById('listingDuration')) {
+        showNotification('NFT listing form elements not found.', 'error');
+        return;
+    }
+
+    const mintAddress = uiElements.nftToSellSelect.value;
+    const salePrice = parseFloat(document.getElementById('salePrice').value);
+    const listingDuration = parseInt(document.getElementById('listingDuration').value, 10);
+
+    if (!mintAddress) {
+        showNotification('Please select an NFT to list.', 'warning');
+        return;
+    }
+    if (isNaN(salePrice) || salePrice <= 0) {
+        showNotification('Please enter a valid sale price (greater than 0).', 'warning');
+        return;
+    }
+    if (isNaN(listingDuration) || listingDuration <= 0) {
+        showNotification('Please enter a valid listing duration (greater than 0).', 'warning');
+        return;
+    }
+
+    try {
+        showNotification('Listing NFT for sale...', 'info');
+        const response = await fetch(`${API_BASE_URL}/api/nfts/list`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mintAddress: mintAddress,
+                price: salePrice,
+                duration: listingDuration,
+                sellerWallet: walletPublicKey.toBase58(),
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        showNotification(result.message, 'success');
+        uiElements.listNftForm.reset();
+        await Promise.all([
+            loadUserNFTs(walletPublicKey.toBase58()),
+            loadMarketplaceNFTs()
+        ]);
+    } catch (error) {
+        console.error('Error listing NFT for sale:', error);
+        showNotification(`Failed to list NFT for sale: ${error.message}`, 'error');
+    }
+}
+
+async function handlePublishAnnouncement() {
+    if (!uiElements.announcementInput || !uiElements.publishButton) {
+        showNotification('Announcement form elements not found.', 'error');
+        return;
+    }
+    const text = uiElements.announcementInput.value.trim();
+    if (!text) {
+        showNotification('Please enter an announcement before publishing.', 'warning');
+        return;
+    }
+
+    try {
+        uiElements.publishButton.disabled = true; // Disable button to prevent multiple submissions
+        showNotification('Publishing announcement...', 'info');
+        const response = await fetch(`${API_BASE_URL}/api/announcements`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, date: new Date().toISOString() })
+        });
+        if (response.ok) {
+            uiElements.announcementInput.value = '';
+            await loadAnnouncements();
+            showNotification('Announcement published successfully!', 'success');
+        } else {
+            const errorData = await response.json();
+            showNotification(`Failed to publish announcement: ${errorData.error || response.statusText}. (Admin only in a real application)`, 'error');
+        }
+    } catch (error) {
+        console.error('Error publishing announcement:', error);
+        showNotification('Server connection error while publishing announcement.', 'error');
+    } finally {
+        uiElements.publishButton.disabled = false; // Re-enable button
+    }
+}
+
+async function handleStakeAfox() {
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet to stake.', 'warning');
+        return;
+    }
+    if (!connection) {
+        showNotification('Solana connection not established. Please connect your wallet again.', 'error');
+        return;
+    }
+    if (!uiElements.stakeAmountInput) {
+        showNotification('Stake amount input not found.', 'error');
+        return;
+    }
+
+    const amount = parseFloat(uiElements.stakeAmountInput.value);
+    if (isNaN(amount) || amount <= 0) {
+        showNotification('Please enter a valid amount to stake (greater than 0).', 'warning');
+        return;
+    }
+
+    try {
+        uiElements.stakeAfoxBtn.disabled = true;
+        showNotification(`Initiating staking of ${amount} AFOX...`, 'info', 5000);
+
+        const [userStakingAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync(
+            [walletPublicKey.toBuffer(), Buffer.from("stake_account_seed")],
+            STAKING_PROGRAM_ID
+        );
+        const [poolAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync(
+            [Buffer.from("pool_config_seed")],
+            STAKING_PROGRAM_ID
+        );
+
+        const userAfoxTokenAccountPubKey = await SolanaToken.getAssociatedTokenAddress(
+            AFOX_TOKEN_MINT_ADDRESS,
+            walletPublicKey
+        );
+
+        // Check user AFOX balance
+        let userAfoxBalanceInfo;
+        try {
+            userAfoxBalanceInfo = await connection.getTokenAccountBalance(userAfoxTokenAccountPubKey);
+        } catch (e) {
+            // This error implies the ATA might not exist or connection issue.
+            // If the ATA doesn't exist, balance is effectively 0 for the purpose of staking.
+            throw new Error(`Failed to fetch AFOX token account for user. Does it exist? ${e.message}`);
+        }
+
+        if (userAfoxBalanceInfo.value.uiAmount < amount) {
+            showNotification('Insufficient AFOX balance for staking.', 'error');
+            return;
+        }
+
+        const transaction = new SolanaWeb3.Transaction();
+
+        // If user's staking account doesn't exist, create it.
+        const userStakingAccountInfo = await connection.getAccountInfo(userStakingAccountPubKey);
+        if (!userStakingAccountInfo) {
+            // !!! IMPORTANT: Replace `space` with the exact size of your `UserStakeAccount` struct in bytes.
+            // You can get this from your Anchor IDL or by carefully calculating.
+            // Example for an Anchor program: Anchor.workspace.YourProgram.account.userStakeAccount.size
+            const space = 8 + 8 + 8 + 32 + 8 + 8 + 8; // Example: discriminator (8) + stakedAmount (8) + rewards (8) + owner (32) + lastStakeTime (8) + lockupEnd (8) + padding... (this will vary)
+            const lamports = await connection.getMinimumBalanceForRentExemption(space);
+            transaction.add(
+                SolanaWeb3.SystemProgram.createAccount({
+                    fromPubkey: walletPublicKey,
+                    newAccountPubkey: userStakingAccountPubKey,
+                    lamports,
+                    space,
+                    programId: STAKING_PROGRAM_ID,
+                })
+            );
+        }
+
+        const stakeAmountBN = new BN(amount * (10 ** AFOX_DECIMALS));
+
+        // !!! IMPORTANT: Replace this with your actual instruction from your staking program.
+        // This is a generic instruction structure. If using Anchor, it would be `program.methods.stake(...).accounts(...)`
+        // The `data` field `[0, ...stakeAmountBN.toArray('le', 8)]` assumes your stake instruction
+        // has a discriminant of 0 and takes a u64 amount. Adjust according to your IDL.
+        transaction.add({
+            keys: [
+                { pubkey: walletPublicKey, isSigner: true, isWritable: false },
+                { pubkey: poolAccountPubKey, isSigner: false, isWritable: true },
+                { pubkey: userStakingAccountPubKey, isSigner: false, isWritable: true },
+                { pubkey: AFOX_TOKEN_MINT_ADDRESS, isSigner: false, isWritable: false }, // Token mint
+                { pubkey: userAfoxTokenAccountPubKey, isSigner: false, isWritable: true }, // User's AFOX ATA
+                // You might need a program derived address (PDA) for the pool's token account if it holds the staked tokens
+                // { pubkey: poolTokenAccount, isSigner: false, isWritable: true },
+                { pubkey: SolanaToken.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+                { pubkey: SolanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+                { pubkey: SolanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+            ],
+            programId: STAKING_PROGRAM_ID,
+            // Example instruction data: assumes a simple "stake" instruction with a u64 amount
+            data: Buffer.from([0, ...stakeAmountBN.toArray('le', 8)]),
+        });
+
+        transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
+        transaction.feePayer = walletPublicKey;
+
+        const signature = await provider.sendAndConfirm(transaction);
+        console.log("Staking transaction successful:", signature);
+
+        showNotification(`You successfully staked ${amount} AFOX! Transaction ID: ${signature}`, 'success', 7000);
+        if (uiElements.stakeAmountInput) uiElements.stakeAmountInput.value = '';
+        await updateStakingUI();
+        await updateSwapBalances(); // Staking affects AFOX balance
+    } catch (error) {
+        console.error('Error during staking:', error);
+        showNotification(`Failed to stake tokens: ${error.message}. See console for details.`, 'error');
+    } finally {
+        if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
+    }
+}
+
+async function handleClaimRewards() {
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet.', 'warning');
+        return;
+    }
+    if (!connection) {
+        showNotification('Solana connection not established. Please connect your wallet again.', 'error');
+        return;
+    }
+    if (!provider) {
+        showNotification('Wallet provider not found. Please reconnect your wallet.', 'error');
+        return;
+    }
+
+    showNotification('Attempting to claim rewards...', 'info');
+    try {
+        if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = true;
+
+        // !!! IMPORTANT: Implement actual claim rewards transaction here.
+        // This would involve calling your staking smart contract's `claim_rewards` instruction.
+        // You'll need the correct PDAs and token accounts for the program.
+        console.warn("Claim rewards functionality is a placeholder. Implement actual smart contract interaction.");
+
+        // Example mock:
+        // const [userStakingAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync([walletPublicKey.toBuffer(), Buffer.from("stake_account_seed")], STAKING_PROGRAM_ID);
+        // const [poolAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync([Buffer.from("pool_config_seed")], STAKING_PROGRAM_ID);
+        // const userAfoxTokenAccountPubKey = await SolanaToken.getAssociatedTokenAddress(AFOX_TOKEN_MINT_ADDRESS, walletPublicKey);
+
+        // const transaction = new SolanaWeb3.Transaction().add(
+        //     // This needs to be replaced with your actual program instruction
+        //     // For example, if using Anchor:
+        //     // program.instruction.claimRewards().accounts({
+        //     //     user: walletPublicKey,
+        //     //     poolConfig: poolAccountPubKey,
+        //     //     userStakeAccount: userStakingAccountPubKey,
+        //     //     tokenMint: AFOX_TOKEN_MINT_ADDRESS,
+        //     //     userRewardAccount: userAfoxTokenAccountPubKey, // Account to receive rewards
+        //     //     tokenProgram: SolanaToken.TOKEN_PROGRAM_ID,
+        //     //     systemProgram: SolanaWeb3.SystemProgram.programId,
+        //     // }).instruction()
+        //     new SolanaWeb3.TransactionInstruction({
+        //         keys: [], // Fill with relevant keys for your claim instruction
+        //         programId: STAKING_PROGRAM_ID,
+        //         data: Buffer.from([1]), // Example discriminant for claim instruction
+        //     })
+        // );
+        // transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
+        // transaction.feePayer = walletPublicKey;
+        // const signature = await provider.sendAndConfirm(transaction);
+        // console.log("Claim rewards transaction successful:", signature);
+        const signature = "MOCK_SIGNATURE_CLAIM_REWARDS"; // Mock signature for demo
+
+        showNotification(`Rewards successfully claimed! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
+        await updateStakingUI();
+        await updateSwapBalances(); // Claiming rewards affects balance
+    } catch (error) {
+        console.error('Error claiming rewards:', error);
+        showNotification(`Failed to claim rewards: ${error.message}. Check console.`, 'error');
+    } finally {
+        if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = false;
+    }
+}
+
+async function handleUnstakeAfox() {
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet.', 'warning');
+        return;
+    }
+    if (!connection) {
+        showNotification('Solana connection not established. Please connect your wallet again.', 'error');
+        return;
+    }
+    if (!provider) {
+        showNotification('Wallet provider not found. Please reconnect your wallet.', 'error');
+        return;
+    }
+
+    showNotification('Attempting to unstake tokens...', 'info');
+    try {
+        if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = true;
+
+        // !!! IMPORTANT: Implement actual unstake transaction here.
+        // This would involve calling your staking smart contract's `unstake` instruction.
+        console.warn("Unstake functionality is a placeholder. Implement actual smart contract interaction.");
+
+        // Example mock:
+        // const [userStakingAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync([walletPublicKey.toBuffer(), Buffer.from("stake_account_seed")], STAKING_PROGRAM_ID);
+        // const [poolAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync([Buffer.from("pool_config_seed")], STAKING_PROGRAM_ID);
+        // const userAfoxTokenAccountPubKey = await SolanaToken.getAssociatedTokenAddress(AFOX_TOKEN_MINT_ADDRESS, walletPublicKey);
+
+        // const transaction = new SolanaWeb3.Transaction().add(
+        //     // This needs to be replaced with your actual program instruction
+        //     // For example, if using Anchor:
+        //     // program.instruction.unstake().accounts({
+        //     //     user: walletPublicKey,
+        //     //     poolConfig: poolAccountPubKey,
+        //     //     userStakeAccount: userStakingAccountPubKey,
+        //     //     tokenMint: AFOX_TOKEN_MINT_ADDRESS,
+        //     //     userTokenAccount: userAfoxTokenAccountPubKey, // Account to receive unstaked tokens
+        //     //     tokenProgram: SolanaToken.TOKEN_PROGRAM_ID,
+        //     //     systemProgram: SolanaWeb3.SystemProgram.programId,
+        //     // }).instruction()
+        //     new SolanaWeb3.TransactionInstruction({
+        //         keys: [], // Fill with relevant keys for your unstake instruction
+        //         programId: STAKING_PROGRAM_ID,
+        //         data: Buffer.from([2]), // Example discriminant for unstake instruction
+        //     })
+        // );
+        // transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
+        // transaction.feePayer = walletPublicKey;
+        // const signature = await provider.sendAndConfirm(transaction);
+        // console.log("Unstake transaction successful:", signature);
+        const signature = "MOCK_SIGNATURE_UNSTAKE"; // Mock signature for demo
+
+
+        showNotification(`Staked tokens successfully unstaked! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
+        await updateStakingUI();
+        await updateSwapBalances(); // Unstaking affects AFOX balance
+    } catch (error) {
+        console.error('Error unstaking tokens:', error);
+        showNotification(`Failed to unstake tokens: ${error.message}. Check console.`, 'error');
+    } finally {
+        if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = false;
+    }
+}
+
+async function handleBuyNft() {
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet to buy an NFT.', 'warning');
+        return;
+    }
+    if (!currentOpenNft) {
+        showNotification('No NFT selected for purchase.', 'warning');
+        return;
+    }
+    if (currentOpenNft.owner === walletPublicKey.toBase58()) {
+        showNotification('You cannot buy your own NFT.', 'warning');
+        return;
+    }
+    if (!currentOpenNft.isListed || !currentOpenNft.price) {
+        showNotification('This NFT is no longer listed for sale or has no price.', 'error');
+        return;
+    }
+    if (!connection) {
+        showNotification('Solana connection not established. Please connect your wallet again.', 'error');
+        return;
+    }
+    if (!provider) {
+        showNotification('Wallet provider not found. Please reconnect your wallet.', 'error');
+        return;
+    }
+    if (!uiElements.nftDetailBuyBtn) {
+        showNotification('Buy button not found.', 'error');
+        return;
+    }
+
+    try {
+        uiElements.nftDetailBuyBtn.disabled = true; // Disable button during purchase
+        showNotification(`Buying ${currentOpenNft.name} for ${currentOpenNft.price} SOL...`, 'info', 5000);
+
+        const response = await fetch(`${API_BASE_URL}/api/nfts/buy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mintAddress: currentOpenNft.mint,
+                buyerWallet: walletPublicKey.toBase58(),
+                sellerWallet: currentOpenNft.owner,
+                price: currentOpenNft.price
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error during purchase: ${response.status}`);
+        }
+        const transactionData = await response.json();
+
+        // Reconstruct transaction from base64 string provided by backend
+        const transaction = SolanaWeb3.Transaction.from(Buffer.from(transactionData.serializedTransaction, 'base64'));
+        transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
+        transaction.feePayer = walletPublicKey; // Ensure feePayer is set to the buyer
+
+        // Send and confirm the transaction
+        const signature = await provider.sendAndConfirm(transaction);
+        console.log("NFT purchase transaction successful:", signature);
+
+        showNotification(`Successfully purchased ${currentOpenNft.name}! Transaction ID: ${signature}`, 'success', 7000);
+        if (uiElements.nftDetailsModal) uiElements.nftDetailsModal.style.display = 'none';
+        await Promise.all([
+            loadMarketplaceNFTs(),
+            loadUserNFTs(walletPublicKey.toBase58()),
+            updateSwapBalances() // SOL balance might change due to purchase
+        ]);
+        currentOpenNft = null; // Clear the currently open NFT
+    } catch (error) {
+        console.error('Error purchasing NFT:', error);
+        showNotification(`Failed to purchase NFT: ${error.message}. Check console.`, 'error');
+    } finally {
+        if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.disabled = false; // Re-enable button
+    }
+}
+
+async function handleTransferNft() {
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet to transfer an NFT.', 'warning');
+        return;
+    }
+    if (!currentOpenNft) {
+        showNotification('No NFT selected for transfer.', 'warning');
+        return;
+    }
+    if (currentOpenNft.owner !== walletPublicKey.toBase58()) {
+        showNotification('You are not the owner of this NFT to transfer it.', 'warning');
+        return;
+    }
+    if (!connection) {
+        showNotification('Solana connection not established. Please connect your wallet again.', 'error');
+        return;
+    }
+    if (!provider) {
+        showNotification('Wallet provider not found. Please reconnect your wallet.', 'error');
+        return;
+    }
+    if (!uiElements.nftDetailTransferBtn) {
+        showNotification('Transfer button not found.', 'error');
+        return;
+    }
+
+    const recipientAddress = prompt("Enter the recipient's public address for the NFT:");
+    if (!recipientAddress) {
+        showNotification('Transfer cancelled. Recipient address not provided.', 'info');
+        return;
+    }
+    let recipientPublicKey;
+    try {
+        recipientPublicKey = new SolanaWeb3.PublicKey(recipientAddress);
+        if (recipientPublicKey.toBase58() === walletPublicKey.toBase58()) {
+            showNotification("Cannot transfer NFT to your own address.", "warning");
+            return;
+        }
+    } catch (e) {
+        showNotification('Invalid recipient address format. Please enter a valid Solana public key.', 'error');
+        return;
+    }
+
+    try {
+        uiElements.nftDetailTransferBtn.disabled = true; // Disable button during transfer
+        showNotification(`Preparing to transfer ${currentOpenNft.name} to ${recipientAddress}...`, 'info', 5000);
+
+        const nftMintPublicKey = new SolanaWeb3.PublicKey(currentOpenNft.mint);
+
+        const ownerTokenAccount = await SolanaToken.getAssociatedTokenAddress(
+            nftMintPublicKey,
+            walletPublicKey
+        );
+
+        // Ensure the owner actually has the token account for the NFT
+        const ownerTokenAccountInfo = await connection.getAccountInfo(ownerTokenAccount);
+        if (!ownerTokenAccountInfo) {
+            throw new Error(`Owner does not have the associated token account for NFT mint ${currentOpenNft.mint}.`);
+        }
+
+        const destinationTokenAccount = await SolanaToken.getAssociatedTokenAddress(
+            nftMintPublicKey,
+            recipientPublicKey
+        );
+
+        const instructions = [];
+
+        // Check if recipient's associated token account exists. If not, create it as part of the transaction.
+        // The payer for creating the ATA is the current walletPublicKey (sender).
+        const destAccountInfo = await connection.getAccountInfo(destinationTokenAccount);
+        if (!destAccountInfo) {
+            instructions.push(
+                SolanaToken.createAssociatedTokenAccountInstruction(
+                    walletPublicKey, // Payer
+                    destinationTokenAccount,
+                    recipientPublicKey,
+                    nftMintPublicKey,
+                    SolanaToken.TOKEN_PROGRAM_ID,
+                    SolanaWeb3.SystemProgram.programId
+                )
+            );
+        }
+
+        // Add the SPL Token transfer instruction
+        instructions.push(
+            SolanaToken.createTransferInstruction(
+                ownerTokenAccount, // Source token account (owner's ATA for this NFT)
+                destinationTokenAccount, // Destination token account (recipient's ATA for this NFT)
+                walletPublicKey, // Owner of the source token account (sender)
+                1, // Amount to transfer (NFTs are non-fungible, so amount is 1)
+                [], // Signers for approval (empty if owner is the signer)
+                SolanaToken.TOKEN_PROGRAM_ID
+            )
+        );
+
+        const transaction = new SolanaWeb3.Transaction().add(...instructions);
+        transaction.feePayer = walletPublicKey;
+        transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
+
+        const signature = await provider.sendAndConfirm(transaction);
+        console.log("NFT transfer successful:", signature);
+
+        showNotification(`NFT ${currentOpenNft.name} successfully transferred to ${recipientAddress}! Transaction ID: ${signature}`, 'success', 7000);
+        if (uiElements.nftDetailsModal) uiElements.nftDetailsModal.style.display = 'none';
+        await Promise.all([
+            loadUserNFTs(walletPublicKey.toBase58()), // Refresh user's NFTs
+            loadMarketplaceNFTs() // The NFT's listing status might change (e.g., delisted if transferred), so refresh
+        ]);
+        currentOpenNft = null; // Clear the currently open NFT
+    } catch (error) {
+        console.error('Error transferring NFT:', error);
+        showNotification(`Failed to transfer NFT: ${error.message}. Check console.`, 'error');
+    } finally {
+        if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.disabled = false; // Re-enable button
+    }
+}
+
+function handleCopyText(event) {
+    const button = event.currentTarget;
+    // Get the text from the previous sibling element with class 'highlight-text'
+    const textToCopyElement = button.previousElementSibling;
+    if (textToCopyElement && textToCopyElement.classList.contains('highlight-text')) {
+        const textToCopy = textToCopyElement.textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showNotification('Text copied to clipboard!', 'info', 2000);
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            showNotification('Failed to copy text. Please copy manually.', 'error');
+        });
+    } else {
+        console.warn('Target element for copying not found.');
+        showNotification('Could not find text to copy.', 'warning');
+    }
+}
+
+function handleSwapDirection() {
+    if (!uiElements.swapFromTokenSelect || !uiElements.swapToTokenSelect) {
+        console.error("Swap direction UI elements not found.");
+        return;
+    }
+
+    const fromVal = uiElements.swapFromTokenSelect.value;
+    const toVal = uiElements.swapToTokenSelect.value;
+
+    uiElements.swapFromTokenSelect.value = toVal;
+    uiElements.swapToTokenSelect.value = fromVal;
+
+    // Clear previous quote and update balances for new selection
+    updateSwapSection();
+}
+
+function clearSwapQuote() {
+    currentJupiterQuote = null;
+    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
+    if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
+    if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = '0%';
+    if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = '0';
+    if (uiElements.minReceivedSpan) uiElements.minReceivedSpan.textContent = '0';
+}
+
+async function updateSwapSection() {
+    await updateSwapBalances();
+    clearSwapQuote();
+}
+
+async function handleMaxAmount(event) {
+    const inputId = event.target.dataset.inputId;
+    const inputElement = document.getElementById(inputId);
+
+    if (!inputElement) {
+        console.warn(`Input element with ID ${inputId} not found for max amount button.`);
+        return;
+    }
+
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet to use MAX.', 'warning');
+        return;
+    }
+    if (!connection) {
+        showNotification('Solana connection not established. Please connect your wallet again.', 'error');
+        return;
+    }
+    if (!uiElements.swapFromTokenSelect) {
+        console.error("Swap from token select not found.");
+        showNotification("Swap functionality UI is not fully initialized.", "error");
+        return;
+    }
+
+    const fromTokenMint = TOKEN_MINT_ADDRESSES[uiElements.swapFromTokenSelect.value];
+    if (!fromTokenMint) {
+        showNotification('Selected "From" token is invalid.', 'error');
+        return;
+    }
+
+    try {
+        if (fromTokenMint.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
+            const solBalance = await connection.getBalance(walletPublicKey);
+            // Leave a small amount for transaction fees (e.g., 0.005 SOL)
+            const maxSol = (solBalance / SolanaWeb3.LAMPORTS_PER_SOL) - 0.005;
+            inputElement.value = Math.max(0, maxSol).toFixed(4); // Ensure non-negative
+        } else {
+            const tokenAccount = await connection.getParsedTokenAccountsByOwner(
+                walletPublicKey,
+                { mint: fromTokenMint }
+            );
+            if (tokenAccount.value.length > 0) {
+                const amount = tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount;
+                const decimals = tokenAccount.value[0].account.data.parsed.info.tokenAmount.decimals;
+                inputElement.value = formatBigInt(new BN(amount), decimals);
+            } else {
+                inputElement.value = '0';
+            }
+        }
+    } catch (error) {
+        console.error('Error getting max token balance:', error);
+        showNotification('Error getting maximum balance.', 'error');
+        inputElement.value = '0'; // Reset value on error
+    }
+    clearSwapQuote(); // Always clear the quote when amount changes
+}
+
+function handleContactFormSubmit(e) {
+    e.preventDefault();
+
+    if (!uiElements.contactForm || !uiElements.contactNameInput || !uiElements.contactEmailInput || !uiElements.contactSubjectInput || !uiElements.contactMessageInput) {
+        showNotification('Contact form elements not found.', 'error');
+        return;
+    }
+
+    const name = uiElements.contactNameInput.value.trim();
+    const email = uiElements.contactEmailInput.value.trim();
+    const subject = uiElements.contactSubjectInput.value.trim();
+    const message = uiElements.contactMessageInput.value.trim();
+
+    let isValid = true;
+    const errorMessages = [];
+
+    if (name === '') {
+        isValid = false;
+        errorMessages.push('Name is required.');
+    }
+    if (email === '') {
+        isValid = false;
+        errorMessages.push('Email address is required.');
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+        isValid = false;
+        errorMessages.push('Please enter a valid email address.');
+    }
+    if (message === '') {
+        isValid = false;
+        errorMessages.push('Message is required.');
+    }
+
+    if (isValid) {
+        console.log('Contact form data:', { name, email, subject, message });
+        // In a real application, you would send this data to a backend API
+        // Example:
+        // fetch(`${API_BASE_URL}/api/contact`, {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({ name, email, subject, message }),
+        // })
+        // .then(response => {
+        //     if (!response.ok) throw new Error('Network response was not ok.');
+        //     return response.json();
+        // })
+        // .then(data => {
+        //     showNotification('Message sent successfully!', 'success');
+        //     uiElements.contactForm.reset();
+        // })
+        // .catch(error => {
+        //     console.error('Error sending contact form:', error);
+        //     showNotification('Failed to send message. Please try again later.', 'error');
+        // });
+
+        // For now, just simulate success
+        showNotification('Message sent successfully! (This is a simulation, integrate with backend for real functionality)', 'success', 5000);
+        uiElements.contactForm.reset();
+    } else {
+        showNotification(`Validation error:\n${errorMessages.join('\n')}`, 'error', 5000);
     }
 }
 
 
 // --- DOMContentLoaded: Ensures the DOM is fully loaded before executing the script ---
 document.addEventListener('DOMContentLoaded', async () => {
-
-    // --- General Event Listeners for Modals and Menu ---
-    allModals.forEach(modalItem => {
-        if (modalItem.closeBtn) {
-            modalItem.closeBtn.addEventListener('click', () => {
-                modalItem.element.style.display = 'none';
-            });
-        }
-    });
-
-    if (closeMainMenuCross) {
-        closeMainMenuCross.addEventListener('click', () => {
-            if (mainNav) {
-                mainNav.classList.remove('active');
-                if (menuToggle) menuToggle.classList.remove('active');
-            }
-        });
-    }
-
-    window.addEventListener('click', function(event) {
-        let popupClosed = false;
-        for (let i = allModals.length - 1; i >= 0; i--) {
-            const modalItem = allModals[i];
-            if (modalItem.element && event.target === modalItem.element && modalItem.element.style.display === 'flex') {
-                modalItem.element.style.display = 'none';
-                popupClosed = true;
-                break;
-            }
-        }
-        if (!popupClosed && mainNav && mainNav.classList.contains('active') &&
-            !mainNav.contains(event.target) && !(menuToggle && menuToggle.contains(event.target))) {
-            mainNav.classList.remove('active');
-            if (menuToggle) menuToggle.classList.remove('active');
-        }
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            let popupClosed = false;
-            for (let i = allModals.length - 1; i >= 0; i--) {
-                const modalItem = allModals[i];
-                if (modalItem.element && modalItem.element.style.display === 'flex') {
-                    modalItem.element.style.display = 'none';
-                    popupClosed = true;
-                    break;
-                }
-            }
-            if (!popupClosed && mainNav && mainNav.classList.contains('active')) {
-                mainNav.classList.remove('active');
-                if (menuToggle) menuToggle.classList.remove('active');
-            }
-        }
-    });
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', () => {
-            if (!mainNav.classList.contains('active')) {
-                closeAllPopups();
-            }
-            mainNav.classList.toggle('active');
-            menuToggle.classList.toggle('active');
-        });
-    }
-
-    if (navLinks.length > 0) {
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                if (mainNav && mainNav.classList.contains('active')) {
-                    mainNav.classList.remove('active');
-                    if (menuToggle) menuToggle.classList.remove('active');
-                }
-            });
-        });
-    }
-
-    // --- Wallet Connect Buttons ---
-    // All connect buttons now point to the single connectWallet function
-    [connectWalletBtnWeb3, connectWalletNftBtn, connectWalletSwapBtn].forEach(btn => {
-        if (btn) btn.addEventListener('click', connectWallet);
-    });
-
-    // --- Mint NFT Form Submission ---
-    if (mintNftForm) {
-        mintNftForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!walletPublicKey) {
-                showNotification('Please connect your Solana wallet first to mint an NFT.', 'warning');
-                return;
-            }
-            const formData = new FormData(mintNftForm);
-            formData.append('creatorWallet', walletPublicKey.toBase58());
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/nfts/prepare-mint`, {
-                    method: 'POST',
-                    body: formData,
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                }
-                const result = await response.json();
-                showNotification(`NFT successfully minted (simulation)! Metadata URI: ${result.uri}, Mint Address: ${result.mintAddress}`, 'success', 5000);
-                mintNftForm.reset();
-                await loadUserNFTs(walletPublicKey.toBase58());
-                await loadMarketplaceNFTs();
-            } catch (error) {
-                console.error('Error minting NFT:', error);
-                showNotification(`Failed to mint NFT: ${error.message}`, 'error');
-            }
-        });
-    }
-
-    // --- List NFT Form Submission ---
-    if (listNftForm) {
-        listNftForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!walletPublicKey) {
-                showNotification('Please connect your Solana wallet first to list an NFT for sale.', 'warning');
-                return;
-            }
-            const mintAddress = document.getElementById('nftToSell').value;
-            const salePrice = parseFloat(document.getElementById('salePrice').value);
-            const listingDuration = parseInt(document.getElementById('listingDuration').value, 10);
-
-            if (!mintAddress || isNaN(salePrice) || salePrice <= 0 || isNaN(listingDuration) || listingDuration <= 0) {
-                showNotification('Please select an NFT and enter a valid price and duration.', 'warning');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/nfts/list`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        mintAddress: mintAddress,
-                        price: salePrice,
-                        duration: listingDuration,
-                        sellerWallet: walletPublicKey.toBase58(),
-                    }),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                showNotification(result.message, 'success');
-                listNftForm.reset();
-                await loadUserNFTs(walletPublicKey.toBase58());
-                await loadMarketplaceNFTs();
-            } catch (error) {
-                console.error('Error listing NFT for sale:', error);
-                showNotification(`Failed to list NFT for sale: ${error.message}`, 'error');
-            }
-        });
-    }
-
-    // --- Announcement Publish Button ---
-    if (publishButton && announcementInput) {
-        publishButton.addEventListener('click', async () => {
-            const text = announcementInput.value.trim();
-            if (text) {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/announcements`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: text, date: new Date().toISOString() })
-                    });
-                    if (response.ok) {
-                        announcementInput.value = '';
-                        await loadAnnouncements();
-                        showNotification('Announcement published!', 'success');
-                    } else {
-                        showNotification('Failed to publish announcement. (Admin only in a real application)', 'error');
-                    }
-                } catch (error) {
-                    console.error('Error publishing announcement:', error);
-                    showNotification('Server connection error.', 'error');
-                }
-            } else {
-                showNotification('Please enter an announcement.', 'warning');
-            }
-        });
-    }
-
-    // --- Game Upload & Ad Post Buttons (Placeholders) ---
-    if (uploadGameBtnWeb3) {
-        uploadGameBtnWeb3.addEventListener('click', () => {
-            showNotification('Game upload functionality requires a form and backend integration for file handling.', 'info', 5000);
-        });
-    }
-
-    if (postAdBtnWeb3) {
-        postAdBtnWeb3.addEventListener('click', () => {
-            showNotification('Ad posting functionality requires a form and backend integration for handling details and creative files.', 'info', 5000);
-        });
-    }
-
-    // --- Staking Button Handlers ---
-    if (stakeAfoxBtn) {
-        stakeAfoxBtn.addEventListener('click', async () => {
-            if (!walletPublicKey) {
-                showNotification('Please connect your wallet to stake.', 'warning');
-                return;
-            }
-            if (!connection) {
-                showNotification('Solana connection not established. Please connect your wallet again.', 'error');
-                return;
-            }
-
-            const amount = parseFloat(stakeAmountInput.value);
-            if (isNaN(amount) || amount <= 0) {
-                showNotification('Please enter a valid amount to stake.', 'warning');
-                return;
-            }
-
-            try {
-                showNotification(`Initiating staking of ${amount} AFOX...`, 'info', 5000);
-
-                const [userStakingAccountPubKey] = await SolanaWeb3.PublicKey.findProgramAddress(
-                    [walletPublicKey.toBuffer(), Buffer.from("stake_account_seed")],
-                    STAKING_PROGRAM_ID
-                );
-                const [poolAccountPubKey] = await SolanaWeb3.PublicKey.findProgramAddress(
-                    [Buffer.from("pool_config_seed")],
-                    STAKING_PROGRAM_ID
-                );
-
-                const userAfoxTokenAccountPubKey = await SolanaToken.getAssociatedTokenAddress(
-                    AFOX_TOKEN_MINT_ADDRESS,
-                    walletPublicKey
-                );
-
-                const userAfoxBalanceInfo = await connection.getTokenAccountBalance(userAfoxTokenAccountPubKey);
-                if (userAfoxBalanceInfo.value.uiAmount < amount) {
-                    showNotification('Insufficient AFOX balance for staking.', 'error');
-                    return;
-                }
-
-                const transaction = new SolanaWeb3.Transaction();
-                const userStakingAccountInfo = await connection.getAccountInfo(userStakingAccountPubKey);
-                if (!userStakingAccountInfo) {
-                    const space = 100; // Example size, REPLACE WITH ACTUAL SIZE FROM YOUR CONTRACT
-                    const lamports = await connection.getMinimumBalanceForRentExemption(space);
-                    transaction.add(
-                        SolanaWeb3.SystemProgram.createAccount({
-                            fromPubkey: walletPublicKey,
-                            newAccountPubkey: userStakingAccountPubKey,
-                            lamports,
-                            space,
-                            programId: STAKING_PROGRAM_ID,
-                        })
-                    );
-                }
-
-                const stakeAmountBN = new BN(amount * (10 ** afoxDecimals));
-                transaction.add({
-                    keys: [
-                        { pubkey: walletPublicKey, isSigner: true, isWritable: false },
-                        { pubkey: poolAccountPubKey, isSigner: false, isWritable: true },
-                        { pubkey: userStakingAccountPubKey, isSigner: false, isWritable: true },
-                        { pubkey: AFOX_TOKEN_MINT_ADDRESS, isSigner: false, isWritable: false },
-                        { pubkey: userAfoxTokenAccountPubKey, isSigner: false, isWritable: true },
-                        { pubkey: SolanaToken.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-                        { pubkey: SolanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
-                        { pubkey: SolanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
-                    ],
-                    programId: STAKING_PROGRAM_ID,
-                    data: Buffer.from([0, ...stakeAmountBN.toArray('le', 8)]),
-                });
-
-                transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-                transaction.feePayer = walletPublicKey;
-
-                const signature = await provider.sendAndConfirm(transaction);
-                console.log("Staking transaction successful:", signature);
-
-                showNotification(`You successfully staked ${amount} AFOX!`, 'success');
-                if (stakeAmountInput) stakeAmountInput.value = '';
-                await updateStakingUI();
-                await updateSwapBalances(); // Staking affects AFOX balance
-            } catch (error) {
-                console.error('Error during staking:', error);
-                showNotification(`Failed to stake tokens: ${error.message}. See console for details.`, 'error');
-            }
-        });
-    }
-
-    if (claimRewardsBtn) {
-        claimRewardsBtn.addEventListener('click', async () => {
-            if (!walletPublicKey) {
-                showNotification('Please connect your wallet.', 'warning');
-                return;
-            }
-            if (!connection) {
-                showNotification('Solana connection not established. Please connect your wallet again.', 'error');
-                return;
-            }
-            showNotification('Attempting to claim rewards...', 'info');
-            try {
-                // Placeholder for actual claim rewards transaction
-                // Example: Construct a transaction calling your smart contract's `claim_rewards`
-                showNotification('Rewards successfully claimed! (This feature requires staking smart contract implementation)', 'success', 5000);
-                await updateStakingUI();
-                await updateSwapBalances(); // Claiming rewards might affect balance
-            } catch (error) {
-                console.error('Error claiming rewards:', error);
-                showNotification(`Failed to claim rewards: ${error.message}. Check console.`, 'error');
-            }
-        });
-    }
-
-    if (unstakeAfoxBtn) {
-        unstakeAfoxBtn.addEventListener('click', async () => {
-            if (!walletPublicKey) {
-                showNotification('Please connect your wallet.', 'warning');
-                return;
-            }
-            if (!connection) {
-                showNotification('Solana connection not established. Please connect your wallet again.', 'error');
-                return;
-            }
-            showNotification('Attempting to unstake tokens...', 'info');
-            try {
-                // Placeholder for actual unstake transaction
-                // Example: Construct a transaction calling your smart contract's `unstake`
-                showNotification('Staked tokens successfully unstaked! (This feature requires staking smart contract implementation)', 'success', 5000);
-                await updateStakingUI();
-                await updateSwapBalances(); // Unstaking affects AFOX balance
-            } catch (error) {
-                console.error('Error unstaking tokens:', error);
-                showNotification(`Failed to unstake tokens: ${error.message}. Check console.`, 'error');
-            }
-        });
-    }
-
-    // --- NFT Buy button handler ---
-    if (nftDetailBuyBtn) {
-        nftDetailBuyBtn.onclick = async () => {
-            if (!walletPublicKey) {
-                showNotification('Please connect your wallet to buy an NFT.', 'warning');
-                return;
-            }
-            if (!currentOpenNft || currentOpenNft.owner === walletPublicKey.toBase58()) {
-                showNotification('You cannot buy your own NFT or NFT data is missing.', 'warning');
-                return;
-            }
-            if (!currentOpenNft.isListed || !currentOpenNft.price) {
-                showNotification('This NFT is no longer listed for sale.', 'error');
-                return;
-            }
-            if (!connection) {
-                showNotification('Solana connection not established. Please connect your wallet again.', 'error');
-                return;
-            }
-
-            try {
-                showNotification(`Buying ${currentOpenNft.name} for ${currentOpenNft.price} SOL...`, 'info', 5000);
-
-                const response = await fetch(`${API_BASE_URL}/api/nfts/buy`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        mintAddress: currentOpenNft.mint,
-                        buyerWallet: walletPublicKey.toBase58(),
-                        sellerWallet: currentOpenNft.owner,
-                        price: currentOpenNft.price
-                    }),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP error during purchase: ${response.status}`);
-                }
-                const transactionData = await response.json();
-
-                const transaction = SolanaWeb3.Transaction.from(Buffer.from(transactionData.serializedTransaction, 'base64'));
-                transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-                transaction.feePayer = walletPublicKey;
-
-                const signature = await provider.sendAndConfirm(transaction);
-                console.log("NFT purchase successful:", signature);
-
-                showNotification(`Successfully purchased ${currentOpenNft.name}!`, 'success', 5000);
-                nftDetailsModal.style.display = 'none';
-                await loadMarketplaceNFTs();
-                await loadUserNFTs(walletPublicKey.toBase58());
-                await updateSwapBalances(); // SOL balance might change
-                currentOpenNft = null;
-            } catch (error) {
-                console.error('Error purchasing NFT:', error);
-                showNotification(`Failed to purchase NFT: ${error.message}`, 'error');
-            }
-        };
-    }
-
-    // NFT Sell button handler (direct link to list form)
-    if (nftDetailSellBtn) {
-        nftDetailSellBtn.onclick = () => {
-            if (currentOpenNft && nftToSellSelect) {
-                document.getElementById('nftToSell').value = currentOpenNft.mint;
-            }
-            closeAllPopups();
-            const nftSection = document.getElementById('nft-section');
-            if (nftSection) nftSection.scrollIntoView({ behavior: 'smooth' });
-        };
-    }
-
-    // NFT Transfer button handler
-    if (nftDetailTransferBtn) {
-        nftDetailTransferBtn.onclick = async () => {
-            if (!walletPublicKey) {
-                showNotification('Please connect your wallet to transfer an NFT.', 'warning');
-                return;
-            }
-            if (!currentOpenNft || currentOpenNft.owner !== walletPublicKey.toBase58()) {
-                showNotification('You are not the owner of this NFT to transfer it, or NFT data is missing.', 'warning');
-                return;
-            }
-            if (!connection) {
-                showNotification('Solana connection not established. Please connect your wallet again.', 'error');
-                return;
-            }
-
-            const recipientAddress = prompt("Enter the recipient's public address for the NFT:");
-            if (!recipientAddress) {
-                showNotification('Transfer cancelled. Recipient address not provided.', 'info');
-                return;
-            }
-            let recipientPublicKey;
-            try {
-                recipientPublicKey = new SolanaWeb3.PublicKey(recipientAddress);
-            } catch (e) {
-                showNotification('Invalid recipient address.', 'error');
-                return;
-            }
-
-            try {
-                showNotification(`Transferring ${currentOpenNft.name} to ${recipientAddress}...`, 'info', 5000);
-
-                const ownerTokenAccounts = await connection.getParsedTokenAccountsByOwner(
-                    walletPublicKey,
-                    { mint: new SolanaWeb3.PublicKey(currentOpenNft.mint) }
-                );
-
-                if (!ownerTokenAccounts.value || ownerTokenAccounts.value.length === 0) {
-                    throw new Error("Could not find NFT token account for owner.");
-                }
-                const sourceTokenAccount = ownerTokenAccounts.value[0].pubkey;
-
-                const destinationTokenAccount = await SolanaToken.getAssociatedTokenAddress(
-                    new SolanaWeb3.PublicKey(currentOpenNft.mint),
-                    recipientPublicKey
-                );
-
-                let instructions = [];
-                const destAccountInfo = await connection.getAccountInfo(destinationTokenAccount);
-                if (!destAccountInfo) {
-                    instructions.push(
-                        SolanaToken.createAssociatedTokenAccountInstruction(
-                            walletPublicKey,
-                            destinationTokenAccount,
-                            recipientPublicKey,
-                            new SolanaWeb3.PublicKey(currentOpenNft.mint),
-                            SolanaToken.TOKEN_PROGRAM_ID,
-                            SolanaWeb3.SystemProgram.programId
-                        )
-                    );
-                }
-
-                instructions.push(
-                    SolanaToken.createTransferInstruction(
-                        sourceTokenAccount,
-                        destinationTokenAccount,
-                        walletPublicKey,
-                        1,
-                        [],
-                        SolanaToken.TOKEN_PROGRAM_ID
-                    )
-                );
-
-                const transaction = new SolanaWeb3.Transaction().add(...instructions);
-                transaction.feePayer = walletPublicKey;
-                transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-
-                const signature = await provider.sendAndConfirm(transaction);
-                console.log("NFT transfer successful:", signature);
-
-                showNotification(`NFT ${currentOpenNft.name} successfully transferred!`, 'success', 5000);
-                nftDetailsModal.style.display = 'none';
-                await loadUserNFTs(walletPublicKey.toBase58());
-                await loadMarketplaceNFTs();
-                currentOpenNft = null;
-            } catch (error) {
-                console.error('Error transferring NFT:', error);
-                showNotification(`Failed to transfer NFT: ${error.message}`, 'error');
-            }
-        };
-    }
-
-    // --- Contract Address Copy Functionality ---
-    const copyButtons = document.querySelectorAll('.copy-btn');
-    copyButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const textToCopyElement = this.previousElementSibling;
-            if (textToCopyElement && textToCopyElement.classList.contains('highlight-text')) {
-                const textToCopy = textToCopyElement.textContent;
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    showNotification('Text copied to clipboard!', 'info', 2000);
-                    const originalText = button.textContent;
-                    button.textContent = 'Copied!';
-                    setTimeout(() => {
-                        button.textContent = originalText;
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
-                    showNotification('Failed to copy text.', 'error');
-                });
-            } else {
-                console.warn('Target element for copying not found.');
-            }
-        });
-    });
-
-    // --- SWAP SECTION EVENT HANDLERS ---
-    swapDirectionBtn.addEventListener('click', () => {
-        const fromVal = swapFromTokenSelect.value;
-        const toVal = swapToTokenSelect.value;
-
-        swapFromTokenSelect.value = toVal;
-        swapToTokenSelect.value = fromVal;
-
-        // Optionally swap amounts, but it's often better to re-fetch quote
-        // const tempFromAmount = swapFromAmountInput.value;
-        // swapFromAmountInput.value = swapToAmountInput.value;
-
-        updateSwapBalances();
-        currentQuote = null;
-        executeSwapBtn.style.display = 'none';
-        swapToAmountInput.value = '';
-    });
-
-    swapFromAmountInput.addEventListener('input', () => {
-        currentQuote = null;
-        executeSwapBtn.style.display = 'none';
-        swapToAmountInput.value = '';
-    });
-
-    swapFromTokenSelect.addEventListener('change', () => {
-        updateSwapBalances();
-        currentQuote = null;
-        executeSwapBtn.style.display = 'none';
-        swapToAmountInput.value = '';
-    });
-
-    swapToTokenSelect.addEventListener('change', () => {
-        currentQuote = null;
-        executeSwapBtn.style.display = 'none';
-        swapToAmountInput.value = '';
-    });
-
-    getQuoteBtn.addEventListener('click', getQuote);
-    executeSwapBtn.addEventListener('click', executeSwap);
-
-    maxAmountBtns.forEach(button => {
-        button.addEventListener('click', async (event) => {
-            const inputId = event.target.dataset.inputId;
-            const inputElement = document.getElementById(inputId);
-
-            if (!walletPublicKey) {
-                showNotification('Please connect your wallet to use MAX.', 'warning');
-                return;
-            }
-            if (!connection) {
-                showNotification('Solana connection not established. Please connect your wallet again.', 'error');
-                return;
-            }
-
-            const fromTokenMint = TOKEN_MINT_ADDRESSES[swapFromTokenSelect.value];
-
-            if (fromTokenMint.toBase58() === TOKEN_MINT_ADDRESSES['SOL'].toBase58()) {
-                const solBalance = await connection.getBalance(walletPublicKey);
-                const maxSol = (solBalance / SolanaWeb3.LAMPORTS_PER_SOL) - 0.005; // Leave 0.005 SOL for fees
-                inputElement.value = Math.max(0, maxSol).toFixed(4);
-            } else {
-                try {
-                    const tokenAccount = await connection.getParsedTokenAccountsByOwner(
-                        walletPublicKey,
-                        { mint: fromTokenMint }
-                    );
-                    if (tokenAccount.value.length > 0) {
-                        const amount = tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount;
-                        const decimals = tokenAccount.value[0].account.data.parsed.info.tokenAmount.decimals;
-                        inputElement.value = formatBigInt(new BN(amount), decimals);
-                    } else {
-                        inputElement.value = '0';
-                    }
-                } catch (error) {
-                    console.error('Error getting max token balance:', error);
-                    showNotification('Error getting maximum balance.', 'error');
-                    inputElement.value = '0';
-                }
-            }
-            currentQuote = null;
-            executeSwapBtn.style.display = 'none';
-            swapToAmountInput.value = '';
-        });
-    });
-
-    // --- DAO/Proposal Modals ---
-    const createProposalBtn = document.getElementById('createProposalBtn');
-    if (createProposalBtn) {
-        createProposalBtn.addEventListener('click', () => {
-            if (createProposalModal) {
-                closeAllPopups();
-                createProposalModal.style.display = 'flex';
-            }
-        });
-    }
-
-    // --- Mint NFT Open Modal Button ---
-    const mintNftOpenBtn = document.getElementById('mintNftOpenBtn');
-    if (mintNftOpenBtn) {
-        mintNftOpenBtn.addEventListener('click', () => {
-            if (mintNftModal) {
-                closeAllPopups();
-                mintNftModal.style.display = 'flex';
-            }
-        });
-    }
-
-    // --- Contact Form Validation ---
-    const contactForm = document.getElementById('contactForm');
-    if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            const name = document.getElementById('contact-name').value.trim();
-            const email = document.getElementById('contact-email').value.trim();
-            const subject = document.getElementById('contact-subject').value.trim();
-            const message = document.getElementById('contact-message').value.trim();
-
-            let isValid = true;
-            let errorMessage = '';
-
-            if (name === '') {
-                isValid = false;
-                errorMessage += 'Name is required.\n';
-            }
-            if (email === '') {
-                isValid = false;
-                errorMessage += 'Email address is required.\n';
-            } else if (!/\S+@\S+\.\S+/.test(email)) {
-                isValid = false;
-                errorMessage += 'Please enter a valid email address.\n';
-            }
-            if (message === '') {
-                isValid = false;
-                errorMessage += 'Message is required.\n';
-            }
-
-            if (isValid) {
-                console.log('Form data:', { name, email, subject, message });
-                showNotification('Message sent successfully!', 'success');
-                contactForm.reset();
-            } else {
-                showNotification(`Validation error:\n${errorMessage}`, 'error', 5000);
-            }
-        });
-    }
+    cacheUIElements(); // Cache all necessary UI elements first
+    initializeEventListeners(); // Attach all event listeners
 
     // --- Initial Data Loads on Page Ready & Auto-Connect ---
-    await loadAnnouncements();
-    await loadGames();
-    await loadAds();
-    await loadMarketplaceNFTs();
+    await Promise.all([
+        loadAnnouncements(),
+        loadGames(),
+        loadAds(),
+        loadMarketplaceNFTs()
+    ]);
 
     // Attempt to auto-connect wallet if already authorized (Phantom's behavior)
     try {
-        const selectedWallet = wallets[0];
-        if (selectedWallet && selectedWallet.connected && selectedWallet.publicKey) {
-            walletPublicKey = selectedWallet.publicKey;
-            provider = selectedWallet;
-            connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(network), 'confirmed');
+        const selectedWallet = WALLETS[0]; // Assuming Phantom is the first/main wallet
+        if (selectedWallet && selectedWallet.adapter && selectedWallet.adapter.connected && selectedWallet.adapter.publicKey) {
+            walletPublicKey = selectedWallet.adapter.publicKey;
+            provider = selectedWallet.adapter;
+            connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(NETWORK), 'confirmed');
 
             updateWalletUI(walletPublicKey.toBase58());
-            await loadUserNFTs(walletPublicKey.toBase58());
-            await updateStakingUI();
-            await updateSwapBalances();
-            registerProviderListeners();
+            // Load all user-specific data
+            await Promise.all([
+                loadUserNFTs(walletPublicKey.toBase58()),
+                updateStakingUI(),
+                updateSwapBalances()
+            ]);
+            registerProviderListeners(); // Re-register listeners for auto-connected provider
             showNotification('Wallet automatically connected!', 'success');
         } else {
             // If not auto-connected, ensure UI reflects disconnected state
@@ -1646,7 +2050,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (e) {
         console.warn("Auto-connect failed or wallet not found/authorized:", e);
-        showNotification(`Auto-connect failed: ${e.message || e}`, 'error');
-        handleWalletDisconnect();
+        showNotification(`Auto-connect failed: ${e.message || e}. Please connect manually.`, 'error');
+        handleWalletDisconnect(); // Ensure UI is reset if auto-connect fails
     }
 });
