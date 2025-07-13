@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../config/logger');
 const ApiError = require('../utils/ApiError'); // Import your custom ApiError
-const { ROLES } = require('../config/constants'); // Import ROLES constant
+const { JWT_SECRET } = require('../config'); // <-- ИМПОРТИРУЕМ JWT_SECRET ИЗ НАШЕГО config
+const { ROLES } = require('../config/constants'); // Import ROLES constant (make sure this file exists and defines ROLES)
 
 /**
  * Middleware to authenticate JWT (JSON Web Token).
@@ -23,18 +24,18 @@ const authenticateToken = (req, res, next) => {
         return next(ApiError.unauthorized('Authentication token required.'));
     }
 
-    // Ensure JWT_SECRET is defined in your environment variables
-    if (!process.env.JWT_SECRET) {
-        logger.error('JWT_SECRET environment variable is not defined!');
+    // Ensure JWT_SECRET is defined in our configuration
+    if (!JWT_SECRET) { // <-- ИСПОЛЬЗУЕМ JWT_SECRET ИЗ config
+        logger.error('CRITICAL ERROR: JWT_SECRET is not defined in config/index.js. Server misconfiguration.');
         // This is a critical server misconfiguration, should alert immediately
         return next(ApiError.internal('Server configuration error: JWT secret missing.'));
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    jwt.verify(token, JWT_SECRET, (err, user) => { // <-- ИСПОЛЬЗУЕМ JWT_SECRET ИЗ config
         if (err) {
             // Handle specific JWT errors
             if (err.name === 'TokenExpiredError') {
-                logger.warn(`Authentication failed: Token expired for user ${user ? user.id : 'unknown'}.`);
+                logger.warn(`Authentication failed: Token expired for user ID ${user ? user.userId : 'unknown'}.`); // Changed to userId for clarity
                 return next(ApiError.unauthorized('Authentication token has expired. Please log in again.'));
             }
             logger.warn(`Authentication failed: Invalid token. Error: ${err.message}`);
@@ -42,9 +43,8 @@ const authenticateToken = (req, res, next) => {
         }
         
         // Attach the decoded user payload to the request object
-        // Ensure the payload matches what you expect (e.g., { id: '...', walletAddress: '...', role: '...' })
         req.user = user; 
-        logger.debug(`User authenticated: ${req.user.walletAddress} (Role: ${req.user.role})`);
+        logger.debug(`User authenticated: ${req.user.username} (Wallet: ${req.user.walletAddress}, Role: ${req.user.role})`);
         next(); // Proceed to the next middleware or route handler
     });
 };
@@ -71,12 +71,12 @@ const authorizeRole = (allowedRoles) => (req, res, next) => {
 
     // Check if the user's role is included in the allowed roles list
     if (!rolesToCheck.includes(req.user.role)) {
-        logger.warn(`Authorization denied for user ${req.user.walletAddress} (Role: ${req.user.role}): Required roles: [${rolesToCheck.join(', ')}].`);
+        logger.warn(`Authorization denied for user ${req.user.username} (Role: ${req.user.role}): Required roles: [${rolesToCheck.join(', ')}].`); // Changed to username for logging
         // Use ApiError for consistent error responses
         return next(ApiError.forbidden(`Access denied. Requires one of the following roles: ${rolesToCheck.join(', ')}.`));
     }
 
-    logger.debug(`Authorization granted for user ${req.user.walletAddress} (Role: ${req.user.role}) for route requiring [${rolesToCheck.join(', ')}].`);
+    logger.debug(`Authorization granted for user ${req.user.username} (Role: ${req.user.role}) for route requiring [${rolesToCheck.join(', ')}].`);
     next(); // User is authorized, proceed
 };
 
