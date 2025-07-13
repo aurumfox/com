@@ -4,12 +4,11 @@
  */
 
 const mongoose = require('mongoose');
+const { MONGODB_URI } = require('../config'); // <-- ИМПОРТИРУЕМ MONGODB_URI ИЗ НАШЕГО config
 const logger = require('./logger'); // Assuming your logger is correctly configured
 
 // Define default connection options for Mongoose
 const mongooseOptions = {
-    // useNewUrlParser: true, // Deprecated in Mongoose 6+
-    // useUnifiedTopology: true, // Deprecated in Mongoose 6+
     serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
     socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
     family: 4, // Use IPv4, skip trying IPv6
@@ -26,10 +25,16 @@ const mongooseOptions = {
  * @throws {Error} If connection fails after retries.
  */
 const connectDB = async () => {
-    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/solana_dapp_db';
+    // const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/solana_dapp_db'; // <-- УДАЛИТЬ ЭТУ СТРОКУ!
     let attempts = 0;
     const MAX_ATTEMPTS = 10; // Max number of attempts to connect
     const RETRY_DELAY_MS = 5000; // Delay between retries in milliseconds
+
+    // CRITICAL CHECK: Ensure MONGODB_URI is available
+    if (!MONGODB_URI) {
+        logger.error('CRITICAL ERROR: MONGODB_URI is not defined in environment variables or config/index.js. Exiting process.');
+        process.exit(1);
+    }
 
     while (attempts < MAX_ATTEMPTS) {
         try {
@@ -63,16 +68,10 @@ const setupConnectionListeners = (connection) => {
 
     connection.on('error', (err) => {
         logger.error(`Mongoose connection error: ${err.message}`);
-        // This indicates a problem *after* initial connection.
-        // Mongoose/MongoDB drivers usually handle internal reconnection for a while.
-        // For persistent errors, you might want to consider application-specific alerts or actions.
     });
 
     connection.on('disconnected', () => {
         logger.warn('Mongoose default connection disconnected.');
-        // This could be due to network issues, database restart, etc.
-        // Mongoose will attempt to reconnect based on its internal logic.
-        // If your application cannot function without the DB, you might trigger alerts here.
     });
 
     // If the Node process ends, close the Mongoose connection
