@@ -2,10 +2,10 @@
   "name": "aurum-fox-backend-ultimate",
   "version": "1.0.0",
   "description": "The ultimate backend for Aurum Fox Unified Portal, combining Web2 and Web3 functionalities.",
-  "main": "server.js", <--- CHANGE THIS LINE
+  "main": "server.js", 
   "scripts": {
-    "start": "node server.js", <--- CHANGE THIS LINE
-    "dev": "NODE_ENV=development nodemon server.js", <--- CHANGE THIS LINE
+    "start": "node server.js", 
+    "dev": "NODE_ENV=development nodemon server.js", 
     "test": "cross-env NODE_ENV=test jest --detectOpenHandles --forceExit --runInBand",
     "test:watch": "cross-env NODE_ENV=test jest --watchAll --detectOpenHandles --forceExit --runInBand",
     "lint": "eslint .",
