@@ -34,9 +34,9 @@ const ROLES = {
 };
 
 const JWT_CONFIG = {
-    SECRET: process.env.JWT_SECRET || 'supersecretjwtkeyfallback_CHANGE_ME_IN_PROD', // IMPORTANT: Use a strong, env-based secret
+    // SECRET: process.env.JWT_SECRET || 'supersecretjwtkeyfallback_CHANGE_ME_IN_PROD', // <-- УДАЛИТЬ ЭТУ СТРОКУ! JWT_SECRET будет импортироваться из config/index.js
     EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d', // e.g., '1h', '7d'
-    REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'supersecretjwtrefreshkey_CHANGE_ME_IN_PROD', // For refresh tokens
+    // REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'supersecretjwtrefreshkey_CHANGE_ME_IN_PROD', // <-- УДАЛИТЬ ЭТУ СТРОКУ! JWT_REFRESH_SECRET также должен быть в config/index.js
     REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
 };
 
@@ -64,8 +64,6 @@ const UPLOAD_CONFIG = {
 
 // --- Solana & Blockchain Constants ---
 const SOLANA_CONFIG = {
-    // These should ideally be loaded from environment variables or a specific blockchain config file,
-    // but defining them here indicates where they belong.
     CLUSTER: process.env.SOLANA_CLUSTER || 'devnet', // e.g., 'devnet', 'testnet', 'mainnet-beta'
     PROGRAM_IDS: {
         // Your custom program IDs, if any
@@ -111,7 +109,7 @@ module.exports = {
     API_VERSIONS,
     ROUTES,
     ROLES,
-    JWT_CONFIG,
+    JWT_CONFIG, // Note: JWT_CONFIG will no longer contain JWT_SECRET directly, it will come from config/index.js
     ALLOWED_MIME_TYPES,
     UPLOAD_CONFIG,
     SOLANA_CONFIG,
