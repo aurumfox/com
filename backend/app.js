@@ -30,8 +30,20 @@ const { API_VERSIONS, ROLES, ALLOWED_MIME_TYPES } = require('./utils/constants')
 // Dependency Injection Container - Initialize early
 const container = require('./config/container'); // NEW: DI container
 
+// --- IMPORTANT: ROUTE IMPORTS ---
+// You MUST import your route files here.
+// Replace these with your actual route file paths.
+const authRoutes = require('./routes/auth');
+const announcementRoutes = require('./routes/announcements');
+const photoRoutes = require('./routes/photos'); // Placeholder - create this file
+const postRoutes = require('./routes/posts');   // Placeholder - create this file
+const nftRoutes = require('./routes/nfts');     // Placeholder - create this file
+const gameRoutes = require('./routes/games');   // Placeholder - create this file
+const adRoutes = require('./routes/ads');       // Placeholder - create this file
+const docsRoutes = require('./routes/docs');    // Placeholder for Swagger docs route
+
 // Middleware Imports (should be required after logger/config for consistent use)
-const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+const { notFound, errorHandler, ApiError } = require('./middleware/errorMiddleware'); // Ensure ApiError is exported
 const { authenticateToken, authorizeRole } = require('./middleware/authMiddleware');
 const cacheMiddleware = require('./middleware/cacheMiddleware');
 const applySecurityHeaders = require('./middleware/securityHeaders');
@@ -51,7 +63,7 @@ const app = express();
 
 // --- Environment Variables & Constants ---
 const PORT = process.env.PORT || 3000;
-const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://127.0.0.1:5500', 'http://localhost:5500'];
+const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : ['http://127.0.0.1:5500', 'http://localhost:5500'];
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const MONGODB_URI = process.env.MONGODB_URI; // Get from process.env after dotenv.config()
 const DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || 'adminpassword';
@@ -177,19 +189,19 @@ app.use(`${API_VERSIONS.V1}/games`, cacheMiddleware(3600), gameRoutes);
 app.use(`${API_VERSIONS.V1}/ads`, cacheMiddleware(600), adRoutes);
 
 // File Upload Route Example (if you have one)
-// app.post(`${API_VERSIONS.V1}/upload`, authenticateToken, upload.single('file'), validateFileUpload, async (req, res, next) => {
-//     try {
-//         if (!req.file) {
-//             throw new ApiError('No file uploaded.', 400);
-//         }
-//         // File is uploaded and validated, now process it (e.g., save path to DB)
-//         const filePath = `/uploads/${req.file.filename}`;
-//         logger.info(`File uploaded: ${filePath}`);
-//         res.status(200).json({ message: 'File uploaded successfully', filePath });
-//     } catch (error) {
-//         next(error); // Pass to error handler
-//     }
-// });
+app.post(`${API_VERSIONS.V1}/upload`, authenticateToken, upload.single('file'), validateFileUpload, async (req, res, next) => {
+    try {
+        if (!req.file) {
+            throw new ApiError('No file uploaded.', 400);
+        }
+        // File is uploaded and validated, now process it (e.g., save path to DB)
+        const filePath = `/uploads/${req.file.filename}`;
+        logger.info(`File uploaded: ${filePath}`);
+        res.status(200).json({ message: 'File uploaded successfully', filePath });
+    } catch (error) {
+        next(error); // Pass to error handler
+    }
+});
 
 
 // Swagger UI documentation (ensure docsRoutes correctly serves Swagger JSON/YAML)
@@ -223,7 +235,8 @@ async function seedInitialData() {
     logger.info('Server: Checking for initial data and seeding if necessary...');
     // Dynamically require models to avoid circular dependencies if models
     // also depend on services that might depend on other models during DI setup.
-    const Announcement = container.resolve('AnnouncementModel'); // Get models via DI
+    // Ensure these models are registered in your DI container (config/container.js)
+    const Announcement = container.resolve('AnnouncementModel');
     const Photo = container.resolve('PhotoModel');
     const Post = container.resolve('PostModel');
     const Nft = container.resolve('NftModel');
