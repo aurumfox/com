@@ -1,4 +1,4 @@
-// server.js (Production-Oriented Version)
+// server.js (Production-Oriented Version - Updated)
 
 // Load environment variables from .env file FIRST THING
 require('dotenv').config();
@@ -13,6 +13,24 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
+// --- New Middleware Imports ---
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const xss = require('express-xss-clean');
+const hpp = require('hpp');
+const morgan = require('morgan'); // For HTTP request logging
+const winston = require('winston'); // For robust application logging
+require('winston-daily-rotate-file'); // For daily log rotation
+
+// --- Redis Import ---
+const redis = require('redis');
+
+// --- AWS SDK Imports (for secure secret management - conceptual) ---
+// const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
+// const { KMSClient, DecryptCommand } = require('@aws-sdk/client-kms');
+
+
 // --- Solana Imports (for validation, not full interaction) ---
 // For full blockchain interactions, you would need more: Connection, Keypair, Transaction, etc.
 const { PublicKey } = require('@solana/web3.js');
@@ -26,34 +44,159 @@ const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS
 // BASE_URL should be your deployed domain in production (e.g., https://api.yourapp.com)
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 // CRITICAL: JWT_SECRET MUST be set in .env for production.
-const JWT_SECRET = process.env.JWT_SECRET;
+// In production, consider fetching this from a secure secret manager (e.g., AWS Secrets Manager, HashiCorp Vault)
+let JWT_SECRET = process.env.JWT_SECRET;
 // Placeholder for a real marketplace wallet in production
 const MARKETPLACE_ESCROW_WALLET = process.env.MARKETPLACE_ESCROW_WALLET || 'YOUR_REAL_MARKETPLACE_ESCROW_WALLET_ADDRESS';
 
+// --- Redis Client Setup ---
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisClient = redis.createClient({ url: REDIS_URL });
 
-// --- Security & Configuration Checks ---
+redisClient.on('connect', () => console.log('Redis client connected!'));
+redisClient.on('error', (err) => console.error('Redis client error:', err));
+
+// Connect to Redis immediately
+redisClient.connect().catch(console.error);
+
+
+// --- Winston Logger Setup ---
+const logger = winston.createLogger({
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+    format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.errors({ stack: true }),
+        winston.format.splat(),
+        winston.format.json()
+    ),
+    defaultMeta: { service: 'aurum-fox-backend' },
+    transports: [
+        new winston.transports.Console({
+            format: winston.format.combine(
+                winston.format.colorize(),
+                winston.format.simple()
+            ),
+            level: 'debug' // Always show debug on console
+        }),
+        new winston.transports.DailyRotateFile({
+            filename: 'logs/application-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: '20m',
+            maxFiles: '14d',
+            level: 'info' // Only info and above go to file in production
+        }),
+        new winston.transports.DailyRotateFile({
+            filename: 'logs/error-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: '20m',
+            maxFiles: '14d',
+            level: 'error' // Errors go to a separate file
+        })
+    ],
+    exceptionHandlers: [
+        new winston.transports.File({ filename: 'logs/exceptions.log' })
+    ],
+    rejectionHandlers: [
+        new winston.transports.File({ filename: 'logs/rejections.log' })
+    ]
+});
+
+// Override console.log for consistent logging (optional, but good for production)
+if (process.env.NODE_ENV === 'production') {
+    console.log = function() {
+        logger.info.apply(logger, arguments);
+    };
+    console.error = function() {
+        logger.error.apply(logger, arguments);
+    };
+    console.warn = function() {
+        logger.warn.apply(logger, arguments);
+    };
+    console.info = function() {
+        logger.info.apply(logger, arguments);
+    };
+    console.debug = function() {
+        logger.debug.apply(logger, arguments);
+    };
+}
+
+
+// --- Security & Configuration Checks (with enhanced logging) ---
+// Function to fetch secrets from AWS Secrets Manager (conceptual)
+/*
+async function getSecret(secretName) {
+    const client = new SecretsManagerClient({ region: process.env.AWS_REGION });
+    try {
+        const command = new GetSecretValueCommand({ SecretId: secretName });
+        const data = await client.send(command);
+        if ('SecretString' in data) {
+            return data.SecretString;
+        }
+        // For binary secrets, you might need to decode SecretBinary
+        return Buffer.from(data.SecretBinary, 'base64').toString('ascii');
+    } catch (error) {
+        logger.error(`Failed to retrieve secret ${secretName} from AWS Secrets Manager:`, error);
+        process.exit(1);
+    }
+}
+
+// Initialize secrets if using AWS Secrets Manager
+async function initializeSecrets() {
+    if (process.env.USE_AWS_SECRETS_MANAGER === 'true' && process.env.JWT_SECRET_NAME) {
+        JWT_SECRET = await getSecret(process.env.JWT_SECRET_NAME);
+    }
+    // You might also fetch MONGODB_URI or other sensitive data this way
+    // For example: MONGODB_URI = await getSecret(process.env.MONGODB_URI_NAME);
+
+    if (!JWT_SECRET || JWT_SECRET.length < 32) {
+        logger.error('ERROR: JWT_SECRET environment variable is missing or too short. Please set a strong, random secret (e.g., 32+ characters) in your .env file or via AWS Secrets Manager.');
+        process.exit(1);
+    }
+    if (!MONGODB_URI) {
+        logger.error('ERROR: MONGODB_URI environment variable is missing. Please set your MongoDB connection string in your .env file.');
+        process.exit(1);
+    }
+    if (!MARKETPLACE_ESCROW_WALLET || !isValidSolanaAddress(MARKETPLACE_ESCROW_WALLET)) {
+        logger.warn('WARNING: MARKETPLACE_ESCROW_WALLET environment variable is missing or invalid. Set a real Solana address for production.');
+    }
+}
+*/
+
+// Without AWS Secrets Manager for now, directly check JWT_SECRET
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
-    console.error('ERROR: JWT_SECRET environment variable is missing or too short. Please set a strong, random secret (e.g., 32+ characters) in your .env file.');
+    logger.error('ERROR: JWT_SECRET environment variable is missing or too short. Please set a strong, random secret (e.g., 32+ characters) in your .env file.');
     process.exit(1);
 }
 if (!MONGODB_URI) {
-    console.error('ERROR: MONGODB_URI environment variable is missing. Please set your MongoDB connection string in your .env file.');
+    logger.error('ERROR: MONGODB_URI environment variable is missing. Please set your MongoDB connection string in your .env file.');
     process.exit(1);
 }
 if (!MARKETPLACE_ESCROW_WALLET || !isValidSolanaAddress(MARKETPLACE_ESCROW_WALLET)) {
-    console.warn('WARNING: MARKETPLACE_ESCROW_WALLET environment variable is missing or invalid. Set a real Solana address for production.');
+    logger.warn('WARNING: MARKETPLACE_ESCROW_WALLET environment variable is missing or invalid. Set a real Solana address for production.');
 }
 
 
 // --- Middlewares ---
 
+// HTTP request logger
+app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
+
+// Helmet for security headers
+app.use(helmet());
+
+// Compression for faster responses
+app.use(compression());
+
+// CORS configuration
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (ALLOWED_CORS_ORIGINS.includes(origin)) {
+        if (!origin || ALLOWED_CORS_ORIGINS.includes(origin)) { // Allow no origin for same-origin requests or tools like Postman
             return callback(null, true);
         }
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+        logger.warn(`CORS blocked for origin: ${origin}`);
         return callback(new Error(msg), false);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -61,8 +204,43 @@ app.use(cors({
     credentials: true
 }));
 
+// Body parsers
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Data Sanitization against XSS attacks
+app.use(xss());
+
+// Prevent HTTP Parameter Pollution attacks
+app.use(hpp());
+
+// Rate limiting to prevent brute-force attacks and abuse
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again after 15 minutes.',
+    headers: true, // Send X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers
+    keyGenerator: (req, res) => req.ip, // Use IP address as the key
+    store: new (require('express-rate-limit-redis').RedisStore)({
+        sendCommand: (...args) => redisClient.sendCommand(args),
+    })
+});
+// Apply to all API routes
+app.use('/api/', apiLimiter);
+
+// Specific stricter rate limit for auth routes
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // Limit each IP to 10 login attempts per hour
+    message: 'Too many authentication attempts from this IP, please try again after an hour.',
+    headers: true,
+    keyGenerator: (req, res) => req.ip,
+    store: new (require('express-rate-limit-redis').RedisStore)({
+        sendCommand: (...args) => redisClient.sendCommand(args),
+    })
+});
+app.use('/api/auth/', authLimiter);
+
 
 // Serve static files for uploads - FOR DEVELOPMENT/TESTING ONLY
 // In production, consider serving these from a CDN or cloud storage
@@ -74,9 +252,9 @@ const uploadDir = 'uploads/'; // Local upload directory - **REPLACE WITH CLOUD S
 async function ensureUploadDir() {
     try {
         await fs.mkdir(uploadDir, { recursive: true });
-        console.log(`Upload directory '${uploadDir}' ensured.`);
+        logger.info(`Upload directory '${uploadDir}' ensured.`);
     } catch (err) {
-        console.error(`Error ensuring upload directory '${uploadDir}':`, err);
+        logger.error(`Error ensuring upload directory '${uploadDir}':`, err);
         process.exit(1); // Exit if crucial directory can't be created
     }
 }
@@ -101,8 +279,8 @@ const upload = multer({
         const allowedMimeTypes = [
             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
             'video/mp4', 'video/webm', 'video/ogg',
-            'application/json',
-            'text/html', 'application/javascript'
+            'application/json', // For NFT metadata, if uploaded directly
+            'text/html', 'application/javascript' // For game files
         ];
         if (allowedMimeTypes.includes(file.mimetype)) {
             cb(null, true);
@@ -114,9 +292,9 @@ const upload = multer({
 
 // --- MongoDB Connection ---
 mongoose.connect(MONGODB_URI)
-    .then(() => console.log('MongoDB connected successfully!'))
+    .then(() => logger.info('MongoDB connected successfully!'))
     .catch(err => {
-        console.error('MongoDB connection error:', err);
+        logger.error('MongoDB connection error:', err);
         process.exit(1); // Exit if DB connection fails
     });
 
@@ -284,15 +462,17 @@ const authenticateToken = (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
+        logger.warn('Authentication token missing.');
         return res.status(401).json({ error: 'Authentication token is required. Please log in.' });
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
             if (err.name === 'TokenExpiredError') {
+                logger.warn('Authentication token expired.');
                 return res.status(401).json({ error: 'Authentication token expired. Please log in again.' });
             }
-            console.warn("JWT verification failed:", err.message);
+            logger.warn("JWT verification failed:", err.message);
             return res.status(403).json({ error: 'Invalid authentication token.' });
         }
         req.user = user;
@@ -302,10 +482,11 @@ const authenticateToken = (req, res, next) => {
 
 const authorizeRole = (...requiredRoles) => (req, res, next) => {
     if (!req.user) {
+        logger.warn('Authorization attempt without user context.');
         return res.status(401).json({ error: 'Authentication required for this action.' });
     }
     if (!requiredRoles.includes(req.user.role)) {
-        console.warn(`Access denied for user ${req.user.username} (role: ${req.user.role}). Required roles: ${requiredRoles.join(', ')}`);
+        logger.warn(`Access denied for user ${req.user.username} (role: ${req.user.role}). Required roles: ${requiredRoles.join(', ')}`);
         return res.status(403).json({ error: `Access denied. Requires one of the following roles: ${requiredRoles.join(', ')}.` });
     }
     next();
@@ -319,12 +500,15 @@ app.post('/api/auth/register', async (req, res, next) => {
     const { username, password, walletAddress, role } = req.body;
 
     if (!username || !password || !walletAddress) {
+        logger.debug('Registration failed: Missing required fields.', { username, walletAddress });
         return res.status(400).json({ error: 'Username, password, and wallet address are required.' });
     }
     if (typeof username !== 'string' || typeof password !== 'string' || typeof walletAddress !== 'string') {
+        logger.debug('Registration failed: Invalid data types.', { username, walletAddress });
         return res.status(400).json({ error: 'Invalid data types for registration fields.' });
     }
     if (!isValidSolanaAddress(walletAddress.trim())) {
+        logger.debug('Registration failed: Invalid Solana address format.', { walletAddress });
         return res.status(400).json({ error: 'Invalid Solana wallet address format.' });
     }
 
@@ -336,16 +520,18 @@ app.post('/api/auth/register', async (req, res, next) => {
             const token = authHeader && authHeader.split(' ')[1];
 
             if (!token) {
+                logger.warn('Role assignment failed: Token missing for non-user role assignment.');
                 return res.status(403).json({ error: 'Authentication token required to assign specific roles.' });
             }
 
             const decodedUser = jwt.verify(token, JWT_SECRET);
             if (decodedUser.role !== 'admin') {
+                logger.warn(`Role assignment failed: User ${decodedUser.username} (role: ${decodedUser.role}) attempted to assign role ${role}.`);
                 return res.status(403).json({ error: 'Only administrators can assign specific roles.' });
             }
             assignedRole = role; // If admin and role provided, use it
         } catch (err) {
-            console.warn("Role assignment attempt failed:", err.message);
+            logger.warn("Role assignment attempt failed:", err.message);
             return res.status(403).json({ error: 'Invalid or expired token for role assignment, or not authorized.' });
         }
     }
@@ -358,11 +544,14 @@ app.post('/api/auth/register', async (req, res, next) => {
             role: assignedRole
         });
         await newUser.save();
+        logger.info(`User registered successfully: ${newUser.username} (${newUser.role})`);
         res.status(201).json({ message: 'User registered successfully!' });
     } catch (error) {
         if (error.code === 11000) {
+            logger.warn('Registration failed: Username or wallet address already in use.', { username, walletAddress });
             return res.status(409).json({ error: 'Username or wallet address already in use.' });
         }
+        logger.error('Error during user registration:', error);
         next(error);
     }
 });
@@ -371,20 +560,24 @@ app.post('/api/auth/login', async (req, res, next) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
+        logger.debug('Login failed: Missing username or password.');
         return res.status(400).json({ error: 'Username and password are required.' });
     }
     if (typeof username !== 'string' || typeof password !== 'string') {
+        logger.debug('Login failed: Invalid data types for credentials.');
         return res.status(400).json({ error: 'Invalid data types for login credentials.' });
     }
 
     try {
         const user = await User.findOne({ username: username.trim() });
         if (!user) {
+            logger.warn('Login failed: Invalid username or password.', { username });
             return res.status(401).json({ error: 'Invalid username or password.' });
         }
 
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
+            logger.warn('Login failed: Invalid username or password (password mismatch).', { username });
             return res.status(401).json({ error: 'Invalid username or password.' });
         }
 
@@ -399,6 +592,7 @@ app.post('/api/auth/login', async (req, res, next) => {
             { expiresIn: '1h' }
         );
 
+        logger.info(`User logged in successfully: ${user.username} (${user.role})`);
         res.json({
             message: 'Logged in successfully!',
             token: token,
@@ -410,6 +604,7 @@ app.post('/api/auth/login', async (req, res, next) => {
             }
         });
     } catch (error) {
+        logger.error('Error during user login:', error);
         next(error);
     }
 });
@@ -418,22 +613,26 @@ app.post('/api/auth/login', async (req, res, next) => {
 app.get('/api/announcements', async (req, res, next) => {
     try {
         const announcements = await Announcement.find().sort({ createdAt: -1 });
+        logger.debug('Fetched all announcements.');
         res.json(announcements);
     } catch (error) {
+        logger.error('Error fetching announcements:', error);
         next(error);
     }
 });
 app.post('/api/announcements', authenticateToken, authorizeRole('admin'), async (req, res, next) => {
     const { text } = req.body;
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
+        logger.debug('Failed to publish announcement: Text is missing or invalid.');
         return res.status(400).json({ error: 'Announcement text is required and must be a non-empty string.' });
     }
     try {
         const newAnnouncement = new Announcement({ text: text.trim() });
         await newAnnouncement.save();
-        console.log('New announcement published:', newAnnouncement);
+        logger.info('New announcement published:', newAnnouncement.text);
         res.status(201).json({ message: 'Announcement published successfully', announcement: newAnnouncement });
     } catch (error) {
+        logger.error('Error publishing announcement:', error);
         next(error);
     }
 });
@@ -442,8 +641,10 @@ app.post('/api/announcements', authenticateToken, authorizeRole('admin'), async 
 app.get('/api/games', async (req, res, next) => {
     try {
         const games = await Game.find().sort({ createdAt: -1 });
+        logger.debug('Fetched all games.');
         res.json(games);
     } catch (error) {
+        logger.error('Error fetching games:', error);
         next(error);
     }
 });
@@ -452,7 +653,8 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
 
     // Validate inputs
     if (!title || !description || !developer) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        logger.debug('Failed to add game: Missing title, description, or developer.', { title, developer });
         return res.status(400).json({ error: 'Title, description, and developer are required to add a game.' });
     }
     const trimmedTitle = String(title).trim();
@@ -461,7 +663,8 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
     const trimmedExternalUrl = externalUrl ? String(externalUrl).trim() : null;
 
     if (trimmedTitle.length === 0 || trimmedDescription.length === 0 || trimmedDeveloper.length === 0) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        logger.debug('Failed to add game: Empty title, description, or developer.', { title, developer });
         return res.status(400).json({ error: 'Title, description, and developer cannot be empty.' });
     }
 
@@ -470,18 +673,18 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
     if (req.file) {
         // In PRODUCTION, you would upload req.file to cloud storage (e.g., S3, Arweave, IPFS)
         // and set gameUrl to the public URL of that cloud resource.
-        // Example: const uploadResult = await uploadFileToS3(req.file);
-        // gameUrl = uploadResult.publicUrl;
-        console.warn('WARNING: Game file uploaded to local storage. Use cloud storage in production!');
+        logger.warn('WARNING: Game file uploaded to local storage. Use cloud storage in production!');
         gameUrl = `${BASE_URL}/uploads/${req.file.filename}`;
     } else if (trimmedExternalUrl) {
         gameUrl = trimmedExternalUrl;
     } else {
+        logger.debug('Failed to add game: No file or external URL provided.');
         return res.status(400).json({ error: 'Either a game file must be uploaded or a valid external URL must be provided.' });
     }
 
     if (gameUrl && !/^https?:\/\/.+/.test(gameUrl)) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        logger.debug('Failed to add game: Provided game URL is not valid.', { gameUrl });
         return res.status(400).json({ error: 'Provided game URL is not valid.' });
     }
 
@@ -493,9 +696,11 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
             developer: trimmedDeveloper
         });
         await newGame.save();
+        logger.info(`Game added successfully: ${newGame.title}`);
         res.status(201).json({ message: 'Game added successfully', game: newGame });
     } catch (error) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file on DB error:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file on DB error:', e)); }
+        logger.error('Error adding game:', error);
         next(error);
     }
 });
@@ -504,8 +709,10 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
 app.get('/api/ads', async (req, res, next) => {
     try {
         const ads = await Ad.find().sort({ createdAt: -1 });
+        logger.debug('Fetched all ads.');
         res.json(ads);
     } catch (error) {
+        logger.error('Error fetching ads:', error);
         next(error);
     }
 });
@@ -513,7 +720,8 @@ app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.sing
     const { title, content, link, advertiser } = req.body;
 
     if (!title || !content || !advertiser) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        logger.debug('Failed to post ad: Missing title, content, or advertiser.');
         return res.status(400).json({ error: 'Title, content, and advertiser are required to post an ad.' });
     }
     const trimmedTitle = String(title).trim();
@@ -522,11 +730,13 @@ app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.sing
     const trimmedLink = link ? String(link).trim() : null;
 
     if (trimmedTitle.length === 0 || trimmedContent.length === 0 || trimmedAdvertiser.length === 0) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        logger.debug('Failed to post ad: Empty title, content, or advertiser.');
         return res.status(400).json({ error: 'Title, content, and advertiser cannot be empty.' });
     }
     if (trimmedLink && !/^https?:\/\/.+/.test(trimmedLink)) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        logger.debug('Failed to post ad: Invalid link URL.', { link: trimmedLink });
         return res.status(400).json({ error: 'Provided ad link is not a valid URL.' });
     }
 
@@ -534,7 +744,7 @@ app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.sing
     if (req.file) {
         // In PRODUCTION, you would upload req.file to cloud storage (e.g., S3, Arweave, IPFS)
         // and set imageUrl to the public URL of that cloud resource.
-        console.warn('WARNING: Ad creative uploaded to local storage. Use cloud storage in production!');
+        logger.warn('WARNING: Ad creative uploaded to local storage. Use cloud storage in production!');
         imageUrl = `${BASE_URL}/uploads/${req.file.filename}`;
     }
 
@@ -547,9 +757,11 @@ app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.sing
             advertiser: trimmedAdvertiser
         });
         await newAd.save();
+        logger.info(`Ad posted successfully: ${newAd.title}`);
         res.status(201).json({ message: 'Ad posted successfully', ad: newAd });
     } catch (error) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file on DB error:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file on DB error:', e)); }
+        logger.error('Error posting ad:', error);
         next(error);
     }
 });
@@ -558,19 +770,23 @@ app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.sing
 app.get('/api/photos', async (req, res, next) => {
     try {
         const photos = await Photo.find().sort({ createdAt: -1 });
+        logger.debug('Fetched all photos.');
         res.json(photos);
     } catch (error) {
+        logger.error('Error fetching photos:', error);
         next(error);
     }
 });
 app.post('/api/photos/upload', authenticateToken, upload.single('photo'), async (req, res, next) => {
     if (!req.file) {
+        logger.debug('Photo upload failed: No file provided.');
         return res.status(400).json({ error: 'No photo file uploaded.' });
     }
     const { title, description, creatorWallet } = req.body;
 
     if (!title || !creatorWallet) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        logger.debug('Photo upload failed: Missing title or creator wallet.');
         return res.status(400).json({ error: 'Photo title and creator wallet are required.' });
     }
     const trimmedTitle = String(title).trim();
@@ -578,17 +794,19 @@ app.post('/api/photos/upload', authenticateToken, upload.single('photo'), async 
     const trimmedCreatorWallet = String(creatorWallet).trim();
 
     if (trimmedTitle.length === 0 || trimmedCreatorWallet.length === 0) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        logger.debug('Photo upload failed: Empty title or creator wallet.');
         return res.status(400).json({ error: 'Photo title and creator wallet cannot be empty.' });
     }
     if (!isValidSolanaAddress(trimmedCreatorWallet)) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        logger.debug('Photo upload failed: Invalid Solana wallet address.', { creatorWallet: trimmedCreatorWallet });
         return res.status(400).json({ error: 'Invalid Solana wallet address format for creatorWallet.' });
     }
 
     // In PRODUCTION, you would upload req.file to cloud storage (e.g., S3, Arweave, IPFS)
     // and set imageUrl to the public URL of that cloud resource.
-    console.warn('WARNING: Photo file uploaded to local storage. Use cloud storage in production!');
+    logger.warn('WARNING: Photo file uploaded to local storage. Use cloud storage in production!');
     const imageUrl = `${BASE_URL}/uploads/${req.file.filename}`;
 
     try {
@@ -599,9 +817,11 @@ app.post('/api/photos/upload', authenticateToken, upload.single('photo'), async 
             creatorWallet: trimmedCreatorWallet
         });
         await newPhoto.save();
+        logger.info(`Photo uploaded successfully: ${newPhoto.title} by ${newPhoto.creatorWallet}`);
         res.status(201).json({ message: 'Photo uploaded successfully.', photo: newPhoto });
     } catch (error) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file on DB error:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file on DB error:', e)); }
+        logger.error('Error uploading photo:', error);
         next(error);
     }
 });
@@ -610,14 +830,17 @@ app.post('/api/photos/upload', authenticateToken, upload.single('photo'), async 
 app.get('/api/posts', async (req, res, next) => {
     try {
         const posts = await Post.find().sort({ createdAt: -1 });
+        logger.debug('Fetched all posts.');
         res.json(posts);
     } catch (error) {
+        logger.error('Error fetching posts:', error);
         next(error);
     }
 });
 app.post('/api/posts', authenticateToken, authorizeRole('publisher'), async (req, res, next) => {
     const { title, content, authorWallet } = req.body;
     if (!title || !content || !authorWallet) {
+        logger.debug('Failed to publish post: Missing title, content, or author wallet.');
         return res.status(400).json({ error: 'Title, content, and author wallet are required.' });
     }
     const trimmedTitle = String(title).trim();
@@ -625,9 +848,11 @@ app.post('/api/posts', authenticateToken, authorizeRole('publisher'), async (req
     const trimmedAuthorWallet = String(authorWallet).trim();
 
     if (trimmedTitle.length === 0 || trimmedContent.length === 0 || trimmedAuthorWallet.length === 0) {
+        logger.debug('Failed to publish post: Empty title, content, or author wallet.');
         return res.status(400).json({ error: 'Title, content, and author wallet cannot be empty.' });
     }
     if (!isValidSolanaAddress(trimmedAuthorWallet)) {
+        logger.debug('Failed to publish post: Invalid author wallet address.', { authorWallet: trimmedAuthorWallet });
         return res.status(400).json({ error: 'Invalid Solana wallet address format for authorWallet.' });
     }
 
@@ -638,8 +863,10 @@ app.post('/api/posts', authenticateToken, authorizeRole('publisher'), async (req
             authorWallet: trimmedAuthorWallet
         });
         await newPost.save();
+        logger.info(`Post published successfully: ${newPost.title} by ${newPost.authorWallet}`);
         res.status(201).json({ message: 'Post published successfully', post: newPost });
     } catch (error) {
+        logger.error('Error publishing post:', error);
         next(error);
     }
 });
@@ -650,20 +877,24 @@ app.get('/api/nfts/marketplace', async (req, res, next) => {
         // In a REAL marketplace, you would query the blockchain or a blockchain indexer
         // for listed NFTs, not just your local database.
         const nfts = await Nft.find({ isListed: true }).sort({ listedAt: -1 });
+        logger.debug('Fetched listed NFTs from marketplace.');
         res.json({ nfts: nfts, marketplaceOwnerWallet: MARKETPLACE_ESCROW_WALLET });
     } catch (error) {
+        logger.error('Error fetching marketplace NFTs:', error);
         next(error);
     }
 });
 
 app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), async (req, res, next) => {
     if (!req.file) {
+        logger.debug('NFT mint preparation failed: No file uploaded.');
         return res.status(400).json({ error: 'No NFT file uploaded.' });
     }
     const { name, description, attributes, creatorWallet } = req.body;
 
     if (!name || !description || !creatorWallet) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        logger.debug('NFT mint preparation failed: Missing name, description, or creator wallet.');
         return res.status(400).json({ error: 'Name, description, and creator wallet are required for NFT preparation.' });
     }
 
@@ -672,18 +903,20 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
     const trimmedCreatorWallet = String(creatorWallet).trim();
 
     if (trimmedName.length === 0 || trimmedDescription.length === 0 || trimmedCreatorWallet.length === 0) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        logger.debug('NFT mint preparation failed: Empty name, description, or creator wallet.');
         return res.status(400).json({ error: 'Name, description, and creator wallet cannot be empty.' });
     }
     if (!isValidSolanaAddress(trimmedCreatorWallet)) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        logger.debug('NFT mint preparation failed: Invalid creator wallet address.', { creatorWallet: trimmedCreatorWallet });
         return res.status(400).json({ error: 'Invalid Solana wallet address format for creatorWallet.' });
     }
 
     // In PRODUCTION, upload req.file to Arweave/IPFS and get its URI
     // const uploadResult = await uploadFileToArweave(req.file);
     // const contentUrl = uploadResult.uri;
-    console.warn('WARNING: NFT media file uploaded to local storage. Use Arweave/IPFS in production!');
+    logger.warn('WARNING: NFT media file uploaded to local storage. Use Arweave/IPFS in production!');
     const contentUrl = `${BASE_URL}/uploads/${req.file.filename}`;
 
     const nftMetadata = {
@@ -717,22 +950,22 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
             }
         }
     } catch (e) {
-        console.warn("NFT preparation: Could not parse attributes JSON:", e.message);
+        logger.warn("NFT preparation: Could not parse attributes JSON:", e.message);
     }
 
     // In PRODUCTION, upload this metadata JSON to Arweave/IPFS and get its URI
     // const metadataUploadResult = await uploadMetadataToArweave(nftMetadata);
     // const metadataUri = metadataUploadResult.uri;
-    console.warn('WARNING: NFT metadata JSON saved locally. Use Arweave/IPFS for metadata in production!');
+    logger.warn('WARNING: NFT metadata JSON saved locally. Use Arweave/IPFS for metadata in production!');
     const baseFileName = path.basename(req.file.filename, path.extname(req.file.filename));
     const metadataFileName = `${baseFileName}-metadata.json`;
     metadataFilePath = path.join(__dirname, uploadDir, metadataFileName);
     try {
         await fs.writeFile(metadataFilePath, JSON.stringify(nftMetadata, null, 2));
     } catch (error) {
-        console.error('Error writing NFT metadata file:', error);
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up NFT file:', e));
-        if (metadataFilePath) { await fs.unlink(metadataFilePath).catch(e => console.error('Error cleaning up NFT metadata file (partial):', e)); }
+        logger.error('Error writing NFT metadata file:', error);
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up NFT file:', e));
+        if (metadataFilePath) { await fs.unlink(metadataFilePath).catch(e => logger.error('Error cleaning up NFT metadata file (partial):', e)); }
         return res.status(500).json({ error: 'Failed to save NFT metadata file.' });
     }
     const metadataUri = `${BASE_URL}/uploads/${metadataFileName}`; // Local URI
@@ -773,6 +1006,7 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
         });
         await newNft.save();
 
+        logger.info(`NFT assets prepared and simulated mint successful for ${newNft.name}. Mint: ${simulatedMintAddress}`);
         res.status(201).json({
             message: 'NFT assets prepared and simulated mint successful. **REQUIRES REAL SOLANA MINT IN PRODUCTION.**',
             uri: metadataUri,
@@ -782,8 +1016,9 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
             nft: newNft
         });
     } catch (error) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up NFT file:', e)); }
-        if (metadataFilePath) { await fs.unlink(metadataFilePath).catch(e => console.error('Error cleaning up NFT metadata file:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up NFT file:', e)); }
+        if (metadataFilePath) { await fs.unlink(metadataFilePath).catch(e => logger.error('Error cleaning up NFT metadata file:', e)); }
+        logger.error('Error preparing NFT mint:', error);
         next(error);
     }
 });
@@ -794,6 +1029,7 @@ app.post('/api/nfts/list', authenticateToken, async (req, res, next) => {
     if (!mintAddress || !price || isNaN(price) || Number(price) <= 0 ||
         !duration || isNaN(duration) || Number(duration) <= 0 ||
         !sellerWallet) {
+        logger.debug('NFT listing failed: Missing or invalid required fields.', { mintAddress, price, duration, sellerWallet });
         return res.status(400).json({ error: 'Missing or invalid required fields for listing (mintAddress, price, duration, sellerWallet).' });
     }
 
@@ -803,9 +1039,11 @@ app.post('/api/nfts/list', authenticateToken, async (req, res, next) => {
     const trimmedSellerWallet = String(sellerWallet).trim();
 
     if (!isValidSolanaAddress(trimmedSellerWallet)) {
+        logger.debug('NFT listing failed: Invalid seller wallet address.', { sellerWallet: trimmedSellerWallet });
         return res.status(400).json({ error: 'Invalid Solana wallet address format for sellerWallet.' });
     }
     if (req.user.walletAddress !== trimmedSellerWallet) {
+        logger.warn(`NFT listing failed: User ${req.user.username} tried to list NFT for wallet ${trimmedSellerWallet}, but authenticated wallet is ${req.user.walletAddress}.`);
          return res.status(403).json({ error: 'You can only list NFTs from your own wallet.' });
     }
 
@@ -833,12 +1071,14 @@ app.post('/api/nfts/list', authenticateToken, async (req, res, next) => {
         );
 
         if (!nft) {
+            logger.warn(`NFT listing failed: NFT ${trimmedMintAddress} not found, not owned by ${trimmedSellerWallet}, or already listed.`);
             return res.status(404).json({ error: 'NFT not found, you are not the owner, or it is already listed.' });
         }
 
-        console.log(`NFT ${trimmedMintAddress} listed by ${trimmedSellerWallet} for ${parsedPrice} SOL (simulated).`);
+        logger.info(`NFT ${trimmedMintAddress} listed by ${trimmedSellerWallet} for ${parsedPrice} SOL (simulated).`);
         res.status(200).json({ message: `NFT ${trimmedMintAddress} listed for sale for ${parsedPrice} SOL (simulated). **REQUIRES REAL SOLANA LISTING TX IN PRODUCTION.**`, nft });
     } catch (error) {
+        logger.error('Error listing NFT:', error);
         next(error);
     }
 });
@@ -847,6 +1087,7 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
     const { mintAddress, buyerWallet, sellerWallet, price } = req.body;
 
     if (!mintAddress || !buyerWallet || !sellerWallet || !price || isNaN(price) || Number(price) <= 0) {
+        logger.debug('NFT buy failed: Missing or invalid required fields.', { mintAddress, buyerWallet, sellerWallet, price });
         return res.status(400).json({ error: 'Missing or invalid required fields for buying NFT.' });
     }
 
@@ -856,12 +1097,15 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
     const parsedPrice = Number(price);
 
     if (trimmedBuyerWallet === trimmedSellerWallet) {
+        logger.debug('NFT buy failed: Buyer and seller wallets are the same.');
         return res.status(400).json({ error: 'Cannot buy your own NFT.' });
     }
     if (!isValidSolanaAddress(trimmedBuyerWallet) || !isValidSolanaAddress(trimmedSellerWallet)) {
+        logger.debug('NFT buy failed: Invalid buyer or seller wallet address.', { buyerWallet: trimmedBuyerWallet, sellerWallet: trimmedSellerWallet });
         return res.status(400).json({ error: 'Invalid Solana wallet address format for buyerWallet or sellerWallet.' });
     }
     if (req.user.walletAddress !== trimmedBuyerWallet) {
+        logger.warn(`NFT buy failed: User ${req.user.username} tried to buy NFT with wallet ${trimmedBuyerWallet}, but authenticated wallet is ${req.user.walletAddress}.`);
         return res.status(403).json({ error: 'You can only buy NFTs with your authenticated wallet.' });
     }
 
@@ -891,6 +1135,7 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
         );
 
         if (!nft) {
+            logger.warn(`NFT buy failed: NFT ${trimmedMintAddress} not found, not listed, or seller/price mismatch.`);
             return res.status(404).json({ error: 'NFT not found, not listed, or seller/price mismatch. It might have been delisted or sold.' });
         }
 
@@ -898,14 +1143,15 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
         // that the client wallet needs to sign.
         const serializedTransaction = 'SIMULATED_TRANSACTION_BASE64_FOR_CLIENT_SIGNING';
 
+        logger.info(`NFT ${nft.name} successfully purchased (simulated) by ${trimmedBuyerWallet} from ${trimmedSellerWallet} for ${parsedPrice} SOL.`);
         res.status(200).json({
             message: `NFT ${nft.name} successfully purchased (simulated). **REQUIRES REAL SOLANA BUY TX IN PRODUCTION.**`,
             nft,
             serializedTransaction
         });
-        console.log(`NFT ${nft.name} transferred from ${trimmedSellerWallet} to ${trimmedBuyerWallet} for ${parsedPrice} SOL (simulated).`);
 
     } catch (error) {
+        logger.error('Error buying NFT:', error);
         next(error);
     }
 });
@@ -914,15 +1160,18 @@ app.post('/api/nfts/delist', authenticateToken, async (req, res, next) => {
     const { mintAddress, ownerWallet } = req.body;
 
     if (!mintAddress || !ownerWallet) {
+        logger.debug('NFT delist failed: Missing mint address or owner wallet.');
         return res.status(400).json({ error: 'Mint address and owner wallet are required.' });
     }
     const trimmedMintAddress = String(mintAddress).trim();
     const trimmedOwnerWallet = String(ownerWallet).trim();
 
     if (!isValidSolanaAddress(trimmedOwnerWallet)) {
+        logger.debug('NFT delist failed: Invalid owner wallet address.', { ownerWallet: trimmedOwnerWallet });
         return res.status(400).json({ error: 'Invalid Solana wallet address format for ownerWallet.' });
     }
     if (req.user.walletAddress !== trimmedOwnerWallet) {
+        logger.warn(`NFT delist failed: User ${req.user.username} tried to delist NFT for wallet ${trimmedOwnerWallet}, but authenticated wallet is ${req.user.walletAddress}.`);
         return res.status(403).json({ error: 'You can only delist NFTs from your own wallet.' });
     }
 
@@ -947,12 +1196,14 @@ app.post('/api/nfts/delist', authenticateToken, async (req, res, next) => {
         );
 
         if (!nft) {
+            logger.warn(`NFT delist failed: NFT ${trimmedMintAddress} not found, not owned by ${trimmedOwnerWallet}, or not currently listed.`);
             return res.status(404).json({ error: 'NFT not found, you are not the owner, or it is not currently listed.' });
         }
 
+        logger.info(`NFT ${nft.name} delisted successfully by ${trimmedOwnerWallet}.`);
         res.status(200).json({ message: `NFT ${nft.name} delisted successfully. **REQUIRES REAL SOLANA DELIST TX IN PRODUCTION.**`, nft });
-        console.log(`NFT ${nft.name} delisted by ${trimmedOwnerWallet}.`);
     } catch (error) {
+        logger.error('Error delisting NFT:', error);
         next(error);
     }
 });
@@ -961,16 +1212,20 @@ app.post('/api/nfts/delist', authenticateToken, async (req, res, next) => {
 app.get('/api/nfts/:mint/history', async (req, res, next) => {
     const { mint } = req.params;
     if (!mint || mint.trim().length === 0) {
+        logger.debug('NFT history fetch failed: Mint address is missing.');
         return res.status(400).json({ error: 'NFT mint address is required.' });
     }
 
     try {
         const nft = await Nft.findOne({ mint: mint.trim() }, 'history');
         if (!nft) {
+            logger.warn(`NFT history fetch failed: NFT with mint ${mint} not found.`);
             return res.status(404).json({ error: 'NFT not found.' });
         }
+        logger.debug(`Fetched history for NFT mint: ${mint}`);
         res.json(nft.history);
     } catch (error) {
+        logger.error('Error fetching NFT history:', error);
         next(error);
     }
 });
@@ -978,7 +1233,7 @@ app.get('/api/nfts/:mint/history', async (req, res, next) => {
 
 // --- Centralized Express Error Handler ---
 app.use((err, req, res, next) => {
-    console.error('API Error:', err);
+    logger.error('API Error:', err); // Log the full error for debugging
 
     if (err.name === 'ValidationError') {
         const errors = Object.values(err.errors).map(el => el.message);
@@ -1011,7 +1266,7 @@ app.use((err, req, res, next) => {
 
 // --- Initial Data Seeding (for Development/Testing) ---
 async function seedInitialData() {
-    console.log('Checking for initial data and seeding if necessary (Development Mode)...');
+    logger.info('Checking for initial data and seeding if necessary (Development Mode)...');
     try {
         await ensureUploadDir();
 
@@ -1021,7 +1276,7 @@ async function seedInitialData() {
                 { text: 'Welcome to Aurum Fox Unified Portal!', date: new Date() },
                 { text: 'AFOX Phase 1 completed!', date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }
             ]);
-            console.log('  Initial announcements seeded.');
+            logger.info('  Initial announcements seeded.');
         }
 
         const createPlaceholderFile = async (fileName) => {
@@ -1031,9 +1286,9 @@ async function seedInitialData() {
             } catch (err) {
                 if (err.code === 'ENOENT') {
                     await fs.writeFile(filePath, Buffer.from([])); // Create an empty file
-                    console.log(`Created placeholder: ${filePath}`);
+                    logger.info(`Created placeholder: ${filePath}`);
                 } else {
-                    console.error(`Error checking/creating placeholder ${filePath}:`, err);
+                    logger.error(`Error checking/creating placeholder ${filePath}:`, err);
                 }
             }
         };
@@ -1046,7 +1301,7 @@ async function seedInitialData() {
                 { title: 'First Day in Office', description: 'Getting started with Aurum Fox.', imageUrl: `${BASE_URL}/uploads/photo_placeholder_1.png`, creatorWallet: "5bW2D6d3jV3oR7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2" },
                 { title: 'Aurum Fox Team', description: 'Our dedicated team.', imageUrl: `${BASE_URL}/uploads/photo_placeholder_2.png`, creatorWallet: "9cE4F7g8hI9j0k1l2M3n4o5p6q7r8s9t0U1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j" }
             ]);
-            console.log('  Initial photos seeded.');
+            logger.info('  Initial photos seeded.');
         }
 
         const postCount = await Post.countDocuments();
@@ -1055,7 +1310,7 @@ async function seedInitialData() {
                 { title: "Launch Day!", content: "Today marks the official launch of the Aurum Fox Unified Portal. We're excited to bring you a seamless Web3 and multimedia experience!", authorWallet: "6dF3G5h7jK9l1M2n3O4p5q6r7S8t9U0v1W2x3Y4z5a6b7c8d9e0f1g2h3i4j5k6l" },
                 { title: "New Features Coming Soon", content: "Stay tuned for exciting new features including decentralized storage options for your media and advanced NFT marketplace functionalities.", authorWallet: "7eG4H6i8kL0m1N2o3P4q5R6s7T8u9V0w1X2y3Z4a5b6c7d8e9f0g1h2i3j4k5l6m" }
             ]);
-            console.log('  Initial posts seeded.');
+            logger.info('  Initial posts seeded.');
         }
 
         const nftCount = await Nft.countDocuments();
@@ -1078,7 +1333,7 @@ async function seedInitialData() {
                     history: [{ type: 'Mint', to: "TestUserWalletAddressHere11111111111111111111111111111", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }]
                 }
             ]);
-            console.log('  Initial NFTs seeded.');
+            logger.info('  Initial NFTs seeded.');
         }
 
         const gameCount = await Game.countDocuments();
@@ -1087,7 +1342,7 @@ async function seedInitialData() {
                 { title: "Solana Chess", description: "Play chess on Solana!", url: "https://example.com/solana-chess", developer: "BlockchainDevs" },
                 { title: "Degen Racer", description: "Fast-paced racing game.", url: "https://example.com/degen-racer", developer: "GameFi Studios" }
             ]);
-            console.log('  Initial games seeded.');
+            logger.info('  Initial games seeded.');
         }
 
         const adCount = await Ad.countDocuments();
@@ -1096,7 +1351,7 @@ async function seedInitialData() {
             await Ad.insertMany([
                 { title: "Buy My Awesome Project!", content: "Check out our new dApp, it's great!", imageUrl: `${BASE_URL}/uploads/ad_placeholder.png`, link: "https://myawesomedapp.com", advertiser: "ProjectX" }
             ]);
-            console.log('  Initial ads seeded.');
+            logger.info('  Initial ads seeded.');
         }
 
         // IMPORTANT: For production, do NOT rely on these default users.
@@ -1105,7 +1360,7 @@ async function seedInitialData() {
 
         const adminUserCount = await User.countDocuments({ role: 'admin' });
         if (adminUserCount === 0) {
-            console.log('  No admin user found. Creating a default admin user...');
+            logger.info('  No admin user found. Creating a default admin user...');
             const defaultAdminUser = new User({
                 username: 'admin',
                 password: process.env.DEFAULT_ADMIN_PASSWORD || 'ChangeMeAdmin123!', // Use ENV variable, then strong fallback
@@ -1113,11 +1368,11 @@ async function seedInitialData() {
                 role: 'admin'
             });
             await defaultAdminUser.save();
-            console.warn('  Default admin user created: username "admin". **CRITICAL: CHANGE DEFAULT_ADMIN_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default admin user created: username "admin". **CRITICAL: CHANGE DEFAULT_ADMIN_PASSWORD IN .ENV IMMEDIATELY!**');
         }
         const regularUserCount = await User.countDocuments({ username: 'testuser' });
         if (regularUserCount === 0) {
-            console.log('  No test user found. Creating a default test user...');
+            logger.info('  No test user found. Creating a default test user...');
             const defaultTestUser = new User({
                 username: 'testuser',
                 password: process.env.DEFAULT_TEST_PASSWORD || 'ChangeMeTest123!',
@@ -1125,11 +1380,11 @@ async function seedInitialData() {
                 role: 'user'
             });
             await defaultTestUser.save();
-            console.warn('  Default test user created: username "testuser". **CRITICAL: CHANGE DEFAULT_TEST_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default test user created: username "testuser". **CRITICAL: CHANGE DEFAULT_TEST_PASSWORD IN .ENV IMMEDIATELY!**');
         }
         const developerUserCount = await User.countDocuments({ username: 'devuser' });
         if (developerUserCount === 0) {
-            console.log('  No developer user found. Creating a default developer user...');
+            logger.info('  No developer user found. Creating a default developer user...');
             const defaultDevUser = new User({
                 username: 'devuser',
                 password: process.env.DEFAULT_DEV_PASSWORD || 'ChangeMeDev123!',
@@ -1137,11 +1392,11 @@ async function seedInitialData() {
                 role: 'developer'
             });
             await defaultDevUser.save();
-            console.warn('  Default developer user created: username "devuser". **CRITICAL: CHANGE DEFAULT_DEV_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default developer user created: username "devuser". **CRITICAL: CHANGE DEFAULT_DEV_PASSWORD IN .ENV IMMEDIATELY!**');
         }
         const advertiserUserCount = await User.countDocuments({ username: 'aduser' });
         if (advertiserUserCount === 0) {
-            console.log('  No advertiser user found. Creating a default advertiser user...');
+            logger.info('  No advertiser user found. Creating a default advertiser user...');
             const defaultAdUser = new User({
                 username: 'aduser',
                 password: process.env.DEFAULT_AD_PASSWORD || 'ChangeMeAd123!',
@@ -1149,11 +1404,11 @@ async function seedInitialData() {
                 role: 'advertiser'
             });
             await defaultAdUser.save();
-            console.warn('  Default advertiser user created: username "aduser". **CRITICAL: CHANGE DEFAULT_AD_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default advertiser user created: username "aduser". **CRITICAL: CHANGE DEFAULT_AD_PASSWORD IN .ENV IMMEDIATELY!**');
         }
         const publisherUserCount = await User.countDocuments({ username: 'pubuser' });
         if (publisherUserCount === 0) {
-            console.log('  No publisher user found. Creating a default publisher user...');
+            logger.info('  No publisher user found. Creating a default publisher user...');
             const defaultPubUser = new User({
                 username: 'pubuser',
                 password: process.env.DEFAULT_PUB_PASSWORD || 'ChangeMePub123!',
@@ -1161,31 +1416,70 @@ async function seedInitialData() {
                 role: 'publisher'
             });
             await defaultPubUser.save();
-            console.warn('  Default publisher user created: username "pubuser". **CRITICAL: CHANGE DEFAULT_PUB_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default publisher user created: username "pubuser". **CRITICAL: CHANGE DEFAULT_PUB_PASSWORD IN .ENV IMMEDIATELY!**');
         }
 
     } catch (error) {
-        console.error('Error seeding initial data:', error);
+        logger.error('Error seeding initial data:', error);
     }
 }
 
 // --- Server Start ---
-ensureUploadDir().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Backend server listening at ${BASE_URL}`);
-        console.log(`MongoDB URI: ${MONGODB_URI ? 'Connected' : 'NOT SET, using default!'}`); // Indicate if URI is set
-        console.log(`CORS allowed origins: ${ALLOWED_CORS_ORIGINS.join(', ')}`);
-        console.log(`Your frontend should be configured to fetch from ${BASE_URL}`);
-        console.log(`\n--- PRODUCTION CHECKLIST ---`);
-        console.log(`1. Ensure .env file has strong JWT_SECRET, MONGODB_URI, and BASE_URL.`);
-        console.log(`2. Replace local file uploads (Multer) with a cloud storage solution (e.g., AWS S3, Arweave, IPFS).`);
-        console.log(`3. Implement REAL Solana blockchain interactions for NFT minting, listing, buying, and delisting.`);
-        console.log(`4. Change all default user passwords (or remove the seeding logic entirely) for production.`);
-        console.log(`5. Set MARKETPLACE_ESCROW_WALLET to a real, secure Solana address.`);
-        console.log(`----------------------------`);
-        seedInitialData(); // Call seed function after server starts and dir is ensured
+// Centralized function to start the server
+async function startServer() {
+    try {
+        // await initializeSecrets(); // Uncomment and implement if using AWS Secrets Manager
+        await ensureUploadDir();
+        app.listen(PORT, () => {
+            logger.info(`Backend server listening at ${BASE_URL}`);
+            logger.info(`MongoDB URI: ${MONGODB_URI ? 'Connected' : 'NOT SET, using default!'}`); // Indicate if URI is set
+            logger.info(`CORS allowed origins: ${ALLOWED_CORS_ORIGINS.join(', ')}`);
+            logger.info(`Your frontend should be configured to fetch from ${BASE_URL}`);
+            logger.info(`Redis URL: ${REDIS_URL}`);
+            logger.info(`\n--- PRODUCTION CHECKLIST ---`);
+            logger.info(`1. Ensure .env file has strong JWT_SECRET, MONGODB_URI, and BASE_URL.`);
+            logger.info(`2. Replace local file uploads (Multer) with a cloud storage solution (e.g., AWS S3, Arweave, IPFS).`);
+            logger.info(`3. Implement REAL Solana blockchain interactions for NFT minting, listing, buying, and delisting.`);
+            logger.info(`4. Change all default user passwords (or remove the seeding logic entirely) for production.`);
+            logger.info(`5. Set MARKETPLACE_ESCROW_WALLET to a real, secure Solana address.`);
+            logger.info(`6. **IMPORTANT**: Properly configure AWS_REGION, JWT_SECRET_NAME, and other AWS secrets if 'USE_AWS_SECRETS_MANAGER' is true.`);
+            logger.info(`7. Configure Redis for persistence and robustness in production.`);
+            logger.info(`----------------------------`);
+            seedInitialData(); // Call seed function after server starts and dir is ensured
+        });
+    } catch (err) {
+        logger.error('Failed to start server due to critical error:', err);
+        process.exit(1);
+    }
+}
+
+startServer();
+
+// --- Graceful Shutdown ---
+process.on('SIGTERM', () => {
+    logger.info('SIGTERM signal received: closing HTTP server.');
+    app.close(() => {
+        logger.info('HTTP server closed.');
+        mongoose.connection.close(false, () => {
+            logger.info('MongoDB connection closed.');
+            redisClient.quit(() => {
+                logger.info('Redis client disconnected.');
+                process.exit(0);
+            });
+        });
     });
-}).catch(err => {
-    console.error('Failed to start server due to directory setup error:', err);
-    process.exit(1);
+});
+
+process.on('SIGINT', () => {
+    logger.info('SIGINT signal received: closing HTTP server.');
+    app.close(() => {
+        logger.info('HTTP server closed.');
+        mongoose.connection.close(false, () => {
+            logger.info('MongoDB connection closed.');
+            redisClient.quit(() => {
+                logger.info('Redis client disconnected.');
+                process.exit(0);
+            });
+        });
+    });
 });
