@@ -1,74 +1,76 @@
 /**
  * @file This file centralizes custom validation functions used across the backend.
  * These functions are designed to be integrated with validation libraries like Joi
- * via custom validators (e.g., Joi.custom()).
+ * via custom validators (e.g., Joi.custom()), or used directly in Mongoose schemas.
  */
 
 const logger = require('../config/logger');
+const mongoose = require('mongoose'); // Необходим для isValidObjectId
 
-// IMPORTANT: For real Solana blockchain interactions, uncomment and use @solana/web3.js for robust validation.
-// You must install it: `npm install @solana/web3.js`
-const { PublicKey } = require('@solana/web3.js'); // Keeping it commented out for now as per original
-
+// ИМПОРТ ДЛЯ РЕАЛЬНОЙ ВАЛИДАЦИИ SOLANA-АДРЕСОВ
+// Вы должны установить `@solana/web3.js`: `npm install @solana/web3.js`
+const { PublicKey } = require('@solana/web3.js'); 
 
 /**
- * Validates if a given string is a valid Solana public key (wallet address) format.
+ * Валидирует, является ли данная строка действительным форматом публичного ключа Solana (адреса кошелька).
  *
- * This function performs a robust check using `@solana/web3.js`'s `PublicKey`
- * constructor. It attempts to create a PublicKey instance, which will throw
- * an error if the address format is invalid.
+ * Эта функция выполняет надежную проверку с использованием конструктора `PublicKey` из `@solana/web3.js`.
+ * Она пытается создать экземпляр PublicKey, который выдаст ошибку, если формат адреса недействителен.
  *
- * @param {string} address - The string to validate as a Solana wallet address.
- * @returns {boolean} - True if the address is a valid Solana public key format, false otherwise.
+ * @param {string} address - Строка для валидации как адрес кошелька Solana.
+ * @returns {boolean} - True, если адрес является действительным форматом публичного ключа Solana, false в противном случае.
  */
 function isValidSolanaAddress(address) {
     if (typeof address !== 'string' || !address) {
-        logger.debug(`Invalid Solana address: Not a string or empty.`);
+        logger.debug(`[Validation] Invalid Solana address: Not a string or empty. Value: ${address}`);
+        return false;
+    }
+    // Solana-адреса имеют длину от 32 до 44 символов в кодировке Base58.
+    // Хотя PublicKey проверит это, это быстрый отказ.
+    if (address.length < 32 || address.length > 44) {
+        logger.debug(`[Validation] Invalid Solana address length: "${address}"`);
         return false;
     }
 
     try {
-        // Attempt to create a PublicKey instance.
-        // This constructor throws an error for invalid Base58 strings or incorrect lengths.
-        new PublicKey(address);
-        return true; // If no error, it's a valid format.
+        new PublicKey(address); // Попытка создать экземпляр PublicKey.
+        return true; // Если ошибок нет, формат действителен.
     } catch (e) {
-        // Log the specific error for debugging purposes, but return false for invalid.
-        logger.debug(`Invalid Solana address "${address}": ${e.message}`);
+        // Логируем конкретную ошибку для отладки, но возвращаем false для недействительного адреса.
+        logger.debug(`[Validation] Invalid Solana address "${address}": ${e.message}`);
         return false;
     }
 }
 
 /**
- * Validates if a given string is a valid MongoDB ObjectId format.
+ * Валидирует, является ли данная строка действительным форматом MongoDB ObjectId.
  *
- * This function uses Mongoose's `ObjectId.isValid()` method to check the format.
- * It's purely a format check and doesn't verify if an ID exists in the database.
+ * Эта функция использует метод `ObjectId.isValid()` Mongoose для проверки формата.
+ * Это исключительно проверка формата и не проверяет, существует ли идентификатор в базе данных.
  *
- * @param {string} id - The string to validate as a MongoDB ObjectId.
- * @returns {boolean} - True if the ID is a valid MongoDB ObjectId format, false otherwise.
+ * @param {string} id - Строка для валидации как MongoDB ObjectId.
+ * @returns {boolean} - True, если идентификатор является действительным форматом MongoDB ObjectId, false в противном случае.
  */
-// Assuming mongoose is available in your project, you'll need to import it here
-// or pass it as an argument if this function were part of a more complex utility.
-// For simplicity, we'll assume it's imported where this validator is used or globally available.
-// If not, you might need to adjust your setup to make Mongoose available, or use a simpler regex.
-const mongoose = require('mongoose'); // Assuming mongoose is installed and configured
-
 function isValidObjectId(id) {
     if (typeof id !== 'string' || !id) {
-        logger.debug(`Invalid ObjectId: Not a string or empty.`);
+        logger.debug(`[Validation] Invalid ObjectId: Not a string or empty. Value: ${id}`);
         return false;
     }
-    // Mongoose's ObjectId.isValid provides the most robust check.
+    // ObjectId MongoDB всегда имеет длину 24 шестнадцатеричных символа.
+    // Это быстрый отказ перед вызовом Mongoose.
+    if (id.length !== 24 || !/^[0-9a-fA-F]+$/.test(id)) {
+        logger.debug(`[Validation] Invalid ObjectId format (length/chars): "${id}"`);
+        return false;
+    }
+
     const isValid = mongoose.Types.ObjectId.isValid(id);
     if (!isValid) {
-        logger.debug(`Invalid ObjectId format: "${id}"`);
+        logger.debug(`[Validation] Invalid ObjectId format (Mongoose check): "${id}"`);
     }
     return isValid;
 }
 
-
 module.exports = {
     isValidSolanaAddress,
-    isValidObjectId, // Export the new ObjectId validator
+    isValidObjectId,
 };
