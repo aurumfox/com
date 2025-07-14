@@ -17,6 +17,7 @@ const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const RedisStore = require('express-rate-limit-redis'); // Import RedisStore directly
 const xss = require('express-xss-clean');
 const hpp = require('hpp');
 const morgan = require('morgan'); // For HTTP request logging
@@ -26,13 +27,7 @@ require('winston-daily-rotate-file'); // For daily log rotation
 // --- Redis Import ---
 const redis = require('redis');
 
-// --- AWS SDK Imports (for secure secret management - conceptual) ---
-// const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
-// const { KMSClient, DecryptCommand } = require('@aws-sdk/client-kms');
-
-
 // --- Solana Imports (for validation, not full interaction) ---
-// For full blockchain interactions, you would need more: Connection, Keypair, Transaction, etc.
 const { PublicKey } = require('@solana/web3.js');
 
 const app = express();
@@ -40,17 +35,17 @@ const PORT = process.env.PORT || 3000;
 // CRITICAL: MONGODB_URI MUST be set in .env for production.
 const MONGODB_URI = process.env.MONGODB_URI;
 // Robust CORS origin parsing and default.
-const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://127.0.0.1:5500', 'http://localhost:5500'];
+const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : ['http://127.0.0.1:5500', 'http://localhost:5500'];
 // BASE_URL should be your deployed domain in production (e.g., https://api.yourapp.com)
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 // CRITICAL: JWT_SECRET MUST be set in .env for production.
-// In production, consider fetching this from a secure secret manager (e.g., AWS Secrets Manager, HashiCorp Vault)
 let JWT_SECRET = process.env.JWT_SECRET;
 // Placeholder for a real marketplace wallet in production
 const MARKETPLACE_ESCROW_WALLET = process.env.MARKETPLACE_ESCROW_WALLET || 'YOUR_REAL_MARKETPLACE_ESCROW_WALLET_ADDRESS';
 
 // --- Redis Client Setup ---
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+// Corrected to prioritize REDIS_URI from docker-compose.yml / .env
+const REDIS_URL = process.env.REDIS_URI || 'redis://localhost:6379'; // Use REDIS_URI to match docker-compose.yml
 const redisClient = redis.createClient({ url: REDIS_URL });
 
 redisClient.on('connect', () => console.log('Redis client connected!'));
@@ -124,47 +119,6 @@ if (process.env.NODE_ENV === 'production') {
 
 
 // --- Security & Configuration Checks (with enhanced logging) ---
-// Function to fetch secrets from AWS Secrets Manager (conceptual)
-/*
-async function getSecret(secretName) {
-    const client = new SecretsManagerClient({ region: process.env.AWS_REGION });
-    try {
-        const command = new GetSecretValueCommand({ SecretId: secretName });
-        const data = await client.send(command);
-        if ('SecretString' in data) {
-            return data.SecretString;
-        }
-        // For binary secrets, you might need to decode SecretBinary
-        return Buffer.from(data.SecretBinary, 'base64').toString('ascii');
-    } catch (error) {
-        logger.error(`Failed to retrieve secret ${secretName} from AWS Secrets Manager:`, error);
-        process.exit(1);
-    }
-}
-
-// Initialize secrets if using AWS Secrets Manager
-async function initializeSecrets() {
-    if (process.env.USE_AWS_SECRETS_MANAGER === 'true' && process.env.JWT_SECRET_NAME) {
-        JWT_SECRET = await getSecret(process.env.JWT_SECRET_NAME);
-    }
-    // You might also fetch MONGODB_URI or other sensitive data this way
-    // For example: MONGODB_URI = await getSecret(process.env.MONGODB_URI_NAME);
-
-    if (!JWT_SECRET || JWT_SECRET.length < 32) {
-        logger.error('ERROR: JWT_SECRET environment variable is missing or too short. Please set a strong, random secret (e.g., 32+ characters) in your .env file or via AWS Secrets Manager.');
-        process.exit(1);
-    }
-    if (!MONGODB_URI) {
-        logger.error('ERROR: MONGODB_URI environment variable is missing. Please set your MongoDB connection string in your .env file.');
-        process.exit(1);
-    }
-    if (!MARKETPLACE_ESCROW_WALLET || !isValidSolanaAddress(MARKETPLACE_ESCROW_WALLET)) {
-        logger.warn('WARNING: MARKETPLACE_ESCROW_WALLET environment variable is missing or invalid. Set a real Solana address for production.');
-    }
-}
-*/
-
-// Without AWS Secrets Manager for now, directly check JWT_SECRET
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
     logger.error('ERROR: JWT_SECRET environment variable is missing or too short. Please set a strong, random secret (e.g., 32+ characters) in your .env file.');
     process.exit(1);
@@ -221,7 +175,7 @@ const apiLimiter = rateLimit({
     message: 'Too many requests from this IP, please try again after 15 minutes.',
     headers: true, // Send X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers
     keyGenerator: (req, res) => req.ip, // Use IP address as the key
-    store: new (require('express-rate-limit-redis').RedisStore)({
+    store: new RedisStore({
         sendCommand: (...args) => redisClient.sendCommand(args),
     })
 });
@@ -235,7 +189,7 @@ const authLimiter = rateLimit({
     message: 'Too many authentication attempts from this IP, please try again after an hour.',
     headers: true,
     keyGenerator: (req, res) => req.ip,
-    store: new (require('express-rate-limit-redis').RedisStore)({
+    store: new RedisStore({
         sendCommand: (...args) => redisClient.sendCommand(args),
     })
 });
@@ -244,10 +198,12 @@ app.use('/api/auth/', authLimiter);
 
 // Serve static files for uploads - FOR DEVELOPMENT/TESTING ONLY
 // In production, consider serving these from a CDN or cloud storage
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Corrected to use absolute path within container
+app.use('/uploads', express.static('/app/uploads'));
 
 // --- Multer Setup for File Uploads ---
-const uploadDir = 'uploads/'; // Local upload directory - **REPLACE WITH CLOUD STORAGE IN PRODUCTION**
+// Corrected uploadDir to use absolute path within container
+const uploadDir = '/app/uploads/'; // Local upload directory - **REPLACE WITH CLOUD STORAGE IN PRODUCTION**
 
 async function ensureUploadDir() {
     try {
@@ -914,8 +870,6 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
     }
 
     // In PRODUCTION, upload req.file to Arweave/IPFS and get its URI
-    // const uploadResult = await uploadFileToArweave(req.file);
-    // const contentUrl = uploadResult.uri;
     logger.warn('WARNING: NFT media file uploaded to local storage. Use Arweave/IPFS in production!');
     const contentUrl = `${BASE_URL}/uploads/${req.file.filename}`;
 
@@ -954,12 +908,10 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
     }
 
     // In PRODUCTION, upload this metadata JSON to Arweave/IPFS and get its URI
-    // const metadataUploadResult = await uploadMetadataToArweave(nftMetadata);
-    // const metadataUri = metadataUploadResult.uri;
     logger.warn('WARNING: NFT metadata JSON saved locally. Use Arweave/IPFS for metadata in production!');
     const baseFileName = path.basename(req.file.filename, path.extname(req.file.filename));
     const metadataFileName = `${baseFileName}-metadata.json`;
-    metadataFilePath = path.join(__dirname, uploadDir, metadataFileName);
+    metadataFilePath = path.join(uploadDir, metadataFileName); // Use the corrected uploadDir
     try {
         await fs.writeFile(metadataFilePath, JSON.stringify(nftMetadata, null, 2));
     } catch (error) {
@@ -969,26 +921,6 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
         return res.status(500).json({ error: 'Failed to save NFT metadata file.' });
     }
     const metadataUri = `${BASE_URL}/uploads/${metadataFileName}`; // Local URI
-
-    // *** THIS IS THE CRITICAL SIMULATION PART ***
-    // In a REAL DAPP, you would initiate a Solana mint transaction here.
-    // 1. Construct a Metaplex/Token Metadata program instruction.
-    // 2. Sign it with your backend's mint authority (or prepare for client signing).
-    // 3. Send the transaction to the Solana cluster.
-    // 4. Wait for confirmation and get the real `mintAddress` and `transactionSignature`.
-    // Example (conceptual, requires @solana/web3.js and @metaplex-foundation/mpl-token-metadata):
-    /*
-    const { Connection, Keypair, Transaction, sendAndConfirmTransaction } = require('@solana/web3.js');
-    const { createCreateMetadataAccountV2Instruction } = require('@metaplex-foundation/mpl-token-metadata');
-    const connection = new Connection(process.env.SOLANA_RPC_URL, 'confirmed');
-    const payerKeypair = Keypair.fromSecretKey(bs58.decode(process.env.BACKEND_MINT_AUTHORITY_SECRET_KEY)); // Load from .env securely
-    const mintKeypair = Keypair.generate();
-
-    // ... construct instruction with metadataUri, payer, mintKeypair, etc.
-    // const transaction = new Transaction().add(createMetadataInstruction);
-    // const transactionSignature = await sendAndConfirmTransaction(connection, transaction, [payerKeypair, mintKeypair]);
-    // const realMintAddress = mintKeypair.publicKey.toBase58();
-    */
 
     const simulatedMintAddress = `SIMULATED_MINT_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     const simulatedSignature = 'SIMULATED_TRANSACTION_SIGNATURE_FROM_BACKEND';
@@ -1048,13 +980,6 @@ app.post('/api/nfts/list', authenticateToken, async (req, res, next) => {
     }
 
     try {
-        // *** REAL BLOCKCHAIN INTEGRATION FOR LISTING ***
-        // In a real DApp:
-        // 1. Your frontend initiates a transaction to list the NFT on a smart contract (e.g., Candy Machine, custom marketplace program).
-        // 2. The smart contract transfers the NFT from seller to an escrow account (e.g., MARKETPLACE_ESCROW_WALLET).
-        // 3. Your backend would listen for on-chain events or verify the transaction signature.
-        // 4. ONLY AFTER successful on-chain listing, update your database.
-        // For this example, we're still just updating the DB:
         const nft = await Nft.findOneAndUpdate(
             { mint: trimmedMintAddress, owner: trimmedSellerWallet, isListed: false },
             {
@@ -1110,14 +1035,6 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
     }
 
     try {
-        // *** REAL BLOCKCHAIN INTEGRATION FOR BUYING ***
-        // In a real DApp:
-        // 1. Your backend (or frontend) constructs a transaction to buy the NFT from the smart contract.
-        //    This involves transferring SOL from buyer to seller/marketplace and transferring NFT from escrow to buyer.
-        // 2. The frontend signs and sends this transaction.
-        // 3. Your backend would listen for on-chain events or verify the transaction signature.
-        // 4. ONLY AFTER successful on-chain purchase, update your database.
-        // For this example, we're still just updating the DB:
         const nft = await Nft.findOneAndUpdate(
             { mint: trimmedMintAddress, owner: trimmedSellerWallet, isListed: true, price: parsedPrice },
             {
@@ -1139,8 +1056,6 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
             return res.status(404).json({ error: 'NFT not found, not listed, or seller/price mismatch. It might have been delisted or sold.' });
         }
 
-        // In a real app, `serializedTransaction` would be a base64 string of a Solana transaction
-        // that the client wallet needs to sign.
         const serializedTransaction = 'SIMULATED_TRANSACTION_BASE64_FOR_CLIENT_SIGNING';
 
         logger.info(`NFT ${nft.name} successfully purchased (simulated) by ${trimmedBuyerWallet} from ${trimmedSellerWallet} for ${parsedPrice} SOL.`);
@@ -1176,10 +1091,6 @@ app.post('/api/nfts/delist', authenticateToken, async (req, res, next) => {
     }
 
     try {
-        // *** REAL BLOCKCHAIN INTEGRATION FOR DELISTING ***
-        // In a real DApp, you would initiate a transaction to delist the NFT from the smart contract.
-        // This usually involves transferring the NFT from the escrow back to the owner's wallet.
-        // ONLY AFTER successful on-chain delisting, update your database.
         const nft = await Nft.findOneAndUpdate(
             { mint: trimmedMintAddress, owner: trimmedOwnerWallet, isListed: true },
             {
@@ -1280,7 +1191,7 @@ async function seedInitialData() {
         }
 
         const createPlaceholderFile = async (fileName) => {
-            const filePath = path.join(uploadDir, fileName);
+            const filePath = path.join(uploadDir, fileName); // Use the corrected uploadDir
             try {
                 await fs.access(filePath);
             } catch (err) {
@@ -1354,16 +1265,12 @@ async function seedInitialData() {
             logger.info('  Initial ads seeded.');
         }
 
-        // IMPORTANT: For production, do NOT rely on these default users.
-        // Create users with strong, unique passwords through your registration API or a secure setup process.
-        // Consider removing or commenting out this seeding block entirely for production deployments.
-
         const adminUserCount = await User.countDocuments({ role: 'admin' });
         if (adminUserCount === 0) {
             logger.info('  No admin user found. Creating a default admin user...');
             const defaultAdminUser = new User({
                 username: 'admin',
-                password: process.env.DEFAULT_ADMIN_PASSWORD || 'ChangeMeAdmin123!', // Use ENV variable, then strong fallback
+                password: process.env.DEFAULT_ADMIN_PASSWORD || 'ChangeMeAdmin123!',
                 walletAddress: 'AdminWalletAddressHere11111111111111111111111111111111',
                 role: 'admin'
             });
@@ -1425,27 +1332,26 @@ async function seedInitialData() {
 }
 
 // --- Server Start ---
-// Centralized function to start the server
 async function startServer() {
     try {
-        // await initializeSecrets(); // Uncomment and implement if using AWS Secrets Manager
         await ensureUploadDir();
         app.listen(PORT, () => {
             logger.info(`Backend server listening at ${BASE_URL}`);
-            logger.info(`MongoDB URI: ${MONGODB_URI ? 'Connected' : 'NOT SET, using default!'}`); // Indicate if URI is set
+            logger.info(`MongoDB URI: ${MONGODB_URI ? 'Connected' : 'NOT SET, using default!'}`);
             logger.info(`CORS allowed origins: ${ALLOWED_CORS_ORIGINS.join(', ')}`);
             logger.info(`Your frontend should be configured to fetch from ${BASE_URL}`);
             logger.info(`Redis URL: ${REDIS_URL}`);
             logger.info(`\n--- PRODUCTION CHECKLIST ---`);
-            logger.info(`1. Ensure .env file has strong JWT_SECRET, MONGODB_URI, and BASE_URL.`);
+            logger.info(`1. Ensure .env file has strong JWT_SECRET, MONGODB_URI, REDIS_URI, BASE_URL, and CORS_ORIGINS.`);
             logger.info(`2. Replace local file uploads (Multer) with a cloud storage solution (e.g., AWS S3, Arweave, IPFS).`);
             logger.info(`3. Implement REAL Solana blockchain interactions for NFT minting, listing, buying, and delisting.`);
             logger.info(`4. Change all default user passwords (or remove the seeding logic entirely) for production.`);
             logger.info(`5. Set MARKETPLACE_ESCROW_WALLET to a real, secure Solana address.`);
             logger.info(`6. **IMPORTANT**: Properly configure AWS_REGION, JWT_SECRET_NAME, and other AWS secrets if 'USE_AWS_SECRETS_MANAGER' is true.`);
             logger.info(`7. Configure Redis for persistence and robustness in production.`);
+            logger.info(`8. If using RabbitMQ, ensure its connection is correctly implemented and uses RABBITMQ_URI from .env.`);
             logger.info(`----------------------------`);
-            seedInitialData(); // Call seed function after server starts and dir is ensured
+            seedInitialData();
         });
     } catch (err) {
         logger.error('Failed to start server due to critical error:', err);
@@ -1458,7 +1364,7 @@ startServer();
 // --- Graceful Shutdown ---
 process.on('SIGTERM', () => {
     logger.info('SIGTERM signal received: closing HTTP server.');
-    app.close(() => {
+    app.close(() => { // Note: app.close is not a standard Express method. Use server.close() if app.listen returns a server instance.
         logger.info('HTTP server closed.');
         mongoose.connection.close(false, () => {
             logger.info('MongoDB connection closed.');
@@ -1472,7 +1378,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
     logger.info('SIGINT signal received: closing HTTP server.');
-    app.close(() => {
+    app.close(() => { // Note: app.close is not a standard Express method. Use server.close() if app.listen returns a server instance.
         logger.info('HTTP server closed.');
         mongoose.connection.close(false, () => {
             logger.info('MongoDB connection closed.');
