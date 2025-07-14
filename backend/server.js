@@ -10,43 +10,60 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises; // Use fs.promises directly for async file operations
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken'); // Still needed for jwt.sign, but not for verify (used in authMiddleware)
+const bcrypt = require('bcryptjs'); // Still needed for seeding, but not for hashing/compare (used in User model)
 
-// --- Solana Imports (for validation, not full interaction) ---
-// For full blockchain interactions, you would need more: Connection, Keypair, Transaction, etc.
-const { PublicKey } = require('@solana/web3.js');
+// --- Custom Modules & Configuration Imports ---
+const logger = require('./config/logger'); // Centralized logger
+const ApiError = require('./utils/ApiError'); // Custom error class
+const { isValidSolanaAddress } = require('./utils/validation'); // Combined validation utilities
+const { authenticateToken, authorizeRole } = require('./middleware/authMiddleware'); // Auth middlewares
+const {
+    ROLES,
+    API_VERSIONS,
+    JWT_CONFIG,
+    UPLOAD_CONFIG,
+    ALLOWED_MIME_TYPES,
+    SOLANA_CONFIG,
+    // Add other constants as needed
+} = require('./config/constants');
+
+// --- Mongoose Model Imports ---
+const User = require('./models/User'); // Updated User model
+const Announcement = require('./models/Announcement');
+const Photo = require('./models/Photo');
+const Post = require('./models/Post');
+const Nft = require('./models/Nft');
+const Game = require('./models/Game');
+const Ad = require('./models/Ad');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// CRITICAL: MONGODB_URI MUST be set in .env for production.
 const MONGODB_URI = process.env.MONGODB_URI;
-// Robust CORS origin parsing and default.
 const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://127.0.0.1:5500', 'http://localhost:5500'];
-// BASE_URL should be your deployed domain in production (e.g., https://api.yourapp.com)
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
-// CRITICAL: JWT_SECRET MUST be set in .env for production.
-const JWT_SECRET = process.env.JWT_SECRET;
-// Placeholder for a real marketplace wallet in production
-const MARKETPLACE_ESCROW_WALLET = process.env.MARKETPLACE_ESCROW_WALLET || 'YOUR_REAL_MARKETPLACE_ESCROW_WALLET_ADDRESS';
+const JWT_SECRET = JWT_CONFIG.SECRET; // Get from constants, which get from env
+const MARKETPLACE_ESCROW_WALLET = process.env.MARKETPLACE_ESCROW_WALLET;
 
 
-// --- Security & Configuration Checks ---
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-    console.error('ERROR: JWT_SECRET environment variable is missing or too short. Please set a strong, random secret (e.g., 32+ characters) in your .env file.');
+// --- Security & Configuration Checks (More Robust) ---
+// These checks should ideally be done in a separate bootstrap/config file
+// or as part of a health check, but here is fine for now.
+if (!JWT_SECRET || JWT_SECRET.length < 32 || JWT_SECRET === JWT_CONFIG.SECRET) {
+    logger.fatal('ERROR: JWT_SECRET environment variable is missing, too short, or using default fallback. Please set a strong, random secret (e.g., 32+ characters) in your .env file.');
     process.exit(1);
 }
 if (!MONGODB_URI) {
-    console.error('ERROR: MONGODB_URI environment variable is missing. Please set your MongoDB connection string in your .env file.');
+    logger.fatal('ERROR: MONGODB_URI environment variable is missing. Please set your MongoDB connection string in your .env file.');
     process.exit(1);
 }
+// Using the imported isValidSolanaAddress for this critical check
 if (!MARKETPLACE_ESCROW_WALLET || !isValidSolanaAddress(MARKETPLACE_ESCROW_WALLET)) {
-    console.warn('WARNING: MARKETPLACE_ESCROW_WALLET environment variable is missing or invalid. Set a real Solana address for production.');
+    logger.fatal('ERROR: MARKETPLACE_ESCROW_WALLET environment variable is missing or invalid. Set a real, valid Solana address in your .env file for production.');
+    process.exit(1);
 }
 
-
 // --- Middlewares ---
-
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin) return callback(null, true);
@@ -54,10 +71,11 @@ app.use(cors({
             return callback(null, true);
         }
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+        logger.warn(`CORS blocked request from origin: ${origin}`);
         return callback(new Error(msg), false);
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Add OPTIONS for preflight requests
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'], // Add Accept
     credentials: true
 }));
 
@@ -66,328 +84,143 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Serve static files for uploads - FOR DEVELOPMENT/TESTING ONLY
 // In production, consider serving these from a CDN or cloud storage
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, UPLOAD_CONFIG.BASE_DIR || 'uploads')));
 
 // --- Multer Setup for File Uploads ---
-const uploadDir = 'uploads/'; // Local upload directory - **REPLACE WITH CLOUD STORAGE IN PRODUCTION**
+const uploadDir = UPLOAD_CONFIG.BASE_DIR || 'uploads/'; // Local upload directory - **REPLACE WITH CLOUD STORAGE IN PRODUCTION**
 
 async function ensureUploadDir() {
     try {
         await fs.mkdir(uploadDir, { recursive: true });
-        console.log(`Upload directory '${uploadDir}' ensured.`);
+        logger.info(`Upload directory '${uploadDir}' ensured.`);
     } catch (err) {
-        console.error(`Error ensuring upload directory '${uploadDir}':`, err);
+        logger.fatal(`Error ensuring upload directory '${uploadDir}':`, err);
         process.exit(1); // Exit if crucial directory can't be created
     }
 }
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDir);
+        // Determine specific subdirectory based on file type if needed, e.g., for NFTs vs Photos
+        let destPath = uploadDir;
+        if (file.fieldname === 'nftFile') {
+            destPath = path.join(uploadDir, UPLOAD_CONFIG.NFT_UPLOAD_DIR);
+        } else if (file.fieldname === 'photo') {
+            destPath = path.join(uploadDir, UPLOAD_CONFIG.IMAGE_UPLOAD_DIR);
+        } else if (file.fieldname === 'gameFile') {
+            destPath = path.join(uploadDir, UPLOAD_CONFIG.GAME_UPLOAD_DIR);
+        } else if (file.fieldname === 'adCreative') {
+            destPath = path.join(uploadDir, UPLOAD_CONFIG.IMAGE_UPLOAD_DIR); // Ads typically use images
+        }
+        fs.mkdir(destPath, { recursive: true }).then(() => {
+            cb(null, destPath);
+        }).catch(err => {
+            logger.error(`Failed to create upload subdirectory ${destPath}:`, err);
+            cb(new Error(`Failed to create upload directory.`));
+        });
     },
     filename: (req, file, cb) => {
         const originalName = path.parse(file.originalname).name;
         const extension = path.parse(file.originalname).ext;
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const sanitizedOriginalName = originalName.replace(/[^a-zA-Z0-9-]/g, '_').substring(0, 50);
+        // Sanitize original name to be URL-friendly and prevent path traversal issues
+        const sanitizedOriginalName = originalName.replace(/[^a-zA-Z0-9-_.]/g, '_').substring(0, 50); // Keep periods for extensions
         cb(null, `${sanitizedOriginalName}-${uniqueSuffix}${extension}`);
     }
 });
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB file size limit
+    limits: { fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE_BYTES },
     fileFilter: (req, file, cb) => {
-        const allowedMimeTypes = [
-            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-            'video/mp4', 'video/webm', 'video/ogg',
-            'application/json',
-            'text/html', 'application/javascript'
-        ];
-        if (allowedMimeTypes.includes(file.mimetype)) {
+        // Use constants for allowed MIME types
+        if (ALLOWED_MIME_TYPES.ALL_MEDIA.includes(file.mimetype) ||
+            ALLOWED_MIME_TYPES.GAME_FILES.includes(file.mimetype) ||
+            ALLOWED_MIME_TYPES.NFT_METADATA.includes(file.mimetype)) { // Added for explicit metadata check
             cb(null, true);
         } else {
-            cb(new Error(`Invalid file type: ${file.mimetype}. Only images, videos, JSON, HTML, and JS files are allowed.`), false);
+            logger.warn(`File upload blocked: Invalid file type '${file.mimetype}' for file '${file.originalname}'.`);
+            cb(new ApiError(400, `Invalid file type: ${file.mimetype}. Only images, videos, JSON, HTML, and JS files are allowed.`), false);
         }
     }
 });
 
 // --- MongoDB Connection ---
 mongoose.connect(MONGODB_URI)
-    .then(() => console.log('MongoDB connected successfully!'))
+    .then(() => logger.info('MongoDB connected successfully!'))
     .catch(err => {
-        console.error('MongoDB connection error:', err);
+        logger.fatal('MongoDB connection error:', err);
         process.exit(1); // Exit if DB connection fails
     });
 
-// --- Mongoose Schemas and Models ---
-// All schemas now include timestamps: true by default
-const announcementSchema = new mongoose.Schema({
-    text: { type: String, required: true, trim: true, minlength: 5, maxlength: 500 },
-}, { timestamps: true });
-const Announcement = mongoose.model('Announcement', announcementSchema);
-
-const photoSchema = new mongoose.Schema({
-    title: { type: String, required: true, trim: true, minlength: 3, maxlength: 100 },
-    description: { type: String, trim: true, maxlength: 1000 },
-    imageUrl: { type: String, required: true, trim: true, match: /^https?:\/\/.+/ },
-    creatorWallet: {
-        type: String,
-        required: true,
-        trim: true,
-        validate: {
-            validator: (v) => isValidSolanaAddress(v),
-            message: props => `${props.value} is not a valid Solana address!`
-        }
-    },
-}, { timestamps: true });
-const Photo = mongoose.model('Photo', photoSchema);
-
-const postSchema = new mongoose.Schema({
-    title: { type: String, required: true, trim: true, minlength: 5, maxlength: 200 },
-    content: { type: String, required: true, trim: true, minlength: 10 },
-    authorWallet: {
-        type: String,
-        required: true,
-        trim: true,
-        validate: {
-            validator: (v) => isValidSolanaAddress(v),
-            message: props => `${props.value} is not a valid Solana address!`
-        }
-    },
-}, { timestamps: true });
-const Post = mongoose.model('Post', postSchema);
-
-const nftSchema = new mongoose.Schema({
-    name: { type: String, required: true, trim: true, minlength: 3, maxlength: 100 },
-    description: { type: String, trim: true, maxlength: 1000 },
-    image: { type: String, required: true, trim: true, match: /^https?:\/\/.+/ },
-    mint: { type: String, required: true, unique: true, index: true, trim: true, minlength: 32, maxlength: 44 },
-    owner: {
-        type: String,
-        required: true,
-        trim: true,
-        validate: {
-            validator: (v) => isValidSolanaAddress(v),
-            message: props => `${props.value} is not a valid Solana address!`
-        }
-    },
-    isListed: { type: Boolean, default: false },
-    price: { type: Number, min: 0, required: function() { return this.isListed; } },
-    listedAt: Date,
-    listingDuration: { type: Number, min: 1, required: function() { return this.isListed; } },
-    listedBy: {
-        type: String,
-        trim: true,
-        validate: {
-            validator: (v) => !v || isValidSolanaAddress(v),
-            message: props => `${props.value} is not a valid Solana address!`
-        }
-    },
-    attributes: [{
-        trait_type: { type: String, trim: true, minlength: 1, maxlength: 50 },
-        value: { type: String, trim: true, minlength: 1, maxlength: 100 }
-    }],
-    history: [{
-        type: { type: String, enum: ['Mint', 'Transfer', 'Sale', 'List', 'Delist'], required: true },
-        from: { type: String, trim: true },
-        to: { type: String, trim: true },
-        price: Number,
-        timestamp: { type: Date, default: Date.now }
-    }]
-}, { timestamps: true });
-const Nft = mongoose.model('Nft', nftSchema);
-
-const gameSchema = new mongoose.Schema({
-    title: { type: String, required: true, trim: true, minlength: 3, maxlength: 100 },
-    description: { type: String, trim: true, maxlength: 1000 },
-    url: { type: String, required: true, trim: true, match: /^https?:\/\/.+/ },
-    developer: { type: String, trim: true, minlength: 3, maxlength: 100 },
-}, { timestamps: true });
-const Game = mongoose.model('Game', gameSchema);
-
-const adSchema = new mongoose.Schema({
-    title: { type: String, required: true, trim: true, minlength: 3, maxlength: 100 },
-    content: { type: String, required: true, trim: true, minlength: 10, maxlength: 1000 },
-    imageUrl: { type: String, trim: true, match: /^https?:\/\/.+/, default: null },
-    link: { type: String, trim: true, match: /^https?:\/\/.+/, default: null },
-    advertiser: { type: String, trim: true, minlength: 3, maxlength: 100 },
-}, { timestamps: true });
-const Ad = mongoose.model('Ad', adSchema);
-
-const userSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        minlength: 3,
-        maxlength: 30
-    },
-    password: {
-        type: String,
-        required: true,
-        minlength: 6,
-        maxlength: 100
-    },
-    walletAddress: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        validate: {
-            validator: (v) => isValidSolanaAddress(v),
-            message: props => `${props.value} is not a valid Solana address!`
-        }
-    },
-    role: {
-        type: String,
-        enum: ['user', 'admin', 'developer', 'advertiser', 'publisher'],
-        default: 'user'
-    },
-}, { timestamps: true });
-
-userSchema.pre('save', async function(next) {
-    if (this.isModified('password')) {
-        // Enforce strong password requirements
-        if (this.password.length < 8 || !/[A-Z]/.test(this.password) || !/[a-z]/.test(this.password) || !/[0-9]/.test(this.password) || !/[^A-Za-z0-9]/.test(this.password)) {
-            return next(new Error('Password must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters.'));
-        }
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-    }
-    next();
-});
-
-userSchema.methods.comparePassword = async function(candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
-};
-
-const User = mongoose.model('User', userSchema);
-
-// --- Utility Functions ---
-
-function isValidSolanaAddress(address) {
-    if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
-        return false;
-    }
-    try {
-        new PublicKey(address);
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ error: 'Authentication token is required. Please log in.' });
-    }
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            if (err.name === 'TokenExpiredError') {
-                return res.status(401).json({ error: 'Authentication token expired. Please log in again.' });
-            }
-            console.warn("JWT verification failed:", err.message);
-            return res.status(403).json({ error: 'Invalid authentication token.' });
-        }
-        req.user = user;
-        next();
-    });
-};
-
-const authorizeRole = (...requiredRoles) => (req, res, next) => {
-    if (!req.user) {
-        return res.status(401).json({ error: 'Authentication required for this action.' });
-    }
-    if (!requiredRoles.includes(req.user.role)) {
-        console.warn(`Access denied for user ${req.user.username} (role: ${req.user.role}). Required roles: ${requiredRoles.join(', ')}`);
-        return res.status(403).json({ error: `Access denied. Requires one of the following roles: ${requiredRoles.join(', ')}.` });
-    }
-    next();
-};
-
-
 // --- API Endpoints ---
+const API_BASE = API_VERSIONS.V1; // Using API versioning constant
 
 // Authentication Endpoints
-app.post('/api/auth/register', async (req, res, next) => {
-    const { username, password, walletAddress, role } = req.body;
+app.post(`${API_BASE}/auth/register`, async (req, res, next) => {
+    const { username, password, walletAddress } = req.body;
 
-    if (!username || !password || !walletAddress) {
-        return res.status(400).json({ error: 'Username, password, and wallet address are required.' });
-    }
-    if (typeof username !== 'string' || typeof password !== 'string' || typeof walletAddress !== 'string') {
-        return res.status(400).json({ error: 'Invalid data types for registration fields.' });
-    }
-    if (!isValidSolanaAddress(walletAddress.trim())) {
-        return res.status(400).json({ error: 'Invalid Solana wallet address format.' });
+    // Basic type validation and presence check
+    if (typeof username !== 'string' || typeof password !== 'string' || typeof walletAddress !== 'string' ||
+        username.trim().length === 0 || password.trim().length === 0 || walletAddress.trim().length === 0) {
+        return next(ApiError.badRequest('Username, password, and wallet address are required and must be non-empty strings.'));
     }
 
-    // Admins can assign roles, others default to 'user'
-    let assignedRole = 'user';
-    if (role && role !== 'user') {
-        try {
-            const authHeader = req.headers['authorization'];
-            const token = authHeader && authHeader.split(' ')[1];
+    const trimmedUsername = username.trim();
+    const trimmedWalletAddress = walletAddress.trim();
 
-            if (!token) {
-                return res.status(403).json({ error: 'Authentication token required to assign specific roles.' });
-            }
-
-            const decodedUser = jwt.verify(token, JWT_SECRET);
-            if (decodedUser.role !== 'admin') {
-                return res.status(403).json({ error: 'Only administrators can assign specific roles.' });
-            }
-            assignedRole = role; // If admin and role provided, use it
-        } catch (err) {
-            console.warn("Role assignment attempt failed:", err.message);
-            return res.status(403).json({ error: 'Invalid or expired token for role assignment, or not authorized.' });
-        }
+    if (!isValidSolanaAddress(trimmedWalletAddress)) {
+        return next(ApiError.badRequest('Invalid Solana wallet address format.'));
     }
 
     try {
+        // Always assign 'user' role by default during registration
+        // Specific role assignment (admin, developer etc.) should be done by an existing admin
+        // through a separate, authorized endpoint (e.g., /api/users/:id/role)
         const newUser = new User({
-            username: username.trim(),
-            password: password,
-            walletAddress: walletAddress.trim(),
-            role: assignedRole
+            username: trimmedUsername,
+            password: password, // Password will be hashed by the User model's pre-save hook
+            walletAddress: trimmedWalletAddress,
+            role: ROLES.USER // Default role for new registrations
         });
         await newUser.save();
-        res.status(201).json({ message: 'User registered successfully!' });
+        logger.info(`New user registered: ${newUser.username} with role ${newUser.role}`);
+        res.status(201).json({ message: 'User registered successfully! Default role assigned: user.' });
     } catch (error) {
-        if (error.code === 11000) {
-            return res.status(409).json({ error: 'Username or wallet address already in use.' });
+        if (error.code === 11000) { // Duplicate key error
+            const field = Object.keys(error.keyValue)[0];
+            const value = error.keyValue[field];
+            return next(ApiError.conflict(`Duplicate value '${value}' for field '${field}'. Please use another.`));
         }
-        next(error);
+        // Handle Mongoose validation errors from User model's pre-save hook (for password complexity)
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(el => el.message);
+            return next(ApiError.badRequest('Validation failed: ' + errors.join(', ')));
+        }
+        next(error); // Pass other errors to the central error handler
     }
 });
 
-app.post('/api/auth/login', async (req, res, next) => {
+app.post(`${API_BASE}/auth/login`, async (req, res, next) => {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password are required.' });
-    }
-    if (typeof username !== 'string' || typeof password !== 'string') {
-        return res.status(400).json({ error: 'Invalid data types for login credentials.' });
+    if (typeof username !== 'string' || typeof password !== 'string' ||
+        username.trim().length === 0 || password.trim().length === 0) {
+        return next(ApiError.badRequest('Username and password are required.'));
     }
 
     try {
         const user = await User.findOne({ username: username.trim() });
         if (!user) {
-            return res.status(401).json({ error: 'Invalid username or password.' });
+            return next(ApiError.unauthorized('Invalid username or password.'));
         }
 
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid username or password.' });
+            return next(ApiError.unauthorized('Invalid username or password.'));
         }
 
+        // Generate JWT using configured secret and expiry
         const token = jwt.sign(
             {
                 userId: user._id,
@@ -396,9 +229,10 @@ app.post('/api/auth/login', async (req, res, next) => {
                 role: user.role
             },
             JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: JWT_CONFIG.EXPIRES_IN }
         );
 
+        logger.info(`User logged in: ${user.username} (Role: ${user.role})`);
         res.json({
             message: 'Logged in successfully!',
             token: token,
@@ -414,8 +248,60 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
 });
 
+// User profile endpoint (example, can be extended)
+app.get(`${API_BASE}/users/me`, authenticateToken, async (req, res, next) => {
+    try {
+        // req.user is populated by authenticateToken
+        const user = await User.findById(req.user.userId).select('-password'); // Exclude password from response
+        if (!user) {
+            return next(ApiError.notFound('User not found.'));
+        }
+        res.json(user);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Admin endpoint to get all users (for demonstration)
+app.get(`${API_BASE}/users`, authenticateToken, authorizeRole(ROLES.ADMIN), async (req, res, next) => {
+    try {
+        const users = await User.find().select('-password'); // Exclude passwords
+        res.json(users);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Admin endpoint to update user role (IMPORTANT: requires careful handling in production)
+app.put(`${API_BASE}/users/:userId/role`, authenticateToken, authorizeRole(ROLES.ADMIN), async (req, res, next) => {
+    const { userId } = req.params;
+    const { newRole } = req.body;
+
+    if (!newRole || typeof newRole !== 'string' || !Object.values(ROLES).includes(newRole)) {
+        return next(ApiError.badRequest('Invalid or missing new role.'));
+    }
+    if (!isValidObjectId(userId)) { // Using isValidObjectId from utils/validation
+        return next(ApiError.badRequest('Invalid user ID format.'));
+    }
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            return next(ApiError.notFound('User not found.'));
+        }
+
+        user.role = newRole;
+        await user.save();
+        logger.info(`Admin ${req.user.username} changed role of user ${user.username} to ${newRole}`);
+        res.status(200).json({ message: `User role updated to ${newRole}`, user: user.toJSON() });
+    } catch (error) {
+        next(error);
+    }
+});
+
+
 // Announcements API
-app.get('/api/announcements', async (req, res, next) => {
+app.get(`${API_BASE}/announcements`, async (req, res, next) => {
     try {
         const announcements = await Announcement.find().sort({ createdAt: -1 });
         res.json(announcements);
@@ -423,15 +309,15 @@ app.get('/api/announcements', async (req, res, next) => {
         next(error);
     }
 });
-app.post('/api/announcements', authenticateToken, authorizeRole('admin'), async (req, res, next) => {
+app.post(`${API_BASE}/announcements`, authenticateToken, authorizeRole(ROLES.ADMIN), async (req, res, next) => {
     const { text } = req.body;
-    if (!text || typeof text !== 'string' || text.trim().length === 0) {
-        return res.status(400).json({ error: 'Announcement text is required and must be a non-empty string.' });
+    if (!text || typeof text !== 'string' || text.trim().length < 5) {
+        return next(ApiError.badRequest('Announcement text is required and must be a string of at least 5 characters.'));
     }
     try {
         const newAnnouncement = new Announcement({ text: text.trim() });
         await newAnnouncement.save();
-        console.log('New announcement published:', newAnnouncement);
+        logger.info(`New announcement published by ${req.user.username}: "${newAnnouncement.text}"`);
         res.status(201).json({ message: 'Announcement published successfully', announcement: newAnnouncement });
     } catch (error) {
         next(error);
@@ -439,7 +325,7 @@ app.post('/api/announcements', authenticateToken, authorizeRole('admin'), async 
 });
 
 // Games API
-app.get('/api/games', async (req, res, next) => {
+app.get(`${API_BASE}/games`, async (req, res, next) => {
     try {
         const games = await Game.find().sort({ createdAt: -1 });
         res.json(games);
@@ -447,22 +333,17 @@ app.get('/api/games', async (req, res, next) => {
         next(error);
     }
 });
-app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.single('gameFile'), async (req, res, next) => {
+app.post(`${API_BASE}/games`, authenticateToken, authorizeRole(ROLES.DEVELOPER), upload.single('gameFile'), async (req, res, next) => {
     const { title, description, developer, url: externalUrl } = req.body;
 
-    // Validate inputs
-    if (!title || !description || !developer) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
-        return res.status(400).json({ error: 'Title, description, and developer are required to add a game.' });
-    }
-    const trimmedTitle = String(title).trim();
-    const trimmedDescription = String(description).trim();
-    const trimmedDeveloper = String(developer).trim();
+    const trimmedTitle = String(title || '').trim();
+    const trimmedDescription = String(description || '').trim();
+    const trimmedDeveloper = String(developer || '').trim();
     const trimmedExternalUrl = externalUrl ? String(externalUrl).trim() : null;
 
-    if (trimmedTitle.length === 0 || trimmedDescription.length === 0 || trimmedDeveloper.length === 0) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
-        return res.status(400).json({ error: 'Title, description, and developer cannot be empty.' });
+    if (!trimmedTitle || !trimmedDescription || !trimmedDeveloper) {
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        return next(ApiError.badRequest('Title, description, and developer are required to add a game.'));
     }
 
     let gameUrl;
@@ -470,19 +351,17 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
     if (req.file) {
         // In PRODUCTION, you would upload req.file to cloud storage (e.g., S3, Arweave, IPFS)
         // and set gameUrl to the public URL of that cloud resource.
-        // Example: const uploadResult = await uploadFileToS3(req.file);
-        // gameUrl = uploadResult.publicUrl;
-        console.warn('WARNING: Game file uploaded to local storage. Use cloud storage in production!');
-        gameUrl = `${BASE_URL}/uploads/${req.file.filename}`;
+        logger.warn('WARNING: Game file uploaded to local storage. Use cloud storage in production!');
+        gameUrl = `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.GAME_UPLOAD_DIR}/${req.file.filename}`;
     } else if (trimmedExternalUrl) {
         gameUrl = trimmedExternalUrl;
     } else {
-        return res.status(400).json({ error: 'Either a game file must be uploaded or a valid external URL must be provided.' });
+        return next(ApiError.badRequest('Either a game file must be uploaded or a valid external URL must be provided.'));
     }
 
     if (gameUrl && !/^https?:\/\/.+/.test(gameUrl)) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
-        return res.status(400).json({ error: 'Provided game URL is not valid.' });
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        return next(ApiError.badRequest('Provided game URL is not valid.'));
     }
 
     try {
@@ -493,15 +372,16 @@ app.post('/api/games', authenticateToken, authorizeRole('developer'), upload.sin
             developer: trimmedDeveloper
         });
         await newGame.save();
+        logger.info(`New game added by ${req.user.username}: "${newGame.title}"`);
         res.status(201).json({ message: 'Game added successfully', game: newGame });
     } catch (error) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file on DB error:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file on DB error:', e)); }
         next(error);
     }
 });
 
 // Ads API
-app.get('/api/ads', async (req, res, next) => {
+app.get(`${API_BASE}/ads`, async (req, res, next) => {
     try {
         const ads = await Ad.find().sort({ createdAt: -1 });
         res.json(ads);
@@ -509,33 +389,28 @@ app.get('/api/ads', async (req, res, next) => {
         next(error);
     }
 });
-app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.single('adCreative'), async (req, res, next) => {
+app.post(`${API_BASE}/ads`, authenticateToken, authorizeRole(ROLES.ADVERTISER), upload.single('adCreative'), async (req, res, next) => {
     const { title, content, link, advertiser } = req.body;
 
-    if (!title || !content || !advertiser) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
-        return res.status(400).json({ error: 'Title, content, and advertiser are required to post an ad.' });
-    }
-    const trimmedTitle = String(title).trim();
-    const trimmedContent = String(content).trim();
-    const trimmedAdvertiser = String(advertiser).trim();
+    const trimmedTitle = String(title || '').trim();
+    const trimmedContent = String(content || '').trim();
+    const trimmedAdvertiser = String(advertiser || '').trim();
     const trimmedLink = link ? String(link).trim() : null;
 
-    if (trimmedTitle.length === 0 || trimmedContent.length === 0 || trimmedAdvertiser.length === 0) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
-        return res.status(400).json({ error: 'Title, content, and advertiser cannot be empty.' });
+    if (!trimmedTitle || !trimmedContent || !trimmedAdvertiser) {
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        return next(ApiError.badRequest('Title, content, and advertiser are required to post an ad.'));
     }
+
     if (trimmedLink && !/^https?:\/\/.+/.test(trimmedLink)) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e)); }
-        return res.status(400).json({ error: 'Provided ad link is not a valid URL.' });
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e)); }
+        return next(ApiError.badRequest('Provided ad link is not a valid URL.'));
     }
 
     let imageUrl = null;
     if (req.file) {
-        // In PRODUCTION, you would upload req.file to cloud storage (e.g., S3, Arweave, IPFS)
-        // and set imageUrl to the public URL of that cloud resource.
-        console.warn('WARNING: Ad creative uploaded to local storage. Use cloud storage in production!');
-        imageUrl = `${BASE_URL}/uploads/${req.file.filename}`;
+        logger.warn('WARNING: Ad creative uploaded to local storage. Use cloud storage in production!');
+        imageUrl = `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.IMAGE_UPLOAD_DIR}/${req.file.filename}`;
     }
 
     try {
@@ -547,15 +422,16 @@ app.post('/api/ads', authenticateToken, authorizeRole('advertiser'), upload.sing
             advertiser: trimmedAdvertiser
         });
         await newAd.save();
+        logger.info(`New ad posted by ${req.user.username}: "${newAd.title}"`);
         res.status(201).json({ message: 'Ad posted successfully', ad: newAd });
     } catch (error) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file on DB error:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file on DB error:', e)); }
         next(error);
     }
 });
 
 // Photos API
-app.get('/api/photos', async (req, res, next) => {
+app.get(`${API_BASE}/photos`, async (req, res, next) => {
     try {
         const photos = await Photo.find().sort({ createdAt: -1 });
         res.json(photos);
@@ -563,33 +439,27 @@ app.get('/api/photos', async (req, res, next) => {
         next(error);
     }
 });
-app.post('/api/photos/upload', authenticateToken, upload.single('photo'), async (req, res, next) => {
+app.post(`${API_BASE}/photos/upload`, authenticateToken, upload.single('photo'), async (req, res, next) => {
     if (!req.file) {
-        return res.status(400).json({ error: 'No photo file uploaded.' });
+        return next(ApiError.badRequest('No photo file uploaded.'));
     }
     const { title, description, creatorWallet } = req.body;
 
-    if (!title || !creatorWallet) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
-        return res.status(400).json({ error: 'Photo title and creator wallet are required.' });
-    }
-    const trimmedTitle = String(title).trim();
+    const trimmedTitle = String(title || '').trim();
     const trimmedDescription = description ? String(description).trim() : '';
-    const trimmedCreatorWallet = String(creatorWallet).trim();
+    const trimmedCreatorWallet = String(creatorWallet || '').trim();
 
-    if (trimmedTitle.length === 0 || trimmedCreatorWallet.length === 0) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
-        return res.status(400).json({ error: 'Photo title and creator wallet cannot be empty.' });
+    if (!trimmedTitle || !trimmedCreatorWallet) {
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        return next(ApiError.badRequest('Photo title and creator wallet are required.'));
     }
     if (!isValidSolanaAddress(trimmedCreatorWallet)) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
-        return res.status(400).json({ error: 'Invalid Solana wallet address format for creatorWallet.' });
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        return next(ApiError.badRequest('Invalid Solana wallet address format for creatorWallet.'));
     }
 
-    // In PRODUCTION, you would upload req.file to cloud storage (e.g., S3, Arweave, IPFS)
-    // and set imageUrl to the public URL of that cloud resource.
-    console.warn('WARNING: Photo file uploaded to local storage. Use cloud storage in production!');
-    const imageUrl = `${BASE_URL}/uploads/${req.file.filename}`;
+    logger.warn('WARNING: Photo file uploaded to local storage. Use cloud storage in production!');
+    const imageUrl = `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.IMAGE_UPLOAD_DIR}/${req.file.filename}`;
 
     try {
         const newPhoto = new Photo({
@@ -599,15 +469,16 @@ app.post('/api/photos/upload', authenticateToken, upload.single('photo'), async 
             creatorWallet: trimmedCreatorWallet
         });
         await newPhoto.save();
+        logger.info(`New photo uploaded by ${req.user.username}: "${newPhoto.title}"`);
         res.status(201).json({ message: 'Photo uploaded successfully.', photo: newPhoto });
     } catch (error) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file on DB error:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file on DB error:', e)); }
         next(error);
     }
 });
 
 // Posts API
-app.get('/api/posts', async (req, res, next) => {
+app.get(`${API_BASE}/posts`, async (req, res, next) => {
     try {
         const posts = await Post.find().sort({ createdAt: -1 });
         res.json(posts);
@@ -615,20 +486,18 @@ app.get('/api/posts', async (req, res, next) => {
         next(error);
     }
 });
-app.post('/api/posts', authenticateToken, authorizeRole('publisher'), async (req, res, next) => {
+app.post(`${API_BASE}/posts`, authenticateToken, authorizeRole(ROLES.PUBLISHER), async (req, res, next) => {
     const { title, content, authorWallet } = req.body;
-    if (!title || !content || !authorWallet) {
-        return res.status(400).json({ error: 'Title, content, and author wallet are required.' });
-    }
-    const trimmedTitle = String(title).trim();
-    const trimmedContent = String(content).trim();
-    const trimmedAuthorWallet = String(authorWallet).trim();
 
-    if (trimmedTitle.length === 0 || trimmedContent.length === 0 || trimmedAuthorWallet.length === 0) {
-        return res.status(400).json({ error: 'Title, content, and author wallet cannot be empty.' });
+    const trimmedTitle = String(title || '').trim();
+    const trimmedContent = String(content || '').trim();
+    const trimmedAuthorWallet = String(authorWallet || '').trim();
+
+    if (!trimmedTitle || !trimmedContent || !trimmedAuthorWallet) {
+        return next(ApiError.badRequest('Title, content, and author wallet are required.'));
     }
     if (!isValidSolanaAddress(trimmedAuthorWallet)) {
-        return res.status(400).json({ error: 'Invalid Solana wallet address format for authorWallet.' });
+        return next(ApiError.badRequest('Invalid Solana wallet address format for authorWallet.'));
     }
 
     try {
@@ -638,6 +507,7 @@ app.post('/api/posts', authenticateToken, authorizeRole('publisher'), async (req
             authorWallet: trimmedAuthorWallet
         });
         await newPost.save();
+        logger.info(`New post published by ${req.user.username}: "${newPost.title}"`);
         res.status(201).json({ message: 'Post published successfully', post: newPost });
     } catch (error) {
         next(error);
@@ -645,10 +515,8 @@ app.post('/api/posts', authenticateToken, authorizeRole('publisher'), async (req
 });
 
 // NFTs API (Placeholder for REAL Blockchain Interaction)
-app.get('/api/nfts/marketplace', async (req, res, next) => {
+app.get(`${API_BASE}/nfts/marketplace`, async (req, res, next) => {
     try {
-        // In a REAL marketplace, you would query the blockchain or a blockchain indexer
-        // for listed NFTs, not just your local database.
         const nfts = await Nft.find({ isListed: true }).sort({ listedAt: -1 });
         res.json({ nfts: nfts, marketplaceOwnerWallet: MARKETPLACE_ESCROW_WALLET });
     } catch (error) {
@@ -656,39 +524,31 @@ app.get('/api/nfts/marketplace', async (req, res, next) => {
     }
 });
 
-app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), async (req, res, next) => {
+app.post(`${API_BASE}/nfts/prepare-mint`, authenticateToken, authorizeRole(ROLES.DEVELOPER), upload.single('nftFile'), async (req, res, next) => {
     if (!req.file) {
-        return res.status(400).json({ error: 'No NFT file uploaded.' });
+        return next(ApiError.badRequest('No NFT file uploaded.'));
     }
     const { name, description, attributes, creatorWallet } = req.body;
 
-    if (!name || !description || !creatorWallet) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
-        return res.status(400).json({ error: 'Name, description, and creator wallet are required for NFT preparation.' });
-    }
+    const trimmedName = String(name || '').trim();
+    const trimmedDescription = String(description || '').trim();
+    const trimmedCreatorWallet = String(creatorWallet || '').trim();
 
-    const trimmedName = String(name).trim();
-    const trimmedDescription = String(description).trim();
-    const trimmedCreatorWallet = String(creatorWallet).trim();
-
-    if (trimmedName.length === 0 || trimmedDescription.length === 0 || trimmedCreatorWallet.length === 0) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
-        return res.status(400).json({ error: 'Name, description, and creator wallet cannot be empty.' });
+    if (!trimmedName || !trimmedDescription || !trimmedCreatorWallet) {
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        return next(ApiError.badRequest('Name, description, and creator wallet are required for NFT preparation.'));
     }
     if (!isValidSolanaAddress(trimmedCreatorWallet)) {
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up file:', e));
-        return res.status(400).json({ error: 'Invalid Solana wallet address format for creatorWallet.' });
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up file:', e));
+        return next(ApiError.badRequest('Invalid Solana wallet address format for creatorWallet.'));
     }
 
-    // In PRODUCTION, upload req.file to Arweave/IPFS and get its URI
-    // const uploadResult = await uploadFileToArweave(req.file);
-    // const contentUrl = uploadResult.uri;
-    console.warn('WARNING: NFT media file uploaded to local storage. Use Arweave/IPFS in production!');
-    const contentUrl = `${BASE_URL}/uploads/${req.file.filename}`;
+    logger.warn('WARNING: NFT media file uploaded to local storage. Use Arweave/IPFS in production!');
+    const contentUrl = `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.NFT_UPLOAD_DIR}/${req.file.filename}`;
 
     const nftMetadata = {
         name: trimmedName,
-        symbol: "AFOXNFT", // Adjust symbol if needed
+        symbol: "AFOXNFT",
         description: trimmedDescription,
         image: contentUrl,
         properties: {
@@ -699,7 +559,7 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
             category: req.file.mimetype.startsWith('image') ? 'image' : (req.file.mimetype.startsWith('video') ? 'video' : 'misc'),
             creators: [{
                 address: trimmedCreatorWallet,
-                share: 100 // Assuming single creator, adjust for multiple
+                share: 100
             }]
         },
         attributes: []
@@ -717,46 +577,26 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
             }
         }
     } catch (e) {
-        console.warn("NFT preparation: Could not parse attributes JSON:", e.message);
+        logger.warn("NFT preparation: Could not parse attributes JSON:", e.message);
+        // Do not return error here, just log and proceed with empty attributes
     }
 
-    // In PRODUCTION, upload this metadata JSON to Arweave/IPFS and get its URI
-    // const metadataUploadResult = await uploadMetadataToArweave(nftMetadata);
-    // const metadataUri = metadataUploadResult.uri;
-    console.warn('WARNING: NFT metadata JSON saved locally. Use Arweave/IPFS for metadata in production!');
+    logger.warn('WARNING: NFT metadata JSON saved locally. Use Arweave/IPFS for metadata in production!');
     const baseFileName = path.basename(req.file.filename, path.extname(req.file.filename));
     const metadataFileName = `${baseFileName}-metadata.json`;
-    metadataFilePath = path.join(__dirname, uploadDir, metadataFileName);
+    // Ensure metadata is saved in the correct subdirectory for NFTs
+    metadataFilePath = path.join(__dirname, UPLOAD_CONFIG.BASE_DIR, UPLOAD_CONFIG.NFT_UPLOAD_DIR, metadataFileName);
     try {
         await fs.writeFile(metadataFilePath, JSON.stringify(nftMetadata, null, 2));
     } catch (error) {
-        console.error('Error writing NFT metadata file:', error);
-        await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up NFT file:', e));
-        if (metadataFilePath) { await fs.unlink(metadataFilePath).catch(e => console.error('Error cleaning up NFT metadata file (partial):', e)); }
-        return res.status(500).json({ error: 'Failed to save NFT metadata file.' });
+        logger.error('Error writing NFT metadata file:', error);
+        await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up NFT file:', e));
+        if (metadataFilePath) { await fs.unlink(metadataFilePath).catch(e => logger.error('Error cleaning up NFT metadata file (partial):', e)); e.message = 'Failed to clean up metadata file.'; }
+        return next(ApiError.internal('Failed to save NFT metadata file.'));
     }
-    const metadataUri = `${BASE_URL}/uploads/${metadataFileName}`; // Local URI
+    const metadataUri = `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.NFT_UPLOAD_DIR}/${metadataFileName}`; // Local URI
 
     // *** THIS IS THE CRITICAL SIMULATION PART ***
-    // In a REAL DAPP, you would initiate a Solana mint transaction here.
-    // 1. Construct a Metaplex/Token Metadata program instruction.
-    // 2. Sign it with your backend's mint authority (or prepare for client signing).
-    // 3. Send the transaction to the Solana cluster.
-    // 4. Wait for confirmation and get the real `mintAddress` and `transactionSignature`.
-    // Example (conceptual, requires @solana/web3.js and @metaplex-foundation/mpl-token-metadata):
-    /*
-    const { Connection, Keypair, Transaction, sendAndConfirmTransaction } = require('@solana/web3.js');
-    const { createCreateMetadataAccountV2Instruction } = require('@metaplex-foundation/mpl-token-metadata');
-    const connection = new Connection(process.env.SOLANA_RPC_URL, 'confirmed');
-    const payerKeypair = Keypair.fromSecretKey(bs58.decode(process.env.BACKEND_MINT_AUTHORITY_SECRET_KEY)); // Load from .env securely
-    const mintKeypair = Keypair.generate();
-
-    // ... construct instruction with metadataUri, payer, mintKeypair, etc.
-    // const transaction = new Transaction().add(createMetadataInstruction);
-    // const transactionSignature = await sendAndConfirmTransaction(connection, transaction, [payerKeypair, mintKeypair]);
-    // const realMintAddress = mintKeypair.publicKey.toBase58();
-    */
-
     const simulatedMintAddress = `SIMULATED_MINT_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     const simulatedSignature = 'SIMULATED_TRANSACTION_SIGNATURE_FROM_BACKEND';
 
@@ -765,36 +605,36 @@ app.post('/api/nfts/prepare-mint', authenticateToken, upload.single('nftFile'), 
             name: nftMetadata.name,
             description: nftMetadata.description,
             image: nftMetadata.image,
-            mint: simulatedMintAddress, // Use realMintAddress in production
+            mint: simulatedMintAddress,
             owner: nftMetadata.properties.creators[0].address,
             isListed: false,
             attributes: nftMetadata.attributes,
             history: [{ type: 'Mint', to: nftMetadata.properties.creators[0].address, timestamp: new Date() }]
         });
         await newNft.save();
-
+        logger.info(`NFT prepared and simulated mint successful by ${req.user.username}: "${newNft.name}"`);
         res.status(201).json({
             message: 'NFT assets prepared and simulated mint successful. **REQUIRES REAL SOLANA MINT IN PRODUCTION.**',
             uri: metadataUri,
-            mintAddress: simulatedMintAddress, // This needs to be the REAL mint address from Solana
+            mintAddress: simulatedMintAddress,
             imageUrl: contentUrl,
-            signature: simulatedSignature, // This needs to be the REAL transaction signature
+            signature: simulatedSignature,
             nft: newNft
         });
     } catch (error) {
-        if (req.file) { await fs.unlink(req.file.path).catch(e => console.error('Error cleaning up NFT file:', e)); }
-        if (metadataFilePath) { await fs.unlink(metadataFilePath).catch(e => console.error('Error cleaning up NFT metadata file:', e)); }
+        if (req.file) { await fs.unlink(req.file.path).catch(e => logger.error('Error cleaning up NFT file:', e)); }
+        if (metadataFilePath) { await fs.unlink(metadataFilePath).catch(e => logger.error('Error cleaning up NFT metadata file:', e)); }
         next(error);
     }
 });
 
-app.post('/api/nfts/list', authenticateToken, async (req, res, next) => {
+app.post(`${API_BASE}/nfts/list`, authenticateToken, async (req, res, next) => {
     const { mintAddress, price, duration, sellerWallet } = req.body;
 
     if (!mintAddress || !price || isNaN(price) || Number(price) <= 0 ||
         !duration || isNaN(duration) || Number(duration) <= 0 ||
-        !sellerWallet) {
-        return res.status(400).json({ error: 'Missing or invalid required fields for listing (mintAddress, price, duration, sellerWallet).' });
+        !sellerWallet || !isValidSolanaAddress(sellerWallet)) {
+        return next(ApiError.badRequest('Missing or invalid required fields for listing (mintAddress, price (>0), duration (>0), sellerWallet (valid Solana address)).'));
     }
 
     const trimmedMintAddress = String(mintAddress).trim();
@@ -802,23 +642,14 @@ app.post('/api/nfts/list', authenticateToken, async (req, res, next) => {
     const parsedDuration = Number(duration);
     const trimmedSellerWallet = String(sellerWallet).trim();
 
-    if (!isValidSolanaAddress(trimmedSellerWallet)) {
-        return res.status(400).json({ error: 'Invalid Solana wallet address format for sellerWallet.' });
-    }
+    // The user trying to list must own the NFT AND be the authenticated user
     if (req.user.walletAddress !== trimmedSellerWallet) {
-         return res.status(403).json({ error: 'You can only list NFTs from your own wallet.' });
+         return next(ApiError.forbidden('You can only list NFTs from your own authenticated wallet.'));
     }
 
     try {
-        // *** REAL BLOCKCHAIN INTEGRATION FOR LISTING ***
-        // In a real DApp:
-        // 1. Your frontend initiates a transaction to list the NFT on a smart contract (e.g., Candy Machine, custom marketplace program).
-        // 2. The smart contract transfers the NFT from seller to an escrow account (e.g., MARKETPLACE_ESCROW_WALLET).
-        // 3. Your backend would listen for on-chain events or verify the transaction signature.
-        // 4. ONLY AFTER successful on-chain listing, update your database.
-        // For this example, we're still just updating the DB:
         const nft = await Nft.findOneAndUpdate(
-            { mint: trimmedMintAddress, owner: trimmedSellerWallet, isListed: false },
+            { mint: trimmedMintAddress, owner: trimmedSellerWallet, isListed: false }, // Must be owned by seller and not listed
             {
                 $set: {
                     isListed: true,
@@ -833,21 +664,22 @@ app.post('/api/nfts/list', authenticateToken, async (req, res, next) => {
         );
 
         if (!nft) {
-            return res.status(404).json({ error: 'NFT not found, you are not the owner, or it is already listed.' });
+            return next(ApiError.notFound('NFT not found, you are not the owner, or it is already listed.'));
         }
 
-        console.log(`NFT ${trimmedMintAddress} listed by ${trimmedSellerWallet} for ${parsedPrice} SOL (simulated).`);
+        logger.info(`NFT ${trimmedMintAddress} listed by ${trimmedSellerWallet} for ${parsedPrice} SOL (simulated).`);
         res.status(200).json({ message: `NFT ${trimmedMintAddress} listed for sale for ${parsedPrice} SOL (simulated). **REQUIRES REAL SOLANA LISTING TX IN PRODUCTION.**`, nft });
     } catch (error) {
         next(error);
     }
 });
 
-app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
+app.post(`${API_BASE}/nfts/buy`, authenticateToken, async (req, res, next) => {
     const { mintAddress, buyerWallet, sellerWallet, price } = req.body;
 
-    if (!mintAddress || !buyerWallet || !sellerWallet || !price || isNaN(price) || Number(price) <= 0) {
-        return res.status(400).json({ error: 'Missing or invalid required fields for buying NFT.' });
+    if (!mintAddress || !buyerWallet || !sellerWallet || !price || isNaN(price) || Number(price) <= 0 ||
+        !isValidSolanaAddress(buyerWallet) || !isValidSolanaAddress(sellerWallet)) {
+        return next(ApiError.badRequest('Missing or invalid required fields for buying NFT (mintAddress, buyerWallet, sellerWallet, price (>0)). All wallets must be valid Solana addresses.'));
     }
 
     const trimmedMintAddress = String(mintAddress).trim();
@@ -856,26 +688,16 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
     const parsedPrice = Number(price);
 
     if (trimmedBuyerWallet === trimmedSellerWallet) {
-        return res.status(400).json({ error: 'Cannot buy your own NFT.' });
+        return next(ApiError.badRequest('Cannot buy your own NFT.'));
     }
-    if (!isValidSolanaAddress(trimmedBuyerWallet) || !isValidSolanaAddress(trimmedSellerWallet)) {
-        return res.status(400).json({ error: 'Invalid Solana wallet address format for buyerWallet or sellerWallet.' });
-    }
+    // Authenticated user must be the buyer
     if (req.user.walletAddress !== trimmedBuyerWallet) {
-        return res.status(403).json({ error: 'You can only buy NFTs with your authenticated wallet.' });
+        return next(ApiError.forbidden('You can only buy NFTs with your authenticated wallet.'));
     }
 
     try {
-        // *** REAL BLOCKCHAIN INTEGRATION FOR BUYING ***
-        // In a real DApp:
-        // 1. Your backend (or frontend) constructs a transaction to buy the NFT from the smart contract.
-        //    This involves transferring SOL from buyer to seller/marketplace and transferring NFT from escrow to buyer.
-        // 2. The frontend signs and sends this transaction.
-        // 3. Your backend would listen for on-chain events or verify the transaction signature.
-        // 4. ONLY AFTER successful on-chain purchase, update your database.
-        // For this example, we're still just updating the DB:
         const nft = await Nft.findOneAndUpdate(
-            { mint: trimmedMintAddress, owner: trimmedSellerWallet, isListed: true, price: parsedPrice },
+            { mint: trimmedMintAddress, owner: trimmedSellerWallet, isListed: true, price: parsedPrice }, // Ensure it's listed by this seller at this price
             {
                 $set: {
                     owner: trimmedBuyerWallet,
@@ -891,48 +713,40 @@ app.post('/api/nfts/buy', authenticateToken, async (req, res, next) => {
         );
 
         if (!nft) {
-            return res.status(404).json({ error: 'NFT not found, not listed, or seller/price mismatch. It might have been delisted or sold.' });
+            return next(ApiError.notFound('NFT not found, not listed by that seller, or price mismatch. It might have been delisted or sold.'));
         }
 
-        // In a real app, `serializedTransaction` would be a base64 string of a Solana transaction
-        // that the client wallet needs to sign.
-        const serializedTransaction = 'SIMULATED_TRANSACTION_BASE64_FOR_CLIENT_SIGNING';
+        const serializedTransaction = 'SIMULATED_TRANSACTION_BASE64_FOR_CLIENT_SIGNING'; // Placeholder
 
+        logger.info(`NFT ${nft.name} transferred from ${trimmedSellerWallet} to ${trimmedBuyerWallet} for ${parsedPrice} SOL (simulated).`);
         res.status(200).json({
             message: `NFT ${nft.name} successfully purchased (simulated). **REQUIRES REAL SOLANA BUY TX IN PRODUCTION.**`,
             nft,
             serializedTransaction
         });
-        console.log(`NFT ${nft.name} transferred from ${trimmedSellerWallet} to ${trimmedBuyerWallet} for ${parsedPrice} SOL (simulated).`);
 
     } catch (error) {
         next(error);
     }
 });
 
-app.post('/api/nfts/delist', authenticateToken, async (req, res, next) => {
+app.post(`${API_BASE}/nfts/delist`, authenticateToken, async (req, res, next) => {
     const { mintAddress, ownerWallet } = req.body;
 
-    if (!mintAddress || !ownerWallet) {
-        return res.status(400).json({ error: 'Mint address and owner wallet are required.' });
+    if (!mintAddress || !ownerWallet || !isValidSolanaAddress(ownerWallet)) {
+        return next(ApiError.badRequest('Mint address and owner wallet (valid Solana address) are required.'));
     }
     const trimmedMintAddress = String(mintAddress).trim();
     const trimmedOwnerWallet = String(ownerWallet).trim();
 
-    if (!isValidSolanaAddress(trimmedOwnerWallet)) {
-        return res.status(400).json({ error: 'Invalid Solana wallet address format for ownerWallet.' });
-    }
+    // Authenticated user must be the owner trying to delist
     if (req.user.walletAddress !== trimmedOwnerWallet) {
-        return res.status(403).json({ error: 'You can only delist NFTs from your own wallet.' });
+        return next(ApiError.forbidden('You can only delist NFTs from your own authenticated wallet.'));
     }
 
     try {
-        // *** REAL BLOCKCHAIN INTEGRATION FOR DELISTING ***
-        // In a real DApp, you would initiate a transaction to delist the NFT from the smart contract.
-        // This usually involves transferring the NFT from the escrow back to the owner's wallet.
-        // ONLY AFTER successful on-chain delisting, update your database.
         const nft = await Nft.findOneAndUpdate(
-            { mint: trimmedMintAddress, owner: trimmedOwnerWallet, isListed: true },
+            { mint: trimmedMintAddress, owner: trimmedOwnerWallet, isListed: true }, // Must be owned by owner and currently listed
             {
                 $set: {
                     isListed: false,
@@ -947,27 +761,27 @@ app.post('/api/nfts/delist', authenticateToken, async (req, res, next) => {
         );
 
         if (!nft) {
-            return res.status(404).json({ error: 'NFT not found, you are not the owner, or it is not currently listed.' });
+            return next(ApiError.notFound('NFT not found, you are not the owner, or it is not currently listed.'));
         }
 
+        logger.info(`NFT ${nft.name} delisted by ${trimmedOwnerWallet}.`);
         res.status(200).json({ message: `NFT ${nft.name} delisted successfully. **REQUIRES REAL SOLANA DELIST TX IN PRODUCTION.**`, nft });
-        console.log(`NFT ${nft.name} delisted by ${trimmedOwnerWallet}.`);
     } catch (error) {
         next(error);
     }
 });
 
 
-app.get('/api/nfts/:mint/history', async (req, res, next) => {
+app.get(`${API_BASE}/nfts/:mint/history`, async (req, res, next) => {
     const { mint } = req.params;
     if (!mint || mint.trim().length === 0) {
-        return res.status(400).json({ error: 'NFT mint address is required.' });
+        return next(ApiError.badRequest('NFT mint address is required.'));
     }
 
     try {
         const nft = await Nft.findOne({ mint: mint.trim() }, 'history');
         if (!nft) {
-            return res.status(404).json({ error: 'NFT not found.' });
+            return next(ApiError.notFound('NFT not found.'));
         }
         res.json(nft.history);
     } catch (error) {
@@ -977,76 +791,93 @@ app.get('/api/nfts/:mint/history', async (req, res, next) => {
 
 
 // --- Centralized Express Error Handler ---
+// This middleware must be defined LAST, after all routes and other middlewares.
 app.use((err, req, res, next) => {
-    console.error('API Error:', err);
+    // Log the full error for debugging (use logger)
+    logger.error(`Unhandled API Error: ${err.message}`, err.stack);
 
-    if (err.name === 'ValidationError') {
-        const errors = Object.values(err.errors).map(el => el.message);
-        return res.status(400).json({ error: 'Validation failed', details: errors });
+    if (err instanceof ApiError) {
+        return res.status(err.statusCode).json({ error: err.message });
     }
+    
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-            return res.status(413).json({ error: 'File too large. Max 10MB allowed.' });
+            return next(ApiError.badRequest(`File too large. Max ${UPLOAD_CONFIG.MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB allowed.`));
         }
-        return res.status(400).json({ error: `File upload error: ${err.message}` });
+        return next(ApiError.badRequest(`File upload error: ${err.message}`));
     }
-    if (err.type === 'entity.parse.failed') {
-        return res.status(400).json({ error: 'Malformed JSON in request body.' });
+    
+    if (err.name === 'ValidationError') { // Mongoose validation errors
+        // Collect all validation error messages
+        const errors = Object.values(err.errors).map(el => el.message);
+        return next(ApiError.badRequest('Validation failed: ' + errors.join(', ')));
     }
-    if (err.name === 'JsonWebTokenError') {
-        return res.status(403).json({ error: 'Invalid token.' });
-    }
-    if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({ error: 'Token expired.' });
-    }
-    if (err.code === 11000) {
+    
+    if (err.code === 11000) { // MongoDB duplicate key error
         const field = Object.keys(err.keyValue)[0];
         const value = err.keyValue[field];
-        return res.status(409).json({ error: `Duplicate field value: '${value}' for '${field}'. Please use another value.` });
+        return next(ApiError.conflict(`Duplicate value '${value}' for field '${field}'. Please use another value.`));
     }
 
-    res.status(500).json({ error: 'An unexpected server error occurred.', message: err.message });
+    if (err.type === 'entity.parse.failed' || err.name === 'SyntaxError') { // Malformed JSON in request body
+        return next(ApiError.badRequest('Malformed JSON in request body.'));
+    }
+    
+    if (err.name === 'JsonWebTokenError') { // Generic JWT error (e.g., invalid signature)
+        return next(ApiError.forbidden('Invalid authentication token.'));
+    }
+    if (err.name === 'TokenExpiredError') { // Specific JWT token expired error
+        return next(ApiError.unauthorized('Authentication token expired. Please log in again.'));
+    }
+
+    // Default to a 500 Internal Server Error
+    res.status(500).json({
+        error: 'An unexpected server error occurred.',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong.' // Show less info in prod
+    });
 });
 
 
 // --- Initial Data Seeding (for Development/Testing) ---
 async function seedInitialData() {
-    console.log('Checking for initial data and seeding if necessary (Development Mode)...');
+    logger.info('Checking for initial data and seeding if necessary (Development Mode)...');
     try {
-        await ensureUploadDir();
+        await ensureUploadDir(); // Ensure base upload directory exists
 
-        const announcementCount = await Announcement.countDocuments();
-        if (announcementCount === 0) {
-            await Announcement.insertMany([
-                { text: 'Welcome to Aurum Fox Unified Portal!', date: new Date() },
-                { text: 'AFOX Phase 1 completed!', date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }
-            ]);
-            console.log('  Initial announcements seeded.');
-        }
-
-        const createPlaceholderFile = async (fileName) => {
-            const filePath = path.join(uploadDir, fileName);
+        // Function to create placeholder files for seeding
+        const createPlaceholderFile = async (subDir, fileName) => {
+            const filePath = path.join(uploadDir, subDir, fileName);
             try {
-                await fs.access(filePath);
+                await fs.mkdir(path.dirname(filePath), { recursive: true }); // Ensure sub-directory exists
+                await fs.access(filePath); // Check if file already exists
             } catch (err) {
                 if (err.code === 'ENOENT') {
-                    await fs.writeFile(filePath, Buffer.from([])); // Create an empty file
-                    console.log(`Created placeholder: ${filePath}`);
+                    await fs.writeFile(filePath, Buffer.from('')); // Create an empty file
+                    logger.debug(`Created placeholder: ${filePath}`);
                 } else {
-                    console.error(`Error checking/creating placeholder ${filePath}:`, err);
+                    logger.error(`Error checking/creating placeholder ${filePath}:`, err);
                 }
             }
         };
 
+        const announcementCount = await Announcement.countDocuments();
+        if (announcementCount === 0) {
+            await Announcement.insertMany([
+                { text: 'Welcome to Aurum Fox Unified Portal!' },
+                { text: 'AFOX Phase 1 completed!' }
+            ]);
+            logger.info('  Initial announcements seeded.');
+        }
+
         const photoCount = await Photo.countDocuments();
         if (photoCount === 0) {
-            await createPlaceholderFile('photo_placeholder_1.png');
-            await createPlaceholderFile('photo_placeholder_2.png');
+            await createPlaceholderFile(UPLOAD_CONFIG.IMAGE_UPLOAD_DIR, 'photo_placeholder_1.png');
+            await createPlaceholderFile(UPLOAD_CONFIG.IMAGE_UPLOAD_DIR, 'photo_placeholder_2.png');
             await Photo.insertMany([
-                { title: 'First Day in Office', description: 'Getting started with Aurum Fox.', imageUrl: `${BASE_URL}/uploads/photo_placeholder_1.png`, creatorWallet: "5bW2D6d3jV3oR7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2" },
-                { title: 'Aurum Fox Team', description: 'Our dedicated team.', imageUrl: `${BASE_URL}/uploads/photo_placeholder_2.png`, creatorWallet: "9cE4F7g8hI9j0k1l2M3n4o5p6q7r8s9t0U1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j" }
+                { title: 'First Day in Office', description: 'Getting started with Aurum Fox.', imageUrl: `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.IMAGE_UPLOAD_DIR}/photo_placeholder_1.png`, creatorWallet: "5bW2D6d3jV3oR7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2" },
+                { title: 'Aurum Fox Team', description: 'Our dedicated team.', imageUrl: `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.IMAGE_UPLOAD_DIR}/photo_placeholder_2.png`, creatorWallet: "9cE4F7g8hI9j0k1l2M3n4o5p6q7r8s9t0U1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j" }
             ]);
-            console.log('  Initial photos seeded.');
+            logger.info('  Initial photos seeded.');
         }
 
         const postCount = await Post.countDocuments();
@@ -1055,30 +886,30 @@ async function seedInitialData() {
                 { title: "Launch Day!", content: "Today marks the official launch of the Aurum Fox Unified Portal. We're excited to bring you a seamless Web3 and multimedia experience!", authorWallet: "6dF3G5h7jK9l1M2n3O4p5q6r7S8t9U0v1W2x3Y4z5a6b7c8d9e0f1g2h3i4j5k6l" },
                 { title: "New Features Coming Soon", content: "Stay tuned for exciting new features including decentralized storage options for your media and advanced NFT marketplace functionalities.", authorWallet: "7eG4H6i8kL0m1N2o3P4q5R6s7T8u9V0w1X2y3Z4a5b6c7d8e9f0g1h2i3j4k5l6m" }
             ]);
-            console.log('  Initial posts seeded.');
+            logger.info('  Initial posts seeded.');
         }
 
         const nftCount = await Nft.countDocuments();
         if (nftCount === 0) {
-            await createPlaceholderFile('nft_marketplace_1.png');
-            await createPlaceholderFile('nft_marketplace_2.png');
-            await createPlaceholderFile('nft_user_owned.png');
+            await createPlaceholderFile(UPLOAD_CONFIG.NFT_UPLOAD_DIR, 'nft_marketplace_1.png');
+            await createPlaceholderFile(UPLOAD_CONFIG.NFT_UPLOAD_DIR, 'nft_marketplace_2.png');
+            await createPlaceholderFile(UPLOAD_CONFIG.NFT_UPLOAD_DIR, 'nft_user_owned.png');
 
             await Nft.insertMany([
                 {
-                    name: "Rare Fox", description: "A very rare golden fox NFT.", image: `${BASE_URL}/uploads/nft_marketplace_1.png`, mint: "MARKETPLACEMINTA111111111111111111111111111111111111", owner: MARKETPLACE_ESCROW_WALLET, isListed: true, price: 0.8, listedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), listingDuration: 30, listedBy: MARKETPLACE_ESCROW_WALLET, attributes: [{ trait_type: "Rarity", value: "Rare" }],
+                    name: "Rare Fox", description: "A very rare golden fox NFT.", image: `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.NFT_UPLOAD_DIR}/nft_marketplace_1.png`, mint: "MARKETPLACEMINTA111111111111111111111111111111111111", owner: MARKETPLACE_ESCROW_WALLET, isListed: true, price: 0.8, listedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), listingDuration: 30, listedBy: MARKETPLACE_ESCROW_WALLET, attributes: [{ trait_type: "Rarity", value: "Rare" }],
                     history: [{ type: 'Mint', to: MARKETPLACE_ESCROW_WALLET, timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }, { type: 'List', from: MARKETPLACE_ESCROW_WALLET, price: 0.8, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) }]
                 },
                 {
-                    name: "Cunning Fox", description: "A cunning fox ready to pounce.", image: `${BASE_URL}/uploads/nft_marketplace_2.png`, mint: "MARKETPLACEMINTB222222222222222222222222222222222222", owner: "ANOTHER_SELLER_WALLET_ADDRESS", isListed: true, price: 0.3, listedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), listingDuration: 60, listedBy: "ANOTHER_SELLER_WALLET_ADDRESS", attributes: [{ trait_type: "Expression", value: "Wink" }],
+                    name: "Cunning Fox", description: "A cunning fox ready to pounce.", image: `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.NFT_UPLOAD_DIR}/nft_marketplace_2.png`, mint: "MARKETPLACEMINTB222222222222222222222222222222222222", owner: "ANOTHER_SELLER_WALLET_ADDRESS", isListed: true, price: 0.3, listedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), listingDuration: 60, listedBy: "ANOTHER_SELLER_WALLET_ADDRESS", attributes: [{ trait_type: "Expression", value: "Wink" }],
                     history: [{ type: 'Mint', to: "ANOTHER_SELLER_WALLET_ADDRESS", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) }, { type: 'List', from: "ANOTHER_SELLER_WALLET_ADDRESS", price: 0.3, timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) }]
                 },
                 {
-                    name: "User Owned Fox", description: "An NFT owned by a user, not yet listed.", image: `${BASE_URL}/uploads/nft_user_owned.png`, mint: "USEROWNEDMINTC3333333333333333333333333333333333333", owner: "TestUserWalletAddressHere11111111111111111111111111111", isListed: false, price: null, attributes: [{ trait_type: "Color", value: "Blue" }],
+                    name: "User Owned Fox", description: "An NFT owned by a user, not yet listed.", image: `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.NFT_UPLOAD_DIR}/nft_user_owned.png`, mint: "USEROWNEDMINTC3333333333333333333333333333333333333", owner: "TestUserWalletAddressHere11111111111111111111111111111", isListed: false, price: null, attributes: [{ trait_type: "Color", value: "Blue" }],
                     history: [{ type: 'Mint', to: "TestUserWalletAddressHere11111111111111111111111111111", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }]
                 }
             ]);
-            console.log('  Initial NFTs seeded.');
+            logger.info('  Initial NFTs seeded.');
         }
 
         const gameCount = await Game.countDocuments();
@@ -1087,105 +918,105 @@ async function seedInitialData() {
                 { title: "Solana Chess", description: "Play chess on Solana!", url: "https://example.com/solana-chess", developer: "BlockchainDevs" },
                 { title: "Degen Racer", description: "Fast-paced racing game.", url: "https://example.com/degen-racer", developer: "GameFi Studios" }
             ]);
-            console.log('  Initial games seeded.');
+            logger.info('  Initial games seeded.');
         }
 
         const adCount = await Ad.countDocuments();
         if (adCount === 0) {
-            await createPlaceholderFile('ad_placeholder.png');
+            await createPlaceholderFile(UPLOAD_CONFIG.IMAGE_UPLOAD_DIR, 'ad_placeholder.png'); // Assuming ads also use IMAGE_UPLOAD_DIR
             await Ad.insertMany([
-                { title: "Buy My Awesome Project!", content: "Check out our new dApp, it's great!", imageUrl: `${BASE_URL}/uploads/ad_placeholder.png`, link: "https://myawesomedapp.com", advertiser: "ProjectX" }
+                { title: "Buy My Awesome Project!", content: "Check out our new dApp, it's great!", imageUrl: `${BASE_URL}/${UPLOAD_CONFIG.BASE_DIR}/${UPLOAD_CONFIG.IMAGE_UPLOAD_DIR}/ad_placeholder.png`, link: "https://myawesomedapp.com", advertiser: "ProjectX" }
             ]);
-            console.log('  Initial ads seeded.');
+            logger.info('  Initial ads seeded.');
         }
 
-        // IMPORTANT: For production, do NOT rely on these default users.
-        // Create users with strong, unique passwords through your registration API or a secure setup process.
-        // Consider removing or commenting out this seeding block entirely for production deployments.
-
-        const adminUserCount = await User.countDocuments({ role: 'admin' });
+        const adminUserCount = await User.countDocuments({ role: ROLES.ADMIN });
         if (adminUserCount === 0) {
-            console.log('  No admin user found. Creating a default admin user...');
+            logger.info('  No admin user found. Creating a default admin user...');
             const defaultAdminUser = new User({
                 username: 'admin',
                 password: process.env.DEFAULT_ADMIN_PASSWORD || 'ChangeMeAdmin123!', // Use ENV variable, then strong fallback
                 walletAddress: 'AdminWalletAddressHere11111111111111111111111111111111',
-                role: 'admin'
+                role: ROLES.ADMIN
             });
-            await defaultAdminUser.save();
-            console.warn('  Default admin user created: username "admin". **CRITICAL: CHANGE DEFAULT_ADMIN_PASSWORD IN .ENV IMMEDIATELY!**');
+            await defaultAdminUser.save(); // pre-save hook will hash password
+            logger.warn('  Default admin user created: username "admin". **CRITICAL: CHANGE DEFAULT_ADMIN_PASSWORD IN .ENV IMMEDIATELY!**');
         }
         const regularUserCount = await User.countDocuments({ username: 'testuser' });
         if (regularUserCount === 0) {
-            console.log('  No test user found. Creating a default test user...');
+            logger.info('  No test user found. Creating a default test user...');
             const defaultTestUser = new User({
                 username: 'testuser',
                 password: process.env.DEFAULT_TEST_PASSWORD || 'ChangeMeTest123!',
                 walletAddress: 'TestUserWalletAddressHere11111111111111111111111111111',
-                role: 'user'
+                role: ROLES.USER
             });
             await defaultTestUser.save();
-            console.warn('  Default test user created: username "testuser". **CRITICAL: CHANGE DEFAULT_TEST_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default test user created: username "testuser". **CRITICAL: CHANGE DEFAULT_TEST_PASSWORD IN .ENV IMMEDIATELY!**');
         }
         const developerUserCount = await User.countDocuments({ username: 'devuser' });
         if (developerUserCount === 0) {
-            console.log('  No developer user found. Creating a default developer user...');
+            logger.info('  No developer user found. Creating a default developer user...');
             const defaultDevUser = new User({
                 username: 'devuser',
                 password: process.env.DEFAULT_DEV_PASSWORD || 'ChangeMeDev123!',
                 walletAddress: 'DevUserWalletAddressHere111111111111111111111111111111',
-                role: 'developer'
+                role: ROLES.DEVELOPER
             });
             await defaultDevUser.save();
-            console.warn('  Default developer user created: username "devuser". **CRITICAL: CHANGE DEFAULT_DEV_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default developer user created: username "devuser". **CRITICAL: CHANGE DEFAULT_DEV_PASSWORD IN .ENV IMMEDIATELY!**');
         }
         const advertiserUserCount = await User.countDocuments({ username: 'aduser' });
         if (advertiserUserCount === 0) {
-            console.log('  No advertiser user found. Creating a default advertiser user...');
+            logger.info('  No advertiser user found. Creating a default advertiser user...');
             const defaultAdUser = new User({
                 username: 'aduser',
                 password: process.env.DEFAULT_AD_PASSWORD || 'ChangeMeAd123!',
                 walletAddress: 'AdUserWalletAddressHere111111111111111111111111111111',
-                role: 'advertiser'
+                role: ROLES.ADVERTISER
             });
             await defaultAdUser.save();
-            console.warn('  Default advertiser user created: username "aduser". **CRITICAL: CHANGE DEFAULT_AD_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default advertiser user created: username "aduser". **CRITICAL: CHANGE DEFAULT_AD_PASSWORD IN .ENV IMMEDIATELY!**');
         }
         const publisherUserCount = await User.countDocuments({ username: 'pubuser' });
         if (publisherUserCount === 0) {
-            console.log('  No publisher user found. Creating a default publisher user...');
+            logger.info('  No publisher user found. Creating a default publisher user...');
             const defaultPubUser = new User({
                 username: 'pubuser',
                 password: process.env.DEFAULT_PUB_PASSWORD || 'ChangeMePub123!',
                 walletAddress: 'PubUserWalletAddressHere111111111111111111111111111111',
-                role: 'publisher'
+                role: ROLES.PUBLISHER
             });
             await defaultPubUser.save();
-            console.warn('  Default publisher user created: username "pubuser". **CRITICAL: CHANGE DEFAULT_PUB_PASSWORD IN .ENV IMMEDIATELY!**');
+            logger.warn('  Default publisher user created: username "pubuser". **CRITICAL: CHANGE DEFAULT_PUB_PASSWORD IN .ENV IMMEDIATELY!**');
         }
 
     } catch (error) {
-        console.error('Error seeding initial data:', error);
+        logger.error('Error seeding initial data:', error);
     }
 }
 
 // --- Server Start ---
 ensureUploadDir().then(() => {
     app.listen(PORT, () => {
-        console.log(`Backend server listening at ${BASE_URL}`);
-        console.log(`MongoDB URI: ${MONGODB_URI ? 'Connected' : 'NOT SET, using default!'}`); // Indicate if URI is set
-        console.log(`CORS allowed origins: ${ALLOWED_CORS_ORIGINS.join(', ')}`);
-        console.log(`Your frontend should be configured to fetch from ${BASE_URL}`);
-        console.log(`\n--- PRODUCTION CHECKLIST ---`);
-        console.log(`1. Ensure .env file has strong JWT_SECRET, MONGODB_URI, and BASE_URL.`);
-        console.log(`2. Replace local file uploads (Multer) with a cloud storage solution (e.g., AWS S3, Arweave, IPFS).`);
-        console.log(`3. Implement REAL Solana blockchain interactions for NFT minting, listing, buying, and delisting.`);
-        console.log(`4. Change all default user passwords (or remove the seeding logic entirely) for production.`);
-        console.log(`5. Set MARKETPLACE_ESCROW_WALLET to a real, secure Solana address.`);
-        console.log(`----------------------------`);
-        seedInitialData(); // Call seed function after server starts and dir is ensured
+        logger.info(`Backend server listening at ${BASE_URL}`);
+        logger.info(`MongoDB URI: ${MONGODB_URI ? 'Connected' : 'NOT SET, using default!'}`); // Indicate if URI is set
+        logger.info(`CORS allowed origins: ${ALLOWED_CORS_ORIGINS.join(', ')}`);
+        logger.info(`Your frontend should be configured to fetch from ${BASE_URL}`);
+        logger.info(`\n--- PRODUCTION CHECKLIST ---`);
+        logger.info(`1. Ensure .env file has strong JWT_SECRET, MONGODB_URI, and BASE_URL.`);
+        logger.info(`2. Replace local file uploads (Multer) with a cloud storage solution (e.g., AWS S3, Arweave, IPFS).`);
+        logger.info(`3. Implement REAL Solana blockchain interactions for NFT minting, listing, buying, and delisting.`);
+        logger.info(`4. Change all default user passwords (or remove the seeding logic entirely) for production.`);
+        logger.info(`5. MARKETPLACE_ESCROW_WALLET is critical and must be a real, secure Solana address.`);
+        logger.info(`----------------------------`);
+        if (process.env.NODE_ENV !== 'production') { // Only seed in non-production environments
+             seedInitialData();
+        } else {
+            logger.info('Skipping data seeding in production environment.');
+        }
     });
 }).catch(err => {
-    console.error('Failed to start server due to directory setup error:', err);
+    logger.fatal('Failed to start server due to directory setup error:', err);
     process.exit(1);
 });
