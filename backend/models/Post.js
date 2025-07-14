@@ -1,71 +1,56 @@
 const mongoose = require('mongoose');
+const { isValidSolanaAddress, isValidURL } = require('../utils/validators'); // Предполагается, что вы создадите utils/validators.js
 
-// --- Recommended: Extract validators into a separate utilities file ---
-// This promotes reusability and keeps your models clean.
-// Example content for backend/utils/validators.js:
-// const { PublicKey } = require('@solana/web3.js'); // Make sure 'web3.js' is installed
-// const isURL = require('validator/lib/isURL');    // Make sure 'validator' is installed (npm install validator)
-
-// function isValidSolanaAddress(address) {
-//     if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
-//         return false;
-//     }
-//     try {
-//         new PublicKey(address); // Uses Solana SDK for robust cryptographic validation
-//         return true;
-//     } catch (e) {
-//         return false;
-//     }
-// }
-//
-// function isValidURL(url) {
-//     if (url === '') return true; // Allow empty string
-//     return isURL(url, { require_protocol: true }); // Require http/https
-// }
-//
-// module.exports = { isValidSolanaAddress, isValidURL };
-
-// Assuming isValidSolanaAddress is imported from '../utils/validators'
-const { isValidSolanaAddress } = require('../utils/validators'); 
-
-// Define the Mongoose schema for a 'Post' document.
-const postSchema = new mongoose.Schema({
-    // 'title' field: Required, trimmed, with min/max length constraints.
+const photoSchema = new mongoose.Schema({
     title: {
         type: String,
-        required: [true, 'Post title is required.'],
+        required: [true, 'Photo title is required.'],
         trim: true,
-        minlength: [3, 'Post title must be at least 3 characters long.'],
-        maxlength: [100, 'Post title cannot exceed 100 characters.']
+        minlength: [3, 'Photo title must be at least 3 characters long.'],
+        maxlength: [100, 'Photo title cannot exceed 100 characters.']
     },
-    // 'content' field: Required, trimmed, with min/max length constraints.
-    content: {
+    description: {
         type: String,
-        required: [true, 'Post content is required.'],
         trim: true,
-        minlength: [10, 'Post content must be at least 10 characters long.'],
-        maxlength: [5000, 'Post content cannot exceed 5000 characters.']
+        maxlength: [500, 'Photo description cannot exceed 500 characters.'],
+        default: '' // Описание может быть необязательным
     },
-    // 'authorWallet' field: Required, trimmed, validated as a Solana wallet address.
-    authorWallet: {
+    imageUrl: {
         type: String,
-        required: [true, 'Author wallet address is required.'],
+        required: [true, 'Image URL is required.'],
         trim: true,
         validate: {
-            validator: isValidSolanaAddress, // Using the centralized Solana address validator
+            validator: isValidURL, // Используем валидатор URL
+            message: props => `${props.value} is not a valid URL for the image.`
+        }
+    },
+    creatorWallet: {
+        type: String,
+        required: [true, 'Creator wallet address is required.'],
+        trim: true,
+        validate: {
+            validator: isValidSolanaAddress, // Используем валидатор Solana адреса
             message: props => `${props.value} is not a valid Solana wallet address.`
         }
+    },
+    // Дополнительные поля, если нужны (например, теги, категория, лайки/дизлайки)
+    tags: [{
+        type: String,
+        trim: true,
+        lowercase: true
+    }],
+    category: {
+        type: String,
+        trim: true,
+        default: 'General'
     }
 }, {
-    // Schema options:
-    // `timestamps: true` automatically adds `createdAt` and `updatedAt` Date fields to the schema.
-    timestamps: true
+    timestamps: true // Автоматически добавляет createdAt и updatedAt
 });
 
-// Add an index to the authorWallet for efficient lookup of posts by a specific author.
-postSchema.index({ authorWallet: 1 });
-// Add an index to the createdAt field for efficient sorting by creation date.
-postSchema.index({ createdAt: -1 });
+// Индексы для оптимизации поиска
+photoSchema.index({ creatorWallet: 1 });
+photoSchema.index({ createdAt: -1 });
+photoSchema.index({ title: 'text', description: 'text' }); // Полнотекстовый поиск по заголовку и описанию
 
-// Export the Mongoose model named 'Post'.
-module.exports = mongoose.model('Post', postSchema);
+module.exports = mongoose.model('Photo', photoSchema);
