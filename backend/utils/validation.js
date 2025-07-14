@@ -5,10 +5,9 @@
  */
 
 const logger = require('../config/logger');
-
-// IMPORTANT: For real Solana blockchain interactions, uncomment and use @solana/web3.js for robust validation.
-// You must install it: `npm install @solana/web3.js`
-const { PublicKey } = require('@solana/web3.js'); // Keeping it commented out for now as per original
+const { PublicKey } = require('@solana/web3.js'); // РАСКОММЕНТИРОВАНО
+const isURL = require('validator/lib/isURL');    // ДОБАВЛЕНО: Убедитесь, что 'validator' установлен (npm install validator)
+const mongoose = require('mongoose'); // Assuming mongoose is installed and configured
 
 
 /**
@@ -28,12 +27,9 @@ function isValidSolanaAddress(address) {
     }
 
     try {
-        // Attempt to create a PublicKey instance.
-        // This constructor throws an error for invalid Base58 strings or incorrect lengths.
         new PublicKey(address);
-        return true; // If no error, it's a valid format.
+        return true;
     } catch (e) {
-        // Log the specific error for debugging purposes, but return false for invalid.
         logger.debug(`Invalid Solana address "${address}": ${e.message}`);
         return false;
     }
@@ -48,18 +44,11 @@ function isValidSolanaAddress(address) {
  * @param {string} id - The string to validate as a MongoDB ObjectId.
  * @returns {boolean} - True if the ID is a valid MongoDB ObjectId format, false otherwise.
  */
-// Assuming mongoose is available in your project, you'll need to import it here
-// or pass it as an argument if this function were part of a more complex utility.
-// For simplicity, we'll assume it's imported where this validator is used or globally available.
-// If not, you might need to adjust your setup to make Mongoose available, or use a simpler regex.
-const mongoose = require('mongoose'); // Assuming mongoose is installed and configured
-
 function isValidObjectId(id) {
     if (typeof id !== 'string' || !id) {
         logger.debug(`Invalid ObjectId: Not a string or empty.`);
         return false;
     }
-    // Mongoose's ObjectId.isValid provides the most robust check.
     const isValid = mongoose.Types.ObjectId.isValid(id);
     if (!isValid) {
         logger.debug(`Invalid ObjectId format: "${id}"`);
@@ -67,8 +56,25 @@ function isValidObjectId(id) {
     return isValid;
 }
 
+/**
+ * Validates if a given string is a valid URL.
+ * Uses the 'validator' library for robust URL validation.
+ *
+ * @param {string} url - The string to validate as a URL.
+ * @returns {boolean} - True if the URL is valid, false otherwise.
+ */
+function isValidURL(url) {
+    if (typeof url !== 'string') {
+        logger.debug(`Invalid URL: Not a string.`);
+        return false;
+    }
+    if (url.trim() === '') return true; // Разрешаем пустую строку, если это допустимо для вашего сценария
+    return isURL(url, { require_protocol: true }); // Требуем http/https
+}
+
 
 module.exports = {
     isValidSolanaAddress,
-    isValidObjectId, // Export the new ObjectId validator
+    isValidObjectId,
+    isValidURL, // ДОБАВЛЕНО
 };
