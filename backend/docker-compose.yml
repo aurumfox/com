@@ -86,20 +86,11 @@ services:
     ports:
       - "3000:3000" # This exposes port 3000 on the host to port 3000 in the container.
                     # If behind a reverse proxy (Nginx/Traefik), this might be '80:3000' or similar.
-    # volumes:
-    #   # For production, it's generally better to rely on COPY in Dockerfile for source code.
-    #   # Bind mounts (like these) are usually for development when you need live code changes.
-    #   # If you MUST use bind mounts in production, understand the implications (e.g., host changes affect running container)
-    #   - .:/app # This bind-mounts your host project directory into the container.
-    #            # It overwrites whatever was COPY-ed during the build, which might not be desired in production.
-    #   - /app/node_modules # This is a "volume mount" to ensure node_modules from the host doesn't overwrite
-    #                       # the one installed in the container, crucial when using the above bind mount.
-    #                       # If you remove the above bind mount, this line is not needed.
-    #   - ./uploads:/app/uploads # Persist user uploads. Good. Make sure the 'uploads' directory exists on the host.
-    # Instead of bind mounts, in production, often you would only have:
     volumes:
-      - uploads_data:/app/uploads # Use a named volume for uploads for better Docker management.
-                                  # Ensures data persists even if you recreate the container.
+      # Use a named volume for uploads for better Docker management.
+      # Ensures data persists even if you recreate the container.
+      # The /app/uploads path inside the container must match what your server.js uses for multer.
+      - uploads_data:/app/uploads
     environment:
       # Explicitly set production environment
       NODE_ENV: production # EXTREMELY IMPORTANT! Enables production optimizations, error handling.
@@ -115,13 +106,29 @@ services:
       # Using `${VAR_NAME:?Error message}` ensures they are set.
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET not set}
       CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS not set} # Make this required for prod
-      # DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD} # Should ONLY be for initial setup, then removed or changed
-      # Other critical environment variables from your .env:
-      SOLANA_NETWORK: ${SOLANA_NETWORK:?SOLANA_NETWORK not set}
-      SOLANA_RPC_URL: ${SOLANA_RPC_URL:?SOLANA_RPC_URL not set}
-      MARKETPLACE_OWNER_WALLET_ADDRESS: ${MARKETPLACE_OWNER_WALLET_ADDRESS:?MARKETPLACE_OWNER_WALLET_ADDRESS not set}
-      ADMIN_WALLETS: ${ADMIN_WALLETS:?ADMIN_WALLETS not set}
-      # ... any other env vars from your .env that are needed in production
+      MARKETPLACE_ESCROW_WALLET: ${MARKETPLACE_ESCROW_WALLET:?MARKETPLACE_ESCROW_WALLET not set} # Name corrected to match server.js
+
+      # Default passwords for seeding users (ONLY FOR INITIAL SETUP, REMOVE OR CHANGE IN PROD!)
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD}
+      DEFAULT_TEST_PASSWORD: ${DEFAULT_TEST_PASSWORD}
+      DEFAULT_DEV_PASSWORD: ${DEFAULT_DEV_PASSWORD}
+      DEFAULT_AD_PASSWORD: ${DEFAULT_AD_PASSWORD}
+      DEFAULT_PUB_PASSWORD: ${DEFAULT_PUB_PASSWORD}
+
+      # BASE_URL is crucial for image/file URLs served by the backend
+      BASE_URL: ${BASE_URL:?BASE_URL not set}
+
+      # If you uncommented AWS Secrets Manager in .env, ensure these are here
+      # USE_AWS_SECRETS_MANAGER: ${USE_AWS_SECRETS_MANAGER}
+      # AWS_REGION: ${AWS_REGION}
+      # JWT_SECRET_NAME: ${JWT_SECRET_NAME}
+      # MONGODB_URI_NAME: ${MONGODB_URI_NAME}
+
+      # If your server directly interacts with Solana RPC, ensure these are here
+      # SOLANA_NETWORK: ${SOLANA_NETWORK}
+      # SOLANA_RPC_URL: ${SOLANA_RPC_URL}
+      # BACKEND_MINT_AUTHORITY_SECRET_KEY: ${BACKEND_MINT_AUTHORITY_SECRET_KEY} # CRITICAL: MUST BE SECURED!
+
     depends_on:
       mongodb:
         condition: service_healthy # Ensures MongoDB is ready to accept connections.
@@ -130,10 +137,10 @@ services:
       rabbitmq:
         condition: service_healthy # Ensures RabbitMQ is ready.
     # Command to run the application in production.
-    # If your Dockerfile's CMD is already `npm start` and `npm start` runs `node dist/server.js`,
+    # Assumes your Dockerfile's WORKDIR is /app and server.js is there.
+    # If your Dockerfile's CMD is already `npm start` and `npm start` runs `node server.js`,
     # then you can omit `command:` here. Otherwise, explicitly specify the entrypoint.
-    command: node /app/server.js # Assuming your main app entry point is `server.js` or `index.js` in /app
-                                  # If you have a build step (e.g., TypeScript), it might be `node dist/server.js`
+    command: node server.js # Adjusted to common practice if WORKDIR is /app and main script is server.js
     networks:
       - aurum_fox_network
 
