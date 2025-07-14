@@ -1,0 +1,151 @@
+# docker-compose.yml (PRODUCTION VARIANT)
+# This file is for production deployment. Sensitive data should come from
+# environment variables set on the host, a secret management system, or a .env file
+# *outside* of the version control.
+
+version: '3.8' # Use a recent version for new features like healthchecks and build contexts.
+
+services:
+  mongodb:
+    image: mongo:6.0 # Explicitly tag the major/minor version. Avoid 'latest' for production.
+    container_name: mongodb_aurum_fox # Good for clear identification.
+    restart: unless-stopped # Always restart unless explicitly stopped.
+    # ports: # REMOVE for production if external access is not needed.
+    #   - "27017:27017" # MongoDB should typically not be directly exposed to the internet.
+    #     Only expose if your backend is not containerized or for specific reasons.
+    volumes:
+      - mongo_data:/data/db # Persist MongoDB data. Essential.
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro # Optional: For initial user/DB setup.
+    environment:
+      # These values MUST be overridden via the host environment variables (e.g., .env in parent dir or direct export)
+      # Do NOT hardcode secrets here.
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:?MONGO_INITDB_ROOT_USERNAME not set} # Requires variable to be set
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:?MONGO_INITDB_ROOT_PASSWORD not set} # Requires variable to be set
+      MONGO_DB: aurumfox # Optional: Define default DB name for convenience
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping').ok"] # More robust test, checking for .ok
+      interval: 10s # Check every 10 seconds.
+      timeout: 5s # Timeout after 5 seconds.
+      start_period: 30s # Give MongoDB 30 seconds to start up before checking.
+      retries: 5 # Retry 5 times.
+    networks:
+      - aurum_fox_network # Assign to a custom network for better isolation.
+
+  redis:
+    image: redis:6.2-alpine # Good choice for small size and stability.
+    container_name: redis_aurum_fox
+    restart: unless-stopped
+    # ports: # REMOVE for production. Redis should almost never be exposed directly.
+    #   - "6379:6379"
+    volumes:
+      - redis_data:/data # Persist Redis data. Essential for cache persistence.
+    command: redis-server --appendonly yes # Ensure data persistence is enabled.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+    networks:
+      - aurum_fox_network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine # Good choice, management UI is useful for debugging.
+    container_name: rabbitmq_aurum_fox
+    restart: unless-stopped
+    # ports: # REMOVE for production if external access is not needed.
+    #   - "5672:5672" # AMQP protocol port - internal only, unless other services need direct external access.
+    #   - "15672:15672" # Management UI port - only expose if you need to access it (e.g., via a proxy).
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq # Persist RabbitMQ data.
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER not set}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS not set}
+      # RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+P 2097152" # Optional: Increase max processes for high load.
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"] # Basic ping
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    networks:
+      - aurum_fox_network
+
+  backend:
+    build:
+      context: . # Build context is the current directory (where docker-compose.yml resides)
+      dockerfile: Dockerfile # Points to your Dockerfile in the current directory
+      # Optionally, use build args if you need to pass dynamic values during build
+      # args:
+      #   NODE_ENV: production # Example, if you had a build-time NODE_ENV distinction
+    # image: your_docker_registry/aurum_fox_backend:latest # RECOMMENDED for production.
+    # Push your image to a registry (e.g., Docker Hub, ECR, GCR) and pull it.
+    # This avoids rebuilding on every deployment and ensures consistent images.
+    container_name: aurum_fox_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000" # This exposes port 3000 on the host to port 3000 in the container.
+                    # If behind a reverse proxy (Nginx/Traefik), this might be '80:3000' or similar.
+    # volumes:
+    #   # For production, it's generally better to rely on COPY in Dockerfile for source code.
+    #   # Bind mounts (like these) are usually for development when you need live code changes.
+    #   # If you MUST use bind mounts in production, understand the implications (e.g., host changes affect running container)
+    #   - .:/app # This bind-mounts your host project directory into the container.
+    #            # It overwrites whatever was COPY-ed during the build, which might not be desired in production.
+    #   - /app/node_modules # This is a "volume mount" to ensure node_modules from the host doesn't overwrite
+    #                       # the one installed in the container, crucial when using the above bind mount.
+    #                       # If you remove the above bind mount, this line is not needed.
+    #   - ./uploads:/app/uploads # Persist user uploads. Good. Make sure the 'uploads' directory exists on the host.
+    # Instead of bind mounts, in production, often you would only have:
+    volumes:
+      - uploads_data:/app/uploads # Use a named volume for uploads for better Docker management.
+                                  # Ensures data persists even if you recreate the container.
+    environment:
+      # Explicitly set production environment
+      NODE_ENV: production # EXTREMELY IMPORTANT! Enables production optimizations, error handling.
+      PORT: 3000 # Matches the exposed port.
+      # Service-to-service communication uses service names as hostnames within the Docker network
+      MONGODB_URI: mongodb://mongodb:27017/aurumfox # Use service name 'mongodb'
+      REDIS_URI: redis://redis:6379 # Use service name 'redis'
+      RABBITMQ_URI: amqp://rabbitmq # Use service name 'rabbitmq'
+
+      # Sensitive secrets are BEST passed directly as environment variables from the host
+      # (e.g., in a cloud environment's task definition) or from a securely loaded .env file
+      # (e.g., via `docker compose --env-file ./.env-prod up`).
+      # Using `${VAR_NAME:?Error message}` ensures they are set.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET not set}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS not set} # Make this required for prod
+      # DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD} # Should ONLY be for initial setup, then removed or changed
+      # Other critical environment variables from your .env:
+      SOLANA_NETWORK: ${SOLANA_NETWORK:?SOLANA_NETWORK not set}
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL:?SOLANA_RPC_URL not set}
+      MARKETPLACE_OWNER_WALLET_ADDRESS: ${MARKETPLACE_OWNER_WALLET_ADDRESS:?MARKETPLACE_OWNER_WALLET_ADDRESS not set}
+      ADMIN_WALLETS: ${ADMIN_WALLETS:?ADMIN_WALLETS not set}
+      # ... any other env vars from your .env that are needed in production
+    depends_on:
+      mongodb:
+        condition: service_healthy # Ensures MongoDB is ready to accept connections.
+      redis:
+        condition: service_healthy # Ensures Redis is ready.
+      rabbitmq:
+        condition: service_healthy # Ensures RabbitMQ is ready.
+    # Command to run the application in production.
+    # If your Dockerfile's CMD is already `npm start` and `npm start` runs `node dist/server.js`,
+    # then you can omit `command:` here. Otherwise, explicitly specify the entrypoint.
+    command: node /app/server.js # Assuming your main app entry point is `server.js` or `index.js` in /app
+                                  # If you have a build step (e.g., TypeScript), it might be `node dist/server.js`
+    networks:
+      - aurum_fox_network
+
+# Define custom network for better isolation and communication
+networks:
+  aurum_fox_network:
+    driver: bridge # Default driver, but good to be explicit.
+
+# Define named volumes for data persistence.
+# These will be created by Docker and managed independently of container lifecycle.
+volumes:
+  mongo_data:
+  redis_data:
+  rabbitmq_data:
+  uploads_data: # NEW: Dedicated named volume for uploads
