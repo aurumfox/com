@@ -1,81 +1,121 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// --- Recommended: Extract roles into a separate configuration file ---
-// Example: ../config/constants.js
-// export const ROLES = {
-//   USER: 'user',
-//   ADMIN: 'admin',
-//   DEVELOPER: 'developer',
-//   ADVERTISER: 'advertiser',
-//   PUBLISHER: 'publisher',
+// Предполагаем, что вы создадите этот файл:
+// project_root/config/constants.js
+// module.exports = {
+//   ROLES: {
+//     USER: 'user',
+//     ADMIN: 'admin',
+//     DEVELOPER: 'developer',
+//     ADVERTISER: 'advertiser',
+//     PUBLISHER: 'publisher',
+//   },
+//   // Другие константы...
 // };
-// Assuming ROLES is imported from '../config/constants'
 const { ROLES } = require('../config/constants'); 
 
+// Предполагаем, что вы создадите этот файл:
+// project_root/utils/solanaValidation.js
+// function isValidSolanaAddress(address) {
+//     if (typeof address !== 'string' || address.length < 32 || address.length > 44) {
+//         return false;
+//     }
+//     try {
+//         // This line would require @solana/web3.js to be installed and imported
+//         // const { PublicKey } = require('@solana/web3.js');
+//         // new PublicKey(address);
+//         return true; // Simplified for now, real validation needs @solana/web3.js
+//     } catch (e) {
+//         return false;
+//     }
+// }
+// module.exports = { isValidSolanaAddress };
+const { isValidSolanaAddress } = require('../utils/solanaValidation');
+
 const userSchema = new mongoose.Schema({
-    // Username can be optional if the primary identifier is the wallet
     username: {
         type: String,
-        required: false, // Can be optional if user registers via wallet
+        required: false, 
         unique: true,
-        sparse: true, // Allows multiple documents to have a null unique value (for optional fields)
+        sparse: true, 
         trim: true,
-        minlength: 3,
-        maxlength: 30 // Limit maximum length
+        minlength: [3, 'Username must be at least 3 characters long.'],
+        maxlength: [30, 'Username cannot exceed 30 characters.']
     },
-    // walletAddress will be the primary identifier for the dApp
     walletAddress: {
         type: String,
-        required: true,
+        required: [true, 'Wallet address is required.'],
         unique: true,
         trim: true,
-        minlength: 32, // Solana public keys are 32-44 chars (base58)
-        maxlength: 44,
-        index: true // Add an index for faster lookups by wallet address
+        minlength: [32, 'Solana wallet address must be at least 32 characters long.'],
+        maxlength: [44, 'Solana wallet address cannot exceed 44 characters.'],
+        index: true,
+        validate: {
+            validator: (v) => isValidSolanaAddress(v),
+            message: props => `${props.value} is not a valid Solana address!`
+        }
     },
-    password: { // Will store the hashed password
+    password: { 
         type: String,
-        required: true,
-        minlength: 8 // Increase minimum password length for better security
+        required: [true, 'Password is required.'],
+        minlength: [8, 'Password must be at least 8 characters long.'] 
     },
-    role: { // User's role
+    role: { 
         type: String,
-        enum: Object.values(ROLES), // Ensures the role is one of the predefined roles
+        enum: {
+            values: Object.values(ROLES),
+            message: 'Invalid role. Allowed roles: {VALUE}'
+        },
         default: ROLES.USER,
-        required: true // Role should always be present
-    },
-    // Additional user-related fields as needed
-    // For example:
-    // email: {
-    //     type: String,
-    //     unique: true,
-    //     sparse: true, // Allows multiple documents to have a null unique value
-    //     trim: true,
-    //     lowercase: true,
-    //     match: [/.+@.+\..+/, 'Please enter a valid email address']
-    // },
-    // profilePicture: {
-    //     type: String, // URL to the profile picture
-    //     default: 'https://example.com/default-avatar.png' 
-    // },
-    // bio: {
-    //     type: String,
-    //     trim: true,
-    //     maxlength: 500
-    // }
+        required: true 
+    }
 }, {
-    timestamps: true // Automatically adds createdAt and updatedAt fields
+    timestamps: true 
 });
 
-// --- Pre-save hook: Hash password before saving ---
+// --- Pre-save hook: Hash password and enforce strong password requirements ---
 userSchema.pre('save', async function(next) {
-    // Only hash the password if it has been modified (or is new)
     if (!this.isModified('password')) {
         return next();
     }
+
+    const password = this.password;
+
+    // Enforce strong password requirements
+    if (password.length < 8) {
+        return next(new mongoose.Error.ValidationError({
+            message: 'Password must be at least 8 characters long.',
+            errors: { password: { message: 'Password too short.' } }
+        }));
+    }
+    if (!/[A-Z]/.test(password)) {
+        return next(new mongoose.Error.ValidationError({
+            message: 'Password must include at least one uppercase letter.',
+            errors: { password: { message: 'Missing uppercase letter.' } }
+        }));
+    }
+    if (!/[a-z]/.test(password)) {
+        return next(new mongoose.Error.ValidationError({
+            message: 'Password must include at least one lowercase letter.',
+            errors: { password: { message: 'Missing lowercase letter.' } }
+        }));
+    }
+    if (!/[0-9]/.test(password)) {
+        return next(new mongoose.Error.ValidationError({
+            message: 'Password must include at least one number.',
+            errors: { password: { message: 'Missing number.' } }
+        }));
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        return next(new mongoose.Error.ValidationError({
+            message: 'Password must include at least one special character.',
+            errors: { password: { message: 'Missing special character.' } }
+        }));
+    }
+
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(password, salt);
     next();
 });
 
@@ -85,14 +125,13 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 };
 
 // --- Configure toJSON to remove sensitive fields and transform _id ---
-// This ensures that when user data is sent to the client,
-// the password is not included, and _id is transformed to id.
 userSchema.set('toJSON', {
-    virtuals: true, // Includes virtual fields (e.g., 'id')
+    virtuals: true, 
     transform: (doc, ret) => {
-        delete ret._id;       // Remove the internal _id
-        delete ret.__v;       // Remove the document version key
-        delete ret.password;  // Remove the hashed password from the response
+        // Mongoose automatically adds 'id' virtual for _id when virtuals are true
+        delete ret._id;       
+        delete ret.__v;       
+        delete ret.password;  
         return ret;
     }
 });
