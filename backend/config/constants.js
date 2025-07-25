@@ -76,7 +76,7 @@ const SOLANA_CONFIG = {
     WALLET_ADDRESSES: {
         // Wallet addresses that your backend directly controls or interacts with (e.g., fee receivers)
         TREASURY: process.env.SOLANA_TREASURY_WALLET || 'YOUR_APP_TREASURY_WALLET_ADDRESS_HERE',
-        PLATFORM_FEE_WALLET: process.env.SOLANA_PLATFORM_FEE_WALLET || 'YOUR_PLATFORM_FEE_WALLET_ADDRESS_HERE',
+        PLATFORM_FEE_WALLET: process.env.SOLANA_PLATFORM_FEE_WALLET || 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr',
     },
     TRANSACTION_TIMEOUT_MS: 30000, // Timeout for Solana transactions in milliseconds
     CONFIRMATION_COMMITMENT: 'confirmed', // 'processed', 'confirmed', 'finalized'
