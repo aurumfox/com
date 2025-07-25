@@ -1,5 +1,8 @@
 // server.js (Production-Oriented Version)
 
+// --- FIXED: All placeholders replaced with your wallet 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr'
+// --- FIXED: NFT addresses in seedInitialData have been made the correct length
+
 // Load environment variables from .env file FIRST THING
 require('dotenv').config();
 
@@ -1066,15 +1069,15 @@ async function seedInitialData() {
 
             await Nft.insertMany([
                 {
-                    name: "Rare Fox", description: "A very rare golden fox NFT.", image: `${BASE_URL}/uploads/nft_marketplace_1.png`, mint: "MARKETPLACEMINTA111111111111111111111111111111111111", owner: MARKETPLACE_ESCROW_WALLET, isListed: true, price: 0.8, listedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), listingDuration: 30, listedBy: MARKETPLACE_ESCROW_WALLET, attributes: [{ trait_type: "Rarity", value: "Rare" }],
-                    history: [{ type: 'Mint', to: MARKETPLACE_ESCROW_WALLET, timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }, { type: 'List', from: MARKETPLACE_ESCROW_WALLET, price: 0.8, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) }]
+                    name: "Rare Fox", description: "A very rare golden fox NFT.", image: `${BASE_URL}/uploads/nft_marketplace_1.png`, mint: "MARKETPLACEMINTA11111111111111111111111111111", owner: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", isListed: true, price: 0.8, listedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), listingDuration: 30, listedBy: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", attributes: [{ trait_type: "Rarity", value: "Rare" }],
+                    history: [{ type: 'Mint', to: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }, { type: 'List', from: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", price: 0.8, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) }]
                 },
                 {
-                    name: "Cunning Fox", description: "A cunning fox ready to pounce.", image: `${BASE_URL}/uploads/nft_marketplace_2.png`, mint: "MARKETPLACEMINTB222222222222222222222222222222222222", owner: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", isListed: true, price: 0.3, listedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), listingDuration: 60, listedBy: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", attributes: [{ trait_type: "Expression", value: "Wink" }],
+                    name: "Cunning Fox", description: "A cunning fox ready to pounce.", image: `${BASE_URL}/uploads/nft_marketplace_2.png`, mint: "MARKETPLACEMINTB22222222222222222222222222222", owner: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", isListed: true, price: 0.3, listedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), listingDuration: 60, listedBy: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", attributes: [{ trait_type: "Expression", value: "Wink" }],
                     history: [{ type: 'Mint', to: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) }, { type: 'List', from: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", price: 0.3, timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) }]
                 },
                 {
-                    name: "User Owned Fox", description: "An NFT owned by a user, not yet listed.", image: `${BASE_URL}/uploads/nft_user_owned.png`, mint: "USEROWNEDMINTC3333333333333333333333333333333333333", owner: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", isListed: false, price: null, attributes: [{ trait_type: "Color", value: "Blue" }],
+                    name: "User Owned Fox", description: "An NFT owned by a user, not yet listed.", image: `${BASE_URL}/uploads/nft_user_owned.png`, mint: "USEROWNEDMINTC33333333333333333333333333333", owner: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", isListed: false, price: null, attributes: [{ trait_type: "Color", value: "Blue" }],
                     history: [{ type: 'Mint', to: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }]
                 }
             ]);
@@ -1099,16 +1102,12 @@ async function seedInitialData() {
             console.log('  Initial ads seeded.');
         }
 
-        // IMPORTANT: For production, do NOT rely on these default users.
-        // Create users with strong, unique passwords through your registration API or a secure setup process.
-        // Consider removing or commenting out this seeding block entirely for production deployments.
-
         const adminUserCount = await User.countDocuments({ role: 'admin' });
         if (adminUserCount === 0) {
             console.log('  No admin user found. Creating a default admin user...');
             const defaultAdminUser = new User({
                 username: 'admin',
-                password: process.env.DEFAULT_ADMIN_PASSWORD || 'ChangeMeAdmin123!', // Use ENV variable, then strong fallback
+                password: process.env.DEFAULT_ADMIN_PASSWORD || 'ChangeMeAdmin123!',
                 walletAddress: 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr',
                 role: 'admin'
             });
