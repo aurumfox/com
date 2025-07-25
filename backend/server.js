@@ -28,7 +28,7 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 // CRITICAL: JWT_SECRET MUST be set in .env for production.
 const JWT_SECRET = process.env.JWT_SECRET;
 // Placeholder for a real marketplace wallet in production
-const MARKETPLACE_ESCROW_WALLET = process.env.MARKETPLACE_ESCROW_WALLET || 'YOUR_REAL_MARKETPLACE_ESCROW_WALLET_ADDRESS';
+const MARKETPLACE_ESCROW_WALLET = process.env.MARKETPLACE_ESCROW_WALLET || 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr';
 
 
 // --- Security & Configuration Checks ---
@@ -1043,8 +1043,8 @@ async function seedInitialData() {
             await createPlaceholderFile('photo_placeholder_1.png');
             await createPlaceholderFile('photo_placeholder_2.png');
             await Photo.insertMany([
-                { title: 'First Day in Office', description: 'Getting started with Aurum Fox.', imageUrl: `${BASE_URL}/uploads/photo_placeholder_1.png`, creatorWallet: "5bW2D6d3jV3oR7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2" },
-                { title: 'Aurum Fox Team', description: 'Our dedicated team.', imageUrl: `${BASE_URL}/uploads/photo_placeholder_2.png`, creatorWallet: "9cE4F7g8hI9j0k1l2M3n4o5p6q7r8s9t0U1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j" }
+                { title: 'First Day in Office', description: 'Getting started with Aurum Fox.', imageUrl: `${BASE_URL}/uploads/photo_placeholder_1.png`, creatorWallet: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr" },
+                { title: 'Aurum Fox Team', description: 'Our dedicated team.', imageUrl: `${BASE_URL}/uploads/photo_placeholder_2.png`, creatorWallet: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr" }
             ]);
             console.log('  Initial photos seeded.');
         }
@@ -1052,8 +1052,8 @@ async function seedInitialData() {
         const postCount = await Post.countDocuments();
         if (postCount === 0) {
             await Post.insertMany([
-                { title: "Launch Day!", content: "Today marks the official launch of the Aurum Fox Unified Portal. We're excited to bring you a seamless Web3 and multimedia experience!", authorWallet: "6dF3G5h7jK9l1M2n3O4p5q6r7S8t9U0v1W2x3Y4z5a6b7c8d9e0f1g2h3i4j5k6l" },
-                { title: "New Features Coming Soon", content: "Stay tuned for exciting new features including decentralized storage options for your media and advanced NFT marketplace functionalities.", authorWallet: "7eG4H6i8kL0m1N2o3P4q5R6s7T8u9V0w1X2y3Z4a5b6c7d8e9f0g1h2i3j4k5l6m" }
+                { title: "Launch Day!", content: "Today marks the official launch of the Aurum Fox Unified Portal. We're excited to bring you a seamless Web3 and multimedia experience!", authorWallet: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr" },
+                { title: "New Features Coming Soon", content: "Stay tuned for exciting new features including decentralized storage options for your media and advanced NFT marketplace functionalities.", authorWallet: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr" }
             ]);
             console.log('  Initial posts seeded.');
         }
@@ -1070,12 +1070,12 @@ async function seedInitialData() {
                     history: [{ type: 'Mint', to: MARKETPLACE_ESCROW_WALLET, timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }, { type: 'List', from: MARKETPLACE_ESCROW_WALLET, price: 0.8, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) }]
                 },
                 {
-                    name: "Cunning Fox", description: "A cunning fox ready to pounce.", image: `${BASE_URL}/uploads/nft_marketplace_2.png`, mint: "MARKETPLACEMINTB222222222222222222222222222222222222", owner: "ANOTHER_SELLER_WALLET_ADDRESS", isListed: true, price: 0.3, listedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), listingDuration: 60, listedBy: "ANOTHER_SELLER_WALLET_ADDRESS", attributes: [{ trait_type: "Expression", value: "Wink" }],
-                    history: [{ type: 'Mint', to: "ANOTHER_SELLER_WALLET_ADDRESS", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) }, { type: 'List', from: "ANOTHER_SELLER_WALLET_ADDRESS", price: 0.3, timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) }]
+                    name: "Cunning Fox", description: "A cunning fox ready to pounce.", image: `${BASE_URL}/uploads/nft_marketplace_2.png`, mint: "MARKETPLACEMINTB222222222222222222222222222222222222", owner: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", isListed: true, price: 0.3, listedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), listingDuration: 60, listedBy: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", attributes: [{ trait_type: "Expression", value: "Wink" }],
+                    history: [{ type: 'Mint', to: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) }, { type: 'List', from: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", price: 0.3, timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) }]
                 },
                 {
-                    name: "User Owned Fox", description: "An NFT owned by a user, not yet listed.", image: `${BASE_URL}/uploads/nft_user_owned.png`, mint: "USEROWNEDMINTC3333333333333333333333333333333333333", owner: "TestUserWalletAddressHere11111111111111111111111111111", isListed: false, price: null, attributes: [{ trait_type: "Color", value: "Blue" }],
-                    history: [{ type: 'Mint', to: "TestUserWalletAddressHere11111111111111111111111111111", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }]
+                    name: "User Owned Fox", description: "An NFT owned by a user, not yet listed.", image: `${BASE_URL}/uploads/nft_user_owned.png`, mint: "USEROWNEDMINTC3333333333333333333333333333333333333", owner: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", isListed: false, price: null, attributes: [{ trait_type: "Color", value: "Blue" }],
+                    history: [{ type: 'Mint', to: "GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }]
                 }
             ]);
             console.log('  Initial NFTs seeded.');
@@ -1109,7 +1109,7 @@ async function seedInitialData() {
             const defaultAdminUser = new User({
                 username: 'admin',
                 password: process.env.DEFAULT_ADMIN_PASSWORD || 'ChangeMeAdmin123!', // Use ENV variable, then strong fallback
-                walletAddress: 'AdminWalletAddressHere11111111111111111111111111111111',
+                walletAddress: 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr',
                 role: 'admin'
             });
             await defaultAdminUser.save();
@@ -1121,7 +1121,7 @@ async function seedInitialData() {
             const defaultTestUser = new User({
                 username: 'testuser',
                 password: process.env.DEFAULT_TEST_PASSWORD || 'ChangeMeTest123!',
-                walletAddress: 'TestUserWalletAddressHere11111111111111111111111111111',
+                walletAddress: 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr',
                 role: 'user'
             });
             await defaultTestUser.save();
@@ -1133,7 +1133,7 @@ async function seedInitialData() {
             const defaultDevUser = new User({
                 username: 'devuser',
                 password: process.env.DEFAULT_DEV_PASSWORD || 'ChangeMeDev123!',
-                walletAddress: 'DevUserWalletAddressHere111111111111111111111111111111',
+                walletAddress: 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr',
                 role: 'developer'
             });
             await defaultDevUser.save();
@@ -1145,7 +1145,7 @@ async function seedInitialData() {
             const defaultAdUser = new User({
                 username: 'aduser',
                 password: process.env.DEFAULT_AD_PASSWORD || 'ChangeMeAd123!',
-                walletAddress: 'AdUserWalletAddressHere111111111111111111111111111111',
+                walletAddress: 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr',
                 role: 'advertiser'
             });
             await defaultAdUser.save();
@@ -1157,7 +1157,7 @@ async function seedInitialData() {
             const defaultPubUser = new User({
                 username: 'pubuser',
                 password: process.env.DEFAULT_PUB_PASSWORD || 'ChangeMePub123!',
-                walletAddress: 'PubUserWalletAddressHere111111111111111111111111111111',
+                walletAddress: 'GDk2UfqfWPepQBZB8BMVMCUnbLbhRCuhK6VzLBpR2HAr',
                 role: 'publisher'
             });
             await defaultPubUser.save();
