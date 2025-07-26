@@ -1,23 +1,46 @@
 const { Keypair } = require('@solana/web3.js');
+const { mnemonicToSeedSync } = require('bip39');
 const bs58 = require('bs58');
-const readline = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const readline = require('readline');
 
-const getPrivateKey = () => {
-    readline.question('Введите вашу мнемоническую фразу: ', phrase => {
-        try {
-            const keypair = Keypair.fromSeed(Buffer.from(phrase.split(' ')));
-            const privateKeyBase58 = bs58.encode(keypair.secretKey);
-            console.log('\nВаш приватный ключ в Base58 (скопируйте его):');
-            console.log(privateKeyBase58);
-            console.log('\nТеперь добавьте его в ваш .env файл как BACKEND_MINT_AUTHORITY_SECRET_KEY');
-        } catch (e) {
-            console.error('Ошибка: Неверная мнемоническая фраза. Попробуйте еще раз.');
-        }
-        readline.close();
+// Используем промисы для асинхронного ввода, это упрощает код
+const getPhrase = () => {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
     });
+
+    return new Promise(resolve => {
+        rl.question('Введите вашу мнемоническую фразу: ', (answer) => {
+            rl.close();
+            resolve(answer);
+        });
+    });
+};
+
+const getPrivateKey = async () => {
+    try {
+        const phrase = await getPhrase();
+
+        // Валидация фразы
+        const words = phrase.trim().split(' ');
+        if (words.length !== 12 && words.length !== 24) {
+            console.error('Ошибка: Мнемоническая фраза должна состоять из 12 или 24 слов.');
+            return;
+        }
+
+        // Используем bip39 для создания сида из мнемонической фразы
+        const seed = mnemonicToSeedSync(phrase, '');
+        const keypair = Keypair.fromSeed(seed.slice(0, 32));
+
+        const privateKeyBase58 = bs58.encode(keypair.secretKey);
+        console.log('\nВаш приватный ключ в Base58:');
+        console.log(privateKeyBase58);
+        console.log('\nДобавьте его в ваш .env файл как BACKEND_MINT_AUTHORITY_SECRET_KEY.');
+    } catch (e) {
+        console.error('Ошибка: Неверная мнемоническая фраза или произошла другая ошибка.');
+        console.error(e.message);
+    }
 };
 
 getPrivateKey();
