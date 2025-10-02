@@ -2054,3 +2054,151 @@ document.addEventListener('DOMContentLoaded', async () => {
         handleWalletDisconnect(); // Ensure UI is reset if auto-connect fails
     }
 });
+
+// =================================================================
+// 5. ФУНКЦИИ ДЛЯ LIVE TRADING DATA
+// =================================================================
+
+// Using the string literal of the mint address for the external API call
+const AFOX_MINT_ADDRESS_STRING = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
+
+/**
+ * Fetches and displays trading data for the AFOX/SOL pair from Dexscreener.
+ * It also embeds a TradingView chart widget.
+ */
+async function fetchAndDisplayTradingData() {
+    // The Dexscreener API allows searching for pairs by token address.
+    const dexscreenerApiUrl = `https://api.dexscreener.com/latest/dex/tokens/${AFOX_MINT_ADDRESS_STRING}`;
+
+    const livePriceElement = document.getElementById('livePriceAfoxSol');
+    const priceChangeElement = document.getElementById('priceChange24h');
+    const liquidityElement = document.getElementById('totalLiquidity');
+    const chartContainer = document.getElementById('afoxChartContainer');
+
+    // Helper to reset UI on error
+    const resetUI = (message = 'N/A') => {
+        if (livePriceElement) livePriceElement.textContent = message;
+        if (priceChangeElement) {
+            priceChangeElement.textContent = '--%';
+            priceChangeElement.style.color = 'gray';
+        }
+        if (liquidityElement) liquidityElement.textContent = message;
+        if (chartContainer) chartContainer.innerHTML = `<p class="placeholder-item">Failed to load chart.</p>`;
+    };
+
+    try {
+        const response = await fetch(dexscreenerApiUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Check if pairs exist and select the main pair
+        if (!data.pairs || data.pairs.length === 0) {
+            resetUI();
+            console.warn("AFOX/SOL pair not found on Dexscreener.");
+            showNotification("AFOX/SOL trading pair not found.", 'warning', 3000);
+            return;
+        }
+
+        // Selecting the first (presumably main) pair
+        const pair = data.pairs[0]; 
+        
+        // Get necessary data
+        // Price in the native token (SOL in this case, as we queried on Solana)
+        const priceSol = parseFloat(pair.priceNative).toFixed(9).replace(/\.?0+$/, ''); // Remove trailing zeros
+        // Price change in 24 hours in percentage
+        const priceChange24h = parseFloat(pair.priceChange.h24).toFixed(2); 
+        // Total liquidity in USD, rounded
+        const liquidityUsd = Math.round(pair.liquidity.usd).toLocaleString('en-US'); 
+        
+        // Update price data in HTML
+        if (livePriceElement) livePriceElement.textContent = priceSol;
+        if (liquidityElement) liquidityElement.textContent = `$${liquidityUsd}`;
+        
+        // Update price change and color
+        if (priceChangeElement) {
+            priceChangeElement.textContent = `${priceChange24h}%`;
+            if (priceChange24h > 0) {
+                priceChangeElement.style.color = 'var(--color-success, green)';
+            } else if (priceChange24h < 0) {
+                priceChangeElement.style.color = 'var(--color-error, red)';
+            } else {
+                 priceChangeElement.style.color = 'var(--color-info, gray)';
+            }
+        }
+
+        // **Integrate Chart (TradingView Widget from Dexscreener)**
+        if (chartContainer) {
+             chartContainer.innerHTML = `
+                <iframe 
+                    src="https://widget.dexscreener.com/embed/solana/${pair.pairAddress}?module=chart&theme=dark"
+                    width="100%"
+                    height="300"
+                    style="border-radius: 10px; border: 1px solid #333;"
+                    frameborder="0"
+                    title="AFOX/SOL Trading Chart"
+                ></iframe>
+            `;
+        }
+        
+    } catch (error) {
+        console.error("Failed to fetch trading data:", error);
+        resetUI('Error');
+        showNotification(`Failed to load trading data: ${error.message}`, 'error', 5000);
+    }
+}
+
+// =================================================================
+// 6. ДОБАВЛЕНИЕ В DOMContentLoaded (INTEGRATION)
+// =================================================================
+
+// Overwriting the previous DOMContentLoaded block with the integrated one
+document.removeEventListener('DOMContentLoaded', arguments.callee); // Remove previous listener if it was added
+
+document.addEventListener('DOMContentLoaded', async () => {
+    cacheUIElements(); 
+    initializeEventListeners(); 
+
+    // --- Initial Data Loads on Page Ready & Auto-Connect ---
+    await Promise.all([
+        loadAnnouncements(),
+        loadGames(),
+        loadAds(),
+        loadMarketplaceNFTs()
+    ]);
+
+    // Attempt to auto-connect wallet (Existing logic)
+    try {
+        const selectedWallet = WALLETS[0];
+        if (selectedWallet && selectedWallet.adapter && selectedWallet.adapter.connected && selectedWallet.adapter.publicKey) {
+            walletPublicKey = selectedWallet.adapter.publicKey;
+            provider = selectedWallet.adapter;
+            connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(NETWORK), 'confirmed');
+
+            updateWalletUI(walletPublicKey.toBase58());
+            // Load all user-specific data
+            await Promise.all([
+                loadUserNFTs(walletPublicKey.toBase58()),
+                updateStakingUI(),
+                updateSwapBalances()
+            ]);
+            registerProviderListeners();
+            showNotification('Wallet automatically connected!', 'success');
+        } else {
+            handleWalletDisconnect();
+        }
+    } catch (e) {
+        console.warn("Auto-connect failed or wallet not found/authorized:", e);
+        showNotification(`Auto-connect failed: ${e.message || e}. Please connect manually.`, 'error');
+        handleWalletDisconnect();
+    }
+    
+    // Launching the load of real-time trading data
+    fetchAndDisplayTradingData();
+    
+    // Optional: Refresh data every 60 seconds
+    // Note: Be mindful of API rate limits if using a free tier.
+    setInterval(fetchAndDisplayTradingData, 60000); 
+
+});
