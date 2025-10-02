@@ -24,8 +24,7 @@
     <script src="https://unpkg.com/@solana/wallet-adapter-wallets@latest/lib/index.iife.js"></script>
     <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
     <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
-    
-    </head>
+</head>
 <body>
     <header class="header">
         <div class="container">
@@ -578,7 +577,7 @@
                             <input type="text" id="proposalTitle" name="proposalTitle" placeholder="Enter proposal title" required aria-required="true">
 
                             <label for="proposalDescription">Proposal Description:</label>
-                            <textarea id="proposalDescription" name="proposalDescription" rows="6" placeholder="Describe your proposal in detail..." required aria-required="true"></textarea>
+                            <textarea type="text" id="proposalDescription" name="proposalDescription" rows="6" placeholder="Describe your proposal in detail..." required aria-required="true"></textarea>
 
                             <button type="submit" class="web3-btn" aria-label="Submit new proposal">Submit Proposal</button>
                         </form>
@@ -664,7 +663,7 @@
                     <h3 class="web3-subheading">⚡️ Jupiter Terminal (AFOX Swap)</h3>
                     <p>Connect your wallet and swap AFOX at the best rate.</p>
                     
-                    <div id="jupiter-swap-widget" style="min-height: 400px; max-width: 450px; margin: 20px auto;">
+                    <div id="jupiter-swap-widget" style="min-height: 400px; max-width: 450px; margin: 20px auto; position: relative; z-index: 10000;">
                     </div>
                 </div>
             </div>
@@ -742,72 +741,83 @@
     <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
 
     <script type="module">
-        // AFOX Contract Address (Mint)
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
-        // SOL Mint Address (Native Token)
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
+        // Зберігаємо оригінальний елемент Birdeye та його батьківський елемент
+        let birdeyeContainer = null;
+        let birdeyeParent = null;
+
         /**
-         * Initializes the Jupiter Terminal for the AFOX swap widget.
+         * Ініціалізує Jupiter Terminal з функцією фізичного видалення Birdeye.
          */
         function initializeJupiterTerminal() {
-            // Отримуємо контейнер Birdeye для керування його видимістю
-            const birdeyeContainer = document.getElementById('afoxChartContainer');
+            birdeyeContainer = document.getElementById('afoxChartContainer');
+            if (birdeyeContainer) {
+                // Батьківський елемент Birdeye - це div.live-trading-info
+                birdeyeParent = birdeyeContainer.parentNode; 
+            }
 
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
+                // Функція для повного видалення Birdeye
+                const removeBirdeye = () => {
+                    if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
+                        birdeyeParent.removeChild(birdeyeContainer);
+                        console.log("Birdeye chart **removed** for wallet connection.");
+                    }
+                };
+
+                // Функція для повернення Birdeye
+                const restoreBirdeye = () => {
+                    if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
+                        // Використовуємо .insertBefore() або .appendChild(), щоб додати елемент назад.
+                        // Оскільки нам потрібно додати Birdeye перед <hr> у live-trading-info, 
+                        // нам потрібна надійна точка вставки.
+                        // Якщо ми додамо його до birdeyeParent (div.live-trading-info), він буде в кінці, що підходить.
+                        birdeyeParent.appendChild(birdeyeContainer); 
+                        console.log("Birdeye chart **restored** after wallet connection.");
+                    }
+                };
+
                 window.Jupiter.init({
                     displayMode: 'widget',
                     widgetStyle: {
                         'container.id': 'jupiter-swap-widget', 
-                        'container.zIndex': 9999, // Високий zIndex для вікна Jupiter
+                        'container.zIndex': 9999, 
                     },
                     theme: 'dark', 
                     formProps: {
                         fixedInputMint: true, 
-                        initialInputMint: AFOX_MINT, // AFOX
-                        initialOutputMint: SOL_MINT, // SOL
+                        initialInputMint: AFOX_MINT,
+                        initialOutputMint: SOL_MINT,
                     },
                     swapSwitchboard: true, 
                     strictTokenList: false, 
 
-                    // ✅ НОВЕ ВИПРАВЛЕННЯ: Спрацьовує, коли користувач натискає 'Connect Wallet'.
+                    // ✅ НОВЕ ВИПРАВЛЕННЯ: Повне видалення елемента при ініціації підключення
                     onConnectWallet: (callback) => {
-                        // 1. Тимчасово приховуємо графік Birdeye
-                        if (birdeyeContainer) {
-                            // Робимо його невидимим і, головне, неактивним для миші/дотику
-                            birdeyeContainer.style.opacity = '0';
-                            birdeyeContainer.style.pointerEvents = 'none'; 
-                        }
-                        // 2. Продовжуємо стандартний процес підключення гаманця
-                        callback();
+                        removeBirdeye(); // Видаляємо Birdeye
+                        // Даємо короткий час для оновлення DOM перед викликом гаманця
+                        setTimeout(callback, 50); 
                     },
 
-                    // ✅ Спрацьовує після успішного підключення або скасування
+                    // ✅ Відновлення після успіху
                     onSuccess: () => {
-                         // Повертаємо графік Birdeye
-                         if (birdeyeContainer) {
-                            birdeyeContainer.style.opacity = '1';
-                            birdeyeContainer.style.pointerEvents = 'auto';
-                        }
+                         restoreBirdeye();
                     },
                     
-                    // ✅ Додаємо обробку помилок (також повертаємо графік)
+                    // ✅ Відновлення після помилки або закриття 
                     onError: () => {
-                         // Повертаємо графік Birdeye
-                         if (birdeyeContainer) {
-                            birdeyeContainer.style.opacity = '1';
-                            birdeyeContainer.style.pointerEvents = 'auto';
-                        }
+                         restoreBirdeye();
                     }
                 });
-                console.log("Jupiter Terminal initialized with connection visibility fixes.");
+                console.log("Jupiter Terminal initialized with DOM manipulation fixes.");
             } else {
                 // Якщо Jupiter ще не завантажився, пробуємо знову
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
 
-        // Call the function after the DOM content is fully loaded
         document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
     </script>
     
