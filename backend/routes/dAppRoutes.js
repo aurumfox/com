@@ -1,16 +1,16 @@
-// routes/dAppRoutes.js
+// /routes/dAppRoutes.js
 
 const express = require('express');
 const router = express.Router();
-const dAppController = require('../controllers/dAppController');
+const dAppController = require('../controllers/dAppController'); 
 
-// История NFT: GET /api/v1/nft/history/:mintId
+// NFT History: GET /api/v1/dapp/nft/history/:mintId
 router.get('/nft/history/:mintId', dAppController.getNftHistory);
 
-// Котировка Свопа: POST /api/v1/bridge/quote
+// Swap Quote: POST /api/v1/dapp/bridge/quote
 router.post('/bridge/quote', dAppController.getSwapQuote);
 
-// Таблица Лидеров: GET /api/v1/analytics/leaderboard
+// Leaderboard: GET /api/v1/dapp/analytics/leaderboard
 router.get('/analytics/leaderboard', dAppController.getLeaderboard);
 
 module.exports = router;
