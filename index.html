@@ -644,7 +644,7 @@
                 </p>
 
                 <div class="live-trading-info">
-                    <h3 class="web3-subheading">Current AFOX/SOL Live Price Chart</h3>
+                    <h3 class="web3-subheading">Current AFOX/SOL Live Price Chart (Birdeye)</h3>
                     <div id="afoxChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden; position: relative; z-index: 1;">
                         <iframe 
                             id="birdeye-chart"
@@ -659,6 +659,20 @@
                 
                 <hr style="margin: 40px 0; border-color: #ffd70033;">
 
+                <div class="geckoterminal-trading-info">
+                    <h3 class="web3-subheading">AFOX/SOL Live Price Chart (GeckoTerminal)</h3>
+                    <div id="geckoTerminalChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden; position: relative;">
+                        <iframe 
+                            src="https://www.geckoterminal.com/solana/pools/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd/widget" 
+                            style="width: 100%; height: 100%; border: none;"
+                            title="Aurum Fox (AFOX/SOL) GeckoTerminal Chart"
+                            frameborder="0"
+                            allow="clipboard-write">
+                        </iframe>
+                    </div>
+                </div>
+                
+                <hr style="margin: 40px 0; border-color: #ffd70033;">
                 <div class="swap-interface">
                     <h3 class="web3-subheading">⚡️ Jupiter Terminal (AFOX Swap)</h3>
                     <p>Connect your wallet and swap AFOX at the best rate.</p>
@@ -672,6 +686,16 @@
 
     <footer class="footer">
         <div class="container">
+            <div class="geckoterminal-promo" style="margin-bottom: 15px;">
+                <p style="font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">Track AFOX Price on:</p>
+                <a href="https://www.geckoterminal.com/solana/pools/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" 
+                   target="_blank" 
+                   rel="noopener noreferrer" 
+                   style="display: inline-block; padding: 10px 15px; background-color: #00bf75; color: #fff; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background-color 0.3s;">
+                    <img src="https://www.geckoterminal.com/favicon-16x16.png" alt="GeckoTerminal Logo" style="height: 16px; margin-right: 8px; vertical-align: middle;">
+                    View on GeckoTerminal
+                </a>
+            </div>
             <p>&copy; 2025 Aurum Fox Unified Portal. All rights reserved.</p>
             <p>Created with ❤️ for the Web3 community.</p>
             <p>Contract Address: <span id="footerContractAddress">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn" aria-label="Copy AFOX contract address from footer">Copy</button></p>
