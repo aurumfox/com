@@ -1,3 +1,42 @@
+// AFOX Contract Address (Mint)
+const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
+// SOL Mint Address (Native Token)
+const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
+function initializeJupiterTerminal() {
+    // Перевірка, чи Jupiter Terminal вже завантажено
+    if (window.Jupiter) {
+        // Ініціалізація Jupiter Terminal
+        window.Jupiter.init({
+            // Ідентифікатор контейнера, де буде відображатися віджет
+            displayMode: 'widget',
+            widgetStyle: {
+                // Визначає місце, куди вбудовується віджет
+                'container.id': 'jupiter-swap-widget', 
+            },
+            // Налаштування теми та стилю
+            theme: 'dark', // або 'light' відповідно до стилю вашого сайту
+            // Налаштування для автоматичного вибору токенів AFOX/SOL
+            formProps: {
+                // Встановлюємо токени за замовчуванням
+                fixedOutputMint: true, // Фіксуємо токен, який хоче отримати користувач
+                initialOutputMint: AFOX_MINT, // AFOX
+                initialInputMint: SOL_MINT, // SOL
+            },
+            // Рекомендований список токенів
+            strictTokenList: false, // Рекомендовано для нових/мем-токенів
+        });
+        console.log("Jupiter Terminal initialized for AFOX/SOL swap.");
+    } else {
+        // Якщо Jupiter ще не завантажився (data-preload), спробуйте ще раз через деякий час
+        setTimeout(initializeJupiterTerminal, 500);
+    }
+}
+
+// Викликати функцію після завантаження DOM (винесено у фінальний блок)
+// document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
+
+
 // --- Imports (Conceptual, if using ES6 Modules) ---
 // In a real-world scenario with a build system (Webpack, Rollup, Vite),
 // these would be proper ES6 imports. For a browser-only script,
@@ -2014,47 +2053,6 @@ function handleContactFormSubmit(e) {
 }
 
 
-// --- DOMContentLoaded: Ensures the DOM is fully loaded before executing the script ---
-document.addEventListener('DOMContentLoaded', async () => {
-    cacheUIElements(); // Cache all necessary UI elements first
-    initializeEventListeners(); // Attach all event listeners
-
-    // --- Initial Data Loads on Page Ready & Auto-Connect ---
-    await Promise.all([
-        loadAnnouncements(),
-        loadGames(),
-        loadAds(),
-        loadMarketplaceNFTs()
-    ]);
-
-    // Attempt to auto-connect wallet if already authorized (Phantom's behavior)
-    try {
-        const selectedWallet = WALLETS[0]; // Assuming Phantom is the first/main wallet
-        if (selectedWallet && selectedWallet.adapter && selectedWallet.adapter.connected && selectedWallet.adapter.publicKey) {
-            walletPublicKey = selectedWallet.adapter.publicKey;
-            provider = selectedWallet.adapter;
-            connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(NETWORK), 'confirmed');
-
-            updateWalletUI(walletPublicKey.toBase58());
-            // Load all user-specific data
-            await Promise.all([
-                loadUserNFTs(walletPublicKey.toBase58()),
-                updateStakingUI(),
-                updateSwapBalances()
-            ]);
-            registerProviderListeners(); // Re-register listeners for auto-connected provider
-            showNotification('Wallet automatically connected!', 'success');
-        } else {
-            // If not auto-connected, ensure UI reflects disconnected state
-            handleWalletDisconnect();
-        }
-    } catch (e) {
-        console.warn("Auto-connect failed or wallet not found/authorized:", e);
-        showNotification(`Auto-connect failed: ${e.message || e}. Please connect manually.`, 'error');
-        handleWalletDisconnect(); // Ensure UI is reset if auto-connect fails
-    }
-});
-
 // =================================================================
 // 5. ФУНКЦИИ ДЛЯ LIVE TRADING DATA
 // =================================================================
@@ -2153,12 +2151,10 @@ async function fetchAndDisplayTradingData() {
 // 6. ДОБАВЛЕНИЕ В DOMContentLoaded (INTEGRATION)
 // =================================================================
 
-// Overwriting the previous DOMContentLoaded block with the integrated one
-document.removeEventListener('DOMContentLoaded', arguments.callee); // Remove previous listener if it was added
-
 document.addEventListener('DOMContentLoaded', async () => {
     cacheUIElements(); 
     initializeEventListeners(); 
+    initializeJupiterTerminal(); // Initialize Jupiter Terminal on DOM load
 
     // --- Initial Data Loads on Page Ready & Auto-Connect ---
     await Promise.all([
@@ -2171,9 +2167,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Attempt to auto-connect wallet (Existing logic)
     try {
         const selectedWallet = WALLETS[0];
-        if (selectedWallet && selectedWallet.adapter && selectedWallet.adapter.connected && selectedWallet.adapter.publicKey) {
-            walletPublicKey = selectedWallet.adapter.publicKey;
-            provider = selectedWallet.adapter;
+        // The wallet adapter might not be fully initialized or globally available depending on the script loading order
+        // A more robust check might be needed in a real-world scenario
+        if (selectedWallet && selectedWallet.connected && selectedWallet.publicKey) {
+            walletPublicKey = selectedWallet.publicKey;
+            provider = selectedWallet;
             connection = new SolanaWeb3.Connection(SolanaWeb3.clusterApiUrl(NETWORK), 'confirmed');
 
             updateWalletUI(walletPublicKey.toBase58());
