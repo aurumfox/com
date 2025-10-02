@@ -2324,3 +2324,169 @@ hr {
         height: 150px;
     }
 }
+
+
+
+/* ============================================== */
+/* AFOX SHOP STYLES */
+/* ============================================== */
+
+.shop-header-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 15px;
+    margin-bottom: 40px;
+    padding: 15px;
+    background-color: #2c2c2c;
+    border-radius: 10px;
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.shop-product-card {
+    background-color: #1f1f1f;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.shop-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(255, 215, 0, 0.2);
+}
+
+.product-image {
+    width: 100%;
+    max-width: 150px;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    object-fit: cover;
+}
+
+.product-price {
+    color: #ffd700;
+    font-size: 1.1em;
+    margin: 10px 0;
+}
+
+.product-description {
+    font-size: 0.9em;
+    color: #aaa;
+    min-height: 40px; /* Для единообразия карточек */
+    margin-bottom: 15px;
+}
+
+.cart-details-container {
+    background: var(--color-bg-card);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    margin-top: var(--spacing-lg);
+    text-align: left;
+    color: var(--text-color-light);
+}
+
+.cart-details-container h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid #4a4a5c;
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-item-name {
+    font-weight: 600;
+    color: var(--text-color-white);
+}
+
+.cart-total {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-sm);
+    border-top: 2px solid var(--primary-color);
+    font-size: 1.2em;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    color: var(--primary-color);
+}
+
+.checkout-button-container {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+}
+
+/* Стили для формы оформления заказа */
+.checkout-form-container {
+    max-width: 600px;
+    margin: var(--spacing-lg) auto;
+    background-color: var(--color-bg-input);
+    padding: var(--spacing-lg);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    text-align: left;
+    color: var(--text-color-light);
+}
+
+.checkout-form-container label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.checkout-form-container input[type="text"],
+.checkout-form-container input[type="email"],
+.checkout-form-container textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid #4a4a7e;
+    border-radius: 5px;
+    background-color: #2a2a3a;
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.checkout-form-container button[type="submit"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+/* Media Query для корзины и магазина */
+@media (max-width: 600px) {
+    .shop-header-stats {
+        flex-direction: column;
+        align-items: center;
+    }
+    .shop-grid {
+        grid-template-columns: 1fr;
+    }
+    .cart-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .cart-item-name, .cart-item-price {
+        margin-bottom: 5px;
+    }
+}
