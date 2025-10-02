@@ -646,7 +646,7 @@
 
                 <div class="live-trading-info">
                     <h3 class="web3-subheading">Current AFOX/SOL Live Price Chart</h3>
-                    <div id="afoxChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden;">
+                    <div id="afoxChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden; position: relative; z-index: 1;">
                         <iframe 
                             id="birdeye-chart"
                             src="https://birdeye.so/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?chain=solana&amp;widget=true&amp;theme=dark" 
@@ -748,32 +748,32 @@
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
         /**
-         * Initializes the Jupiter Terminal for the AFOX/SOL swap widget.
+         * Initializes the Jupiter Terminal for the AFOX swap widget.
          */
         function initializeJupiterTerminal() {
-            // Check if Jupiter Terminal script is loaded
-            if (window.Jupiter) {
+            // Перевіряємо, чи завантажено Jupiter
+            if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
                 window.Jupiter.init({
-                    // Display as a widget embedded in a div
                     displayMode: 'widget',
                     widgetStyle: {
-                        // ID of the container where the widget will be displayed
                         'container.id': 'jupiter-swap-widget', 
+                        // ✅ КРИТИЧНЕ ВИПРАВЛЕННЯ: встановлюємо дуже високий zIndex, 
+                        // щоб модальні вікна гаманця не зникали за графіком Birdeye.
+                        'container.zIndex': 9999, 
                     },
-                    // Set theme and style
                     theme: 'dark', 
-                    // Configuration for pre-selecting AFOX/SOL tokens
+                    // Налаштовуємо початковий обмін AFOX на SOL (це можна змінити всередині віджета)
                     formProps: {
-                        fixedOutputMint: true, // Fix the token the user receives
-                        initialOutputMint: AFOX_MINT, // AFOX
-                        initialInputMint: SOL_MINT, // SOL (swapping SOL for AFOX by default)
+                        fixedInputMint: true, 
+                        initialInputMint: AFOX_MINT, // AFOX
+                        initialOutputMint: SOL_MINT, // SOL
                     },
-                    // Recommended to be false to allow access to all tokens on Solana
+                    swapSwitchboard: true, // Дозволяє користувачу змінити напрямок обміну
                     strictTokenList: false, 
                 });
-                console.log("Jupiter Terminal initialized for AFOX/SOL swap.");
+                console.log("Jupiter Terminal initialized for AFOX/SOL swap with high zIndex.");
             } else {
-                // If Jupiter hasn't loaded (due to data-preload), try again shortly
+                // Якщо Jupiter ще не завантажився, пробуємо знову через 500ms
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
