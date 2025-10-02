@@ -87,7 +87,7 @@
                 <h2 class="aurum-heading">About Our AURUM FOX (AFOX) Meme Token</h2>
                 <p>Welcome to the world of <strong>AURUM FOX!</strong> We are a new, fully decentralized meme token, created by the community and for the community. Our goal is to create a fun, dynamic, and truly community-driven meme token on the Solana blockchain.</p>
                 <p><strong>AURUM FOX</strong> is a meme token presented as a golden coin with a cute cartoon fox image and the inscription "AURUM FOX". Its name combines the Latin "Aurum" (gold), symbolizing value, and "Fox" – a popular image for creating viral brands in the meme token space.</p>
-                <p>We believe in transparency and fairness. All permissions for <strong>minting</strong> (creating new tokens) and <strong>freezing</strong> (locking existing tokens) have been <strong>irrevocably revoked</strong>. This ensures a fixed total supply and the inability to lock your assets. No one, not even the creators, can issue new tokens or interfere with your holdings. AURUM FOX (AFOX) is a 100% community-governed meme token.</p>
+                <p>We believe in transparency and fairness. All permissions for <strong>minting</strong> (creating new tokens) and <strong>freezing</strong> (locking existing tokens) have been **irrevocably revoked**. This ensures a fixed total supply and the inability to lock your assets. No one, not even the creators, can issue new tokens or interfere with your holdings. AURUM FOX (AFOX) is a 100% community-governed meme token.</p>
             </div>
         </section>
 
@@ -751,29 +751,58 @@
          * Initializes the Jupiter Terminal for the AFOX swap widget.
          */
         function initializeJupiterTerminal() {
-            // Перевіряємо, чи завантажено Jupiter
+            // Отримуємо контейнер Birdeye для керування його видимістю
+            const birdeyeContainer = document.getElementById('afoxChartContainer');
+
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
                 window.Jupiter.init({
                     displayMode: 'widget',
                     widgetStyle: {
                         'container.id': 'jupiter-swap-widget', 
-                        // ✅ КРИТИЧНЕ ВИПРАВЛЕННЯ: встановлюємо дуже високий zIndex, 
-                        // щоб модальні вікна гаманця не зникали за графіком Birdeye.
-                        'container.zIndex': 9999, 
+                        'container.zIndex': 9999, // Високий zIndex для вікна Jupiter
                     },
                     theme: 'dark', 
-                    // Налаштовуємо початковий обмін AFOX на SOL (це можна змінити всередині віджета)
                     formProps: {
                         fixedInputMint: true, 
                         initialInputMint: AFOX_MINT, // AFOX
                         initialOutputMint: SOL_MINT, // SOL
                     },
-                    swapSwitchboard: true, // Дозволяє користувачу змінити напрямок обміну
+                    swapSwitchboard: true, 
                     strictTokenList: false, 
+
+                    // ✅ НОВЕ ВИПРАВЛЕННЯ: Спрацьовує, коли користувач натискає 'Connect Wallet'.
+                    onConnectWallet: (callback) => {
+                        // 1. Тимчасово приховуємо графік Birdeye
+                        if (birdeyeContainer) {
+                            // Робимо його невидимим і, головне, неактивним для миші/дотику
+                            birdeyeContainer.style.opacity = '0';
+                            birdeyeContainer.style.pointerEvents = 'none'; 
+                        }
+                        // 2. Продовжуємо стандартний процес підключення гаманця
+                        callback();
+                    },
+
+                    // ✅ Спрацьовує після успішного підключення або скасування
+                    onSuccess: () => {
+                         // Повертаємо графік Birdeye
+                         if (birdeyeContainer) {
+                            birdeyeContainer.style.opacity = '1';
+                            birdeyeContainer.style.pointerEvents = 'auto';
+                        }
+                    },
+                    
+                    // ✅ Додаємо обробку помилок (також повертаємо графік)
+                    onError: () => {
+                         // Повертаємо графік Birdeye
+                         if (birdeyeContainer) {
+                            birdeyeContainer.style.opacity = '1';
+                            birdeyeContainer.style.pointerEvents = 'auto';
+                        }
+                    }
                 });
-                console.log("Jupiter Terminal initialized for AFOX/SOL swap with high zIndex.");
+                console.log("Jupiter Terminal initialized with connection visibility fixes.");
             } else {
-                // Якщо Jupiter ще не завантажився, пробуємо знову через 500ms
+                // Якщо Jupiter ще не завантажився, пробуємо знову
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
