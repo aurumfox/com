@@ -3,9 +3,33 @@ const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
 // SOL Mint Address (Native Token)
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
+// Зберігання посилань для логіки приховування/відновлення chart'у
+let birdeyeContainer = null;
+let birdeyeParent = null;
+
 function initializeJupiterTerminal() {
+    // Функції приховування/відновлення iFrame, щоб запобігти блокуванню кліків
+    const removeBirdeye = () => {
+        if (birdeyeContainer && birdeyeParent) {
+            // Приховуємо iFrame, що містить графік
+            birdeyeContainer.style.display = 'none';
+            console.log("Trading chart **hidden** for wallet connection.");
+        }
+    };
+
+    const restoreBirdeye = () => {
+        if (birdeyeContainer) {
+            // Відновлюємо видимість iFrame
+            birdeyeContainer.style.display = 'block';
+            console.log("Trading chart **restored** after wallet connection.");
+        }
+    };
+    
     // Перевірка, чи Jupiter Terminal вже завантажено
-    if (window.Jupiter) {
+    if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
+        // ✅ ВИПРАВЛЕННЯ RPC: Примусове використання надійного RPC-вузла
+        const RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com'; 
+
         // Ініціалізація Jupiter Terminal
         window.Jupiter.init({
             // Ідентифікатор контейнера, де буде відображатися віджет
@@ -13,9 +37,10 @@ function initializeJupiterTerminal() {
             widgetStyle: {
                 // Визначає місце, куди вбудовується віджет
                 'container.id': 'jupiter-swap-widget', 
+                'container.zIndex': 9999, // Переконайтеся, що віджет поверх інших елементів
             },
             // Налаштування теми та стилю
-            theme: 'dark', // або 'light' відповідно до стилю вашого сайту
+            theme: 'dark', 
             // Налаштування для автоматичного вибору токенів AFOX/SOL
             formProps: {
                 // Встановлюємо токени за замовчуванням
@@ -24,17 +49,39 @@ function initializeJupiterTerminal() {
                 initialInputMint: SOL_MINT, // SOL
             },
             // Рекомендований список токенів
-            strictTokenList: false, // Рекомендовано для нових/мем-токенів
+            strictTokenList: false, 
+            
+            // ✅ ДОДАНО ВИПРАВЛЕННЯ RPC
+            endpoint: RPC_ENDPOINT, 
+
+            // ✅ ДОДАНО ВИПРАВЛЕННЯ iFRAME: Приховування перед відкриттям гаманця
+            onConnectWallet: (callback) => {
+                removeBirdeye();
+                // Невелика затримка, щоб DOM мав час на оновлення перед відкриттям гаманця
+                setTimeout(callback, 50); 
+            },
+
+            // ✅ ДОДАНО ВИПРАВЛЕННЯ iFRAME: Відновлення після закриття модального вікна
+            onSuccess: () => {
+                 restoreBirdeye();
+            },
+            
+            onError: () => {
+                 restoreBirdeye();
+            },
+            onSwapError: () => {
+                 restoreBirdeye();
+            },
+            onDisconnected: () => {
+                 restoreBirdeye();
+            }
         });
-        console.log("Jupiter Terminal initialized for AFOX/SOL swap.");
+        console.log(`Jupiter Terminal initialized, using RPC: ${RPC_ENDPOINT}`);
     } else {
         // Якщо Jupiter ще не завантажився (data-preload), спробуйте ще раз через деякий час
         setTimeout(initializeJupiterTerminal, 500);
     }
 }
-
-// Викликати функцію після завантаження DOM (винесено у фінальний блок)
-// document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
 
 
 // --- Imports (Conceptual, if using ES6 Modules) ---
@@ -979,13 +1026,6 @@ async function getUserStakingAccount(userPublicKey) {
 
         if (accountInfo && accountInfo.data) {
             // !!! IMPORTANT: Replace this with actual deserialization based on your smart contract's account structure.
-            // Example for an Anchor program:
-            // const program = new Anchor.Program(idl, STAKING_PROGRAM_ID, provider);
-            // const decodedAccount = await program.account.userStakeAccount.fetch(userStakingAccountPubKey);
-            // return {
-            //     stakedAmount: decodedAccount.stakedAmount.toNumber() / (10 ** AFOX_DECIMALS),
-            //     rewards: decodedAccount.pendingRewards.toNumber() / (10 ** AFOX_DECIMALS),
-            // };
             console.warn("Staking user account data deserialization is a placeholder. Implement actual smart contract interaction.");
             // Mock data for demonstration:
             return { stakedAmount: 100, rewards: 1.5 }; // Example mock
@@ -1017,16 +1057,6 @@ async function getStakingPoolInfo() {
 
         if (accountInfo && accountInfo.data) {
             // !!! IMPORTANT: Replace this with actual deserialization based on your smart contract's account structure.
-            // Example for an Anchor program:
-            // const program = new Anchor.Program(idl, STAKING_PROGRAM_ID, provider);
-            // const decodedPool = await program.account.stakingPool.fetch(poolAccountPubKey);
-            // return {
-            //     apr: decodedPool.apr / 100, // Assuming APR is stored as a percentage, adjust as per your contract
-            //     minStake: decodedPool.minStake.toNumber() / (10 ** AFOX_DECIMALS),
-            //     lockupDays: decodedPool.lockupPeriodDays,
-            //     unstakeFee: decodedPool.unstakeFeeBps / 100, // Assuming basis points
-            //     rewardCalcMethod: decodedPool.rewardCalcMethod // e.g., "Daily", "PerBlock"
-            // };
             console.warn("Staking pool data deserialization is a placeholder. Implement actual smart contract interaction.");
             // Mock data for demonstration:
             return { apr: 10, minStake: 5, lockupDays: 30, unstakeFee: 0.5, rewardCalcMethod: "Daily" }; // Example mock
@@ -1505,8 +1535,6 @@ async function handleStakeAfox() {
         const userStakingAccountInfo = await connection.getAccountInfo(userStakingAccountPubKey);
         if (!userStakingAccountInfo) {
             // !!! IMPORTANT: Replace `space` with the exact size of your `UserStakeAccount` struct in bytes.
-            // You can get this from your Anchor IDL or by carefully calculating.
-            // Example for an Anchor program: Anchor.workspace.YourProgram.account.userStakeAccount.size
             const space = 8 + 8 + 8 + 32 + 8 + 8 + 8; // Example: discriminator (8) + stakedAmount (8) + rewards (8) + owner (32) + lastStakeTime (8) + lockupEnd (8) + padding... (this will vary)
             const lamports = await connection.getMinimumBalanceForRentExemption(space);
             transaction.add(
@@ -1523,9 +1551,6 @@ async function handleStakeAfox() {
         const stakeAmountBN = new BN(amount * (10 ** AFOX_DECIMALS));
 
         // !!! IMPORTANT: Replace this with your actual instruction from your staking program.
-        // This is a generic instruction structure. If using Anchor, it would be `program.methods.stake(...).accounts(...)`
-        // The `data` field `[0, ...stakeAmountBN.toArray('le', 8)]` assumes your stake instruction
-        // has a discriminant of 0 and takes a u64 amount. Adjust according to your IDL.
         transaction.add({
             keys: [
                 { pubkey: walletPublicKey, isSigner: true, isWritable: false },
@@ -1534,7 +1559,6 @@ async function handleStakeAfox() {
                 { pubkey: AFOX_TOKEN_MINT_ADDRESS, isSigner: false, isWritable: false }, // Token mint
                 { pubkey: userAfoxTokenAccountPubKey, isSigner: false, isWritable: true }, // User's AFOX ATA
                 // You might need a program derived address (PDA) for the pool's token account if it holds the staked tokens
-                // { pubkey: poolTokenAccount, isSigner: false, isWritable: true },
                 { pubkey: SolanaToken.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
                 { pubkey: SolanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
                 { pubkey: SolanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
@@ -1581,37 +1605,8 @@ async function handleClaimRewards() {
         if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = true;
 
         // !!! IMPORTANT: Implement actual claim rewards transaction here.
-        // This would involve calling your staking smart contract's `claim_rewards` instruction.
-        // You'll need the correct PDAs and token accounts for the program.
         console.warn("Claim rewards functionality is a placeholder. Implement actual smart contract interaction.");
 
-        // Example mock:
-        // const [userStakingAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync([walletPublicKey.toBuffer(), Buffer.from("stake_account_seed")], STAKING_PROGRAM_ID);
-        // const [poolAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync([Buffer.from("pool_config_seed")], STAKING_PROGRAM_ID);
-        // const userAfoxTokenAccountPubKey = await SolanaToken.getAssociatedTokenAddress(AFOX_TOKEN_MINT_ADDRESS, walletPublicKey);
-
-        // const transaction = new SolanaWeb3.Transaction().add(
-        //     // This needs to be replaced with your actual program instruction
-        //     // For example, if using Anchor:
-        //     // program.instruction.claimRewards().accounts({
-        //     //     user: walletPublicKey,
-        //     //     poolConfig: poolAccountPubKey,
-        //     //     userStakeAccount: userStakingAccountPubKey,
-        //     //     tokenMint: AFOX_TOKEN_MINT_ADDRESS,
-        //     //     userRewardAccount: userAfoxTokenAccountPubKey, // Account to receive rewards
-        //     //     tokenProgram: SolanaToken.TOKEN_PROGRAM_ID,
-        //     //     systemProgram: SolanaWeb3.SystemProgram.programId,
-        //     // }).instruction()
-        //     new SolanaWeb3.TransactionInstruction({
-        //         keys: [], // Fill with relevant keys for your claim instruction
-        //         programId: STAKING_PROGRAM_ID,
-        //         data: Buffer.from([1]), // Example discriminant for claim instruction
-        //     })
-        // );
-        // transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
-        // transaction.feePayer = walletPublicKey;
-        // const signature = await provider.sendAndConfirm(transaction);
-        // console.log("Claim rewards transaction successful:", signature);
         const signature = "MOCK_SIGNATURE_CLAIM_REWARDS"; // Mock signature for demo
 
         showNotification(`Rewards successfully claimed! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
@@ -1644,36 +1639,8 @@ async function handleUnstakeAfox() {
         if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = true;
 
         // !!! IMPORTANT: Implement actual unstake transaction here.
-        // This would involve calling your staking smart contract's `unstake` instruction.
         console.warn("Unstake functionality is a placeholder. Implement actual smart contract interaction.");
 
-        // Example mock:
-        // const [userStakingAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync([walletPublicKey.toBuffer(), Buffer.from("stake_account_seed")], STAKING_PROGRAM_ID);
-        // const [poolAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync([Buffer.from("pool_config_seed")], STAKING_PROGRAM_ID);
-        // const userAfoxTokenAccountPubKey = await SolanaToken.getAssociatedTokenAddress(AFOX_TOKEN_MINT_ADDRESS, walletPublicKey);
-
-        // const transaction = new SolanaWeb3.Transaction().add(
-        //     // This needs to be replaced with your actual program instruction
-        //     // For example, if using Anchor:
-        //     // program.instruction.unstake().accounts({
-        //     //     user: walletPublicKey,
-        //     //     poolConfig: poolAccountPubKey,
-        //     //     userStakeAccount: userStakingAccountPubKey,
-        //     //     tokenMint: AFOX_TOKEN_MINT_ADDRESS,
-        //     //     userTokenAccount: userAfoxTokenAccountPubKey, // Account to receive unstaked tokens
-        //     //     tokenProgram: SolanaToken.TOKEN_PROGRAM_ID,
-        //     //     systemProgram: SolanaWeb3.SystemProgram.programId,
-        //     // }).instruction()
-        //     new SolanaWeb3.TransactionInstruction({
-        //         keys: [], // Fill with relevant keys for your unstake instruction
-        //         programId: STAKING_PROGRAM_ID,
-        //         data: Buffer.from([2]), // Example discriminant for unstake instruction
-        //     })
-        // );
-        // transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
-        // transaction.feePayer = walletPublicKey;
-        // const signature = await provider.sendAndConfirm(transaction);
-        // console.log("Unstake transaction successful:", signature);
         const signature = "MOCK_SIGNATURE_UNSTAKE"; // Mock signature for demo
 
 
@@ -2025,25 +1992,6 @@ function handleContactFormSubmit(e) {
     if (isValid) {
         console.log('Contact form data:', { name, email, subject, message });
         // In a real application, you would send this data to a backend API
-        // Example:
-        // fetch(`${API_BASE_URL}/api/contact`, {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ name, email, subject, message }),
-        // })
-        // .then(response => {
-        //     if (!response.ok) throw new Error('Network response was not ok.');
-        //     return response.json();
-        // })
-        // .then(data => {
-        //     showNotification('Message sent successfully!', 'success');
-        //     uiElements.contactForm.reset();
-        // })
-        // .catch(error => {
-        //     console.error('Error sending contact form:', error);
-        //     showNotification('Failed to send message. Please try again later.', 'error');
-        // });
-
         // For now, just simulate success
         showNotification('Message sent successfully! (This is a simulation, integrate with backend for real functionality)', 'success', 5000);
         uiElements.contactForm.reset();
@@ -2153,6 +2101,13 @@ async function fetchAndDisplayTradingData() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     cacheUIElements(); 
+    
+    // ✅ ДОДАНО ВИПРАВЛЕННЯ iFRAME: Кешування елементів для логіки приховування/відновлення iFrame
+    birdeyeContainer = document.getElementById('afoxChartContainer');
+    if (birdeyeContainer) {
+        birdeyeParent = birdeyeContainer.parentNode; 
+    }
+
     initializeEventListeners(); 
     initializeJupiterTerminal(); // Initialize Jupiter Terminal on DOM load
 
