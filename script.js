@@ -10,16 +10,16 @@ let birdeyeParent = null;
 function initializeJupiterTerminal() {
     // Функції приховування/відновлення iFrame, щоб запобігти блокуванню кліків
     const removeBirdeye = () => {
+        // ✅ ВИПРАВЛЕННЯ iFRAME (КРОК 1): Приховуємо контейнер графіка, коли відкривається модальне вікно гаманця
         if (birdeyeContainer && birdeyeParent) {
-            // Приховуємо iFrame, що містить графік
             birdeyeContainer.style.display = 'none';
             console.log("Trading chart **hidden** for wallet connection.");
         }
     };
 
     const restoreBirdeye = () => {
+        // ✅ ВИПРАВЛЕННЯ iFRAME (КРОК 2): Відновлюємо видимість після закриття модального вікна
         if (birdeyeContainer) {
-            // Відновлюємо видимість iFrame
             birdeyeContainer.style.display = 'block';
             console.log("Trading chart **restored** after wallet connection.");
         }
@@ -1588,7 +1588,7 @@ async function handleStakeAfox() {
 
 async function handleClaimRewards() {
     if (!walletPublicKey) {
-        showNotification('Please connect your wallet.', 'warning');
+        showNotification('Please connect your wallet to claim rewards.', 'warning');
         return;
     }
     if (!connection) {
@@ -2102,8 +2102,10 @@ async function fetchAndDisplayTradingData() {
 document.addEventListener('DOMContentLoaded', async () => {
     cacheUIElements(); 
     
-    // ✅ ДОДАНО ВИПРАВЛЕННЯ iFRAME: Кешування елементів для логіки приховування/відновлення iFrame
+    // ✅ ВИПРАВЛЕННЯ iFRAME: Кешування елементів для логіки приховування/відновлення iFrame
+    // Це забезпечує, що при відкритті гаманця iFrame графіка не буде блокувати кліки.
     birdeyeContainer = document.getElementById('afoxChartContainer');
+    // Ми також кешуємо батьківський елемент, хоча в нашому випадку достатньо лише змінити display у birdeyeContainer
     if (birdeyeContainer) {
         birdeyeParent = birdeyeContainer.parentNode; 
     }
