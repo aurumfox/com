@@ -24,6 +24,8 @@
     <script src="https://unpkg.com/@solana/wallet-adapter-wallets@latest/lib/index.iife.js"></script>
     <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
     <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
+    
+    <script src="https://terminal.jup.ag/main-v1.js" data-preload></script> 
 </head>
 <body>
     <header class="header">
@@ -638,59 +640,37 @@
         <section id="swap-section" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🔄 AFOX Swap & Live Trading</h2>
-                <p class="web3-intro">Swap your AFOX tokens for SOL or other SPL tokens directly, and track the live market price!</p>
+                <p class="web3-intro">
+                    Swap your AFOX tokens for SOL or other SPL tokens directly, and track the live market price!
+                    For exchange, use **Jupiter Terminal** — the best liquidity aggregator on Solana.
+                </p>
 
                 <div class="live-trading-info">
-                    <h3 class="web3-subheading">Current AFOX/SOL Market</h3>
-                    <div class="price-data-container">
-                        <p><strong>Price:</strong> <span id="livePriceAfoxSol">Loading...</span> SOL</p>
-                        <p><strong>24h Change:</strong> <span id="priceChange24h">--%</span></p>
-                        <p><strong>Liquidity:</strong> <span id="totalLiquidity">Loading...</span></p>
-                    </div>
-                    <div id="afoxChartContainer" style="height: 300px; width: 100%; margin-top: 20px;">
-                        <p class="web3-placeholder">Loading Live Price Chart...</p>
+                    <h3 class="web3-subheading">Current AFOX/SOL Live Price Chart</h3>
+                    <div id="afoxChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden;">
+                        <iframe 
+                            id="dextools-chart"
+                            src="https://www.dextools.io/app/en/solana/pair-explorer/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?charttype=2&theme=dark" 
+                            style="width:100%; height:100%; border:none; border-radius: 12px;"
+                            title="Aurum Fox (AFOX/SOL) Live Chart"
+                            allowfullscreen>
+                        </iframe>
+                        <p class="web3-placeholder" style="text-align: center; margin-top: 10px;">Chart Loading...</p>
                     </div>
                 </div>
-                <button id="connectWalletSwapBtn" class="web3-btn" aria-label="Connect wallet to AFOX swap">Connect Wallet</button>
-                <p class="web3-wallet-display">Your Wallet Address: <span id="walletAddressDisplaySwap">Not Connected</span></p>
+                
+                <hr style="margin: 40px 0; border-color: #ffd70033;">
 
                 <div class="swap-interface">
-                    <h3 class="web3-subheading">From:</h3>
-                    <div class="input-group swap-input">
-                        <input type="number" id="swapFromAmount" min="0" step="0.000001" placeholder="Amount" aria-label="Amount to swap from">
-                        <select id="swapFromToken" class="token-select" aria-label="Select token to swap from">
-                            <option value="AFOX" data-mint="GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd">AFOX</option>
-                            <option value="SOL" data-mint="So11111111111111111111111111111111111111112">SOL</option>
-                            </select>
-                        <button class="web3-btn small-btn max-amount-btn" data-input-id="swapFromAmount" aria-label="Use max available amount">MAX</button>
+                    <h3 class="web3-subheading">⚡️ Jupiter Terminal (AFOX Swap)</h3>
+                    <p>Connect your wallet and swap AFOX at the best rate.</p>
+                    
+                    <div id="jupiter-swap-widget" style="min-height: 400px; max-width: 450px; margin: 20px auto;">
                     </div>
-                    <p>Balance: <span id="swapFromBalance">0</span></p>
-
-                    <div class="swap-direction-toggle">
-                        <button id="swapDirectionBtn" class="web3-btn" aria-label="Toggle swap direction">&darr;&uarr;</button>
-                    </div>
-
-                    <h3 class="web3-subheading">To (Estimated):</h3>
-                    <div class="input-group swap-input">
-                        <input type="number" id="swapToAmount" min="0" step="0.000001" placeholder="Estimated Amount" readonly aria-label="Estimated amount to receive">
-                        <select id="swapToToken" class="token-select" aria-label="Select token to swap to">
-                            <option value="SOL" data-mint="So11111111111111111111111111111111111111112">SOL</option>
-                            <option value="AFOX" data-mint="GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd">AFOX</option>
-                            </select>
-                    </div>
-                    <p>Price Impact: <span id="priceImpact">0%</span></p>
-                    <p>Liquidity Provider Fee: <span id="lpFee">0%</span></p>
-                    <p>Minimum Received: <span id="minReceived">0</span></p>
-
-
-                    <button id="getQuoteBtn" class="web3-btn green-btn" aria-label="Get best swap quote">Get Best Quote</button>
-                    <button id="executeSwapBtn" class="web3-btn" style="display:none;" aria-label="Execute swap transaction">Execute Swap</button> 
                 </div>
             </div>
         </section>
-        ---
-
-    </main>
+        </main>
 
     <footer class="footer">
         <div class="container">
@@ -760,6 +740,47 @@
 
     <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 1000;"></div>
 
+    <script type="module">
+        // AFOX Contract Address (Mint)
+        const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
+        // SOL Mint Address (Native Token)
+        const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
+        /**
+         * Initializes the Jupiter Terminal for the AFOX/SOL swap widget.
+         */
+        function initializeJupiterTerminal() {
+            // Check if Jupiter Terminal script is loaded
+            if (window.Jupiter) {
+                window.Jupiter.init({
+                    // Display as a widget embedded in a div
+                    displayMode: 'widget',
+                    widgetStyle: {
+                        // ID of the container where the widget will be displayed
+                        'container.id': 'jupiter-swap-widget', 
+                    },
+                    // Set theme and style
+                    theme: 'dark', 
+                    // Configuration for pre-selecting AFOX/SOL tokens
+                    formProps: {
+                        fixedOutputMint: true, // Fix the token the user receives
+                        initialOutputMint: AFOX_MINT, // AFOX
+                        initialInputMint: SOL_MINT, // SOL (swapping SOL for AFOX by default)
+                    },
+                    // Recommended to be false to allow access to all tokens on Solana
+                    strictTokenList: false, 
+                });
+                console.log("Jupiter Terminal initialized for AFOX/SOL swap.");
+            } else {
+                // If Jupiter hasn't loaded (due to data-preload), try again shortly
+                setTimeout(initializeJupiterTerminal, 500);
+            }
+        }
+
+        // Call the function after the DOM content is fully loaded
+        document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
+    </script>
+    
     <script src="script.js" type="module"></script>
 </body>
 </html>
