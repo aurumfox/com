@@ -635,12 +635,22 @@
             </div>
         </section>
 
-        ---
         <section id="swap-section" class="section web3-section-alt">
             <div class="container">
-                <h2 class="web3-heading">🔄 AFOX Swap</h2>
-                <p class="web3-intro">Swap your AFOX tokens for SOL or other SPL tokens directly!</p>
+                <h2 class="web3-heading">🔄 AFOX Swap & Live Trading</h2>
+                <p class="web3-intro">Swap your AFOX tokens for SOL or other SPL tokens directly, and track the live market price!</p>
 
+                <div class="live-trading-info">
+                    <h3 class="web3-subheading">Current AFOX/SOL Market</h3>
+                    <div class="price-data-container">
+                        <p><strong>Price:</strong> <span id="livePriceAfoxSol">Loading...</span> SOL</p>
+                        <p><strong>24h Change:</strong> <span id="priceChange24h">--%</span></p>
+                        <p><strong>Liquidity:</strong> <span id="totalLiquidity">Loading...</span></p>
+                    </div>
+                    <div id="afoxChartContainer" style="height: 300px; width: 100%; margin-top: 20px;">
+                        <p class="web3-placeholder">Loading Live Price Chart...</p>
+                    </div>
+                </div>
                 <button id="connectWalletSwapBtn" class="web3-btn" aria-label="Connect wallet to AFOX swap">Connect Wallet</button>
                 <p class="web3-wallet-display">Your Wallet Address: <span id="walletAddressDisplaySwap">Not Connected</span></p>
 
