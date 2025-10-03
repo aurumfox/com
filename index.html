@@ -45,85 +45,7 @@
     <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
     
     <style>
-        /* Стиль для модуля AI Diagnostic, интегрированный с темой Aurum Fox */
-        .ai-insights-module {
-            margin-top: 40px;
-            padding: 30px;
-            background-color: #2c3e50; /* var(--color-secondary-bg) */
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            color: #fff;
-        }
-
-        .ai-diagnostic-tool__heading {
-            color: #ffd700; /* var(--color-highlight) */
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8em;
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        .ai-diagnostic-tool__description {
-            color: #aaa; /* var(--color-text-faded) */
-            font-size: 0.95em;
-            margin-bottom: 20px;
-        }
-
-        .ai-diagnostic-tool__controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .ai-diagnostic-tool__selector,
-        .ai-diagnostic-tool__input {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #444; 
-            background-color: #1a1a2e; /* var(--color-primary-bg) */
-            color: #fff;
-            font-size: 1em;
-            flex-grow: 1;
-            min-width: 180px;
-            box-sizing: border-box;
-        }
-
-        .ai-diagnostic-tool__selector:focus,
-        .ai-diagnostic-tool__input:focus {
-            border-color: #ffd700;
-            outline: none;
-        }
-        
-        .ai-diagnostic-tool__button {
-            background-color: #e6b300 !important; /* var(--color-accent) */
-            color: #1a1a2e !important; /* var(--color-primary-bg) */
-            border: none; 
-            padding: 10px 15px; 
-            cursor: pointer;
-            font-weight: 700;
-            border-radius: 8px;
-            transition: background-color 0.2s, filter 0.2s; 
-            flex-shrink: 0; 
-        }
-
-        .ai-diagnostic-tool__button:hover {
-            filter: brightness(110%);
-        }
-
-        .ai-diagnostic-tool__output {
-            margin-top: 20px; 
-            padding: 15px; 
-            border: 1px solid #444; 
-            border-radius: 8px; 
-            background-color: #1a1a2e; /* var(--color-primary-bg) */
-            white-space: pre-wrap;
-            font-family: monospace;
-            color: #e0e0e0; /* var(--color-text-output) */
-            min-height: 80px;
-            overflow-x: auto;
-        }
-
+        /* Стиль для скрытых элементов */
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -135,18 +57,22 @@
             border: 0;
         }
 
-        @media (max-width: 600px) {
-            .ai-diagnostic-tool__controls {
-                flex-direction: column;
-            }
-
-            .ai-diagnostic-tool__selector,
-            .ai-diagnostic-tool__input,
-            .ai-diagnostic-tool__button {
-                width: 100%;
-                min-width: 100%;
-            }
-        }
+        /* * Следующие стили были удалены, так как они относились к удаленному 
+        * модулю AI-Driven Insights / AI Code Assistant Diagnostics:
+        *
+        * .ai-insights-module 
+        * .ai-diagnostic-tool__heading
+        * .ai-diagnostic-tool__description
+        * .ai-diagnostic-tool__controls
+        * .ai-diagnostic-tool__selector
+        * .ai-diagnostic-tool__input
+        * .ai-diagnostic-tool__selector:focus
+        * .ai-diagnostic-tool__input:focus
+        * .ai-diagnostic-tool__button
+        * .ai-diagnostic-tool__button:hover
+        * .ai-diagnostic-tool__output
+        * @media (max-width: 600px) { ... }
+        */
     </style>
 </head>
 <body>
@@ -784,53 +710,6 @@
             </div>
         </section>
         
-        <section id="ai-section" class="web3-section ai-insights-module" aria-labelledby="ai-insights-heading">
-            
-            <h2 id="ai-insights-heading" class="aurum-heading">AI-Driven Insights</h2>
-            
-            <div id="ai-code-assistant" 
-                 class="ai-diagnostic-tool"
-                 role="region" aria-labelledby="ai-diagnostics-heading">
-                
-                <h3 id="ai-diagnostics-heading" class="ai-diagnostic-tool__heading">🤖 AI Code Assistant Diagnostics</h3>
-                <p class="ai-diagnostic-tool__description">
-                    Manually select a function and enter the error details, or paste a transaction ID for the AI to diagnose on-chain failures.
-                </p>
-                
-                <div class="ai-diagnostic-tool__controls">
-                    
-                    <label for="functionSelector" class="visually-hidden">Select Broken Function</label>
-                    <select id="functionSelector" 
-                            class="ai-diagnostic-tool__selector"
-                            aria-label="Select Broken Function">
-                        <option value="">-- Select Broken Function --</option>
-                        <option value="connectWallet">connectWallet()</option>
-                        <option value="getQuote">getQuote() (Swap)</option>
-                        <option value="executeSwap">executeSwap() (Swap)</option>
-                        <option value="handleStakeAfox">handleStakeAfox() (Staking)</option>
-                        <option value="handleClaimRewards">handleClaimRewards() (Staking)</option>
-                        <option value="handleBuyNft">handleBuyNft() (NFT)</option>
-                        <option value="handleTransferNft">handleTransferNft() (NFT)</option>
-                    </select>
-                    
-                    <label for="issueDetailsInput" class="visually-hidden">Error Details or Transaction ID</label>
-                    <input type="text" id="issueDetailsInput" 
-                           class="ai-diagnostic-tool__input"
-                           placeholder="Enter error details (e.g., 'RPC timeout') or a Transaction ID" 
-                           aria-label="Error details or Transaction ID">
-                    
-                    <button id="runDiagnosticBtn" type="button" class="web3-btn ai-diagnostic-tool__button">
-                        Run AI Diagnostic
-                    </button>
-                </div>
-
-                <div id="aiCodeAssistantOutput" 
-                     class="ai-diagnostic-tool__output"
-                     role="status" aria-live="polite">
-                    <p>Output will appear here after running a diagnostic.</p>
-                </div>
-            </div>
-        </section>
         </main>
 
     <footer class="footer">
