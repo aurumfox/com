@@ -8,6 +8,7 @@ const SOL_MINT = 'So11111111111111111111111111111111111111112';
 // --- AI FORECAST CONFIGURATION ---
 // In a real application, replace this with your actual ML server endpoint.
 const AI_FORECAST_API_URL = 'https://your-ai-ml-server.com/api/afox-forecast';
+const DIAGNOSTICS_API_URL = 'https://your-ai-ml-server.com/api/diagnose';
 
 // ------------------------------------------------------------------
 // **RPC Fix Configuration**
@@ -20,6 +21,74 @@ const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 // State variables for chart overlay fix
 let birdeyeContainer = null;
 let birdeyeContainerOriginalDisplay = 'block'; // To store the original display style
+
+// --- CONSTANTS AND SETTINGS ---
+const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
+const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
+const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
+const API_BASE_URL = 'http://localhost:3000'; // For local development
+const AFOX_MINT_ADDRESS_STRING = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
+
+// Mint addresses for tokens supported in the swap functionality
+const TOKEN_MINT_ADDRESSES = {
+    'SOL': new SolanaWeb3.PublicKey('So11111111111111111111111111111111111111112'),
+    'AFOX': AFOX_TOKEN_MINT_ADDRESS,
+};
+
+const AFOX_DECIMALS = 6;
+const SOL_DECIMALS = 9;
+
+const NETWORK = SolanaWeb3.WalletAdapterNetwork.Mainnet; // Updated from Devnet for a mainnet application
+
+// --- GLOBAL WALLET & CONNECTION STATE ---
+let walletPublicKey = null;
+let provider = null;
+let connection = null;
+const WALLETS = [
+    new SolanaWalletAdapterPhantom.PhantomWalletAdapter(),
+];
+let areProviderListenersAttached = false;
+let currentJupiterQuote = null;
+let currentOpenNft = null;
+
+// --- UI ELEMENT CACHING ---
+const uiElements = {
+    // General Wallet & Display
+    connectWalletButtons: [],
+    walletAddressDisplays: [],
+    // Modals
+    nftDetailsModal: null, nftModal: null, mintNftModal: null, createProposalModal: null,
+    closeModalButtons: {},
+    closeMainMenuCross: null,
+    // Menu Elements
+    mainNav: null, menuToggle: null, navLinks: [],
+    // NFT Section
+    userNftList: null, nftToSellSelect: null, listNftForm: null, mintNftForm: null, marketplaceNftList: null,
+    // NFT Details Modal elements
+    nftDetailImage: null, nftDetailName: null, nftDetailDescription: null, nftDetailOwner: null,
+    nftDetailMint: null, attributesList: null, nftDetailSolscanLink: null, nftDetailBuyBtn: null,
+    nftDetailSellBtn: null, nftDetailTransferBtn: null, nftDetailHistory: null,
+    // Announcements Section
+    announcementsList: null, announcementInput: null, publishButton: null,
+    // Games & Ads Section
+    gameList: null, uploadGameBtnWeb3: null, adList: null, postAdBtnWeb3: null,
+    // Staking Section Elements
+    userAfoxBalance: null, userStakedAmount: null, userRewardsAmount: null, stakingApr: null,
+    stakeAmountInput: null, stakeAfoxBtn: null, claimRewardsBtn: null, unstakeAfoxBtn: null,
+    minStakeAmountDisplay: null, lockupPeriodDisplay: null, unstakeFeeDisplay: null, rewardCalculationDisplay: null,
+    // SWAP SECTION UI ELEMENTS
+    swapFromAmountInput: null, swapFromTokenSelect: null, swapFromBalanceSpan: null,
+    swapDirectionBtn: null, swapToAmountInput: null, swapToTokenSelect: null, priceImpactSpan: null,
+    lpFeeSpan: null, minReceivedSpan: null, getQuoteBtn: null, executeSwapBtn: null, maxAmountBtns: [],
+    // Copy Button (generic)
+    copyButtons: [],
+    // Contact Form
+    contactForm: null, contactNameInput: null, contactEmailInput: null, contactSubjectInput: null, contactMessageInput: null,
+    notificationContainer: null,
+    // AI Forecast Section
+    aiPriceForecast: null, // ✅ NEW: AI Price Forecast Element
+};
+
 
 /**
  * Aggressively hides the trading chart iFrame to prevent it from blocking the
@@ -113,81 +182,6 @@ function initializeJupiterTerminal(useBackupRpc = false) {
     }
 }
 
-
-// --- REST OF YOUR CODE (Unchanged boilerplate for context) ---
-
-// --- Imports (Conceptual, if using ES6 Modules) ---
-// Assuming these are globally available via script tags (as suggested by window. prefix)
-const SolanaWeb3 = window.SolanaWeb3;
-const SolanaWalletAdapterPhantom = window.SolanaWalletAdapterPhantom;
-const SolanaToken = window.SolanaToken;
-const BN = window.BN;
-
-// --- CONSTANTS AND SETTINGS ---
-const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
-const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
-const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
-const API_BASE_URL = 'http://localhost:3000'; // For local development
-
-// Mint addresses for tokens supported in the swap functionality
-const TOKEN_MINT_ADDRESSES = {
-    'SOL': new SolanaWeb3.PublicKey('So11111111111111111111111111111111111111112'),
-    'AFOX': AFOX_TOKEN_MINT_ADDRESS,
-};
-
-const AFOX_DECIMALS = 6;
-const SOL_DECIMALS = 9;
-
-const NETWORK = SolanaWeb3.WalletAdapterNetwork.Mainnet; // Updated from Devnet for a mainnet application
-
-// --- GLOBAL WALLET & CONNECTION STATE ---
-let walletPublicKey = null;
-let provider = null;
-let connection = null;
-const WALLETS = [
-    new SolanaWalletAdapterPhantom.PhantomWalletAdapter(),
-];
-let areProviderListenersAttached = false;
-let currentJupiterQuote = null;
-let currentOpenNft = null;
-
-// --- UI ELEMENT CACHING ---
-const uiElements = {
-    // General Wallet & Display
-    connectWalletButtons: [],
-    walletAddressDisplays: [],
-    // Modals
-    nftDetailsModal: null, nftModal: null, mintNftModal: null, createProposalModal: null,
-    closeModalButtons: {},
-    closeMainMenuCross: null,
-    // Menu Elements
-    mainNav: null, menuToggle: null, navLinks: [],
-    // NFT Section
-    userNftList: null, nftToSellSelect: null, listNftForm: null, mintNftForm: null, marketplaceNftList: null,
-    // NFT Details Modal elements
-    nftDetailImage: null, nftDetailName: null, nftDetailDescription: null, nftDetailOwner: null,
-    nftDetailMint: null, attributesList: null, nftDetailSolscanLink: null, nftDetailBuyBtn: null,
-    nftDetailSellBtn: null, nftDetailTransferBtn: null, nftDetailHistory: null,
-    // Announcements Section
-    announcementsList: null, announcementInput: null, publishButton: null,
-    // Games & Ads Section
-    gameList: null, uploadGameBtnWeb3: null, adList: null, postAdBtnWeb3: null,
-    // Staking Section Elements
-    userAfoxBalance: null, userStakedAmount: null, userRewardsAmount: null, stakingApr: null,
-    stakeAmountInput: null, stakeAfoxBtn: null, claimRewardsBtn: null, unstakeAfoxBtn: null,
-    minStakeAmountDisplay: null, lockupPeriodDisplay: null, unstakeFeeDisplay: null, rewardCalculationDisplay: null,
-    // SWAP SECTION UI ELEMENTS
-    swapFromAmountInput: null, swapFromTokenSelect: null, swapFromBalanceSpan: null,
-    swapDirectionBtn: null, swapToAmountInput: null, swapToTokenSelect: null, priceImpactSpan: null,
-    lpFeeSpan: null, minReceivedSpan: null, getQuoteBtn: null, executeSwapBtn: null, maxAmountBtns: [],
-    // Copy Button (generic)
-    copyButtons: [],
-    // Contact Form
-    contactForm: null, contactNameInput: null, contactEmailInput: null, contactSubjectInput: null, contactMessageInput: null,
-    notificationContainer: null,
-    // AI Forecast Section
-    aiPriceForecast: null, // ✅ NEW: AI Price Forecast Element
-};
 
 /**
  * Initializes UI element references. Called once on DOMContentLoaded.
@@ -371,6 +365,61 @@ function closeAllPopups() {
         if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
     }
 }
+
+/**
+ * Helper function to run both staking UI update and balance update in parallel
+ * to ensure all UI elements related to AFOX and staking are refreshed after a transaction.
+ * @async
+ */
+async function updateStakingAndBalanceUI() {
+    try {
+        await Promise.all([
+            updateStakingUI(),
+            updateSwapBalances()
+        ]);
+    } catch (error) {
+        console.error("Error refreshing staking/balance UI after transaction:", error);
+        showNotification("Error updating staking and balance displays.", 'error');
+    }
+}
+
+/**
+ * PSEUDO-FUNCTION: Simulates an AI/ML server call to diagnose a code or network issue.
+ * In a real application, this would log error details to an observability platform
+ * and potentially trigger an AI analysis for root cause (e.g., failed to load a specific account, RPC latency spike).
+ * @param {string} functionName - The function where the error occurred.
+ * @param {string} errorDetails - A summary of the error.
+ * @async
+ */
+async function diagnoseCodeIssue(functionName, errorDetails) {
+    // In a real application, this would involve a POST request to an error-logging/AI-diagnostics server.
+    try {
+        console.error(`[AI Diagnostic Triggered] Function: ${functionName}, Details: ${errorDetails}`);
+        // Mock a brief API call to a diagnostic service
+        /*
+        const response = await fetch(DIAGNOSTICS_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                timestamp: new Date().toISOString(),
+                wallet: walletPublicKey ? walletPublicKey.toBase58() : 'N/A',
+                function: functionName,
+                details: errorDetails
+            })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log(`[AI Diagnostic Result]: ${result.summary || 'Analysis started.'}`);
+        } else {
+             console.warn("Failed to submit error to AI diagnostics server.");
+        }
+        */
+    } catch (networkError) {
+        console.error("Failed to call AI diagnostics service:", networkError);
+    }
+}
+
 
 // --- WALLET CONNECTION & STATE MANAGEMENT ---
 
@@ -765,6 +814,7 @@ async function executeSwap() {
     } catch (error) {
         console.error('Error during swap execution:', error);
         showNotification(`Swap failed: ${error.message}. Check console for details.`, 'error');
+        await diagnoseCodeIssue('executeSwap', `Swap transaction failed. Error: ${error.message}.`);
     } finally {
         if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.disabled = false;
     }
@@ -808,7 +858,7 @@ async function loadUserNFTs(walletAddress) {
                 <p>${nft.description || 'No description'}</p>
                 <p>Mint: <span style="font-size:0.8em; word-break:break-all;">${nft.mint ? `${nft.mint.substring(0, 6)}...${nft.mint.substring(nft.mint.length - 4)}` : 'N/A'}</span></p>
             `;
-            nftItem.addEventListener('click', () => showNftDetails(nft));
+            nftItem.addEventListener('click', () => window.showNftDetails(nft));
             uiElements.userNftList.appendChild(nftItem);
 
             if (uiElements.nftToSellSelect) {
@@ -859,7 +909,7 @@ async function loadMarketplaceNFTs() {
                 <p>Price: <strong>${nft.price ? `${nft.price} SOL` : 'N/A'}</strong></p>
                 <p>Mint: <span style="font-size:0.8em; word-break:break-all;">${nft.mint ? `${nft.mint.substring(0, 6)}...${nft.mint.substring(nft.mint.length - 4)}` : 'N/A'}</span></p>
             `;
-            nftItem.addEventListener('click', () => showNftDetails(nft));
+            nftItem.addEventListener('click', () => window.showNftDetails(nft));
             uiElements.marketplaceNftList.appendChild(nftItem);
         });
 
@@ -979,7 +1029,7 @@ window.showNftDetails = async function(nft) {
     }
 };
 
-// --- STAKING FUNCTIONS (Unchanged boilerplate for context) ---
+// --- STAKING FUNCTIONS ---
 
 /**
  * Updates all staking data in the UI.
@@ -1118,6 +1168,156 @@ async function getStakingPoolInfo() {
     } catch (error) {
         console.error("Error getting staking pool information (might not exist or deserialization issue):", error);
         return { apr: 0, minStake: 0, lockupDays: 0, unstakeFee: 0, rewardCalcMethod: "N/A" };
+    }
+}
+
+/**
+ * Handles the transaction for staking AFOX tokens.
+ * @async
+ * @global
+ */
+async function handleStakeAfox() {
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet.', 'warning');
+        return;
+    }
+
+    if (!uiElements.stakeAmountInput) {
+        showNotification('Stake amount input not found.', 'error');
+        return;
+    }
+
+    const amount = parseFloat(uiElements.stakeAmountInput.value);
+    if (isNaN(amount) || amount <= 0) {
+        showNotification('Please enter a valid amount to stake (greater than 0).', 'warning');
+        return;
+    }
+
+    // Set initial UI state
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = true;
+
+    try {
+        showNotification(`Initiating staking of ${amount} AFOX... (Simulation)`, 'info', 5000);
+
+        // --- MOCKING TRANSACTION LOGIC (REPLACE WITH REAL SOLANA TX) ---
+        console.warn("Staking is a simulation. Implement actual transaction to the Staking Program (e.g., using Anchor).");
+
+        // Simulate waiting for wallet signature and network confirmation
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const signature = "MOCK_SIGNATURE_STAKE_" + Date.now();
+        // --- END MOCKING ---
+
+        showNotification(`You successfully staked ${amount} AFOX! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 7000);
+
+        // Clear input and update UI
+        uiElements.stakeAmountInput.value = '';
+        await updateStakingAndBalanceUI();
+
+    } catch (error) {
+        console.error('Error during staking:', error);
+
+        // Cleaner user message
+        const errorMessage = error.message || "An unknown network error occurred.";
+        showNotification(`Staking failed. Check connection or retry. Details: ${errorMessage.substring(0, 50)}...`, 'error');
+
+        // AI Diagnostic Integration
+        await diagnoseCodeIssue('handleStakeAfox', `Staking transaction for ${amount} AFOX failed. Error: ${error.message}. Check token account/program ID/balance.`);
+
+    } finally {
+        if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
+    }
+}
+
+/**
+ * Handles the transaction for claiming rewards.
+ * @async
+ * @global
+ */
+async function handleClaimRewards() {
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet to claim rewards.', 'warning');
+        return;
+    }
+
+    // Set initial UI state
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = true;
+
+    try {
+        showNotification('Attempting to claim rewards... (Simulation)', 'info');
+
+        // !!! IMPORTANT: Implement actual claim rewards transaction here.
+        console.warn("Claim rewards functionality is a placeholder. Implement actual smart contract interaction.");
+
+        // Simulate waiting for wallet signature and network confirmation
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        const signature = "MOCK_SIGNATURE_CLAIM_REWARDS_" + Date.now();
+
+        showNotification(`Rewards successfully claimed! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
+
+        // Update UI
+        await updateStakingAndBalanceUI();
+
+    } catch (error) {
+        console.error('Error claiming rewards:', error);
+
+        // Cleaner user message
+        const errorMessage = error.message || "An unknown network error occurred.";
+        showNotification(`Claiming failed. Check connection or retry. Details: ${errorMessage.substring(0, 50)}...`, 'error');
+
+        // AI Diagnostic Integration
+        await diagnoseCodeIssue('handleClaimRewards', `Claim rewards transaction failed. Error: ${error.message}.`);
+
+    } finally {
+        if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = false;
+    }
+}
+
+/**
+ * Handles the transaction for unstaking AFOX tokens.
+ * @async
+ * @global
+ */
+async function handleUnstakeAfox() {
+    if (!walletPublicKey) {
+        showNotification('Please connect your wallet.', 'warning');
+        return;
+    }
+
+    // In a real app, you would read the unstake amount from an input,
+    // or retrieve the entire staked balance if that's the program's logic.
+    // Using a mock amount for the placeholder.
+    const amount = 100;
+
+    // Set initial UI state
+    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = true;
+
+    try {
+        showNotification(`Attempting to unstake ${amount} tokens... (Simulation)`, 'info');
+
+        // !!! IMPORTANT: Implement actual unstake transaction here.
+        console.warn("Unstake functionality is a placeholder. Implement actual smart contract interaction.");
+
+        // Simulate waiting for wallet signature and network confirmation
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const signature = "MOCK_SIGNATURE_UNSTAKE_" + Date.now();
+
+        showNotification(`Staked tokens successfully unstaked! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
+
+        // Update UI
+        await updateStakingAndBalanceUI();
+
+    } catch (error) {
+        console.error('Error unstaking tokens:', error);
+
+        // Cleaner user message
+        const errorMessage = error.message || "An unknown network error occurred.";
+        showNotification(`Unstaking failed. Check connection or retry. Details: ${errorMessage.substring(0, 50)}...`, 'error');
+
+        // AI Diagnostic Integration
+        await diagnoseCodeIssue('handleUnstakeAfox', `Unstake transaction for ${amount} tokens failed. Error: ${error.message}.`);
+
+    } finally {
+        if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = false;
     }
 }
 
@@ -1435,6 +1635,7 @@ async function handleMintNftSubmit(e) {
     } catch (error) {
         console.error('Error minting NFT:', error);
         showNotification(`Failed to mint NFT: ${error.message}`, 'error');
+        await diagnoseCodeIssue('handleMintNftSubmit', `NFT minting failed. Error: ${error.message}.`);
     }
 }
 
@@ -1494,6 +1695,7 @@ async function handleListNftSubmit(e) {
     } catch (error) {
         console.error('Error listing NFT for sale:', error);
         showNotification(`Failed to list NFT for sale: ${error.message}`, 'error');
+        await diagnoseCodeIssue('handleListNftSubmit', `NFT listing failed. Error: ${error.message}.`);
     }
 }
 
@@ -1523,120 +1725,14 @@ async function handlePublishAnnouncement() {
         } else {
             const errorData = await response.json();
             showNotification(`Failed to publish announcement: ${errorData.error || response.statusText}. (Admin only in a real application)`, 'error');
+             await diagnoseCodeIssue('handlePublishAnnouncement', `Announcement publication failed. HTTP error: ${response.status}.`);
         }
     } catch (error) {
         console.error('Error publishing announcement:', error);
         showNotification('Server connection error while publishing announcement.', 'error');
+        await diagnoseCodeIssue('handlePublishAnnouncement', `Network error publishing announcement. Error: ${error.message}.`);
     } finally {
         uiElements.publishButton.disabled = false; // Re-enable button
-    }
-}
-
-async function handleStakeAfox() {
-    if (!walletPublicKey) {
-        showNotification('Please connect your wallet to stake.', 'warning');
-        return;
-    }
-    if (!connection) {
-        showNotification('Solana connection not established. Please connect your wallet again.', 'error');
-        return;
-    }
-    if (!uiElements.stakeAmountInput) {
-        showNotification('Stake amount input not found.', 'error');
-        return;
-    }
-
-    const amount = parseFloat(uiElements.stakeAmountInput.value);
-    if (isNaN(amount) || amount <= 0) {
-        showNotification('Please enter a valid amount to stake (greater than 0).', 'warning');
-        return;
-    }
-
-    try {
-        uiElements.stakeAfoxBtn.disabled = true;
-        showNotification(`Initiating staking of ${amount} AFOX... (Simulation)`, 'info', 5000);
-
-        // --- MOCKING TRANSACTION LOGIC ---
-        console.warn("Staking is a simulation. Replace with actual Solana transaction logic.");
-
-        const [userStakingAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync(
-            [walletPublicKey.toBuffer(), Buffer.from("stake_account_seed")],
-            STAKING_PROGRAM_ID
-        );
-
-        const userAfoxTokenAccountPubKey = await SolanaToken.getAssociatedTokenAddress(
-            AFOX_TOKEN_MINT_ADDRESS,
-            walletPublicKey
-        );
-
-        // Simulate a balance check failure/success
-        // In a real scenario, this is where you'd execute the signed transaction.
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const signature = "MOCK_SIGNATURE_STAKE";
-
-        // --- END MOCKING ---
-
-        showNotification(`You successfully staked ${amount} AFOX! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 7000);
-        if (uiElements.stakeAmountInput) uiElements.stakeAmountInput.value = '';
-        await updateStakingUI();
-        await updateSwapBalances(); // Staking affects AFOX balance
-    } catch (error) {
-        console.error('Error during staking:', error);
-        showNotification(`Failed to stake tokens: ${error.message}. See console for details.`, 'error');
-    } finally {
-        if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
-    }
-}
-
-async function handleClaimRewards() {
-    if (!walletPublicKey) {
-        showNotification('Please connect your wallet to claim rewards.', 'warning');
-        return;
-    }
-
-    showNotification('Attempting to claim rewards... (Simulation)', 'info');
-    try {
-        if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = true;
-
-        // !!! IMPORTANT: Implement actual claim rewards transaction here.
-        console.warn("Claim rewards functionality is a placeholder. Implement actual smart contract interaction.");
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const signature = "MOCK_SIGNATURE_CLAIM_REWARDS"; // Mock signature for demo
-
-        showNotification(`Rewards successfully claimed! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
-        await updateStakingUI();
-        await updateSwapBalances(); // Claiming rewards affects balance
-    } catch (error) {
-        console.error('Error claiming rewards:', error);
-        showNotification(`Failed to claim rewards: ${error.message}. Check console.`, 'error');
-    } finally {
-        if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = false;
-    }
-}
-
-async function handleUnstakeAfox() {
-    if (!walletPublicKey) {
-        showNotification('Please connect your wallet.', 'warning');
-        return;
-    }
-
-    showNotification('Attempting to unstake tokens... (Simulation)', 'info');
-    try {
-        if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = true;
-
-        // !!! IMPORTANT: Implement actual unstake transaction here.
-        console.warn("Unstake functionality is a placeholder. Implement actual smart contract interaction.");
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const signature = "MOCK_SIGNATURE_UNSTAKE"; // Mock signature for demo
-
-        showNotification(`Staked tokens successfully unstaked! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
-        await updateStakingUI();
-        await updateSwapBalances(); // Unstaking affects AFOX balance
-    } catch (error) {
-        console.error('Error unstaking tokens:', error);
-        showNotification(`Failed to unstake tokens: ${error.message}. Check console.`, 'error');
-    } finally {
-        if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = false;
     }
 }
 
@@ -1692,6 +1788,7 @@ async function handleBuyNft() {
     } catch (error) {
         console.error('Error purchasing NFT:', error);
         showNotification(`Failed to purchase NFT: ${error.message}. Check console.`, 'error');
+        await diagnoseCodeIssue('handleBuyNft', `NFT purchase failed. Error: ${error.message}.`);
     } finally {
         if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.disabled = false; // Re-enable button
     }
@@ -1783,6 +1880,7 @@ async function handleTransferNft() {
     } catch (error) {
         console.error('Error transferring NFT:', error);
         showNotification(`Failed to transfer NFT: ${error.message}. Check console.`, 'error');
+        await diagnoseCodeIssue('handleTransferNft', `NFT transfer failed. Error: ${error.message}.`);
     } finally {
         if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.disabled = false;
     }
@@ -1940,12 +2038,7 @@ function handleContactFormSubmit(e) {
 }
 
 
-// =================================================================
-// 5. ФУНКЦИИ ДЛЯ LIVE TRADING DATA И AI ПРОГНОЗА
-// =================================================================
-
-// Using the string literal of the mint address for the external API call
-const AFOX_MINT_ADDRESS_STRING = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
+// --- LIVE TRADING DATA AND AI FORECAST FUNCTIONS ---
 
 /**
  * PSEUDO-FUNCTION: Fetches an AI-driven price forecast for AFOX.
@@ -2090,9 +2183,7 @@ async function fetchAndDisplayTradingData() {
     }
 }
 
-// =================================================================
-// 6. ДОБАВЛЕНИЕ В DOMContentLoaded (INTEGRATION)
-// =================================================================
+// --- DOMContentLoaded EXECUTION ---
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize UI elements and cache references
@@ -2140,8 +2231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
         // This usually happens if Phantom is not installed or not authorized for auto-connect
         console.warn("Auto-connect failed or wallet not found/authorized:", e);
-        // Do not show an error if it's a simple case of the wallet not being auto-approved
-        // showNotification(`Auto-connect failed: ${e.message || e}. Please connect manually.`, 'error');
         handleWalletDisconnect();
     }
 
