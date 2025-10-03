@@ -46,17 +46,18 @@
     
     <style>
         /* Стиль для модуля AI Diagnostic, интегрированный с темой Aurum Fox */
+        /*
         .ai-insights-module {
             margin-top: 40px;
             padding: 30px;
-            background-color: #2c3e50; /* var(--color-secondary-bg) */
+            background-color: #2c3e50; 
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             color: #fff;
         }
 
         .ai-diagnostic-tool__heading {
-            color: #ffd700; /* var(--color-highlight) */
+            color: #ffd700; 
             font-family: 'Montserrat', sans-serif;
             font-size: 1.8em;
             margin-top: 0;
@@ -64,7 +65,7 @@
         }
 
         .ai-diagnostic-tool__description {
-            color: #aaa; /* var(--color-text-faded) */
+            color: #aaa; 
             font-size: 0.95em;
             margin-bottom: 20px;
         }
@@ -81,7 +82,7 @@
             padding: 10px 12px;
             border-radius: 8px;
             border: 1px solid #444; 
-            background-color: #1a1a2e; /* var(--color-primary-bg) */
+            background-color: #1a1a2e; 
             color: #fff;
             font-size: 1em;
             flex-grow: 1;
@@ -96,8 +97,8 @@
         }
         
         .ai-diagnostic-tool__button {
-            background-color: #e6b300 !important; /* var(--color-accent) */
-            color: #1a1a2e !important; /* var(--color-primary-bg) */
+            background-color: #e6b300 !important; 
+            color: #1a1a2e !important; 
             border: none; 
             padding: 10px 15px; 
             cursor: pointer;
@@ -116,13 +117,14 @@
             padding: 15px; 
             border: 1px solid #444; 
             border-radius: 8px; 
-            background-color: #1a1a2e; /* var(--color-primary-bg) */
+            background-color: #1a1a2e; 
             white-space: pre-wrap;
             font-family: monospace;
-            color: #e0e0e0; /* var(--color-text-output) */
+            color: #e0e0e0; 
             min-height: 80px;
             overflow-x: auto;
         }
+        */
 
         .visually-hidden {
             position: absolute;
@@ -136,6 +138,7 @@
         }
 
         @media (max-width: 600px) {
+            /*
             .ai-diagnostic-tool__controls {
                 flex-direction: column;
             }
@@ -146,6 +149,7 @@
                 width: 100%;
                 min-width: 100%;
             }
+            */
         }
     </style>
 </head>
@@ -783,53 +787,6 @@
             </div>
         </section>
         
-        <section id="ai-section" class="web3-section ai-insights-module" aria-labelledby="ai-insights-heading">
-            
-            <h2 id="ai-insights-heading" class="aurum-heading">AI-Driven Insights</h2>
-            
-            <div id="ai-code-assistant" 
-                 class="ai-diagnostic-tool"
-                 role="region" aria-labelledby="ai-diagnostics-heading">
-                
-                <h3 id="ai-diagnostics-heading" class="ai-diagnostic-tool__heading">🤖 AI Code Assistant Diagnostics</h3>
-                <p class="ai-diagnostic-tool__description">
-                    Manually select a function and enter the error details, or paste a transaction ID for the AI to diagnose on-chain failures.
-                </p>
-                
-                <div class="ai-diagnostic-tool__controls">
-                    
-                    <label for="functionSelector" class="visually-hidden">Select Broken Function</label>
-                    <select id="functionSelector" 
-                            class="ai-diagnostic-tool__selector"
-                            aria-label="Select Broken Function">
-                        <option value="">-- Select Broken Function --</option>
-                        <option value="connectWallet">connectWallet()</option>
-                        <option value="getQuote">getQuote() (Swap)</option>
-                        <option value="executeSwap">executeSwap() (Swap)</option>
-                        <option value="handleStakeAfox">handleStakeAfox() (Staking)</option>
-                        <option value="handleClaimRewards">handleClaimRewards() (Staking)</option>
-                        <option value="handleBuyNft">handleBuyNft() (NFT)</option>
-                        <option value="handleTransferNft">handleTransferNft() (NFT)</option>
-                    </select>
-                    
-                    <label for="issueDetailsInput" class="visually-hidden">Error Details or Transaction ID</label>
-                    <input type="text" id="issueDetailsInput" 
-                           class="ai-diagnostic-tool__input"
-                           placeholder="Enter error details (e.g., 'RPC timeout') or a Transaction ID" 
-                           aria-label="Error details or Transaction ID">
-                    
-                    <button id="runDiagnosticBtn" type="button" class="web3-btn ai-diagnostic-tool__button">
-                        Run AI Diagnostic
-                    </button>
-                </div>
-
-                <div id="aiCodeAssistantOutput" 
-                     class="ai-diagnostic-tool__output"
-                     role="status" aria-live="polite">
-                    <p>Output will appear here after running a diagnostic.</p>
-                </div>
-            </div>
-        </section>
         </main>
 
     <footer class="footer">
@@ -911,77 +868,6 @@
     <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 1000;"></div>
 
     <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
-
-    <script>
-        /**
-         * Placeholder JavaScript для имитации работы AI Diagnostic.
-         * В реальном приложении это отправляло бы запрос к бэкенду с ИИ.
-         */
-        document.addEventListener('DOMContentLoaded', () => {
-            const runDiagnosticBtn = document.getElementById('runDiagnosticBtn');
-            const functionSelector = document.getElementById('functionSelector');
-            const issueDetailsInput = document.getElementById('issueDetailsInput');
-            const outputDiv = document.getElementById('aiCodeAssistantOutput');
-
-            runDiagnosticBtn.addEventListener('click', () => {
-                const selectedFunction = functionSelector.value;
-                const issueDetails = issueDetailsInput.value.trim();
-                const errorColor = '#e74c3c'; // Красный
-
-                if (!selectedFunction && !issueDetails) {
-                    outputDiv.innerHTML = `<p style="color: ${errorColor}; font-weight: bold;">Ошибка: Пожалуйста, выберите функцию ИЛИ введите детали ошибки/ID транзакции.</p>`;
-                    return;
-                }
-
-                outputDiv.innerHTML = `<p style="color: #ffd700;">Анализирую проблему для ${selectedFunction || 'Transaction ID'} с деталями: "${issueDetails}"...</p>`;
-
-                // --- Имитация ответа от бэкенда ИИ ---
-                setTimeout(() => {
-                    let diagnosticMessage = '';
-                    const baseIssue = issueDetails.toLowerCase();
-
-                    if (baseIssue.includes("rpc timeout")) {
-                        diagnosticMessage = `**Диагноз: RPC Timeout**
-**Функция:** ${selectedFunction || 'Общая Транзакция'}
-**Причина:** Соединение с нодой сети Solana истекло. Часто это происходит из-за перегрузки сети.
-**Решение:** Попробуйте провести транзакцию еще раз. Если проблема сохраняется, смените RPC-провайдера в настройках вашего кошелька.`;
-                    } else if (baseIssue.includes("failed to deserialize") || baseIssue.includes("invalid account data")) {
-                        diagnosticMessage = `**Диагноз: Неверные Данные Счета**
-**Функция:** ${selectedFunction}
-**Причина:** Транзакция пыталась использовать данные счета, которые имеют неверную структуру (например, неверный токен-счет SPL).
-**Решение:** Очистите кэш кошелька, перезапустите его и повторите попытку. Для NFT убедитесь, что адрес минта верен.`;
-                    } else if (baseIssue.includes("insufficient funds") || baseIssue.includes("low sol balance")) {
-                        diagnosticMessage = `**Диагноз: Недостаточно Средств**
-**Функция:** ${selectedFunction || 'Общая Транзакция'}
-**Причина:** Не хватает **SOL** для оплаты комиссии (газа) ИЛИ не хватает нужного количества AFOX/токена для выполнения операции.
-**Решение:** Пополните кошелек **SOL** для газа и убедитесь, что у вас достаточно нужных токенов.`;
-                    } else if (baseIssue.includes("custom program error: 0x")) {
-                         diagnosticMessage = `**Диагноз: Ошибка Пользовательской Программы**
-**Функция:** ${selectedFunction}
-**Причина:** Смарт-контракт выполнился, но нарушено конкретное правило (Код Ошибки: ${issueDetails.split('0x')[1].split(' ')[0]}). Проверьте условия (например, период блокировки стейкинга).
-**Решение:** Проверьте требования функции (например, минимальная сумма или период блокировки) и попробуйте снова.`;
-                    } else if (baseIssue.length > 50) { 
-                        diagnosticMessage = `**Диагноз: Общий Обзор Транзакции**
-**Функция:** ${selectedFunction || 'ID Транзакции'}
-**Причина:** Подробная ошибка сложна. ИИ рекомендует проверить транзакцию на Solscan/Solana Explorer для более глубокого журнала.
-**Решение:** Вставьте полный ID транзакции в Solscan.io. Если это повторяющаяся ошибка, сообщите о ней команде Aurum Fox.`;
-                    } else {
-                        diagnosticMessage = `**Диагноз: Неизвестный или Общий Сбой**
-**Функция:** ${selectedFunction || 'Общая'}
-**Причина:** Произошла неуказанная ошибка. Это может быть временный сбой сети или проблема с подключением кошелька.
-**Решение:** Очистите кэш браузера, обновите страницу, переподключите кошелек и повторите операцию.`;
-                    }
-
-                    outputDiv.innerHTML = `
-                        <p style="color: #ffd700; font-weight: bold;">Результат Диагностики ИИ:</p>
-                        <div style="padding: 10px; border-left: 3px solid #ffd700; background-color: rgba(255, 215, 0, 0.05);">
-                            ${diagnosticMessage.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-                        </div>
-                    `;
-                }, 1500); // Имитация задержки обработки ИИ
-            });
-        });
-    </script>
 
     <script type="module">
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
