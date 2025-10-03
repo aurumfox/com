@@ -2117,7 +2117,7 @@ hr {
 }
 
 /* ==========================================================================
-   Media Queries for Responsiveness (Additional)
+   Media Queries for Responsiveness (Original)
 ========================================================================== */
 @media (max-width: 992px) {
     h1 { font-size: 2.5em; }
@@ -2132,23 +2132,23 @@ hr {
 @media (max-width: 768px) {
     /* Стили для мобильного меню уже определены выше */
     .header .container {
+        /* Убрал 'flex-direction: column' чтобы оставить логотип и гамбургер в одной строке */
         flex-wrap: wrap;
-        justify-content: center;
-        text-align: center;
-        flex-direction: column;
-        gap: 15px;
+        justify-content: space-between; /* Лого слева, гамбургер справа */
+        text-align: left;
+        gap: 0; /* Убираем лишний gap */
     }
 
     .logo {
-        margin-bottom: var(--spacing-md); /* Отступ между логотипом и гамбургером */
-        width: 100%;
-        justify-content: center;
+        margin-bottom: 0; /* Убираем лишний отступ */
+        width: auto;
+        justify-content: flex-start;
     }
-
+    
     .nav {
-        width: 100%;
-        display: flex;
-        justify-content: flex-end; /* Переместить гамбургер вправо */
+        width: auto; /* Навигация только для гамбургера */
+        display: block;
+        justify-content: flex-end;
     }
 
     /* Стили для мобильной навигации */
@@ -2156,52 +2156,62 @@ hr {
         flex-direction: column;
         position: fixed;
         top: 0;
-        right: -100%; /* Увеличена ширина мобильного меню */
-        width: 100%;
+        right: 0; /* Начинается справа */
+        width: 70%; /* Ширина мобильного меню */
+        max-width: 300px;
         height: 100%;
         background-color: var(--color-bg-dark);
-        padding: 60px var(--spacing-md) var(--spacing-md); /* Отступ сверху для кнопки закрытия */
-        box-shadow: -8px 0 20px rgba(0, 0, 0, 0.3);
-        transform: translateX(100%);
+        padding: 60px var(--spacing-md) var(--spacing-md);
+        box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
+        transform: translateX(100%); /* Скрыто справа */
         z-index: 1000;
         overflow-y: auto;
-        align-items: center; /* Центрировать элементы */
+        align-items: flex-start; /* Элементы по левому краю */
+        gap: 0; /* Убираем лишний gap */
+        display: none; /* Скрываем по умолчанию, управляется JS */
     }
-
+    
     .nav ul.main-nav.open, .nav ul.main-nav.active {
         transform: translateX(0);
-        right: 0;
+        display: flex; /* Показываем при открытии */
     }
 
     .nav ul.main-nav li {
-        width: 100%; /* Элементы меню на всю ширину */
-        text-align: center;
-        margin-bottom: var(--spacing-md);
+        width: 100%;
+        text-align: left;
+        margin-bottom: 0; /* Убираем старый отступ */
+        border-bottom: 1px solid #333; /* Добавляем разделитель */
     }
 
     .nav ul.main-nav li a {
-        font-size: 1.3em;
-        display: block; /* Ссылка занимает всю ширину элемента */
-        padding: var(--spacing-sm) 0;
-        color: var(--text-color-light); /* Убедиться, что цвет светлый */
+        font-size: 1.2em;
+        display: block;
+        padding: 15px 10px; /* Увеличиваем область клика */
+        color: var(--text-color-light);
+    }
+    
+    .nav ul.main-nav li a:hover {
+        background-color: #3a3a4c;
+        color: var(--primary-color);
     }
 
-    /* Убрать подчеркивание для мобильных ссылок при наведении, если применимо */
+
+    /* Убираем подчеркивание */
     .nav ul.main-nav li a::after {
         display: none;
     }
 
     .menu-toggle {
         display: block;
-        position: absolute; /* Позиционировать гамбургер относительно хедера */
-        right: var(--spacing-md);
-        top: 50%;
-        transform: translateY(-50%);
+        position: static; /* Возвращаем в поток документа */
+        transform: none;
     }
 
     .close-menu-button {
         display: block;
-        color: var(--text-color-dimmed);
+        position: absolute; /* Кнопка закрытия внутри меню */
+        top: 10px;
+        right: 15px;
     }
     .close-menu-button:hover {
         color: var(--primary-color);
@@ -2217,6 +2227,10 @@ hr {
         text-align: center;
         order: 2; /* Контент под изображением */
     }
+    .hero-content h1, .hero-content .tagline {
+        text-align: center; /* Центрируем текст внутри мобильного контента */
+    }
+
 
     .hero-image {
         order: 1; /* Изображение над контентом */
@@ -2225,6 +2239,9 @@ hr {
 
     .call-to-action, .hero-buttons {
         justify-content: center; /* Центрировать кнопки на мобильных устройствах */
+    }
+    .hero-buttons .btn, .hero-buttons .primary-btn {
+        width: 100%; /* Кнопки на всю ширину */
     }
 
     h1 { font-size: 2.8em; }
@@ -2238,6 +2255,7 @@ hr {
         padding: 60px 0;
     }
 
+    /* Одиночная колонка для всех Grid-элементов (Уже было, оставляем) */
     .tokenomics-grid,
     .nft-showcase,
     .nfc-grid,
@@ -2254,13 +2272,24 @@ hr {
     .gallery,
     .posts,
     .games {
-        grid-template-columns: 1fr; /* Одна колонка на мобильных устройствах */
+        grid-template-columns: 1fr; 
     }
+    
+    /* Дополнительная адаптация roadmap для читабельности */
+    .roadmap-grid {
+        border-left: none; /* Убираем вертикальную линию, если она была */
+    }
+    
+    .roadmap-item {
+        padding-left: var(--spacing-md);
+        text-align: left;
+    }
+    
     .buy-steps li {
         padding: 20px;
     }
 
-
+    /* Адаптация формы и контейнеров */
     .contact-form, .nft-form-container, .upload-form {
         padding: var(--spacing-md);
     }
@@ -2297,196 +2326,132 @@ hr {
         width: 95%;
         padding: var(--spacing-md);
     }
+    
+    /* Адаптация социальных ссылок */
+    .social-links {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .social-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
+/* ==========================================================================
+   МОБІЛЬНА АДАПТИВНІСТЬ ДЛЯ СІТОК ТА ТАБЛИЦЬ (MAX-WIDTH: 600PX) - НОВИЙ БЛОК
+   Це забезпечить кращу читабельність на маленьких телефонах.
+   ========================================================================== */
+@media (max-width: 600px) {
+    /* Основні сітки на всю ширину (стовпчик), вже були 1fr, але для надійності */
+    .tokenomics-grid,
+    .web3-features-grid,
+    .dao-proposals-grid,
+    .nft-showcase,
+    .nfc-grid,
+    .games-grid,
+    .staking-info-grid,
+    .ad-list,
+    .multimedia-features-grid,
+    .gallery,
+    .posts,
+    .games {
+        grid-template-columns: 1fr; /* Один стовпчик */
+        gap: 25px; 
+    }
+    
+    .nft-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Залишимо 2 колонки, якщо карточки маленькі */
+    }
+
+    /* Адаптація таблиці токеноміки (Horizontal Scrolling або Card View) */
+    .tokenomics-item table {
+        width: 100%;
+        display: block;
+        overflow-x: auto; /* Дозволяє горизонтальну прокрутку таблиці */
+    }
+    
+    /* Або, для кращої мобільної читабельності, перетворимо таблицю на картки: */
+    /*
+    .tokenomics-item table {
+        display: block;
+        width: 100%;
+    }
+    .tokenomics-item thead { 
+        display: none; // Скрыть заголовки 
+    }
+    .tokenomics-item tr { 
+        border: 1px solid #4a4a7e; 
+        margin-bottom: 10px; 
+        display: block; 
+    }
+    .tokenomics-item td { 
+        border: none;
+        border-bottom: 1px solid #4a4a7e; 
+        position: relative;
+        padding-left: 50%; 
+        text-align: right;
+        display: block;
+    }
+    .tokenomics-item td:before { 
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        width: 45%; 
+        padding-right: 10px; 
+        white-space: nowrap;
+        text-align: left;
+        font-weight: bold;
+        color: var(--primary-color);
+        content: attr(data-label); // Потрібен data-label в HTML
+    }
+    */
+    
+    .dao-vote-btn {
+        width: calc(50% - 7.5px); /* Две кнопки в ряд */
+        margin: 5px 0;
+    }
+    .dao-actions {
+        gap: 10px;
+    }
+}
+
+
+/* ==========================================================================
+   Media Queries for Responsiveness (The smallest screens - Original)
+========================================================================== */
 @media (max-width: 480px) {
     h1 { font-size: 2em; }
     h2 { font-size: 1.6em; }
     .hero-content h1 { font-size: 2.4em; }
     .hero-content .tagline { font-size: 1.1em; }
-    .btn {
+    
+    .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn {
         padding: var(--spacing-sm);
         font-size: 0.9em;
     }
     .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn {
-        width: 100%; /* Социальные кнопки на всю ширину */
+        width: 100%; /* Кнопки на всю ширину */
         justify-content: center;
         padding: 12px 20px;
         margin: 5px 0;
     }
+    
     .container {
-        padding: var(--spacing-xs);
+        padding: 0 var(--spacing-sm); /* 10px по бокам */
     }
     .section {
-        padding: var(--spacing-lg) var(--spacing-xs);
+        padding: var(--spacing-lg) var(--spacing-sm);
     }
     .nft-item img {
         height: 150px;
     }
-}
-
-
-
-/* ============================================== */
-/* AFOX SHOP STYLES */
-/* ============================================== */
-
-.shop-header-stats {
-    display: flex;
-    justify-content: space-around;
-    gap: 15px;
-    margin-bottom: 40px;
-    padding: 15px;
-    background-color: #2c2c2c;
-    border-radius: 10px;
-}
-
-.shop-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 30px;
-    margin-bottom: 40px;
-}
-
-.shop-product-card {
-    background-color: #1f1f1f;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.shop-product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(255, 215, 0, 0.2);
-}
-
-.product-image {
-    width: 100%;
-    max-width: 150px;
-    height: auto;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    object-fit: cover;
-}
-
-.product-price {
-    color: #ffd700;
-    font-size: 1.1em;
-    margin: 10px 0;
-}
-
-.product-description {
-    font-size: 0.9em;
-    color: #aaa;
-    min-height: 40px; /* Для единообразия карточек */
-    margin-bottom: 15px;
-}
-
-.cart-details-container {
-    background: var(--color-bg-card);
-    padding: var(--spacing-lg);
-    border-radius: var(--border-radius-base);
-    box-shadow: var(--box-shadow-medium);
-    margin-top: var(--spacing-lg);
-    text-align: left;
-    color: var(--text-color-light);
-}
-
-.cart-details-container h3 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-md);
-    text-align: center;
-}
-
-.cart-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-sm) 0;
-    border-bottom: 1px solid #4a4a5c;
-}
-
-.cart-item:last-child {
-    border-bottom: none;
-}
-
-.cart-item-name {
-    font-weight: 600;
-    color: var(--text-color-white);
-}
-
-.cart-total {
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-sm);
-    border-top: 2px solid var(--primary-color);
-    font-size: 1.2em;
-    font-weight: 700;
-    display: flex;
-    justify-content: space-between;
-    color: var(--primary-color);
-}
-
-.checkout-button-container {
-    text-align: center;
-    margin-top: var(--spacing-lg);
-}
-
-/* Стили для формы оформления заказа */
-.checkout-form-container {
-    max-width: 600px;
-    margin: var(--spacing-lg) auto;
-    background-color: var(--color-bg-input);
-    padding: var(--spacing-lg);
-    border-radius: 10px;
-    box-shadow: var(--shadow-md);
-    text-align: left;
-    color: var(--text-color-light);
-}
-
-.checkout-form-container label {
-    display: block;
-    margin-bottom: var(--spacing-xs);
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.checkout-form-container input[type="text"],
-.checkout-form-container input[type="email"],
-.checkout-form-container textarea {
-    width: 100%;
-    padding: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    border: 1px solid #4a4a7e;
-    border-radius: 5px;
-    background-color: #2a2a3a;
-    color: var(--text-color-light);
-    font-family: inherit;
-    font-size: 1em;
-}
-
-.checkout-form-container button[type="submit"] {
-    width: 100%;
-    padding: var(--spacing-md);
-    font-size: 1.1em;
-}
-
-/* Media Query для корзины и магазина */
-@media (max-width: 600px) {
-    .shop-header-stats {
-        flex-direction: column;
-        align-items: center;
+    
+    .dao-vote-btn {
+        width: 100%; /* Кнопки голосования на всю ширину */
     }
-    .shop-grid {
-        grid-template-columns: 1fr;
-    }
-    .cart-item {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .cart-item-name, .cart-item-price {
-        margin-bottom: 5px;
+    
+    .tokenomics-item .highlight {
+        font-size: 1.4em; /* Зменшення розміру шрифту для ключових значень */
     }
 }
