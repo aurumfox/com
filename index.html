@@ -25,13 +25,13 @@
     
     <script src="https://js.sentry-cdn.com/7.x.x/bundle.min.js" crossorigin="anonymous"></script>
     <script>
-        // !!! ЗАМЕНИТЕ ЭТО НА ВАШ РЕАЛЬНЫЙ КЛЮЧ DSN !!!
+        // !!! REPLACE THIS WITH YOUR REAL DSN KEY !!!
         Sentry.init({
-            dsn: "ВАШ_DSN_ЗДЕСЬ", 
+            dsn: "YOUR_DSN_HERE", 
             integrations: [
                 new Sentry.BrowserTracing(),
             ],
-            // Устанавливаем 100% отслеживания ошибок для точных отчетов ИИ-Агенту
+            // Set 100% error tracing for accurate reports to the AI Agent
             tracesSampleRate: 1.0, 
             release: "aurum-fox-portal@1.0.0", 
         });
@@ -45,7 +45,7 @@
     <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
     
     <style>
-        /* Стиль для модуля AI Diagnostic, интегрированный с темой Aurum Fox */
+        /* Style for the AI Diagnostic module, integrated with the Aurum Fox theme */
         .ai-insights-module {
             margin-top: 40px;
             padding: 30px;
@@ -914,8 +914,8 @@
 
     <script>
         /**
-         * Placeholder JavaScript для имитации работы AI Diagnostic.
-         * В реальном приложении это отправляло бы запрос к бэкенду с ИИ.
+         * Placeholder JavaScript to simulate the AI Diagnostic tool.
+         * In a real application, this would send a request to an AI backend.
          */
         document.addEventListener('DOMContentLoaded', () => {
             const runDiagnosticBtn = document.getElementById('runDiagnosticBtn');
@@ -926,59 +926,59 @@
             runDiagnosticBtn.addEventListener('click', () => {
                 const selectedFunction = functionSelector.value;
                 const issueDetails = issueDetailsInput.value.trim();
-                const errorColor = '#e74c3c'; // Красный
+                const errorColor = '#e74c3c'; // Red
 
                 if (!selectedFunction && !issueDetails) {
-                    outputDiv.innerHTML = `<p style="color: ${errorColor}; font-weight: bold;">Ошибка: Пожалуйста, выберите функцию ИЛИ введите детали ошибки/ID транзакции.</p>`;
+                    outputDiv.innerHTML = `<p style="color: ${errorColor}; font-weight: bold;">Error: Please select a function OR enter error details/Transaction ID.</p>`;
                     return;
                 }
 
-                outputDiv.innerHTML = `<p style="color: #ffd700;">Анализирую проблему для ${selectedFunction || 'Transaction ID'} с деталями: "${issueDetails}"...</p>`;
+                outputDiv.innerHTML = `<p style="color: #ffd700;">Analyzing problem for ${selectedFunction || 'Transaction ID'} with details: "${issueDetails}"...</p>`;
 
-                // --- Имитация ответа от бэкенда ИИ ---
+                // --- Simulation of AI Backend Response ---
                 setTimeout(() => {
                     let diagnosticMessage = '';
                     const baseIssue = issueDetails.toLowerCase();
 
                     if (baseIssue.includes("rpc timeout")) {
-                        diagnosticMessage = `**Диагноз: RPC Timeout**
-**Функция:** ${selectedFunction || 'Общая Транзакция'}
-**Причина:** Соединение с нодой сети Solana истекло. Часто это происходит из-за перегрузки сети.
-**Решение:** Попробуйте провести транзакцию еще раз. Если проблема сохраняется, смените RPC-провайдера в настройках вашего кошелька.`;
+                        diagnosticMessage = `**Diagnosis: RPC Timeout**
+**Function:** ${selectedFunction || 'General Transaction'}
+**Reason:** The connection to the Solana network node timed out. This often occurs due to network congestion.
+**Solution:** Try the transaction again. If the issue persists, switch your RPC provider in your wallet settings.`;
                     } else if (baseIssue.includes("failed to deserialize") || baseIssue.includes("invalid account data")) {
-                        diagnosticMessage = `**Диагноз: Неверные Данные Счета**
-**Функция:** ${selectedFunction}
-**Причина:** Транзакция пыталась использовать данные счета, которые имеют неверную структуру (например, неверный токен-счет SPL).
-**Решение:** Очистите кэш кошелька, перезапустите его и повторите попытку. Для NFT убедитесь, что адрес минта верен.`;
+                        diagnosticMessage = `**Diagnosis: Invalid Account Data**
+**Function:** ${selectedFunction}
+**Reason:** The transaction attempted to use account data that has an incorrect structure (e.g., an invalid SPL token account).
+**Solution:** Clear your wallet's cache, restart it, and try again. For NFTs, ensure the mint address is correct.`;
                     } else if (baseIssue.includes("insufficient funds") || baseIssue.includes("low sol balance")) {
-                        diagnosticMessage = `**Диагноз: Недостаточно Средств**
-**Функция:** ${selectedFunction || 'Общая Транзакция'}
-**Причина:** Не хватает **SOL** для оплаты комиссии (газа) ИЛИ не хватает нужного количества AFOX/токена для выполнения операции.
-**Решение:** Пополните кошелек **SOL** для газа и убедитесь, что у вас достаточно нужных токенов.`;
+                        diagnosticMessage = `**Diagnosis: Insufficient Funds**
+**Function:** ${selectedFunction || 'General Transaction'}
+**Reason:** Not enough **SOL** to cover the transaction fee (gas) OR not enough of the required AFOX/token to perform the operation.
+**Solution:** Fund your wallet with **SOL** for gas and ensure you have enough of the necessary tokens.`;
                     } else if (baseIssue.includes("custom program error: 0x")) {
-                         diagnosticMessage = `**Диагноз: Ошибка Пользовательской Программы**
-**Функция:** ${selectedFunction}
-**Причина:** Смарт-контракт выполнился, но нарушено конкретное правило (Код Ошибки: ${issueDetails.split('0x')[1].split(' ')[0]}). Проверьте условия (например, период блокировки стейкинга).
-**Решение:** Проверьте требования функции (например, минимальная сумма или период блокировки) и попробуйте снова.`;
+                         diagnosticMessage = `**Diagnosis: Custom Program Error**
+**Function:** ${selectedFunction}
+**Reason:** The smart contract executed but violated a specific rule (Error Code: ${issueDetails.split('0x')[1].split(' ')[0]}). Check conditions (e.g., staking lockup period).
+**Solution:** Check the function requirements (e.g., minimum amount or lockup period) and try again.`;
                     } else if (baseIssue.length > 50) { 
-                        diagnosticMessage = `**Диагноз: Общий Обзор Транзакции**
-**Функция:** ${selectedFunction || 'ID Транзакции'}
-**Причина:** Подробная ошибка сложна. ИИ рекомендует проверить транзакцию на Solscan/Solana Explorer для более глубокого журнала.
-**Решение:** Вставьте полный ID транзакции в Solscan.io. Если это повторяющаяся ошибка, сообщите о ней команде Aurum Fox.`;
+                        diagnosticMessage = `**Diagnosis: General Transaction Review**
+**Function:** ${selectedFunction || 'Transaction ID'}
+**Reason:** The detailed error is complex. The AI recommends checking the transaction on Solscan/Solana Explorer for a deeper log.
+**Solution:** Paste the full transaction ID into Solscan.io. If this is a recurring error, report it to the Aurum Fox team.`;
                     } else {
-                        diagnosticMessage = `**Диагноз: Неизвестный или Общий Сбой**
-**Функция:** ${selectedFunction || 'Общая'}
-**Причина:** Произошла неуказанная ошибка. Это может быть временный сбой сети или проблема с подключением кошелька.
-**Решение:** Очистите кэш браузера, обновите страницу, переподключите кошелек и повторите операцию.`;
+                        diagnosticMessage = `**Diagnosis: Unknown or General Failure**
+**Function:** ${selectedFunction || 'General'}
+**Reason:** An unspecified error occurred. This could be a temporary network glitch or a wallet connection issue.
+**Solution:** Clear your browser cache, refresh the page, reconnect your wallet, and repeat the operation.`;
                     }
 
                     outputDiv.innerHTML = `
-                        <p style="color: #ffd700; font-weight: bold;">Результат Диагностики ИИ:</p>
+                        <p style="color: #ffd700; font-weight: bold;">AI Diagnostic Result:</p>
                         <div style="padding: 10px; border-left: 3px solid #ffd700; background-color: rgba(255, 215, 0, 0.05);">
                             ${diagnosticMessage.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
                         </div>
                     `;
-                }, 1500); // Имитация задержки обработки ИИ
+                }, 1500); // Simulate AI processing delay
             });
         });
     </script>
@@ -987,22 +987,22 @@
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-        // Зберігаємо оригінальний елемент Birdeye та його батьківський елемент
+        // Storing the original Birdeye element and its parent element
         let birdeyeContainer = null;
         let birdeyeParent = null;
 
         /**
-         * Ініціалізує Jupiter Terminal з функцією фізичного видалення Birdeye.
+         * Initializes Jupiter Terminal with the function to physically remove Birdeye.
          */
         function initializeJupiterTerminal() {
             birdeyeContainer = document.getElementById('afoxChartContainer');
             if (birdeyeContainer) {
-                // Батьківський елемент Birdeye - це div.live-trading-info
+                // The parent element of Birdeye is div.live-trading-info
                 birdeyeParent = birdeyeContainer.parentNode; 
             }
 
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-                // Функція для повного видалення Birdeye
+                // Function for complete removal of Birdeye
                 const removeBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
                         birdeyeParent.removeChild(birdeyeContainer);
@@ -1010,10 +1010,10 @@
                     }
                 };
 
-                // Функція для повернення Birdeye
+                // Function to restore Birdeye
                 const restoreBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
-                        // Додаємо елемент обратно в родителя
+                        // Add the element back to the parent
                         birdeyeParent.appendChild(birdeyeContainer); 
                         console.log("Birdeye chart **restored** after wallet connection.");
                     }
@@ -1034,26 +1034,26 @@
                     swapSwitchboard: true, 
                     strictTokenList: false, 
 
-                    // ✅ НОВЕ ВИПРАВЛЕННЯ: Повне видалення елемента при ініціації підключения
+                    // ✅ NEW FIX: Complete removal of the element upon connection initiation
                     onConnectWallet: (callback) => {
-                        removeBirdeye(); // Видаляємо Birdeye
-                        // Даємо короткий час для оновлення DOM перед викликом гаманця
+                        removeBirdeye(); // Remove Birdeye
+                        // Give a short time for DOM update before calling the wallet
                         setTimeout(callback, 50); 
                     },
 
-                    // ✅ Відновлення після успіху
+                    // ✅ Restore upon success
                     onSuccess: () => {
                          restoreBirdeye();
                     },
                     
-                    // ✅ Відновлення після помилки або закриття 
+                    // ✅ Restore upon error or closing
                     onError: () => {
                          restoreBirdeye();
                     }
                 });
                 console.log("Jupiter Terminal initialized with DOM manipulation fixes.");
             } else {
-                // Если Jupiter еще не завантажився, пробуємо знову
+                // If Jupiter hasn't loaded yet, try again
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
