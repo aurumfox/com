@@ -758,41 +758,53 @@
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
         /**
-         * Ініціалізує Jupiter Terminal без функціоналу видалення/відновлення Birdeye.
+         * Инициализирует Jupiter Terminal
          */
         function initializeJupiterTerminal() {
-            if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-                window.Jupiter.init({
-                    displayMode: 'widget',
-                    widgetStyle: {
-                        'container.id': 'jupiter-swap-widget', 
-                        'container.zIndex': 9999, 
-                    },
-                    theme: 'dark', 
-                    formProps: {
-                        fixedInputMint: false, // <-- ИСПРАВЛЕНО
-                        initialInputMint: AFOX_MINT,
-                        initialOutputMint: SOL_MINT,
-                    },
-                    swapSwitchboard: true, 
-                    strictTokenList: false, 
+            const container = document.getElementById('jupiter-swap-widget');
+            if (window.Jupiter && container) {
+                try {
+                    // Используем .init() с правильной конфигурацией
+                    window.Jupiter.init({
+                        displayMode: 'widget',
+                        endpoint: 'mainnet-beta', // Явно указываем сеть
+                        widgetStyle: {
+                            'container.id': 'jupiter-swap-widget', 
+                            'container.zIndex': 9999, 
+                        },
+                        theme: 'dark', 
+                        formProps: {
+                            // ИСПРАВЛЕНИЕ: Это позволяет виджету загрузиться, даже если AFOX временно недоступен
+                            fixedInputMint: false, 
+                            initialInputMint: AFOX_MINT,
+                            initialOutputMint: SOL_MINT,
+                        },
+                        swapSwitchboard: true, 
+                        strictTokenList: false, 
 
-                    // Залишаємо функції для гаманця, але не додаємо логіку Birdeye
-                    onConnectWallet: (callback) => {
-                        setTimeout(callback, 50); 
-                    },
+                        // Заглушки для функций кошелька
+                        onConnectWallet: (callback) => {
+                            // Тут должна быть ваша логика подключения кошелька
+                            console.log("Wallet connection requested by Jupiter");
+                            setTimeout(callback, 50); // Вызываем callback, имитируя подключение
+                        },
 
-                    onSuccess: () => {
-                         // Пуста логіка
-                    },
-                    
-                    onError: () => {
-                         // Пуста логіка
-                    }
-                });
-                console.log("Jupiter Terminal initialized.");
+                        onSuccess: ({ txid }) => {
+                            console.log("Swap successful:", txid);
+                            // Логика после успешного обмена
+                        },
+                        
+                        onError: (error) => {
+                            console.error("Jupiter Swap Error:", error);
+                            // Логика обработки ошибок
+                        }
+                    });
+                    console.log("Jupiter Terminal initialized successfully.");
+                } catch (e) {
+                    console.error("Failed to initialize Jupiter Terminal:", e);
+                }
             } else {
-                // Якщо Jupiter ще не завантажився, пробуємо знову
+                // Если Jupiter еще не завантажився, пробуем снова
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
