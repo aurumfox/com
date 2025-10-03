@@ -9,12 +9,16 @@
     <meta name="author" content="Aurum Fox Community">
 
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://aurumfox.github.io/com/"> <meta property="og:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
+    <meta property="og:url" content="https://aurumfox.github.io/com/"> 
+    <meta property="og:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
     <meta property="og:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, Advertising, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
-    <meta property="og:image" content="./assets/foxcoin-hero.png.jpg"> <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://aurumfox.github.io/com/"> <meta property="twitter:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
+    <meta property="og:image" content="./assets/foxcoin-hero.png.jpg"> 
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://aurumfox.github.io/com/"> 
+    <meta property="twitter:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
     <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, Advertising, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
-    <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> <link rel="stylesheet" href="style.css">
+    <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
+    <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
     
@@ -446,7 +450,7 @@
                     <div class="placeholder-item web3-placeholder game">Game Title 3</div>
                     <div class="placeholder-item web3-placeholder game">Game Title 4</div>
                 </div>
-                <button id="loadMoreGamesBtn" class="web3-btn" aria-label="Load more games">Load More Games</button>
+                <button id="loadMoreGamesBtn" class="web3-btn" aria-label="Load More Games">Load More Games</button>
             </div>
         </section>
 
@@ -644,18 +648,17 @@
                 </p>
 
                 <div class="dexscreener-trading-info">
-    <h3 class="web3-subheading">AFOX/SOL Live Price Chart (Dexscreener)</h3>
-    <div id="dexscreenerChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden; position: relative;">
-        <iframe 
-            src="https://DEXSCREENER.com/solana/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?embed=1&theme=dark&trades=0" 
-            style="width: 100%; height: 100%; border: none;"
-            title="Aurum Fox (AFOX/SOL) Dexscreener Chart"
-            frameborder="0"
-            allow="clipboard-write">
-        </iframe>
-    </div>
-</div>
-
+                    <h3 class="web3-subheading">AFOX/SOL Live Price Chart (Dexscreener)</h3>
+                    <div id="dexscreenerChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden; position: relative;">
+                        <iframe 
+                            src="https://DEXSCREENER.com/solana/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz?embed=1&theme=dark&trades=0" 
+                            style="width: 100%; height: 100%; border: none;"
+                            title="Aurum Fox (AFOX/SOL) Dexscreener Chart"
+                            frameborder="0"
+                            allow="clipboard-write">
+                        </iframe>
+                    </div>
+                </div>
 
                 
                 <hr style="margin: 40px 0; border-color: #ffd70033;">
@@ -767,7 +770,7 @@
                     },
                     theme: 'dark', 
                     formProps: {
-                        fixedInputMint: true, 
+                        fixedInputMint: false, // <-- ИСПРАВЛЕНО
                         initialInputMint: AFOX_MINT,
                         initialOutputMint: SOL_MINT,
                     },
