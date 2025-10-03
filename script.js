@@ -1,5 +1,99 @@
 // ==============================================
-// 1. MAIN APPLICATION LOGIC (afox-portal-logic.js)
+// 1. JUPITER TERMINAL & RPC FIX
+// ----------------------------------------------
+const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag'; // Jupiter's recommended RPC (often Helius)
+const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
+const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
+// State variables for chart overlay fix (для iFrame)
+let birdeyeContainer = null;
+let birdeyeContainerOriginalDisplay = 'block';
+
+/**
+ * Агрессивно скрывает iFrame графика для предотвращения блокировки модального окна кошелька.
+ */
+function hideBirdeyeChart() {
+    if (!birdeyeContainer) {
+        birdeyeContainer = document.getElementById('afoxChartContainer');
+    }
+    if (birdeyeContainer && birdeyeContainer.style.display !== 'none') {
+        birdeyeContainerOriginalDisplay = birdeyeContainer.style.display || 'block';
+        birdeyeContainer.style.display = 'none';
+        console.log("Trading chart **HIDDEN** to allow wallet modal interaction.");
+    }
+}
+
+/**
+ * Восстанавливает видимость iFrame графика.
+ */
+function restoreBirdeyeChart() {
+    if (birdeyeContainer && birdeyeContainer.style.display === 'none') {
+        birdeyeContainer.style.display = birdeyeContainerOriginalDisplay;
+        console.log("Trading chart **RESTORED**.");
+    }
+}
+
+
+function initializeJupiterTerminal(useBackupRpc = false) {
+    const rpcToUse = useBackupRpc ? BACKUP_RPC_ENDPOINT : JUPITER_RPC_ENDPOINT;
+    console.log(`Initializing Jupiter Terminal with RPC: ${rpcToUse}`);
+
+    if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
+        try {
+            window.Jupiter.init({
+                displayMode: 'widget',
+                widgetStyle: {
+                    'container.id': 'jupiter-swap-widget',
+                    'container.zIndex': 9999,
+                },
+                theme: 'dark',
+                formProps: {
+                    // ✅ ИСПРАВЛЕНИЕ: Убираем фиксирование токена.
+                    // Оставляем только начальные значения.
+                    // fixedOutputMint: true, // Эта строка удалена/неактивна
+                    initialOutputMint: AFOX_MINT,
+                    initialInputMint: SOL_MINT,
+                },
+                strictTokenList: false,
+
+                // Используем выбранный RPC endpoint
+                endpoint: rpcToUse,
+
+                // iFrame OVERLAY FIX: Скрытие графика при открытии модалки кошелька
+                onConnectWallet: (callback) => {
+                    hideBirdeyeChart(); 
+                    setTimeout(callback, 50);
+                },
+
+                // iFrame OVERLAY FIX: Восстановление графика после завершения/ошибки
+                onSuccess: () => {
+                     restoreBirdeyeChart();
+                },
+                onError: (error) => {
+                     console.error("Jupiter Terminal error:", error);
+                     restoreBirdeyeChart();
+                },
+                onSwapError: () => {
+                     restoreBirdeyeChart();
+                },
+                onDisconnected: () => {
+                     restoreBirdeyeChart();
+                }
+            });
+            console.log(`Jupiter Terminal successfully initialized with RPC: ${rpcToUse}`);
+        } catch(e) {
+            console.error("Failed to call Jupiter.init:", e);
+        }
+    } else {
+        // Повторная попытка инициализации
+        setTimeout(() => initializeJupiterTerminal(useBackupRpc), 500);
+    }
+}
+
+
+// ==============================================
+// 2. MAIN APPLICATION LOGIC (afox-portal-logic.js)
 // ==============================================
 
 // ==============================================
@@ -278,96 +372,10 @@ function initializeShop() {
 // Global function to be called by the main wallet connection flow
 window.updateShopAfoxBalance = updateShopAfoxBalance;
 
-
-// ------------------------------------------------------------------
-// **RPC Fix Configuration**
-// ------------------------------------------------------------------
-const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag'; // Jupiter's recommended RPC (often Helius)
-const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
-const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
-const SOL_MINT = 'So11111111111111111111111111111111111111112';
-
-// State variables for chart overlay fix
-let birdeyeContainer = null;
-let birdeyeContainerOriginalDisplay = 'block';
-
-/**
- * Aggressively hides the trading chart iFrame to prevent it from blocking the
- * wallet connection modal (which often has a lower z-index than iFrames).
- */
-function hideBirdeyeChart() {
-    if (!birdeyeContainer) {
-        birdeyeContainer = document.getElementById('afoxChartContainer');
-    }
-    if (birdeyeContainer && birdeyeContainer.style.display !== 'none') {
-        birdeyeContainerOriginalDisplay = birdeyeContainer.style.display || 'block';
-        birdeyeContainer.style.display = 'none';
-        console.log("Trading chart **HIDDEN** to allow wallet modal interaction.");
-    }
-}
-
-/**
- * Restores the trading chart iFrame's visibility.
- */
-function restoreBirdeyeChart() {
-    if (birdeyeContainer && birdeyeContainer.style.display === 'none') {
-        birdeyeContainer.style.display = birdeyeContainerOriginalDisplay;
-        console.log("Trading chart **RESTORED**.");
-    }
-}
-
-
-function initializeJupiterTerminal(useBackupRpc = false) {
-    const rpcToUse = useBackupRpc ? BACKUP_RPC_ENDPOINT : JUPITER_RPC_ENDPOINT;
-    console.log(`Initializing Jupiter Terminal with RPC: ${rpcToUse}`);
-
-    if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-
-        window.Jupiter.init({
-            displayMode: 'widget',
-            widgetStyle: {
-                'container.id': 'jupiter-swap-widget',
-                'container.zIndex': 9999,
-            },
-            theme: 'dark',
-            formProps: {
-                fixedOutputMint: true,
-                initialOutputMint: AFOX_MINT,
-                initialInputMint: SOL_MINT,
-            },
-            strictTokenList: false,
-
-            // ✅ RPC FIX: Use the selected stable RPC endpoint
-            endpoint: rpcToUse,
-
-            // --------------------------------------------------------------
-            // ✅ iFrame OVERLAY FIX: Hide chart before connecting wallet
-            // --------------------------------------------------------------
-            onConnectWallet: (callback) => {
-                hideBirdeyeChart(); // Hide iFrame before the modal opens
-                setTimeout(callback, 50);
-            },
-
-            // ✅ iFrame OVERLAY FIX: Restore chart after closing wallet modal
-            onSuccess: () => {
-                 restoreBirdeyeChart();
-            },
-            onError: (error) => {
-                 console.error("Jupiter Terminal error:", error);
-                 restoreBirdeyeChart();
-            },
-            onSwapError: () => {
-                 restoreBirdeyeChart();
-            },
-            onDisconnected: () => {
-                 restoreBirdeyeChart();
-            }
-        });
-        console.log(`Jupiter Terminal successfully initialized with RPC: ${rpcToUse}`);
-    } else {
-        setTimeout(() => initializeJupiterTerminal(useBackupRpc), 500);
-    }
-}
+// ==========================================================
+// ** DUPLICATE JUPITER TERMINAL BLOCK REMOVED HERE **
+// (The previous block at the beginning of the file is the correct one)
+// ==========================================================
 
 
 // --- CORE IMPORTS AND CONSTANTS ---
@@ -2015,7 +2023,7 @@ function handleContactFormSubmit(e) {
 
 
 // =================================================================
-// 5. LIVE TRADING DATA FUNCTIONS
+// 3. LIVE TRADING DATA FUNCTIONS
 // =================================================================
 
 const AFOX_MINT_ADDRESS_STRING = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
@@ -2095,7 +2103,7 @@ async function fetchAndDisplayTradingData() {
 }
 
 // =================================================================
-// 6. DOMContentLoaded (INTEGRATION)
+// 4. DOMContentLoaded (INTEGRATION)
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -2150,7 +2158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================
-// 2. MOCK LIBRARY SIMULATION (mock-web3-libs.js)
+// 5. MOCK LIBRARY SIMULATION (mock-web3-libs.js)
 // NOTE: This must be included in the HTML *before* the main logic.
 // ==============================================
 
