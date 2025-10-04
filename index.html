@@ -48,83 +48,7 @@
     
     <style>
         /* Style for the AI Diagnostic module, integrated with the Aurum Fox theme */
-        
-        /* ВОССТАНОВЛЕННЫЕ И ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ AI-МОДУЛЯ */
-        .ai-diagnostic-module {
-            /* Ключевые стили для позиционирования внизу по центру */
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10000;
-            
-            padding: 10px 15px;
-            background-color: #2c3e50; /* Темный фон, подходит к Web3 секциям */
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            color: #ecf0f1;
-            font-family: 'Poppins', sans-serif;
-            text-align: center;
-        }
-
-        .ai-insights-module {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .ai-diagnostic-tool__controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .ai-diagnostic-tool__selector,
-        .ai-diagnostic-tool__input {
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #34495e;
-            background-color: #34495e;
-            color: #ecf0f1;
-            font-size: 0.9em;
-        }
-        
-        /* Стили для кнопки, которая создает "красный кружок" */
-        .ai-diagnostic-tool__button {
-            cursor: pointer;
-            background-color: #c08000; /* Цвет Aurum/Золото */
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: none;
-            transition: background-color 0.3s;
-            min-width: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
-
-        .icon-red-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background-color: #e74c3c; /* Красный кружок (как на скриншоте) */
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-        
-        /* ИСПРАВЛЕНИЕ: Скрываем область вывода, если она не должна быть видна по умолчанию */
-        .ai-diagnostic-tool__output {
-            /* Модуль был скрыт через .visually-hidden в прошлой версии, 
-            но если вы хотите, чтобы он был просто скрыт, без стилей */
-            display: none; 
-            padding-top: 5px;
-            color: #f1c40f; 
-        }
-        
+        /* УДАЛЕНЫ СТИЛИ ДЛЯ .ai-insights-module И ЕГО ДОЧЕРНИХ ЭЛЕМЕНТОВ */
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -799,23 +723,6 @@
         </div>
     </footer>
 
-    <div class="ai-diagnostic-module">
-        <div class="ai-insights-module">
-            <h3 class="visually-hidden">AI Diagnostic Tool</h3>
-            <div class="ai-diagnostic-tool__controls">
-                <select class="ai-diagnostic-tool__selector" aria-label="Select diagnostic type">
-                    <option value="test">AI Test</option>
-                    <option value="debug">Debug Mode</option>
-                    <option value="status">Status Check</option>
-                </select>
-                <input type="text" class="ai-diagnostic-tool__input" placeholder="Enter Parameter">
-                <button id="runDiagnosticBtn" class="ai-diagnostic-tool__button" aria-label="Run AI Diagnostic">
-                    <span class="icon-red-dot"></span> Run Diagnostic
-                </button>
-            </div>
-            <div id="diagnosticOutput" class="ai-diagnostic-tool__output">Ready.</div>
-        </div>
-    </div>
     <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">
         <div class="modal-content">
             <span class="close-button" aria-label="Close NFT details modal">&times;</span>
