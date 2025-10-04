@@ -5,15 +5,13 @@ const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
 // SOL Mint Address (Native Token)
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-// --- AI FORECAST CONFIGURATION ---
-// In a real application, replace this with your actual ML server endpoint.
-const AI_FORECAST_API_URL = 'https://your-ai-ml-server.com/api/afox-forecast';
-const DIAGNOSTICS_API_URL = 'https://your-ai-ml-server.com/api/diagnose';
+// --- AI FORECAST CONFIGURATION (MOCK) ---
+// Эти URL теперь используются только для консольного вывода (MOCK).
+const AI_FORECAST_API_URL = 'MOCK_URL';
+const DIAGNOSTICS_API_URL = 'MOCK_URL';
 
 // ------------------------------------------------------------------
-// **RPC Fix Configuration**
-// Using a better-performing RPC for Jupiter (Helius/custom) or a public one.
-// We prioritize a robust one for the terminal.
+// **RPC Fix Configuration** (Оставлено, так как это запросы к Solana, а не к вашему бэкенду)
 // ------------------------------------------------------------------
 const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag'; // Jupiter's recommended RPC (often Helius)
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
@@ -25,8 +23,8 @@ let birdeyeContainerOriginalDisplay = 'block'; // To store the original display 
 // --- CONSTANTS AND SETTINGS ---
 const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
 const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
-const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
-const API_BASE_URL = 'http://localhost:3000'; // For local development
+const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // Оставлено, так как это внешний API
+const API_BASE_URL = 'MOCK_BASE_URL'; // Заглушка
 const AFOX_MINT_ADDRESS_STRING = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
 
 // Mint addresses for tokens supported in the swap functionality
@@ -38,7 +36,7 @@ const TOKEN_MINT_ADDRESSES = {
 const AFOX_DECIMALS = 6;
 const SOL_DECIMALS = 9;
 
-const NETWORK = SolanaWeb3.WalletAdapterNetwork.Mainnet; // Updated from Devnet for a mainnet application
+const NETWORK = SolanaWeb3.WalletAdapterNetwork.Mainnet;
 
 // --- GLOBAL WALLET & CONNECTION STATE ---
 let walletPublicKey = null;
@@ -51,7 +49,7 @@ let areProviderListenersAttached = false;
 let currentJupiterQuote = null;
 let currentOpenNft = null;
 
-// --- UI ELEMENT CACHING ---
+// --- UI ELEMENT CACHING (Не изменено) ---
 const uiElements = {
     // General Wallet & Display
     connectWalletButtons: [],
@@ -86,8 +84,48 @@ const uiElements = {
     contactForm: null, contactNameInput: null, contactEmailInput: null, contactSubjectInput: null, contactMessageInput: null,
     notificationContainer: null,
     // AI Forecast Section
-    aiPriceForecast: null, // ✅ NEW: AI Price Forecast Element
+    aiPriceForecast: null,
 };
+
+
+// --- ЛОКАЛЬНАЯ СИМУЛЯЦИЯ БЭКЕНДА (MOCK DB) ---
+
+const MOCK_DB = {
+    // Начальные NFT. 'NO_WALLET_CONNECTED' - заглушка, которая будет заменена на адрес пользователя при подключении.
+    nfts: JSON.parse(localStorage.getItem('mockNfts')) || [
+        { mint: 'NFT1_MOCK_MINT', name: 'Alpha Fox #001 (Listed)', description: 'Rare Alpha Fox NFT. Buy me!', owner: 'NO_WALLET_CONNECTED', price: 5.5, isListed: true, image: 'https://via.placeholder.com/180x180/007bff/ffffff?text=Fox+001', attributes: [{ trait_type: 'Rarity', value: 'Epic' }, { trait_type: 'Edition', value: 'First' }] },
+        { mint: 'NFT2_MOCK_MINT', name: 'Alpha Fox #002 (Owned)', description: 'Common Alpha Fox NFT. My personal collection.', owner: 'NO_WALLET_CONNECTED', price: 0, isListed: false, image: 'https://via.placeholder.com/180x180/17a2b8/ffffff?text=Fox+002', attributes: [{ trait_type: 'Rarity', value: 'Common' }] }
+    ],
+    announcements: JSON.parse(localStorage.getItem('mockAnnouncements')) || [
+        { text: 'Добро пожаловать в автономную симуляцию! Данные сохраняются в localStorage.', date: new Date(Date.now() - 3600000).toISOString() },
+        { text: 'Этот код работает без бэкенда. Все API вызовы заменены заглушками.', date: new Date().toISOString() }
+    ],
+    games: [
+        { title: 'Solana Runner (MOCK)', description: 'Бесконечный раннер, симуляция игры.', url: '#' }
+    ],
+    ads: [
+        { title: 'Купи AFOX (MOCK Ad)', content: 'Лучший токен на Solana!', imageUrl: 'https://via.placeholder.com/300x100/dc3545/ffffff?text=MOCK+AD', link: '#' }
+    ],
+    // Симуляция истории транзакций
+    nftHistory: JSON.parse(localStorage.getItem('mockNftHistory')) || {
+        'NFT1_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 86400000).toISOString(), to: 'INITIAL_OWNER' }],
+        'NFT2_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 7200000).toISOString(), to: 'INITIAL_OWNER' }],
+    },
+    // Симуляция данных стейкинга
+    staking: JSON.parse(localStorage.getItem('mockStaking')) || {
+        // Ключом будет адрес кошелька
+    }
+};
+
+/**
+ * Сохраняет текущее состояние MOCK_DB (NFT, объявления, история) в localStorage.
+ */
+function persistMockData() {
+    localStorage.setItem('mockNfts', JSON.stringify(MOCK_DB.nfts));
+    localStorage.setItem('mockAnnouncements', JSON.stringify(MOCK_DB.announcements));
+    localStorage.setItem('mockNftHistory', JSON.stringify(MOCK_DB.nftHistory));
+    localStorage.setItem('mockStaking', JSON.stringify(MOCK_DB.staking));
+}
 
 
 /**
@@ -118,7 +156,7 @@ function restoreBirdeyeChart() {
 
 function initializeJupiterTerminal(useBackupRpc = false) {
     // ------------------------------------------------------------------
-    // **RPC Fix Implementation**
+    // **RPC Fix Implementation** (Не изменено)
     // ------------------------------------------------------------------
     const rpcToUse = useBackupRpc ? BACKUP_RPC_ENDPOINT : JUPITER_RPC_ENDPOINT;
     console.log(`Initializing Jupiter Terminal with RPC: ${rpcToUse}`);
@@ -159,13 +197,6 @@ function initializeJupiterTerminal(useBackupRpc = false) {
             },
             onError: (error) => {
                  console.error("Jupiter Terminal error:", error);
-                 // The logic to retry with backup RPC is disabled to prevent loops, but remains commented for context.
-                 /*
-                 if (error && error.message.includes("RPC") && !useBackupRpc) {
-                    console.warn("RPC failed. Retrying Jupiter Terminal initialization with backup RPC.");
-                    initializeJupiterTerminal(true);
-                 }
-                 */
                  restoreBirdeyeChart();
             },
             onSwapError: () => {
@@ -184,7 +215,7 @@ function initializeJupiterTerminal(useBackupRpc = false) {
 
 
 /**
- * Initializes UI element references. Called once on DOMContentLoaded.
+ * Initializes UI element references. Called once on DOMContentLoaded. (Не изменено)
  */
 function cacheUIElements() {
     // Filter out nulls to ensure no errors if an element is missing
@@ -288,7 +319,7 @@ function cacheUIElements() {
     uiElements.aiPriceForecast = document.getElementById('aiPriceForecast');
 }
 
-// --- HELPER UTILITIES ---
+// --- HELPER UTILITIES (Не изменено) ---
 
 /**
  * Universal function to display notifications.
@@ -384,44 +415,17 @@ async function updateStakingAndBalanceUI() {
 }
 
 /**
- * PSEUDO-FUNCTION: Simulates an AI/ML server call to diagnose a code or network issue.
- * In a real application, this would log error details to an observability platform
- * and potentially trigger an AI analysis for root cause (e.g., failed to load a specific account, RPC latency spike).
- * @param {string} functionName - The function where the error occurred.
- * @param {string} errorDetails - A summary of the error.
+ * ✅ ИЗМЕНЕНИЕ: PSEUDO-FUNCTION: Заглушка для диагностики AI.
  * @async
  */
 async function diagnoseCodeIssue(functionName, errorDetails) {
-    // In a real application, this would involve a POST request to an error-logging/AI-diagnostics server.
-    try {
-        console.error(`[AI Diagnostic Triggered] Function: ${functionName}, Details: ${errorDetails}`);
-        // Mock a brief API call to a diagnostic service
-        /*
-        const response = await fetch(DIAGNOSTICS_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                timestamp: new Date().toISOString(),
-                wallet: walletPublicKey ? walletPublicKey.toBase58() : 'N/A',
-                function: functionName,
-                details: errorDetails
-            })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            console.log(`[AI Diagnostic Result]: ${result.summary || 'Analysis started.'}`);
-        } else {
-             console.warn("Failed to submit error to AI diagnostics server.");
-        }
-        */
-    } catch (networkError) {
-        console.error("Failed to call AI diagnostics service:", networkError);
-    }
+    // В автономном режиме просто логируем ошибку в консоль
+    console.error(`[AI Diagnostic MOCK Triggered] Function: ${functionName}, Details: ${errorDetails}`);
+    console.log(`[AI Diagnostic MOCK Result]: Error analysis logged to console.`);
 }
 
 
-// --- WALLET CONNECTION & STATE MANAGEMENT ---
+// --- WALLET CONNECTION & STATE MANAGEMENT (Не изменено) ---
 
 /**
  * Updates all wallet address display elements across the UI.
@@ -452,9 +456,21 @@ async function handlePublicKeyChange(publicKey) {
     if (publicKey) {
         walletPublicKey = publicKey;
         updateWalletUI(publicKey.toBase58());
+
+        // ✅ ДОБАВЛЕНИЕ: Обновление владельцев моковых NFT и стейкинга
+        MOCK_DB.nfts.forEach(nft => {
+             // Если NFT был назначен заглушке, переназначаем его новому владельцу
+            if (nft.owner === 'NO_WALLET_CONNECTED' || nft.owner.startsWith('MOCK_MINT')) {
+                 nft.owner = walletPublicKey.toBase58();
+            }
+        });
+        persistMockData();
+        // ---------------------------------------------------------------------
+
         // Trigger reloads for all sections with a slight delay to avoid UI flicker
         await Promise.all([
             loadUserNFTs(walletPublicKey.toBase58()),
+            loadMarketplaceNFTs(), // Также обновить маркетплейс, чтобы показать, что NFT теперь принадлежат пользователю
             updateStakingUI(),
             updateSwapBalances()
         ]);
@@ -531,9 +547,19 @@ async function connectWallet() {
         updateWalletUI(walletPublicKey.toBase58());
         registerProviderListeners();
 
+        // ✅ ДОБАВЛЕНИЕ: Обновление владельцев моковых NFT и стейкинга
+        MOCK_DB.nfts.forEach(nft => {
+            if (nft.owner === 'NO_WALLET_CONNECTED') {
+                nft.owner = walletPublicKey.toBase58();
+            }
+        });
+        persistMockData();
+        // ---------------------------------------------------------------------
+
         // Load data for all sections
         await Promise.all([
             loadUserNFTs(walletPublicKey.toBase58()),
+            loadMarketplaceNFTs(),
             updateStakingUI(),
             updateSwapBalances()
         ]);
@@ -548,7 +574,7 @@ async function connectWallet() {
 }
 
 /**
- * Handles the logic for wallet disconnection, resetting UI and data.
+ * Handles the logic for wallet disconnection, resetting UI and data. (Не изменено)
  */
 function handleWalletDisconnect() {
     walletPublicKey = null;
@@ -559,6 +585,7 @@ function handleWalletDisconnect() {
     // Reset NFT section
     if (uiElements.userNftList) uiElements.userNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Connect your wallet to see your NFTs.</p>';
     if (uiElements.nftToSellSelect) uiElements.nftToSellSelect.innerHTML = '<option value="">-- Select NFT --</option>';
+    if (uiElements.marketplaceNftList) uiElements.marketplaceNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Connect wallet to see listed NFTs.</p>'; // Reset MP
 
     // Reset Staking section
     updateStakingUI(); // This function handles resetting itself if walletPublicKey is null
@@ -586,12 +613,10 @@ function handleWalletDisconnect() {
 }
 
 
-// --- SWAP FUNCTIONS ---
+// --- SWAP FUNCTIONS (Оставлены, так как они взаимодействуют с Solana/Jupiter) ---
 
 /**
  * Fetches the token decimals for a given mint address.
- * In a real app, this might involve fetching from a token list or a dedicated API.
- * For this example, we use predefined decimals or a fallback.
  * @param {SolanaWeb3.PublicKey} mintAddress
  * @returns {number}
  */
@@ -611,6 +636,7 @@ function getTokenDecimals(mintAddress) {
  * Updates balances for the "From" token in the swap section.
  */
 async function updateSwapBalances() {
+    // Не изменено, так как это запрос к RPC Solana
     if (!walletPublicKey || !connection) {
         if (uiElements.swapFromBalanceSpan) uiElements.swapFromBalanceSpan.textContent = '0';
         return;
@@ -656,9 +682,10 @@ async function updateSwapBalances() {
 }
 
 /**
- * Fetches a swap quote from Jupiter Aggregator.
+ * Fetches a swap quote from Jupiter Aggregator. (Не изменено)
  */
 async function getQuote() {
+    // ... (Оставлено как есть - взаимодействует с Jupiter API, не с вашим бэкендом)
     if (!walletPublicKey) {
         showNotification('Please connect your wallet first.', 'warning');
         return;
@@ -689,8 +716,6 @@ async function getQuote() {
     }
 
     const decimalsFrom = getTokenDecimals(fromMint);
-    // Convert float amount to BigNumber string for Jupiter API
-    // Ensure accurate integer conversion for the API
     const inputAmountLamports = (amount * (10 ** decimalsFrom)).toFixed(0);
 
     showNotification('Getting the best swap quote...', 'info');
@@ -698,7 +723,6 @@ async function getQuote() {
     if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
 
     try {
-        // Jupiter's slippage is in basis points (bps): 50 bps = 0.5%
         const response = await fetch(`${JUPITER_API_URL}/quote?inputMint=${fromMint.toBase58()}&outputMint=${toMint.toBase58()}&amount=${inputAmountLamports}&slippageBps=50`);
         if (!response.ok) {
             const errorData = await response.json();
@@ -713,11 +737,9 @@ async function getQuote() {
         if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = formatBigInt(currentJupiterQuote.outAmount, outputDecimals);
         if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = `${(currentJupiterQuote.priceImpactPct * 100).toFixed(2)}%`;
         if (uiElements.lpFeeSpan) {
-            // Check if lpFee exists and has an amount
             const lpFeeAmount = currentJupiterQuote.lpFee && currentJupiterQuote.lpFee.amount ? currentJupiterQuote.lpFee.amount : '0';
             uiElements.lpFeeSpan.textContent = `${formatBigInt(lpFeeAmount, outputDecimals)} ${uiElements.swapToTokenSelect.value}`;
         }
-        // Jupiter's `otherAmountThreshold` is already in "lamports" based on output token decimals (min received)
         if (uiElements.minReceivedSpan) uiElements.minReceivedSpan.textContent = `${formatBigInt(currentJupiterQuote.otherAmountThreshold, outputDecimals)} ${uiElements.swapToTokenSelect.value}`;
 
         showNotification('Quote successfully received!', 'success');
@@ -726,7 +748,6 @@ async function getQuote() {
         console.error('Error fetching quote:', error);
         showNotification(`Error fetching quote: ${error.message}. Please try again.`, 'error');
         currentJupiterQuote = null;
-        // Clear all quote-related display fields
         if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
         if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = '0%';
         if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = '0';
@@ -738,9 +759,10 @@ async function getQuote() {
 }
 
 /**
- * Executes the swap transaction via Jupiter Aggregator.
+ * Executes the swap transaction via Jupiter Aggregator. (Не изменено)
  */
 async function executeSwap() {
+    // ... (Оставлено как есть - взаимодействует с Jupiter API и Solana RPC)
     if (!currentJupiterQuote) {
         showNotification('Please get a quote first.', 'warning');
         return;
@@ -821,10 +843,10 @@ async function executeSwap() {
 }
 
 
-// --- NFT DISPLAY & ACTIONS (Unchanged boilerplate for context) ---
+// --- NFT DISPLAY & ACTIONS (MOCK IMPLEMENTATION) ---
 
 /**
- * Loads and displays NFTs owned by the connected user.
+ * ✅ ИЗМЕНЕНИЕ: Загружает и отображает NFT, принадлежащие подключенному пользователю (из MOCK_DB).
  * @param {string} walletAddress - The public key of the connected wallet.
  */
 async function loadUserNFTs(walletAddress) {
@@ -834,13 +856,12 @@ async function loadUserNFTs(walletAddress) {
     if (uiElements.nftToSellSelect) uiElements.nftToSellSelect.innerHTML = '<option value="">-- Select NFT --</option>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/nfts/marketplace`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        // Ensure data.nfts exists and is an array before filtering
-        const userOwnedNfts = Array.isArray(data.nfts) ? data.nfts.filter(nft => nft.owner === walletAddress && !nft.isListed) : [];
+        // --- ЗАМЕНА FETCH НА ЛОКАЛЬНЫЕ ДАННЫЕ ---
+        // Имитируем успешный ответ API
+        const allNfts = MOCK_DB.nfts;
+        // Фильтруем: принадлежат текущему кошельку И не выставлены на продажу
+        const userOwnedNfts = allNfts.filter(nft => nft.owner === walletAddress && !nft.isListed);
+        // ------------------------------------------
 
         uiElements.userNftList.innerHTML = ''; // Clear loading message
 
@@ -870,14 +891,14 @@ async function loadUserNFTs(walletAddress) {
         });
 
     } catch (error) {
-        console.error('Error loading user NFTs:', error);
-        showNotification(`Failed to load your NFTs: ${error.message}.`, 'error');
+        console.error('Error loading user NFTs (MOCK):', error);
+        showNotification(`Failed to load your NFTs: ${error.message}. (MOCK)`, 'error');
         uiElements.userNftList.innerHTML = `<p class="placeholder-item web3-placeholder">Error loading NFTs: ${error.message}.</p>`;
     }
 }
 
 /**
- * Loads and displays NFTs listed on the marketplace.
+ * ✅ ИЗМЕНЕНИЕ: Загружает и отображает NFT, выставленные на продажу (из MOCK_DB).
  */
 async function loadMarketplaceNFTs() {
     if (!uiElements.marketplaceNftList) return;
@@ -885,12 +906,11 @@ async function loadMarketplaceNFTs() {
     uiElements.marketplaceNftList.innerHTML = '<p class="placeholder-item web3-placeholder">Loading marketplace NFTs...</p>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/nfts/marketplace`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        const listedNfts = Array.isArray(data.nfts) ? data.nfts.filter(nft => nft.price && nft.isListed) : [];
+        // --- ЗАМЕНА FETCH НА ЛОКАЛЬНЫЕ ДАННЫЕ ---
+        const allNfts = MOCK_DB.nfts;
+        // Фильтруем: выставлены на продажу И имеют цену
+        const listedNfts = allNfts.filter(nft => nft.price && nft.isListed);
+        // ------------------------------------------
 
         uiElements.marketplaceNftList.innerHTML = ''; // Clear loading message
 
@@ -914,14 +934,14 @@ async function loadMarketplaceNFTs() {
         });
 
     } catch (error) {
-        console.error('Error loading marketplace NFTs:', error);
-        showNotification(`Failed to load marketplace NFTs: ${error.message}.`, 'error');
+        console.error('Error loading marketplace NFTs (MOCK):', error);
+        showNotification(`Failed to load marketplace NFTs: ${error.message}. (MOCK)`, 'error');
         uiElements.marketplaceNftList.innerHTML = `<p class="placeholder-item web3-placeholder">Error loading marketplace NFTs: ${error.message}.</p>`;
     }
 }
 
 /**
- * Displays the NFT details modal and populates its content.
+ * ✅ ИЗМЕНЕНИЕ: Отображает детали NFT, включая историю из MOCK_DB.
  * @param {object} nft - The NFT object to display.
  */
 window.showNftDetails = async function(nft) {
@@ -930,7 +950,7 @@ window.showNftDetails = async function(nft) {
     closeAllPopups();
     currentOpenNft = nft; // Store the NFT object for actions
 
-    // Populate static NFT details
+    // Populate static NFT details (Не изменено)
     if (uiElements.nftDetailImage) uiElements.nftDetailImage.src = nft.image || 'https://via.placeholder.com/250x150?text=NFT';
     if (uiElements.nftDetailName) uiElements.nftDetailName.textContent = nft.name || 'Untitled NFT';
     if (uiElements.nftDetailDescription) uiElements.nftDetailDescription.textContent = nft.description || 'No description provided.';
@@ -941,7 +961,7 @@ window.showNftDetails = async function(nft) {
         uiElements.nftDetailSolscanLink.style.display = nft.mint ? 'inline-block' : 'none';
     }
 
-    // Populate attributes list
+    // Populate attributes list (Не изменено)
     if (uiElements.attributesList) {
         uiElements.attributesList.innerHTML = '';
         if (nft.attributes && Array.isArray(nft.attributes) && nft.attributes.length > 0) {
@@ -955,8 +975,7 @@ window.showNftDetails = async function(nft) {
         }
     }
 
-    // Show/hide action buttons based on ownership and listing status
-    // Set all to none first to ensure correct state
+    // Show/hide action buttons based on ownership and listing status (Не изменено)
     if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.style.display = 'none';
     if (uiElements.nftDetailSellBtn) uiElements.nftDetailSellBtn.style.display = 'none';
     if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.style.display = 'none';
@@ -976,26 +995,22 @@ window.showNftDetails = async function(nft) {
 
     uiElements.nftDetailsModal.style.display = 'flex'; // Display the modal
 
-    // Load NFT transaction history
+    // ✅ ИЗМЕНЕНИЕ: Загрузка NFT transaction history из MOCK_DB
     if (uiElements.nftDetailHistory && nft.mint) {
         uiElements.nftDetailHistory.textContent = 'Loading history...';
         try {
-            const historyResponse = await fetch(`${API_BASE_URL}/api/nfts/${nft.mint}/history`);
-            if (!historyResponse.ok) {
-                const errorData = await historyResponse.json();
-                throw new Error(errorData.error || `Failed to get history: ${historyResponse.status}`);
-            }
-            const historyData = await historyResponse.json();
+            // --- ЗАМЕНА FETCH НА ЛОКАЛЬНЫЕ ДАННЫЕ ---
+            const historyData = MOCK_DB.nftHistory[nft.mint] || [];
+            // ------------------------------------------
 
             if (historyData && historyData.length > 0) {
-                uiElements.nftDetailHistory.innerHTML = '<h4>Transaction History:</h4>';
+                uiElements.nftDetailHistory.innerHTML = '<h4>Transaction History (MOCK):</h4>';
                 // Sort by date in descending order (most recent first)
                 historyData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
                 historyData.forEach(event => {
                     const p = document.createElement('p');
                     let eventText = `${new Date(event.timestamp).toLocaleString()}: `;
-                    // Use optional chaining and nullish coalescing for robustness
                     const from = event.from ? `${event.from.substring(0, 6)}...${event.from.substring(event.from.length - 4)}` : 'N/A';
                     const to = event.to ? `${event.to.substring(0, 6)}...${event.to.substring(event.to.length - 4)}` : 'N/A';
 
@@ -1022,17 +1037,17 @@ window.showNftDetails = async function(nft) {
                 uiElements.nftDetailHistory.textContent = 'No transaction history for this NFT.';
             }
         } catch (error) {
-            console.error('Error loading NFT history for modal:', error);
-            showNotification(`Error loading NFT history: ${error.message}.`, 'error');
+            console.error('Error loading NFT history for modal (MOCK):', error);
+            showNotification(`Error loading NFT history: ${error.message}. (MOCK)`, 'error');
             uiElements.nftDetailHistory.textContent = `Error loading history: ${error.message}.`;
         }
     }
 };
 
-// --- STAKING FUNCTIONS ---
+// --- STAKING FUNCTIONS (MOCK IMPLEMENTATION) ---
 
 /**
- * Updates all staking data in the UI.
+ * ✅ ИЗМЕНЕНИЕ: Обновляет все данные о стейкинге (MOCK).
  */
 async function updateStakingUI() {
     // Reset UI if wallet is disconnected or no data can be fetched
@@ -1040,10 +1055,11 @@ async function updateStakingUI() {
         if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = '0 AFOX';
         if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = '0 AFOX';
         if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = '0 AFOX';
-        if (uiElements.stakingApr) uiElements.stakingApr.textContent = '--%';
-        if (uiElements.minStakeAmountDisplay) uiElements.minStakeAmountDisplay.textContent = '1 AFOX';
-        if (uiElements.lockupPeriodDisplay) uiElements.lockupPeriodDisplay.textContent = '0 days (flexible)';
-        if (uiElements.unstakeFeeDisplay) uiElements.unstakeFeeDisplay.textContent = '0%';
+        // Mock default pool info even if disconnected
+        if (uiElements.stakingApr) uiElements.stakingApr.textContent = '10%';
+        if (uiElements.minStakeAmountDisplay) uiElements.minStakeAmountDisplay.textContent = '5 AFOX';
+        if (uiElements.lockupPeriodDisplay) uiElements.lockupPeriodDisplay.textContent = '30 days';
+        if (uiElements.unstakeFeeDisplay) uiElements.unstakeFeeDisplay.textContent = '0.5%';
         if (uiElements.rewardCalculationDisplay) uiElements.rewardCalculationDisplay.textContent = 'Daily';
         return;
     }
@@ -1054,23 +1070,18 @@ async function updateStakingUI() {
     }
 
     try {
-        // Fetch AFOX balance
+        // Fetch AFOX balance (Solana RPC, не изменено)
         let afoxBalance = 0;
         try {
-            // Get all token accounts for the user
             const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
                 walletPublicKey,
                 { mint: AFOX_TOKEN_MINT_ADDRESS }
             );
-
-            // Find the ATA which will hold the main balance
             if (tokenAccounts.value.length > 0) {
-                 // Loop to find the correct ATA or simply use the first one if only one exists
-                const ata = tokenAccounts.value.find(acc => acc.account.data.parsed.info.owner === walletPublicKey.toBase58());
+                 const ata = tokenAccounts.value.find(acc => acc.account.data.parsed.info.owner === walletPublicKey.toBase58());
                 if (ata) {
                     afoxBalance = ata.account.data.parsed.info.tokenAmount.uiAmount;
                 } else {
-                    // Fallback to the first account's UI amount if the ATA isn't explicitly found but some account exists
                     afoxBalance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
                 }
             }
@@ -1080,18 +1091,17 @@ async function updateStakingUI() {
         }
         if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = `${afoxBalance.toFixed(4).replace(/\.?0+$/, '')} AFOX`;
 
-        // Fetch user staking account info
+        // ✅ ИЗМЕНЕНИЕ: Fetch user staking account info (MOCK)
         const userStakingAccount = await getUserStakingAccount(walletPublicKey);
         if (userStakingAccount) {
             if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = `${userStakingAccount.stakedAmount.toFixed(4).replace(/\.?0+$/, '')} AFOX`;
             if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = `${userStakingAccount.rewards.toFixed(4).replace(/\.?0+$/, '')} AFOX`;
         } else {
-            // Set to zero if account does not exist or fetch failed
             if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = '0 AFOX';
             if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = '0 AFOX';
         }
 
-        // Fetch staking pool info
+        // ✅ ИЗМЕНЕНИЕ: Fetch staking pool info (MOCK)
         const stakingPoolInfo = await getStakingPoolInfo();
         if (stakingPoolInfo) {
             if (uiElements.stakingApr) uiElements.stakingApr.textContent = `${stakingPoolInfo.apr}%`;
@@ -1108,71 +1118,27 @@ async function updateStakingUI() {
 }
 
 /**
- * PSEUDO-FUNCTION: Gets user's staking account information.
- * This needs to be replaced with actual Solana program interaction (e.g., using Anchor or raw Web3.js).
- * @param {SolanaWeb3.PublicKey} userPublicKey
+ * ✅ ИЗМЕНЕНИЕ: PSEUDO-FUNCTION: Симулирует получение информации о стейкинге пользователя (MOCK).
  * @returns {Promise<{stakedAmount: number, rewards: number} | null>}
  */
 async function getUserStakingAccount(userPublicKey) {
-    if (!connection) return null; // Ensure connection is available
-
-    try {
-        const [userStakingAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync(
-            [userPublicKey.toBuffer(), Buffer.from("stake_account_seed")],
-            STAKING_PROGRAM_ID
-        );
-
-        const accountInfo = await connection.getAccountInfo(userStakingAccountPubKey);
-
-        if (accountInfo && accountInfo.data) {
-            // !!! IMPORTANT: Replace this with actual deserialization.
-            console.warn("Staking user account data deserialization is a placeholder. Implement actual smart contract interaction.");
-            // Mock data for demonstration:
-            return { stakedAmount: 100.5, rewards: 1.5 }; // Example mock
-        } else {
-            // Return default/zero values if account doesn't exist
-            return { stakedAmount: 0, rewards: 0 };
-        }
-    } catch (error) {
-        console.error("Error getting user staking account (might not exist or deserialization issue):", error);
-        // The common case is it just doesn't exist yet, so we return 0/0
-        return { stakedAmount: 0, rewards: 0 };
-    }
+    const userKey = userPublicKey.toBase58();
+    // Инициализация/получение данных стейкинга из MOCK_DB
+    MOCK_DB.staking[userKey] = MOCK_DB.staking[userKey] || { stakedAmount: 0, rewards: 0 };
+    return MOCK_DB.staking[userKey];
 }
 
 /**
- * PSEUDO-FUNCTION: Gets staking pool information.
- * This needs to be replaced with actual Solana program interaction.
+ * ✅ ИЗМЕНЕНИЕ: PSEUDO-FUNCTION: Симулирует получение информации о пуле стейкинга (MOCK).
  * @returns {Promise<{apr: number, minStake: number, lockupDays: number, unstakeFee: number, rewardCalcMethod: string} | null>}
  */
 async function getStakingPoolInfo() {
-    if (!connection) return null; // Ensure connection is available
-
-    try {
-        const [poolAccountPubKey] = SolanaWeb3.PublicKey.findProgramAddressSync(
-            [Buffer.from("pool_config_seed")],
-            STAKING_PROGRAM_ID
-        );
-
-        const accountInfo = await connection.getAccountInfo(poolAccountPubKey);
-
-        if (accountInfo && accountInfo.data) {
-            // !!! IMPORTANT: Replace this with actual deserialization.
-            console.warn("Staking pool data deserialization is a placeholder. Implement actual smart contract interaction.");
-            // Mock data for demonstration:
-            return { apr: 10, minStake: 5, lockupDays: 30, unstakeFee: 0.5, rewardCalcMethod: "Daily" }; // Example mock
-        } else {
-            // Return default values if pool config doesn't exist
-            return { apr: 0, minStake: 0, lockupDays: 0, unstakeFee: 0, rewardCalcMethod: "N/A" };
-        }
-    } catch (error) {
-        console.error("Error getting staking pool information (might not exist or deserialization issue):", error);
-        return { apr: 0, minStake: 0, lockupDays: 0, unstakeFee: 0, rewardCalcMethod: "N/A" };
-    }
+    // Не нужно взаимодействовать с RPC, просто возвращаем моковые данные пула
+    return { apr: 10, minStake: 5, lockupDays: 30, unstakeFee: 0.5, rewardCalcMethod: "Daily" };
 }
 
 /**
- * Handles the transaction for staking AFOX tokens.
+ * ✅ ИЗМЕНЕНИЕ: Handles the transaction for staking AFOX tokens (MOCK).
  * @async
  * @global
  */
@@ -1181,7 +1147,6 @@ async function handleStakeAfox() {
         showNotification('Please connect your wallet.', 'warning');
         return;
     }
-
     if (!uiElements.stakeAmountInput) {
         showNotification('Stake amount input not found.', 'error');
         return;
@@ -1193,43 +1158,38 @@ async function handleStakeAfox() {
         return;
     }
 
-    // Set initial UI state
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = true;
 
     try {
         showNotification(`Initiating staking of ${amount} AFOX... (Simulation)`, 'info', 5000);
 
-        // --- MOCKING TRANSACTION LOGIC (REPLACE WITH REAL SOLANA TX) ---
-        console.warn("Staking is a simulation. Implement actual transaction to the Staking Program (e.g., using Anchor).");
-
-        // Simulate waiting for wallet signature and network confirmation
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // --- MOCKING TRANSACTION LOGIC ---
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate delay
+        const userKey = walletPublicKey.toBase58();
+        MOCK_DB.staking[userKey].stakedAmount += amount;
+        // Добавляем моковую награду, чтобы показать, что это работает
+        MOCK_DB.staking[userKey].rewards += (amount * 0.01);
+        persistMockData();
         const signature = "MOCK_SIGNATURE_STAKE_" + Date.now();
         // --- END MOCKING ---
 
-        showNotification(`You successfully staked ${amount} AFOX! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 7000);
+        showNotification(`You successfully staked ${amount} AFOX! (Simulation Confirmed)`, 'success', 7000);
 
-        // Clear input and update UI
         uiElements.stakeAmountInput.value = '';
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        console.error('Error during staking:', error);
-
-        // Cleaner user message
+        console.error('Error during staking (MOCK):', error);
         const errorMessage = error.message || "An unknown network error occurred.";
-        showNotification(`Staking failed. Check connection or retry. Details: ${errorMessage.substring(0, 50)}...`, 'error');
-
-        // AI Diagnostic Integration
-        await diagnoseCodeIssue('handleStakeAfox', `Staking transaction for ${amount} AFOX failed. Error: ${error.message}. Check token account/program ID/balance.`);
-
+        showNotification(`Staking failed. Details: ${errorMessage.substring(0, 50)}...`, 'error');
+        await diagnoseCodeIssue('handleStakeAfox', `Staking transaction for ${amount} AFOX failed. Error: ${error.message}.`);
     } finally {
         if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
     }
 }
 
 /**
- * Handles the transaction for claiming rewards.
+ * ✅ ИЗМЕНЕНИЕ: Handles the transaction for claiming rewards (MOCK).
  * @async
  * @global
  */
@@ -1238,33 +1198,28 @@ async function handleClaimRewards() {
         showNotification('Please connect your wallet to claim rewards.', 'warning');
         return;
     }
-
-    // Set initial UI state
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = true;
 
     try {
         showNotification('Attempting to claim rewards... (Simulation)', 'info');
 
-        // !!! IMPORTANT: Implement actual claim rewards transaction here.
-        console.warn("Claim rewards functionality is a placeholder. Implement actual smart contract interaction.");
-
-        // Simulate waiting for wallet signature and network confirmation
+        // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 2500));
+        const userKey = walletPublicKey.toBase58();
+        const claimedAmount = MOCK_DB.staking[userKey].rewards;
+        MOCK_DB.staking[userKey].rewards = 0; // Сбрасываем награды
+        persistMockData();
         const signature = "MOCK_SIGNATURE_CLAIM_REWARDS_" + Date.now();
+        // --- END MOCKING ---
 
-        showNotification(`Rewards successfully claimed! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
+        showNotification(`Rewards of ${claimedAmount.toFixed(4)} AFOX successfully claimed! (Simulation Confirmed)`, 'success', 5000);
 
-        // Update UI
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        console.error('Error claiming rewards:', error);
-
-        // Cleaner user message
+        console.error('Error claiming rewards (MOCK):', error);
         const errorMessage = error.message || "An unknown network error occurred.";
-        showNotification(`Claiming failed. Check connection or retry. Details: ${errorMessage.substring(0, 50)}...`, 'error');
-
-        // AI Diagnostic Integration
+        showNotification(`Claiming failed. Details: ${errorMessage.substring(0, 50)}...`, 'error');
         await diagnoseCodeIssue('handleClaimRewards', `Claim rewards transaction failed. Error: ${error.message}.`);
 
     } finally {
@@ -1273,7 +1228,7 @@ async function handleClaimRewards() {
 }
 
 /**
- * Handles the transaction for unstaking AFOX tokens.
+ * ✅ ИЗМЕНЕНИЕ: Handles the transaction for unstaking AFOX tokens (MOCK).
  * @async
  * @global
  */
@@ -1283,38 +1238,35 @@ async function handleUnstakeAfox() {
         return;
     }
 
-    // In a real app, you would read the unstake amount from an input,
-    // or retrieve the entire staked balance if that's the program's logic.
-    // Using a mock amount for the placeholder.
-    const amount = 100;
+    const userKey = walletPublicKey.toBase58();
+    const amount = MOCK_DB.staking[userKey].stakedAmount; // Unstake all staked for simplicity
 
-    // Set initial UI state
+    if (amount <= 0) {
+        showNotification('You have no tokens staked to unstake.', 'warning');
+        return;
+    }
+
     if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = true;
 
     try {
-        showNotification(`Attempting to unstake ${amount} tokens... (Simulation)`, 'info');
+        showNotification(`Attempting to unstake ${amount.toFixed(4)} tokens... (Simulation)`, 'info');
 
-        // !!! IMPORTANT: Implement actual unstake transaction here.
-        console.warn("Unstake functionality is a placeholder. Implement actual smart contract interaction.");
-
-        // Simulate waiting for wallet signature and network confirmation
+        // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 3000));
+        MOCK_DB.staking[userKey].stakedAmount = 0; // Сбрасываем стейкинг
+        persistMockData();
         const signature = "MOCK_SIGNATURE_UNSTAKE_" + Date.now();
+        // --- END MOCKING ---
 
-        showNotification(`Staked tokens successfully unstaked! Transaction ID: ${signature} (Requires staking smart contract implementation)`, 'success', 5000);
+        showNotification(`Staked tokens successfully unstaked! (Simulation Confirmed)`, 'success', 5000);
 
-        // Update UI
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        console.error('Error unstaking tokens:', error);
-
-        // Cleaner user message
+        console.error('Error unstaking tokens (MOCK):', error);
         const errorMessage = error.message || "An unknown network error occurred.";
-        showNotification(`Unstaking failed. Check connection or retry. Details: ${errorMessage.substring(0, 50)}...`, 'error');
-
-        // AI Diagnostic Integration
-        await diagnoseCodeIssue('handleUnstakeAfox', `Unstake transaction for ${amount} tokens failed. Error: ${error.message}.`);
+        showNotification(`Unstaking failed. Details: ${errorMessage.substring(0, 50)}...`, 'error');
+        await diagnoseCodeIssue('handleUnstakeAfox', `Unstake transaction failed. Error: ${error.message}.`);
 
     } finally {
         if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = false;
@@ -1322,17 +1274,19 @@ async function handleUnstakeAfox() {
 }
 
 
-// --- DYNAMIC CONTENT LOADING (ANNOUNCEMENTS, GAMES, ADS) (Unchanged boilerplate for context) ---
+// --- DYNAMIC CONTENT LOADING (MOCK IMPLEMENTATION) ---
 
+/**
+ * ✅ ИЗМЕНЕНИЕ: Загрузка объявлений из MOCK_DB.
+ */
 async function loadAnnouncements() {
     if (!uiElements.announcementsList) return;
     uiElements.announcementsList.innerHTML = '<p class="placeholder-item">Loading announcements...</p>';
     try {
-        const response = await fetch(`${API_BASE_URL}/api/announcements`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        // --- ЗАМЕНА FETCH НА ЛОКАЛЬНЫЕ ДАННЫЕ ---
+        const data = MOCK_DB.announcements;
+        // ------------------------------------------
+
         uiElements.announcementsList.innerHTML = ''; // Clear loading message
 
         if (!Array.isArray(data) || data.length === 0) {
@@ -1351,21 +1305,23 @@ async function loadAnnouncements() {
             uiElements.announcementsList.appendChild(div);
         });
     } catch (error) {
-        console.error('Error loading announcements:', error);
-        showNotification(`Failed to load announcements: ${error.message}.`, 'error');
+        console.error('Error loading announcements (MOCK):', error);
+        showNotification(`Failed to load announcements: ${error.message}. (MOCK)`, 'error');
         uiElements.announcementsList.innerHTML = '<p class="placeholder-item">Failed to load announcements.</p>';
     }
 }
 
+/**
+ * ✅ ИЗМЕНЕНИЕ: Загрузка игр из MOCK_DB.
+ */
 async function loadGames() {
     if (!uiElements.gameList) return;
     uiElements.gameList.innerHTML = '<p class="placeholder-item web3-placeholder">Loading games...</p>';
     try {
-        const response = await fetch(`${API_BASE_URL}/api/games`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        // --- ЗАМЕНА FETCH НА ЛОКАЛЬНЫЕ ДАННЫЕ ---
+        const data = MOCK_DB.games;
+        // ------------------------------------------
+
         uiElements.gameList.innerHTML = ''; // Clear loading message
 
         if (!Array.isArray(data) || data.length === 0) {
@@ -1383,21 +1339,23 @@ async function loadGames() {
             uiElements.gameList.appendChild(div);
         });
     } catch (error) {
-        console.error('Error loading games:', error);
-        showNotification(`Failed to load games: ${error.message}.`, 'error');
+        console.error('Error loading games (MOCK):', error);
+        showNotification(`Failed to load games: ${error.message}. (MOCK)`, 'error');
         uiElements.gameList.innerHTML = '<p class="placeholder-item web3-placeholder">Failed to load games.</p>';
     }
 }
 
+/**
+ * ✅ ИЗМЕНЕНИЕ: Загрузка рекламы из MOCK_DB.
+ */
 async function loadAds() {
     if (!uiElements.adList) return;
     uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Loading ads...</p>';
     try {
-        const response = await fetch(`${API_BASE_URL}/api/ads`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        // --- ЗАМЕНА FETCH НА ЛОКАЛЬНЫЕ ДАННЫЕ ---
+        const data = MOCK_DB.ads;
+        // ------------------------------------------
+
         uiElements.adList.innerHTML = ''; // Clear loading message
 
         if (!Array.isArray(data) || data.length === 0) {
@@ -1416,14 +1374,14 @@ async function loadAds() {
             uiElements.adList.appendChild(div);
         });
     } catch (error) {
-        console.error('Error loading ads:', error);
-        showNotification(`Failed to load ads: ${error.message}.`, 'error');
+        console.error('Error loading ads (MOCK):', error);
+        showNotification(`Failed to load ads: ${error.message}. (MOCK)`, 'error');
         uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Failed to load ads.</p>';
     }
 }
 
 
-// --- EVENT LISTENERS INITIALIZATION (Unchanged boilerplate for context) ---
+// --- EVENT LISTENERS INITIALIZATION (Не изменено) ---
 
 /**
  * Initializes all global event listeners.
@@ -1521,12 +1479,12 @@ function initializeEventListeners() {
     // Game Upload & Ad Post Buttons (Placeholders)
     if (uiElements.uploadGameBtnWeb3) {
         uiElements.uploadGameBtnWeb3.addEventListener('click', () => {
-            showNotification('Game upload is a placeholder. Implement backend logic for file uploads and database storage.', 'info', 5000);
+            showNotification('Game upload is a placeholder. (MOCK)', 'info', 5000);
         });
     }
     if (uiElements.postAdBtnWeb3) {
         uiElements.postAdBtnWeb3.addEventListener('click', () => {
-            showNotification('Ad posting is a placeholder. Implement backend logic for handling ad creatives and details.', 'info', 5000);
+            showNotification('Ad posting is a placeholder. (MOCK)', 'info', 5000);
         });
     }
 
@@ -1598,8 +1556,11 @@ function initializeEventListeners() {
     }
 }
 
-// --- Specific Event Handler Functions (Unchanged boilerplate for context) ---
+// --- Specific Event Handler Functions (MOCK IMPLEMENTATION) ---
 
+/**
+ * ✅ ИЗМЕНЕНИЕ: Симуляция минта NFT (MOCK).
+ */
 async function handleMintNftSubmit(e) {
     e.preventDefault();
     if (!walletPublicKey) {
@@ -1612,20 +1573,32 @@ async function handleMintNftSubmit(e) {
     }
 
     const formData = new FormData(uiElements.mintNftForm);
-    formData.append('creatorWallet', walletPublicKey.toBase58());
 
     try {
         showNotification('Minting NFT (simulation)...', 'info', 5000);
-        const response = await fetch(`${API_BASE_URL}/api/nfts/prepare-mint`, {
-            method: 'POST',
-            body: formData, // FormData sends as multipart/form-data
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        showNotification(`NFT successfully minted (simulation)! Metadata URI: ${result.uri}, Mint Address: ${result.mintAddress}`, 'success', 7000);
+
+        // --- MOCKING TRANSACTION LOGIC ---
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Имитация задержки
+
+        const newMintAddress = 'MINT_' + Date.now().toString().substring(5);
+        const newNft = {
+            mint: newMintAddress,
+            name: formData.get('nftName') || `Minted NFT #${MOCK_DB.nfts.length + 1}`,
+            description: formData.get('nftDescription') || 'User minted NFT (MOCK).',
+            owner: walletPublicKey.toBase58(),
+            price: 0,
+            isListed: false,
+            image: 'https://via.placeholder.com/180x180/ffd700/000000?text=NEW+MINT',
+            attributes: [{ trait_type: 'Creator', value: walletPublicKey.toBase58().substring(0, 8) }],
+        };
+
+        MOCK_DB.nfts.push(newNft);
+        MOCK_DB.nftHistory[newMintAddress] = [{ type: 'Mint', timestamp: new Date().toISOString(), to: walletPublicKey.toBase58() }];
+        persistMockData(); // Сохраняем в localStorage
+        const result = { uri: 'MOCK_URI', mintAddress: newMintAddress };
+        // --- END MOCKING ---
+
+        showNotification(`NFT successfully minted (simulation)! Mint Address: ${result.mintAddress}`, 'success', 7000);
         uiElements.mintNftForm.reset();
         await Promise.all([
             loadUserNFTs(walletPublicKey.toBase58()),
@@ -1633,12 +1606,15 @@ async function handleMintNftSubmit(e) {
         ]);
         if (uiElements.mintNftModal) uiElements.mintNftModal.style.display = 'none'; // Close modal after successful mint
     } catch (error) {
-        console.error('Error minting NFT:', error);
+        console.error('Error minting NFT (MOCK):', error);
         showNotification(`Failed to mint NFT: ${error.message}`, 'error');
         await diagnoseCodeIssue('handleMintNftSubmit', `NFT minting failed. Error: ${error.message}.`);
     }
 }
 
+/**
+ * ✅ ИЗМЕНЕНИЕ: Симуляция листинга NFT (MOCK).
+ */
 async function handleListNftSubmit(e) {
     e.preventDefault();
     if (!walletPublicKey) {
@@ -1662,30 +1638,28 @@ async function handleListNftSubmit(e) {
         showNotification('Please enter a valid sale price (greater than 0).', 'warning');
         return;
     }
-    if (isNaN(listingDuration) || listingDuration <= 0) {
-        showNotification('Please enter a valid listing duration (greater than 0).', 'warning');
-        return;
-    }
+    // duration validation omitted for mock simplicity
 
     try {
-        showNotification('Listing NFT for sale...', 'info');
-        const response = await fetch(`${API_BASE_URL}/api/nfts/list`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                mintAddress: mintAddress,
-                price: salePrice,
-                duration: listingDuration,
-                sellerWallet: walletPublicKey.toBase58(),
-            }),
-        });
+        showNotification('Listing NFT for sale (simulation)...', 'info');
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        // --- MOCKING TRANSACTION LOGIC ---
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Имитация задержки
+
+        const nftIndex = MOCK_DB.nfts.findIndex(n => n.mint === mintAddress && n.owner === walletPublicKey.toBase58());
+
+        if (nftIndex === -1) {
+            throw new Error('NFT not found or you are not the owner.');
         }
 
-        const result = await response.json();
+        MOCK_DB.nfts[nftIndex].isListed = true;
+        MOCK_DB.nfts[nftIndex].price = salePrice;
+        MOCK_DB.nfts[nftIndex].listingDuration = listingDuration; // Сохраняем длительность
+        persistMockData(); // Сохраняем в localStorage
+
+        const result = { message: `NFT ${MOCK_DB.nfts[nftIndex].name} successfully listed for ${salePrice} SOL (Simulation).` };
+        // --- END MOCKING ---
+
         showNotification(result.message, 'success');
         uiElements.listNftForm.reset();
         await Promise.all([
@@ -1693,12 +1667,15 @@ async function handleListNftSubmit(e) {
             loadMarketplaceNFTs()
         ]);
     } catch (error) {
-        console.error('Error listing NFT for sale:', error);
+        console.error('Error listing NFT for sale (MOCK):', error);
         showNotification(`Failed to list NFT for sale: ${error.message}`, 'error');
         await diagnoseCodeIssue('handleListNftSubmit', `NFT listing failed. Error: ${error.message}.`);
     }
 }
 
+/**
+ * ✅ ИЗМЕНЕНИЕ: Симуляция публикации объявления (MOCK).
+ */
 async function handlePublishAnnouncement() {
     if (!uiElements.announcementInput || !uiElements.publishButton) {
         showNotification('Announcement form elements not found.', 'error');
@@ -1712,30 +1689,29 @@ async function handlePublishAnnouncement() {
 
     try {
         uiElements.publishButton.disabled = true; // Disable button to prevent multiple submissions
-        showNotification('Publishing announcement...', 'info');
-        const response = await fetch(`${API_BASE_URL}/api/announcements`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text, date: new Date().toISOString() })
-        });
-        if (response.ok) {
-            uiElements.announcementInput.value = '';
-            await loadAnnouncements();
-            showNotification('Announcement published successfully!', 'success');
-        } else {
-            const errorData = await response.json();
-            showNotification(`Failed to publish announcement: ${errorData.error || response.statusText}. (Admin only in a real application)`, 'error');
-             await diagnoseCodeIssue('handlePublishAnnouncement', `Announcement publication failed. HTTP error: ${response.status}.`);
-        }
+        showNotification('Publishing announcement (simulation)...', 'info');
+
+        // --- ЗАМЕНА FETCH НА ЛОКАЛЬНУЮ ЛОГИКУ ---
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        MOCK_DB.announcements.push({ text: text, date: new Date().toISOString() });
+        persistMockData(); // Сохраняем в localStorage
+        // ------------------------------------------
+
+        uiElements.announcementInput.value = '';
+        await loadAnnouncements();
+        showNotification('Announcement published successfully (Simulation)!', 'success');
     } catch (error) {
-        console.error('Error publishing announcement:', error);
-        showNotification('Server connection error while publishing announcement.', 'error');
+        console.error('Error publishing announcement (MOCK):', error);
+        showNotification('Server connection error while publishing announcement (MOCK).', 'error');
         await diagnoseCodeIssue('handlePublishAnnouncement', `Network error publishing announcement. Error: ${error.message}.`);
     } finally {
         uiElements.publishButton.disabled = false; // Re-enable button
     }
 }
 
+/**
+ * ✅ ИЗМЕНЕНИЕ: Симуляция покупки NFT (MOCK).
+ */
 async function handleBuyNft() {
     if (!walletPublicKey) {
         showNotification('Please connect your wallet to buy an NFT.', 'warning');
@@ -1745,7 +1721,8 @@ async function handleBuyNft() {
         showNotification('NFT is not listed for sale or no price is set.', 'error');
         return;
     }
-    if (currentOpenNft.owner === walletPublicKey.toBase58()) {
+    const buyerWallet = walletPublicKey.toBase58();
+    if (currentOpenNft.owner === buyerWallet) {
         showNotification('You are the owner of this NFT.', 'warning');
         return;
     }
@@ -1756,29 +1733,38 @@ async function handleBuyNft() {
         if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.disabled = true;
 
         // --- MOCKING TRANSACTION LOGIC ---
-        // In a real application, the backend would return a serialized transaction to sign.
-        console.warn("NFT purchase is a simulation. Replace with actual serialized transaction signing.");
         await new Promise(resolve => setTimeout(resolve, 3000));
         const signature = "MOCK_SIGNATURE_BUY";
 
-        // Simulate success and update backend (simplified fetch for simulation)
-        const response = await fetch(`${API_BASE_URL}/api/nfts/buy-confirm`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({
-                 mintAddress: currentOpenNft.mint,
-                 buyerWallet: walletPublicKey.toBase58(),
-                 signature: signature
-             })
+        const nftIndex = MOCK_DB.nfts.findIndex(n => n.mint === currentOpenNft.mint);
+        if (nftIndex === -1) {
+            throw new Error('NFT not found in mock database.');
+        }
+
+        const sellerWallet = MOCK_DB.nfts[nftIndex].owner;
+
+        // Обновление статуса NFT
+        MOCK_DB.nfts[nftIndex].owner = buyerWallet;
+        MOCK_DB.nfts[nftIndex].isListed = false;
+        MOCK_DB.nfts[nftIndex].price = 0; // Сбрасываем цену
+
+        // Добавление в историю транзакций
+        MOCK_DB.nftHistory[currentOpenNft.mint] = MOCK_DB.nftHistory[currentOpenNft.mint] || [];
+        MOCK_DB.nftHistory[currentOpenNft.mint].push({
+            type: 'Sale',
+            timestamp: new Date().toISOString(),
+            from: sellerWallet,
+            to: buyerWallet,
+            price: currentOpenNft.price
         });
 
-        if (!response.ok) {
-             throw new Error("Backend failed to confirm sale (simulated).");
-        }
+        persistMockData(); // Сохраняем в localStorage
         // --- END MOCKING ---
 
-        showNotification(`Successfully purchased ${currentOpenNft.name}! Transaction ID: ${signature}`, 'success', 7000);
+        showNotification(`Successfully purchased ${currentOpenNft.name}! (Simulation Confirmed)`, 'success', 7000);
         if (uiElements.nftDetailsModal) uiElements.nftDetailsModal.style.display = 'none';
+
+        // Обновляем списки
         await Promise.all([
             loadMarketplaceNFTs(),
             loadUserNFTs(walletPublicKey.toBase58()),
@@ -1786,14 +1772,17 @@ async function handleBuyNft() {
         ]);
         currentOpenNft = null; // Clear the currently open NFT
     } catch (error) {
-        console.error('Error purchasing NFT:', error);
-        showNotification(`Failed to purchase NFT: ${error.message}. Check console.`, 'error');
+        console.error('Error purchasing NFT (MOCK):', error);
+        showNotification(`Failed to purchase NFT: ${error.message}. (MOCK)`, 'error');
         await diagnoseCodeIssue('handleBuyNft', `NFT purchase failed. Error: ${error.message}.`);
     } finally {
         if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.disabled = false; // Re-enable button
     }
 }
 
+/**
+ * ✅ ИЗМЕНЕНИЕ: Симуляция перевода NFT (MOCK).
+ */
 async function handleTransferNft() {
     if (!walletPublicKey) {
         showNotification('Please connect your wallet to transfer an NFT.', 'warning');
@@ -1803,12 +1792,13 @@ async function handleTransferNft() {
         showNotification('No NFT selected for transfer.', 'warning');
         return;
     }
-    if (currentOpenNft.owner !== walletPublicKey.toBase58()) {
+    const senderWallet = walletPublicKey.toBase58();
+    if (currentOpenNft.owner !== senderWallet) {
         showNotification('You are not the owner of this NFT to transfer it.', 'warning');
         return;
     }
 
-    const recipientAddress = prompt("Enter the recipient's public address for the NFT:");
+    const recipientAddress = prompt("Enter the recipient's public address for the NFT (MOCK):");
     if (!recipientAddress) {
         showNotification('Transfer cancelled. Recipient address not provided.', 'info');
         return;
@@ -1816,7 +1806,7 @@ async function handleTransferNft() {
     let recipientPublicKey;
     try {
         recipientPublicKey = new SolanaWeb3.PublicKey(recipientAddress);
-        if (recipientPublicKey.toBase58() === walletPublicKey.toBase58()) {
+        if (recipientPublicKey.toBase58() === senderWallet) {
             showNotification("Cannot transfer NFT to your own address.", "warning");
             return;
         }
@@ -1827,50 +1817,35 @@ async function handleTransferNft() {
 
     try {
         uiElements.nftDetailTransferBtn.disabled = true; // Disable button during transfer
-        showNotification(`Preparing to transfer ${currentOpenNft.name} to ${recipientAddress}...`, 'info', 5000);
+        showNotification(`Preparing to transfer ${currentOpenNft.name} to ${recipientAddress}... (Simulation)`, 'info', 5000);
 
-        const nftMintPublicKey = new SolanaWeb3.PublicKey(currentOpenNft.mint);
+        // --- MOCKING TRANSACTION LOGIC ---
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const signature = "MOCK_SIGNATURE_TRANSFER";
 
-        // --- ACTUAL TRANSFER LOGIC (Simplified from full block for brevity) ---
-        const ownerTokenAccount = await SolanaToken.getAssociatedTokenAddress(nftMintPublicKey, walletPublicKey);
-        const destinationTokenAccount = await SolanaToken.getAssociatedTokenAddress(nftMintPublicKey, recipientPublicKey);
-        const instructions = [];
-
-        // Check/Create ATA logic (omitted for brevity, but it's correct in the original block)
-        const destAccountInfo = await connection.getAccountInfo(destinationTokenAccount);
-        if (!destAccountInfo) {
-             instructions.push(
-                SolanaToken.createAssociatedTokenAccountInstruction(
-                    walletPublicKey, destinationTokenAccount, recipientPublicKey, nftMintPublicKey, SolanaToken.TOKEN_PROGRAM_ID, SolanaWeb3.SystemProgram.programId
-                )
-             );
+        const nftIndex = MOCK_DB.nfts.findIndex(n => n.mint === currentOpenNft.mint);
+        if (nftIndex === -1) {
+            throw new Error('NFT not found in mock database.');
         }
 
-        instructions.push(
-            SolanaToken.createTransferInstruction(
-                ownerTokenAccount, destinationTokenAccount, walletPublicKey, 1, [], SolanaToken.TOKEN_PROGRAM_ID
-            )
-        );
+        // Обновление статуса NFT
+        MOCK_DB.nfts[nftIndex].owner = recipientAddress;
+        MOCK_DB.nfts[nftIndex].isListed = false; // Снимаем с листинга при переводе
+        MOCK_DB.nfts[nftIndex].price = 0;
 
-        const transaction = new SolanaWeb3.Transaction().add(...instructions);
-        transaction.feePayer = walletPublicKey;
-        transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
-
-        const signature = await provider.sendAndConfirm(transaction);
-        console.log("NFT transfer successful:", signature);
-        // --- END ACTUAL TRANSFER LOGIC ---
-
-        // Simulate backend update after successful on-chain transfer
-        await fetch(`${API_BASE_URL}/api/nfts/transfer-confirm`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({
-                 mintAddress: currentOpenNft.mint,
-                 newOwnerWallet: recipientAddress
-             })
+        // Добавление в историю транзакций
+        MOCK_DB.nftHistory[currentOpenNft.mint] = MOCK_DB.nftHistory[currentOpenNft.mint] || [];
+        MOCK_DB.nftHistory[currentOpenNft.mint].push({
+            type: 'Transfer',
+            timestamp: new Date().toISOString(),
+            from: senderWallet,
+            to: recipientAddress
         });
 
-        showNotification(`NFT ${currentOpenNft.name} successfully transferred to ${recipientAddress}! Transaction ID: ${signature}`, 'success', 7000);
+        persistMockData(); // Сохраняем в localStorage
+        // --- END MOCKING ---
+
+        showNotification(`NFT ${currentOpenNft.name} successfully transferred! (Simulation Confirmed)`, 'success', 7000);
         if (uiElements.nftDetailsModal) uiElements.nftDetailsModal.style.display = 'none';
         await Promise.all([
             loadUserNFTs(walletPublicKey.toBase58()),
@@ -1878,8 +1853,8 @@ async function handleTransferNft() {
         ]);
         currentOpenNft = null;
     } catch (error) {
-        console.error('Error transferring NFT:', error);
-        showNotification(`Failed to transfer NFT: ${error.message}. Check console.`, 'error');
+        console.error('Error transferring NFT (MOCK):', error);
+        showNotification(`Failed to transfer NFT: ${error.message}. (MOCK)`, 'error');
         await diagnoseCodeIssue('handleTransferNft', `NFT transfer failed. Error: ${error.message}.`);
     } finally {
         if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.disabled = false;
@@ -1887,6 +1862,7 @@ async function handleTransferNft() {
 }
 
 function handleCopyText(event) {
+    // ... (Не изменено)
     const button = event.currentTarget;
     const textToCopyElement = button.previousElementSibling;
     if (textToCopyElement && textToCopyElement.classList.contains('highlight-text')) {
@@ -1909,6 +1885,7 @@ function handleCopyText(event) {
 }
 
 function handleSwapDirection() {
+    // ... (Не изменено)
     if (!uiElements.swapFromTokenSelect || !uiElements.swapToTokenSelect) {
         console.error("Swap direction UI elements not found.");
         return;
@@ -1925,6 +1902,7 @@ function handleSwapDirection() {
 }
 
 function clearSwapQuote() {
+    // ... (Не изменено)
     currentJupiterQuote = null;
     if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
     if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
@@ -1934,11 +1912,13 @@ function clearSwapQuote() {
 }
 
 async function updateSwapSection() {
+    // ... (Не изменено)
     await updateSwapBalances();
     clearSwapQuote();
 }
 
 async function handleMaxAmount(event) {
+    // ... (Не изменено)
     const inputId = event.target.dataset.inputId;
     const inputElement = document.getElementById(inputId);
 
@@ -2026,10 +2006,8 @@ function handleContactFormSubmit(e) {
     }
 
     if (isValid) {
-        console.log('Contact form data:', { name, email, subject, message });
-        // In a real application, you would send this data to a backend API
-        // For now, just simulate success
-        showNotification('Message sent successfully! (This is a simulation, integrate with backend for real functionality)', 'success', 5000);
+        console.log('Contact form data (MOCK):', { name, email, subject, message });
+        showNotification('Message sent successfully! (This is a simulation)', 'success', 5000);
         uiElements.contactForm.reset();
     } else {
         // Display validation errors
@@ -2038,26 +2016,22 @@ function handleContactFormSubmit(e) {
 }
 
 
-// --- LIVE TRADING DATA AND AI FORECAST FUNCTIONS ---
+// --- LIVE TRADING DATA AND AI FORECAST FUNCTIONS (Остаются внешними или MOCK) ---
 
 /**
- * PSEUDO-FUNCTION: Fetches an AI-driven price forecast for AFOX.
- * In a real application, this would call a dedicated ML model server.
- * @param {object} currentMarketData - Current data (priceNative, priceChange) from Dexscreener.
+ * ✅ ИЗМЕНЕНИЕ: PSEUDO-FUNCTION: Fetches an AI-driven price forecast for AFOX (MOCK).
  */
 async function fetchAIForecast(currentMarketData) {
     if (!uiElements.aiPriceForecast) return;
 
-    uiElements.aiPriceForecast.innerHTML = '<span style="color:#aaa;">AI is calculating...</span>';
+    uiElements.aiPriceForecast.innerHTML = '<span style="color:#aaa;">AI is calculating (MOCK)...</span>';
 
-    // Simulate a network call to an AI/ML API endpoint
+    // --- MOCK AI LOGIC (Simulated Heuristic) ---
     try {
-        // --- MOCK AI LOGIC (Replace with actual ML API call) ---
-        // For demonstration, we use a simple heuristic based on the last 24h change.
         const change = parseFloat(currentMarketData.priceChange.h24);
 
         let forecastMessage;
-        let styleColor; // Use styleColor instead of CSS class for simplicity in JS template literal
+        let styleColor;
 
         if (change > 5) {
             forecastMessage = "STRONG BUY: AI detects strong upward momentum (Bullish).";
@@ -2073,29 +2047,26 @@ async function fetchAIForecast(currentMarketData) {
             styleColor = 'var(--color-warning, #ffc107)'; // Yellow
         }
 
-        // Calculate a projected price based on current price and 24h change (simple linear projection mock)
         const currentPrice = parseFloat(currentMarketData.priceNative);
-        // Use toFixed(9) for precision, then remove trailing zeros for clean display
         const next24hPrice = (currentPrice * (1 + change / 100)).toFixed(9).replace(/\.?0+$/, '');
 
         // Display result in UI
         uiElements.aiPriceForecast.innerHTML = `
-            <strong>24H Outlook:</strong> <span style="color:${styleColor}; font-weight:bold;">${forecastMessage}</span><br>
+            <strong>24H Outlook (MOCK):</strong> <span style="color:${styleColor}; font-weight:bold;">${forecastMessage}</span><br>
             *Projected price in 24h: ≈ <span style="font-weight:bold;">${next24hPrice} SOL</span>
         `;
 
     } catch (error) {
-        console.error("Failed to fetch AI forecast:", error);
+        console.error("Failed to fetch AI forecast (MOCK):", error);
         uiElements.aiPriceForecast.innerHTML = 'AI Forecast: <span style="color:#dc3545;">Service Unavailable.</span>';
     }
 }
 
 /**
- * Fetches and displays trading data for the AFOX/SOL pair from Dexscreener.
- * It also embeds a TradingView chart widget and calls the AI forecast function.
+ * Fetches and displays trading data for the AFOX/SOL pair from Dexscreener. (Не изменено)
  */
 async function fetchAndDisplayTradingData() {
-    // The Dexscreener API allows searching for pairs by token address.
+    // Это внешний API, его оставляем
     const dexscreenerApiUrl = `https://api.dexscreener.com/latest/dex/tokens/${AFOX_MINT_ADDRESS_STRING}`;
 
     const livePriceElement = document.getElementById('livePriceAfoxSol');
@@ -2122,7 +2093,6 @@ async function fetchAndDisplayTradingData() {
         }
         const data = await response.json();
 
-        // Check if pairs exist and select the main pair
         if (!data.pairs || data.pairs.length === 0) {
             resetUI();
             console.warn("AFOX/SOL pair not found on Dexscreener.");
@@ -2130,25 +2100,17 @@ async function fetchAndDisplayTradingData() {
             return;
         }
 
-        // Selecting the first (presumably main) pair
         const pair = data.pairs.find(p => p.quoteToken.symbol === 'SOL') || data.pairs[0];
 
-        // Get necessary data
-        // Price in the native token (SOL in this case, as we queried on Solana)
-        const priceSol = parseFloat(pair.priceNative).toFixed(9).replace(/\.?0+$/, ''); // Remove trailing zeros
-        // Price change in 24 hours in percentage
+        const priceSol = parseFloat(pair.priceNative).toFixed(9).replace(/\.?0+$/, '');
         const priceChange24h = parseFloat(pair.priceChange.h24).toFixed(2);
-        // Total liquidity in USD, rounded
         const liquidityUsd = Math.round(pair.liquidity.usd).toLocaleString('en-US');
 
-        // Update price data in HTML
         if (livePriceElement) livePriceElement.textContent = priceSol;
         if (liquidityElement) liquidityElement.textContent = `$${liquidityUsd}`;
 
-        // Update price change and color
         if (priceChangeElement) {
             priceChangeElement.textContent = `${priceChange24h}%`;
-            // Set style based on price change (assuming CSS variables are defined)
             if (priceChange24h > 0) {
                 priceChangeElement.style.color = 'var(--color-success, green)';
             } else if (priceChange24h < 0) {
@@ -2158,9 +2120,7 @@ async function fetchAndDisplayTradingData() {
             }
         }
 
-        // **Integrate Chart (TradingView Widget from Dexscreener)**
         if (chartContainer) {
-             // We use the pairAddress to embed the specific chart
              chartContainer.innerHTML = `
                 <iframe
                     src="https://widget.dexscreener.com/embed/solana/${pair.pairAddress}?module=chart&theme=dark"
@@ -2179,11 +2139,11 @@ async function fetchAndDisplayTradingData() {
     } catch (error) {
         console.error("Failed to fetch trading data:", error);
         resetUI('Error');
-        showNotification(`Failed to load trading data: ${error.message}`, 'error', 5000);
+        showNotification(`Failed to load trading data (Dexscreener): ${error.message}`, 'error', 5000);
     }
 }
 
-// --- DOMContentLoaded EXECUTION ---
+// --- DOMContentLoaded EXECUTION (Не изменено, кроме добавления loadMarketplaceNFTs) ---
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize UI elements and cache references
@@ -2196,7 +2156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeEventListeners();
 
     // 3. Initialize Jupiter Terminal for the swap section
-    initializeJupiterTerminal(); // Initialize Jupiter Terminal with the primary RPC
+    initializeJupiterTerminal();
 
     // 4. --- Initial Data Loads on Page Ready & Auto-Connect ---
     await Promise.all([
@@ -2209,14 +2169,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Attempt to auto-connect wallet
     try {
         const selectedWallet = WALLETS[0];
-        // Check if the wallet adapter is connected and has a public key
         if (selectedWallet && selectedWallet.connected && selectedWallet.publicKey) {
             walletPublicKey = selectedWallet.publicKey;
             provider = selectedWallet;
-            // Use the backup RPC for general connection tasks
             connection = new SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
 
             updateWalletUI(walletPublicKey.toBase58());
+
+            // ✅ ДОБАВЛЕНИЕ: Обновление владельцев моковых NFT при автоподключении
+            MOCK_DB.nfts.forEach(nft => {
+                if (nft.owner === 'NO_WALLET_CONNECTED') {
+                    nft.owner = walletPublicKey.toBase58();
+                }
+            });
+            persistMockData();
+            // ---------------------------------------------------------------------
+
             // Load all user-specific data
             await Promise.all([
                 loadUserNFTs(walletPublicKey.toBase58()),
@@ -2229,7 +2197,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             handleWalletDisconnect();
         }
     } catch (e) {
-        // This usually happens if Phantom is not installed or not authorized for auto-connect
         console.warn("Auto-connect failed or wallet not found/authorized:", e);
         handleWalletDisconnect();
     }
@@ -2238,20 +2205,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchAndDisplayTradingData();
 
     // Optional: Refresh data every 60 seconds
-    // Note: Be mindful of API rate limits if using a free tier.
     setInterval(fetchAndDisplayTradingData, 60000);
 
     // Final Mobile Menu Fix (Ensuring scroll lock is handled by the first event listener block)
     const menuToggle = document.getElementById('menuToggle');
     const mainNav = document.getElementById('mainNav');
     if (menuToggle && mainNav) {
-        // This ensures the correct class 'active' is used by the main logic's initializeEventListeners
         const toggleMenu = () => {
              const isActive = mainNav.classList.contains('active');
              document.body.classList.toggle('menu-open', !isActive);
         };
         menuToggle.addEventListener('click', toggleMenu);
-        // Attach to nav links for closing menu
         mainNav.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
                 if (mainNav.classList.contains('active')) {
@@ -2259,7 +2223,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         });
-        // Attach to the close button cross too
         if (uiElements.closeMainMenuCross) {
              uiElements.closeMainMenuCross.addEventListener('click', () => {
                  document.body.classList.remove('menu-open');
