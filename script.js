@@ -1,19 +1,9 @@
 // --- Global Constants and Configuration ---
-
-// AFOX Contract Address (Mint)
+// ❗️ ЗАМЕНЕНЫ НА БЛОК ВЫШЕ ❗️
 const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
-// SOL Mint Address (Native Token)
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
-
-// --- AI FORECAST CONFIGURATION (MOCK) ---
-// Эти URL теперь используются только для консольного вывода (MOCK).
-// const AI_FORECAST_API_URL = 'MOCK_URL'; // Удалено
-// const DIAGNOSTICS_API_URL = 'MOCK_URL'; // Удалено
-
 // ------------------------------------------------------------------
-// **RPC Fix Configuration** (Оставлено, так как это запросы к Solana, а не к вашему бэкенду)
-// ------------------------------------------------------------------
-const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag'; // Jupiter's recommended RPC (often Helius)
+const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag'; 
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 
 // State variables for chart overlay fix
@@ -23,8 +13,8 @@ let birdeyeContainerOriginalDisplay = 'block'; // To store the original display 
 // --- CONSTANTS AND SETTINGS ---
 const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
 const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
-const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // Оставлено, так как это внешний API
-const API_BASE_URL = 'MOCK_BASE_URL'; // Заглушка
+const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; 
+// ✅ ИЗМЕНЕНИЕ: Удалили заглушку API_BASE_URL, используя ее из блока выше.
 const AFOX_MINT_ADDRESS_STRING = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
 
 // Mint addresses for tokens supported in the swap functionality
@@ -346,31 +336,33 @@ function showNotification(message, type = 'info', duration = 3000) {
 }
 
 /**
- * Formats a BigNumber amount given its decimals.
- * @param {BN | string | number} amount - The amount as BN, string, or number.
+ * ✅ ИЗМЕНЕНИЕ: Форматирует BigInt (вместо BN) с учетом десятичных знаков.
+ * @param {BigInt | string | number} amount - The amount as BigInt, string, or number.
  * @param {number} decimals - The number of decimal places for the token.
  * @returns {string} The formatted number as a string.
  */
 function formatBigInt(amount, decimals) {
     if (amount === undefined || amount === null || decimals === undefined || decimals === null || isNaN(decimals)) return '0';
-    let bnAmount;
+    let bigIntAmount;
     try {
-        // Ensure conversion to string for BN if it's a number
-        bnAmount = new BN(String(amount));
+        // Используем BigInt для точного представления
+        bigIntAmount = BigInt(amount);
     } catch (e) {
-        console.error("Invalid amount for BN conversion:", amount, e);
+        console.error("Invalid amount for BigInt conversion:", amount, e);
         return '0';
     }
 
-    let str = bnAmount.toString();
-    // Pad with leading zeros if amount is smaller than 1.0
+    const str = bigIntAmount.toString();
+    // Паддинг и вставка десятичной точки
     if (str.length <= decimals) {
-        str = '0.' + '0'.repeat(decimals - str.length) + str;
+        // Пример: amount=123, decimals=6 -> "0.000123"
+        return '0.' + '0'.repeat(decimals - str.length) + str;
     } else {
-        str = str.slice(0, str.length - decimals) + '.' + str.slice(str.length - decimals);
+        // Пример: amount=123456789, decimals=6 -> "123.456789"
+        const integerPart = str.slice(0, str.length - decimals);
+        const fractionalPart = str.slice(str.length - decimals);
+        return integerPart + '.' + fractionalPart.replace(/0+$/, ''); // Удаление конечных нулей
     }
-    // Remove trailing zeros and decimal point if it's an integer
-    return str.replace(/\.?0+$/, '');
 }
 
 /**
@@ -414,17 +406,6 @@ async function updateStakingAndBalanceUI() {
     }
 }
 
-/**
- * ✅ ИЗМЕНЕНИЕ: PSEUDO-FUNCTION: Заглушка для диагностики AI.
- * @async
- */
-// async function diagnoseCodeIssue(functionName, errorDetails) { // Удалено
-//     // В автономном режиме просто логируем ошибку в консоль
-//     console.error(`[AI Diagnostic MOCK Triggered] Function: ${functionName}, Details: ${errorDetails}`);
-//     console.log(`[AI Diagnostic MOCK Result]: Error analysis logged to console.`);
-// } // Удалено
-
-
 // --- WALLET CONNECTION & STATE MANAGEMENT (Не изменено) ---
 
 /**
@@ -461,7 +442,7 @@ async function handlePublicKeyChange(publicKey) {
         MOCK_DB.nfts.forEach(nft => {
              // Если NFT был назначен заглушке, переназначаем его новому владельцу
             if (nft.owner === 'NO_WALLET_CONNECTED' || nft.owner.startsWith('MOCK_MINT')) {
-                 nft.owner = walletPublicKey.toBase58();
+                 nft.owner = walletPublicKey.toBase558();
             }
         });
         persistMockData();
@@ -664,8 +645,8 @@ async function updateSwapBalances() {
                 const amount = tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount;
                 const decimals = tokenAccount.value[0].account.data.parsed.info.tokenAmount.decimals;
                 if (uiElements.swapFromBalanceSpan) {
-                    // Use a common formatting style that is human-readable
-                    const formattedAmount = (Number(amount) / (10 ** decimals)).toFixed(4).replace(/\.?0+$/, '');
+                    // Используем formatBigInt для больших чисел.
+                    const formattedAmount = formatBigInt(amount, decimals);
                     uiElements.swapFromBalanceSpan.textContent = `${formattedAmount} ${uiElements.swapFromTokenSelect.value}`;
                 }
             } else {
@@ -716,7 +697,8 @@ async function getQuote() {
     }
 
     const decimalsFrom = getTokenDecimals(fromMint);
-    const inputAmountLamports = (amount * (10 ** decimalsFrom)).toFixed(0);
+    // Используем BigInt для точного представления
+    const inputAmountLamports = (BigInt(Math.round(amount * (10 ** decimalsFrom)))).toString();
 
     showNotification('Getting the best swap quote...', 'info');
     if (uiElements.getQuoteBtn) uiElements.getQuoteBtn.disabled = true;
@@ -836,7 +818,6 @@ async function executeSwap() {
     } catch (error) {
         console.error('Error during swap execution:', error);
         showNotification(`Swap failed: ${error.message}. Check console for details.`, 'error');
-        // await diagnoseCodeIssue('executeSwap', `Swap transaction failed. Error: ${error.message}.`); // Удалено
     } finally {
         if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.disabled = false;
     }
@@ -1163,6 +1144,12 @@ async function handleStakeAfox() {
     try {
         showNotification(`Initiating staking of ${amount} AFOX... (Simulation)`, 'info', 5000);
 
+        // 🚀 ВАШ РЕАЛЬНЫЙ КОД SOLANA ТРАНЗАКЦИИ ЗДЕСЬ (Anchor/Web3.js) 🚀
+        // 1. Создайте инструкцию Anchor/Web3.js для вызова функции `stake`.
+        // 2. Соберите транзакцию и отправьте ее на подпись.
+        // const tx = new SolanaWeb3.Transaction().add(instructionStake);
+        // const signature = await provider.sendAndConfirm(tx);
+        
         // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate delay
         const userKey = walletPublicKey.toBase58();
@@ -1182,7 +1169,6 @@ async function handleStakeAfox() {
         console.error('Error during staking (MOCK):', error);
         const errorMessage = error.message || "An unknown network error occurred.";
         showNotification(`Staking failed. Details: ${errorMessage.substring(0, 50)}...`, 'error');
-        // await diagnoseCodeIssue('handleStakeAfox', `Staking transaction for ${amount} AFOX failed. Error: ${error.message}.`); // Удалено
     } finally {
         if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
     }
@@ -1202,6 +1188,8 @@ async function handleClaimRewards() {
 
     try {
         showNotification('Attempting to claim rewards... (Simulation)', 'info');
+        
+        // 🚀 ВАШ РЕАЛЬНЫЙ КОД SOLANA ТРАНЗАКЦИИ ЗДЕСЬ (Anchor/Web3.js) 🚀
 
         // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 2500));
@@ -1220,7 +1208,6 @@ async function handleClaimRewards() {
         console.error('Error claiming rewards (MOCK):', error);
         const errorMessage = error.message || "An unknown network error occurred.";
         showNotification(`Claiming failed. Details: ${errorMessage.substring(0, 50)}...`, 'error');
-        // await diagnoseCodeIssue('handleClaimRewards', `Claim rewards transaction failed. Error: ${error.message}.`); // Удалено
 
     } finally {
         if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = false;
@@ -1251,6 +1238,8 @@ async function handleUnstakeAfox() {
     try {
         showNotification(`Attempting to unstake ${amount.toFixed(4)} tokens... (Simulation)`, 'info');
 
+        // 🚀 ВАШ РЕАЛЬНЫЙ КОД SOLANA ТРАНЗАКЦИИ ЗДЕСЬ (Anchor/Web3.js) 🚀
+
         // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 3000));
         MOCK_DB.staking[userKey].stakedAmount = 0; // Сбрасываем стейкинг
@@ -1266,7 +1255,6 @@ async function handleUnstakeAfox() {
         console.error('Error unstaking tokens (MOCK):', error);
         const errorMessage = error.message || "An unknown network error occurred.";
         showNotification(`Unstaking failed. Details: ${errorMessage.substring(0, 50)}...`, 'error');
-        // await diagnoseCodeIssue('handleUnstakeAfox', `Unstake transaction failed. Error: ${error.message}.`); // Удалено
 
     } finally {
         if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = false;
@@ -1577,6 +1565,11 @@ async function handleMintNftSubmit(e) {
     try {
         showNotification('Minting NFT (simulation)...', 'info', 5000);
 
+        // 🚀 ВАШ РЕАЛЬНЫЙ КОД SOLANA ТРАНЗАКЦИИ ЗДЕСЬ (Anchor/Web3.js) 🚀
+        // 1. Создайте инструкции для минта NFT.
+        // const tx = new SolanaWeb3.Transaction().add(instructionMint);
+        // const signature = await provider.sendAndConfirm(tx);
+        
         // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 1500)); // Имитация задержки
 
@@ -1608,7 +1601,6 @@ async function handleMintNftSubmit(e) {
     } catch (error) {
         console.error('Error minting NFT (MOCK):', error);
         showNotification(`Failed to mint NFT: ${error.message}`, 'error');
-        // await diagnoseCodeIssue('handleMintNftSubmit', `NFT minting failed. Error: ${error.message}.`); // Удалено
     }
 }
 
@@ -1643,6 +1635,9 @@ async function handleListNftSubmit(e) {
     try {
         showNotification('Listing NFT for sale (simulation)...', 'info');
 
+        // 🚀 ВАШ РЕАЛЬНЫЙ КОД SOLANA ТРАНЗАКЦИИ ЗДЕСЬ (Anchor/Web3.js) 🚀
+        // 1. Создайте инструкцию Anchor/Web3.js для вызова функции `list`.
+        
         // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 1500)); // Имитация задержки
 
@@ -1669,7 +1664,6 @@ async function handleListNftSubmit(e) {
     } catch (error) {
         console.error('Error listing NFT for sale (MOCK):', error);
         showNotification(`Failed to list NFT for sale: ${error.message}`, 'error');
-        // await diagnoseCodeIssue('handleListNftSubmit', `NFT listing failed. Error: ${error.message}.`); // Удалено
     }
 }
 
@@ -1703,7 +1697,6 @@ async function handlePublishAnnouncement() {
     } catch (error) {
         console.error('Error publishing announcement (MOCK):', error);
         showNotification('Server connection error while publishing announcement (MOCK).', 'error');
-        // await diagnoseCodeIssue('handlePublishAnnouncement', `Network error publishing announcement. Error: ${error.message}.`); // Удалено
     } finally {
         uiElements.publishButton.disabled = false; // Re-enable button
     }
@@ -1731,6 +1724,9 @@ async function handleBuyNft() {
 
     try {
         if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.disabled = true;
+
+        // 🚀 ВАШ РЕАЛЬНЫЙ КОД SOLANA ТРАНЗАКЦИИ ЗДЕСЬ (Anchor/Web3.js) 🚀
+        // 1. Создайте инструкцию Anchor/Web3.js для вызова функции `buy`.
 
         // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -1774,7 +1770,6 @@ async function handleBuyNft() {
     } catch (error) {
         console.error('Error purchasing NFT (MOCK):', error);
         showNotification(`Failed to purchase NFT: ${error.message}. (MOCK)`, 'error');
-        // await diagnoseCodeIssue('handleBuyNft', `NFT purchase failed. Error: ${error.message}.`); // Удалено
     } finally {
         if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.disabled = false; // Re-enable button
     }
@@ -1819,6 +1814,9 @@ async function handleTransferNft() {
         uiElements.nftDetailTransferBtn.disabled = true; // Disable button during transfer
         showNotification(`Preparing to transfer ${currentOpenNft.name} to ${recipientAddress}... (Simulation)`, 'info', 5000);
 
+        // 🚀 ВАШ РЕАЛЬНЫЙ КОД SOLANA ТРАНЗАКЦИИ ЗДЕСЬ (Web3.js/Token Program) 🚀
+        // 1. Создайте инструкцию для перевода токена (NFT)
+        
         // --- MOCKING TRANSACTION LOGIC ---
         await new Promise(resolve => setTimeout(resolve, 3000));
         const signature = "MOCK_SIGNATURE_TRANSFER";
@@ -1855,7 +1853,6 @@ async function handleTransferNft() {
     } catch (error) {
         console.error('Error transferring NFT (MOCK):', error);
         showNotification(`Failed to transfer NFT: ${error.message}. (MOCK)`, 'error');
-        // await diagnoseCodeIssue('handleTransferNft', `NFT transfer failed. Error: ${error.message}.`); // Удалено
     } finally {
         if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.disabled = false;
     }
@@ -1960,7 +1957,7 @@ async function handleMaxAmount(event) {
             if (tokenAccount.value.length > 0) {
                 const amount = tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount;
                 const decimals = tokenAccount.value[0].account.data.parsed.info.tokenAmount.decimals;
-                inputElement.value = formatBigInt(new BN(amount), decimals);
+                inputElement.value = formatBigInt(BigInt(amount), decimals); // ✅ ИЗМЕНЕНИЕ: Использование BigInt
             } else {
                 inputElement.value = '0';
             }
