@@ -1071,52 +1071,7 @@
         }
 
         /**
-         * 3. Публикация Нового Объявления (Админ-функция) - ИСПОЛЬЗУЕТСЯ FIRESTORE
-         */
-        function handlePublishAnnouncement() {
-            const publishButton = document.getElementById('publishButton');
-            const announcementInput = document.getElementById('announcementInput');
-            if (!publishButton || !announcementInput) return;
-
-            publishButton.addEventListener('click', async () => {
-                const content = announcementInput.value.trim();
-                // Используем первую строку как заголовок, если он не задан
-                const title = content.split('\n')[0].substring(0, 50) + (content.length > 50 ? '...' : ''); 
-                if (content.length < 10) {
-                    showNotification("Объявление слишком короткое.", 'warning');
-                    return;
-                }
-
-                publishButton.disabled = true;
-                publishButton.textContent = 'Публикация...';
-                showNotification('Публикация объявления...', 'info');
-
-                try {
-                    // Используем глобальный объект firebase для доступа к FieldValue
-                    await db.collection(COLLECTIONS.ANNOUNCEMENTS).add({
-                        title: title,
-                        content: content,
-                        // Используем auth.currentUser, который определен в глобальной области
-                        author: auth.currentUser ? auth.currentUser.email : 'Admin (Unauthenticated)',
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    announcementInput.value = ''; 
-                    showNotification("Объявление успешно опубликовано!", 'success');
-                    fetchAnnouncements(); 
-
-                } catch (error) {
-                    console.error("Ошибка при публикации объявления:", error);
-                    showNotification("Ошибка публикации: " + error.message, 'error');
-                } finally {
-                    publishButton.disabled = false;
-                    publishButton.textContent = 'Publish Announcement';
-                }
-            });
-        }
-
-        /**
-         * 4. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         * 3. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
          */
         function handleContactForm() {
             const contactForm = document.getElementById('contactForm');
@@ -1156,7 +1111,7 @@
         }
         
         /**
-         * 5. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         * 4. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE
          */
          async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
@@ -1198,7 +1153,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchNews();
             fetchAnnouncements();
-            handlePublishAnnouncement();
+            // handlePublishAnnouncement(); <-- REMOVED THIS CALL
             handleContactForm();
             
             // Загрузка списков с контентом
