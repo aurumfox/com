@@ -48,84 +48,7 @@
     
     <style>
         /* Style for the AI Diagnostic module, integrated with the Aurum Fox theme */
-        .ai-insights-module {
-            margin-top: 40px;
-            padding: 30px;
-            background-color: #2c3e50; /* var(--color-secondary-bg) */
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            color: #fff;
-        }
-        /* ... (Остальные стили остаются без изменений) ... */
-        .ai-diagnostic-tool__heading {
-            color: #ffd700; /* var(--color-highlight) */
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8em;
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        .ai-diagnostic-tool__description {
-            color: #aaa; /* var(--color-text-faded) */
-            font-size: 0.95em;
-            margin-bottom: 20px;
-        }
-
-        .ai-diagnostic-tool__controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .ai-diagnostic-tool__selector,
-        .ai-diagnostic-tool__input {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #444; 
-            background-color: #1a1a2e; /* var(--color-primary-bg) */
-            color: #fff;
-            font-size: 1em;
-            flex-grow: 1;
-            min-width: 180px;
-            box-sizing: border-box;
-        }
-
-        .ai-diagnostic-tool__selector:focus,
-        .ai-diagnostic-tool__input:focus {
-            border-color: #ffd700;
-            outline: none;
-        }
-        
-        .ai-diagnostic-tool__button {
-            background-color: #e6b300 !important; /* var(--color-accent) */
-            color: #1a1a2e !important; /* var(--color-primary-bg) */
-            border: none; 
-            padding: 10px 15px; 
-            cursor: pointer;
-            font-weight: 700;
-            border-radius: 8px;
-            transition: background-color 0.2s, filter 0.2s; 
-            flex-shrink: 0; 
-        }
-
-        .ai-diagnostic-tool__button:hover {
-            filter: brightness(110%);
-        }
-
-        .ai-diagnostic-tool__output {
-            margin-top: 20px; 
-            padding: 15px; 
-            border: 1px solid #444; 
-            border-radius: 8px; 
-            background-color: #1a1a2e; /* var(--color-primary-bg) */
-            white-space: pre-wrap;
-            font-family: monospace;
-            color: #e0e0e0; /* var(--color-text-output) */
-            min-height: 80px;
-            overflow-x: auto;
-        }
-
+        /* УДАЛЕНЫ СТИЛИ ДЛЯ .ai-insights-module И ЕГО ДОЧЕРНИХ ЭЛЕМЕНТОВ */
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -780,53 +703,6 @@
             </div>
         </section>
         
-        <section id="ai-section" class="web3-section ai-insights-module" aria-labelledby="ai-insights-heading">
-            
-            <h2 id="ai-insights-heading" class="aurum-heading">AI-Driven Insights</h2>
-            
-            <div id="ai-code-assistant" 
-                 class="ai-diagnostic-tool"
-                 role="region" aria-labelledby="ai-diagnostics-heading">
-                
-                <h3 id="ai-diagnostics-heading" class="ai-diagnostic-tool__heading">🤖 AI Code Assistant Diagnostics</h3>
-                <p class="ai-diagnostic-tool__description">
-                    Manually select a function and enter the error details, or paste a transaction ID for the AI to diagnose on-chain failures.
-                </p>
-                
-                <div class="ai-diagnostic-tool__controls">
-                    
-                    <label for="functionSelector" class="visually-hidden">Select Broken Function</label>
-                    <select id="functionSelector" 
-                            class="ai-diagnostic-tool__selector"
-                            aria-label="Select Broken Function">
-                        <option value="">-- Select Broken Function --</option>
-                        <option value="connectWallet">connectWallet()</option>
-                        <option value="getQuote">getQuote() (Swap)</option>
-                        <option value="executeSwap">executeSwap() (Swap)</option>
-                        <option value="handleStakeAfox">handleStakeAfox() (Staking)</option>
-                        <option value="handleClaimRewards">handleClaimRewards() (Staking)</option>
-                        <option value="handleBuyNft">handleBuyNft() (NFT)</option>
-                        <option value="handleTransferNft">handleTransferNft() (NFT)</option>
-                    </select>
-                    
-                    <label for="issueDetailsInput" class="visually-hidden">Error Details or Transaction ID</label>
-                    <input type="text" id="issueDetailsInput" 
-                           class="ai-diagnostic-tool__input"
-                           placeholder="Enter error details (e.g., 'RPC timeout') or a Transaction ID" 
-                           aria-label="Error details or Transaction ID">
-                    
-                    <button id="runDiagnosticBtn" type="button" class="web3-btn ai-diagnostic-tool__button">
-                        Run AI Diagnostic
-                    </button>
-                </div>
-
-                <div id="aiCodeAssistantOutput" 
-                     class="ai-diagnostic-tool__output"
-                     role="status" aria-live="polite">
-                    <p>Output will appear here after running a diagnostic.</p>
-                </div>
-            </div>
-        </section>
         </main>
 
     <footer class="footer">
@@ -1071,7 +947,52 @@
         }
 
         /**
-         * 3. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         * 3. Публикация Нового Объявления (Админ-функция) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         */
+        function handlePublishAnnouncement() {
+            const publishButton = document.getElementById('publishButton');
+            const announcementInput = document.getElementById('announcementInput');
+            if (!publishButton || !announcementInput) return;
+
+            publishButton.addEventListener('click', async () => {
+                const content = announcementInput.value.trim();
+                // Используем первую строку как заголовок, если он не задан
+                const title = content.split('\n')[0].substring(0, 50) + (content.length > 50 ? '...' : ''); 
+                if (content.length < 10) {
+                    showNotification("Объявление слишком короткое.", 'warning');
+                    return;
+                }
+
+                publishButton.disabled = true;
+                publishButton.textContent = 'Публикация...';
+                showNotification('Публикация объявления...', 'info');
+
+                try {
+                    // Используем глобальный объект firebase для доступа к FieldValue
+                    await db.collection(COLLECTIONS.ANNOUNCEMENTS).add({
+                        title: title,
+                        content: content,
+                        // Используем auth.currentUser, который определен в глобальной области
+                        author: auth.currentUser ? auth.currentUser.email : 'Admin (Unauthenticated)',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    announcementInput.value = ''; 
+                    showNotification("Объявление успешно опубликовано!", 'success');
+                    fetchAnnouncements(); 
+
+                } catch (error) {
+                    console.error("Ошибка при публикации объявления:", error);
+                    showNotification("Ошибка публикации: " + error.message, 'error');
+                } finally {
+                    publishButton.disabled = false;
+                    publishButton.textContent = 'Publish Announcement';
+                }
+            });
+        }
+
+        /**
+         * 4. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
          */
         function handleContactForm() {
             const contactForm = document.getElementById('contactForm');
@@ -1111,7 +1032,7 @@
         }
         
         /**
-         * 4. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         * 5. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE
          */
          async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
@@ -1153,7 +1074,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchNews();
             fetchAnnouncements();
-            // handlePublishAnnouncement(); <-- REMOVED THIS CALL
+            handlePublishAnnouncement();
             handleContactForm();
             
             // Загрузка списков с контентом
@@ -1162,70 +1083,7 @@
         });
     </script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const runDiagnosticBtn = document.getElementById('runDiagnosticBtn');
-            const functionSelector = document.getElementById('functionSelector');
-            const issueDetailsInput = document.getElementById('issueDetailsInput');
-            const outputDiv = document.getElementById('aiCodeAssistantOutput');
-
-            runDiagnosticBtn.addEventListener('click', () => {
-                const selectedFunction = functionSelector.value;
-                const issueDetails = issueDetailsInput.value.trim();
-                const errorColor = '#e74c3c'; 
-
-                if (!selectedFunction && !issueDetails) {
-                    outputDiv.innerHTML = `<p style="color: ${errorColor}; font-weight: bold;">Error: Please select a function OR enter error details/Transaction ID.</p>`;
-                    return;
-                }
-
-                outputDiv.innerHTML = `<p style="color: #ffd700;">Analyzing problem for ${selectedFunction || 'Transaction ID'} with details: "${issueDetails}"...</p>`;
-
-                // --- Simulation of AI Backend Response ---
-                setTimeout(() => {
-                    let diagnosticMessage = '';
-                    const baseIssue = issueDetails.toLowerCase();
-
-                    if (baseIssue.includes("rpc timeout")) {
-                        diagnosticMessage = `**Diagnosis: RPC Timeout**
-**Function:** ${selectedFunction || 'General Transaction'}
-**Reason:** The connection to the Solana network node timed out. This often occurs due to network congestion.
-**Solution:** Try the transaction again. If the issue persists, switch your RPC provider in your wallet settings.`;
-                    } else if (baseIssue.includes("failed to deserialize") || baseIssue.includes("invalid account data")) {
-                        diagnosticMessage = `**Diagnosis: Invalid Account Data**
-**Function:** ${selectedFunction}
-**Reason:** The transaction attempted to use account data that has an incorrect structure (e.g., an invalid SPL token account).
-**Solution:** Clear your wallet's cache, restart it, and try again. For NFTs, ensure the mint address is correct.`;
-                    } else if (baseIssue.includes("insufficient funds") || baseIssue.includes("low sol balance")) {
-                        diagnosticMessage = `**Diagnosis: Insufficient Funds**
-**Function:** ${selectedFunction || 'General Transaction'}
-**Reason:** Not enough **SOL** to cover the transaction fee (gas) OR not enough of the required AFOX/token to perform the operation.
-**Solution:** Fund your wallet with **SOL** for gas and ensure you have enough of the necessary tokens.`;
-                    } else if (baseIssue.includes("custom program error: 0x")) {
-                         diagnosticMessage = `**Diagnosis: Custom Program Error**
-**Function:** ${selectedFunction}
-**Reason:** The smart contract executed but violated a specific rule (Error Code: ${issueDetails.split('0x')[1].split(' ')[0]}). Check conditions (e.g., staking lockup period).
-**Solution:** Check the function requirements (e.g., minimum amount or lockup period) and try again.`;
-                    } else if (baseIssue.length > 50) { 
-                        diagnosticMessage = `**Diagnosis: General Transaction Review**
-**Function:** ${selectedFunction || 'Transaction ID'}
-**Reason:** The detailed error is complex. The AI recommends checking the transaction on Solscan/Solana Explorer for a deeper log.
-**Solution:** Paste the full transaction ID into Solscan.io. If this is a recurring error, report it to the Aurum Fox team.`;
-                    } else {
-                        diagnosticMessage = `**Diagnosis: Unknown or General Failure**
-**Function:** ${selectedFunction || 'General'}
-**Reason:** An unspecified error occurred. This could be a temporary network glitch or a wallet connection issue.
-**Solution:** Clear your browser cache, refresh the page, reconnect your wallet, and repeat the operation.`;
-                    }
-
-                    outputDiv.innerHTML = `
-                        <p style="color: #ffd700; font-weight: bold;">AI Diagnostic Result:</p>
-                        <div style="padding: 10px; border-left: 3px solid #ffd700; background-color: rgba(255, 215, 0, 0.05);">
-                            ${diagnosticMessage.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-                        </div>
-                    `;
-                }, 1500); // Simulate AI processing delay
-            });
-        });
+        // УДАЛЕНА ЛОГИКА runDiagnosticBtn
     </script>
 
 
