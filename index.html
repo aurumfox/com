@@ -920,15 +920,23 @@
     
     <script>
         // Конфигурация Firebase
-        const firebaseConfig = {
-            apiKey: "YOUR_FIREBASE_API_KEY", // ⚠️ ЗАМЕНИТЕ
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // ⚠️ ЗАМЕНИТЕ
-            projectId: "YOUR_PROJECT_ID", // ⚠️ ЗАМЕНИТЕ
-            storageBucket: "YOUR_PROJECT_ID.appspot.com", // ⚠️ ЗАМЕНИТЕ
-            messagingSenderId: "YOUR_SENDER_ID", // ⚠️ ЗАМЕНИТЕ
-            appId: "YOUR_APP_ID" // ⚠️ ЗАМЕНИТЕ
-        };
+      // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBBk4g-JRO82Bq7zeX_upmGQ-htw9OGvpg",
+  authDomain: "aurum-fox.firebaseapp.com",
+  projectId: "aurum-fox",
+  storageBucket: "aurum-fox.firebasestorage.app",
+  messagingSenderId: "650661732233",
+  appId: "1:650661732233:web:e8b12d73c1df56cde70b58",
+  measurementId: "G-L9XHK0DPB7"
+};
         // Инициализация Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
