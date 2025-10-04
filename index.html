@@ -7,16 +7,37 @@
     <meta name="description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, Advertising, DAO, Staking, Swaps) and a multimedia hub (Photos, Posts, Mini-Games). Your gateway to the AFOX ecosystem on Solana.">
     <meta name="keywords" content="Aurum Fox, AFOX, Solana, meme coin, Web3, NFT, DAO, Staking, Crypto Games, Decentralized Advertising, DeFi, Blockchain, SPL Token, Raydium, Orca, Phantom Wallet">
     <meta name="author" content="Aurum Fox Community">
-
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://aurumfox.github.io/com/"> <meta property="og:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
+    <meta property="og:url" content="https://aurumfox.github.io/com/"> 
+    <meta property="og:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
     <meta property="og:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, Advertising, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
-    <meta property="og:image" content="./assets/foxcoin-hero.png.jpg"> <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://aurumfox.github.io/com/"> <meta property="twitter:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
+    <meta property="og:image" content="./assets/foxcoin-hero.png.jpg"> 
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://aurumfox.github.io/com/"> 
+    <meta property="twitter:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
     <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, Advertising, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
-    <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> <link rel="stylesheet" href="style.css">
+    <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
+    
+    <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
+    
+    <script
+      src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js"
+      crossorigin="anonymous"
+    ></script>
+    
+    <script>
+        Sentry.init({
+            dsn: "https://93b9760a7026c9acedf1f14b044146c6@o4505059231873024.ingest.sentry.io/4505059233642496", 
+            integrations: [
+                new Sentry.BrowserTracing(),
+            ],
+            tracesSampleRate: 1.0, 
+            release: "aurum-fox-portal@1.0.0", 
+        });
+        Sentry.setTag("context", "Web3 Solana Interface");
+    </script>
     
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
     <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
@@ -24,6 +45,101 @@
     <script src="https://unpkg.com/@solana/wallet-adapter-wallets@latest/lib/index.iife.js"></script>
     <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
     <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
+    
+    <style>
+        /* Style for the AI Diagnostic module, integrated with the Aurum Fox theme */
+        
+        /* ВОССТАНОВЛЕННЫЕ СТИЛИ ДЛЯ AI-МОДУЛЯ, КОТОРЫЙ ВЫ ХОТЕЛИ ВЕРНУТЬ */
+        .ai-diagnostic-module {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            padding: 10px 15px;
+            background-color: #2c3e50; /* Темный фон, подходит к Web3 секциям */
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            color: #ecf0f1;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+        }
+
+        .ai-insights-module {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ai-diagnostic-tool__controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-diagnostic-tool__selector,
+        .ai-diagnostic-tool__input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #34495e;
+            background-color: #34495e;
+            color: #ecf0f1;
+            font-size: 0.9em;
+        }
+        
+        /* Стили для кнопки, которая создает "красный кружок" */
+        .ai-diagnostic-tool__button {
+            cursor: pointer;
+            background-color: #c08000; /* Цвет Aurum/Золото */
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            transition: background-color 0.3s;
+            min-width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .icon-red-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #e74c3c; /* Красный кружок (как на скриншоте) */
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        /* КОНЕЦ ВОССТАНОВЛЕННЫХ СТИЛЕЙ */
+
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        @media (max-width: 600px) {
+            .ai-diagnostic-tool__controls {
+                flex-direction: column;
+            }
+
+            .ai-diagnostic-tool__selector,
+            .ai-diagnostic-tool__input,
+            .ai-diagnostic-tool__button {
+                width: 100%;
+                min-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -151,6 +267,7 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="contract-address">
                     <p><strong>AFOX Contract Address:</strong> <span id="contractAddress" class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn" aria-label="Copy AFOX contract address">Copy</button></p>
                 </div>
@@ -174,7 +291,7 @@
                     <li>
                         <h3>Step 3: Fund Your Wallet with SOL</h3>
                         <p>Buy SOL (Solana) on any major centralized exchange (Binance, Coinbase, Bybit, etc.) and send it to the address of your chosen Solana wallet.</p>
-                    </li
+                    </li> 
                     <li>
                         <h3>Step 4: Go to a DEX and Swap SOL for AFOX</h3>
                         <p>Use a Solana Decentralized Exchange (DEX) such as <a href="https://raydium.io/swap/" target="_blank" rel="noopener noreferrer">Raydium</a> or <a href="https://www.orca.so/swap" target="_blank" rel="noopener noreferrer">Orca</a> to swap SOL for AFOX.</p>
@@ -343,7 +460,7 @@
                 <p>Become part of our rapidly growing and friendly community. Together, we will build something special and share the luck of Aurum Fox!</p>
                 <div class="social-links">
                     <a href="https://discord.gg/AR7vnJVE" target="_blank" rel="noopener noreferrer" class="social-btn discord-btn" aria-label="Join our Discord community">
-                        <svg class="social-icon" viewBox="0 0 448 512"><path fill="currentColor" d="M297.2 92.5C336.5 98.7 368 116.3 368 116.3V151.7C368 151.7 328.5 137.5 299.7 136.2C288.7 135.8 276.1 136.6 261.6 138.8C202.4 147.2 165.8 171.1 165.8 171.1L170 167.3C136.4 179.6 100.9 203.2 100.9 203.2L90.4 207.2C100.2 198.8 113.8 189.9 129.5 180.8L124.7 176.6C124.7 176.6 141.7 167 159.2 161C172.9 156.4 187.9 153.8 203.8 153.2C226.5 152.4 246.6 153.3 260.6 154.9C281.3 157.4 297.2 160 297.2 160L290.7 158.1C305.9 160.7 319.4 162.7 330.4 164.7C338.9 166.4 346.8 168.1 353.4 169.8C349.5 169.8 344.6 169.9 339.6 169.9C331.4 170.2 323 170.6 314.4 171.2C307.3 171.8 300.2 172.5 293.2 173.3C285.8 174.1 278.4 175.1 271 176.2C247.9 179.4 225.2 182.7 203.8 186.1C194.2 187.6 184.8 189.2 175.7 190.9C166.8 192.6 158.1 194.5 149.5 196.5C141.2 198.5 133.2 200.6 125.4 202.8C117.8 204.9 110.4 207.1 103.2 209.4L107.5 212.7C107.5 212.7 131.6 221 155.6 230.1C183.4 240.7 212.6 251.8 243.6 262.9C274.6 274 307.4 284.9 342.3 295.4L339.6 295.4C342.3 295.4 345 295.3 347.7 295.2L352.4 294.9C361.6 294.4 370.8 293.8 379.9 293.1C388.9 292.4 398 291.6 407 290.8C415.8 290 424.6 289.2 433.4 288.5C442.2 287.7 451 287.1 459.8 286.5L462.5 286.4C448 298.5 423.8 316.5 397.6 331.5C384.8 338.4 372.1 345.1 359.4 351.6C346.6 358.1 333.9 364.5 321.2 370.7C308.5 376.9 295.8 383.1 283.1 389.1C270.4 395.1 257.7 401.1 245 406.8C232.3 412.5 219.6 418.1 206.9 423.6C194.2 429.1 181.5 434.5 168.8 439.8C156.1 445.1 143.4 450.4 130.7 455.5L128 456C128 456 109.9 450.2 87.8 438.4C65.7 426.6 45.4 408.8 29.2 387.6L29.2 387.6L27.5 385.4C26.5 384.3 25.6 383.2 24.8 382.1C18.6 373.1 14 363.1 11.2 352.2C8.5 341.2 7.1 329.8 7.1 318C7.1 278.4 43.1 246.6 86.8 231.1C91.4 229.5 96.1 227.9 100.9 226.3C105.7 224.7 110.5 223.1 115.4 221.5C120.3 219.9 125.2 218.4 130.1 216.8C135.1 215.3 140.1 213.7 145.1 212.2C150.1 210.7 155.1 209.2 160.2 207.7C165.2 206.2 170.3 204.7 175.4 203.2C180.5 201.7 185.7 200.2 190.8 198.8C196 197.3 201.1 195.9 206.3 194.5C211.5 193.1 216.6 191.7 221.8 190.4C226.9 189 232.1 187.7 237.3 186.4C242.4 185.1 247.6 183.9 252.8 182.7C258 181.5 263.1 180.3 268.3 179.1C273.5 177.9 278.7 176.8 283.8 175.7C289 174.6 294.2 173.5 299.4 172.5C304.6 171.4 309.8 170.4 315 169.4C320.1 168.4 325.3 167.5 330.5 166.6C335.7 165.7 340.9 164.8 346.1 163.9C351.3 163.1 356.5 162.2 361.7 161.4C366.9 160.6 372.1 159.8 377.3 159.1C382.5 158.3 387.7 157.6 392.9 156.9C398.1 156.2 403.3 155.5 408.5 154.9L408.5 154.9L416.7 153.9C403.9 146.7 387.5 137 368 126.8C359.8 122.5 351.5 118.1 343.3 113.8C335.1 109.5 326.8 105.1 318.5 100.8C310.3 96.5 302 92.1 293.8 87.8L297.2 92.5ZM224 372.3C224 380.2 230.1 386.3 238 386.3C245.9 386.3 252 380.2 252 372.3C252 364.4 245.9 358.3 238 358.3C230.1 358.3 224 364.4 224 372.3ZM160 372.3C160 380.2 166.1 386.3 174 386.3C181.9 386.3 188 380.2 188 372.3C188 364.4 181.9 358.3 174 358.3C166.1 358.3 160 364.4 160 372.3Z"/></svg>
+                        <svg class="social-icon" viewBox="0 0 448 512"><path fill="currentColor" d="M297.2 92.5C336.5 98.7 368 116.3 368 116.3V151.7C368 151.7 328.5 137.5 299.7 136.2C288.7 135.8 276.1 136.6 261.6 138.8C202.4 147.2 165.8 171.1 165.8 171.1L170 167.3C136.4 179.6 100.9 203.2 100.9 203.2L90.4 207.2C100.2 198.8 113.8 189.9 129.5 180.8L124.7 176.6C124.7 176.6 141.7 167 159.2 161C172.9 156.4 187.9 153.8 203.8 153.2C226.5 152.4 246.6 153.3 260.6 154.9C281.3 157.4 297.2 160 297.2 160L290.7 158.1C305.9 160.7 319.4 162.7 330.4 164.7C338.9 166.4 346.8 168.1 353.4 169.8C349.5 169.8 344.6 169.9 339.6 169.9C331.4 170.2 323 170.6 314.4 171.2C307.3 171.8 300.2 172.5 293.2 173.3C285.8 174.1 278.4 175.1 271 176.2C247.9 179.4 225.2 182.7 203.8 186.1C194.2 187.6 184.8 189.2 175.7 190.9C166.8 192.6 158.1 194.5 149.5 196.5C141.2 198.5 133.2 200.6 125.4 202.8C117.8 204.9 110.4 207.1 103.2 209.4L107.5 212.7C107.5 212.7 131.6 221 155.6 230.1C183.4 240.7 212.6 251.8 243.6 262.9C274.6 274 307.4 284.9 342.3 295.4L339.6 295.4C342.3 295.4 345 295.3 347.7 295.2L352.4 294.9C361.6 294.4 370.8 293.8 379.9 293.1C388.9 292.4 398 291.6 407 290.8C415.8 290 424.6 289.2 433.4 288.5C442.2 287.7 451 287.1 459.8 286.5L462.5 286.4C448 298.5 423.8 316.5 397.6 331.5C384.8 338.4 372.1 345.1 359.4 351.6C346.6 358.1 333.9 364.5 321.2 370.7C308.5 376.9 295.8 383.1 283.1 389.1C270.4 395.1 257.7 401.1 245 406.8C232.3 412.5 219.6 418.1 206.9 423.6C194.2 429.1 181.5 434.5 168.8 439.8C156.1 445.1 143.4 450.4 130.7 455.5L128 456C128 456 109.9 450.2 87.8 438.4C65.7 426.6 45.4 408.8 29.2 387.6L29.2 387.6L27.5 385.4C26.5 384.3 25.6 383.2 24.8 382.1C18.6 373.1 14 363.1 11.2 352.2C8.5 341.2 7.1 329.8 7.1 318C7.1 278.4 43.1 246.6 86.8 231.1C91.4 229.5 96.1 227.9 100.9 226.3C105.7 224.7 110.5 223.1 115.4 221.5C120.3 219.9 125.2 218.4 130.1 216.8C135.1 215.3 140.1 213.7 145.1 212.2C150.1 210.7 155.1 209.2 160.2 207.7C165.2 206.2 170.3 204.7 175.4 203.2C180.5 201.7 185.7 200.2 190.8 198.8C196 197.3 201.1 195.9 206.3 194.5C211.5 193.1 216.6 191.7 221.8 190.4C226.9 189 232.1 187.7 237.3 186.4C242.4 185.1 247.6 183.9 252.8 182.7C258 181.5 263.1 180.3 268.3 179.1C273.5 177.9 278.7 176.8 283.8 175.7C289 174.6 294.2 173.5 299.4 172.5C304.6 171.4 309.8 170.4 315 169.4C320.1 168.4 325.3 167.5 330.5 166.6C335.7 165.7 340.9 164.8 346.1 163.9C351.3 163.1 356.5 162.2 361.7 161.4C366.9 160.6 372.1 159.8 377.3 159.1C382.5 158.3 387.7 157.6 392.9 156.9C398.1 156.2 403.3 155.5 408.5 154.9L408.5 154.9L416.7 153.9C403.9 146.7 387.5 137 368 126.8C359.8 122.5 351.5 118.1 343.3 113.8C335.1 109.5 326.8 105.1 318.5 100.8C310.3 96.5 302 92.1 293.8 87.8L297.2 92.5ZM224 372.3C224 380.2 230.1 386.3 238 386.3C245.9 386.3 252 380.2 252 372.3C252 364.4 245.9 358.3 238 358.3C230.1 358.3 224 364.4 160 372.3Z"/></svg>
                         Discord
                     </a>
                     <a href="https://t.me/+J2c790PJUSI4OWI0" target="_blank" rel="noopener noreferrer" class="social-btn telegram-btn" aria-label="Join our Telegram channel">
@@ -446,7 +563,7 @@
                     <div class="placeholder-item web3-placeholder game">Game Title 3</div>
                     <div class="placeholder-item web3-placeholder game">Game Title 4</div>
                 </div>
-                <button id="loadMoreGamesBtn" class="web3-btn" aria-label="Load more games">Load More Games</button>
+                <button id="loadMoreGamesBtn" class="web3-btn" aria-label="Load More Games">Load More Games</button>
             </div>
         </section>
 
@@ -643,36 +760,6 @@
                     For exchange, use **Jupiter Terminal** — the best liquidity aggregator on Solana.
                 </p>
 
-                <div class="live-trading-info">
-                    <h3 class="web3-subheading">Current AFOX/SOL Live Price Chart (Birdeye)</h3>
-                    <div id="afoxChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden; position: relative; z-index: 1;">
-                        <iframe 
-                            id="birdeye-chart"
-                            src="https://birdeye.so/pool/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz?chain=solana&amp;widget=true&amp;theme=dark" 
-                            style="width: 100%; height: 100%; border: none;"
-                            title="Aurum Fox (AFOX/SOL) Birdeye Chart"
-                            frameborder="0"
-                            allow="clipboard-write">
-                        </iframe>
-                    </div>
-                </div>
-                
-                <hr style="margin: 40px 0; border-color: #ffd70033;">
-
-                <div class="geckoterminal-trading-info">
-                    <h3 class="web3-subheading">AFOX/SOL Live Price Chart (GeckoTerminal)</h3>
-                    <div id="geckoTerminalChartContainer" style="height: 350px; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden; position: relative;">
-                        <iframe 
-                            src="https://www.geckoterminal.com/solana/pools/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz/widget" 
-                            style="width: 100%; height: 100%; border: none;"
-                            title="Aurum Fox (AFOX/SOL) GeckoTerminal Chart"
-                            frameborder="0"
-                            allow="clipboard-write">
-                        </iframe>
-                    </div>
-                </div>
-                
-                <hr style="margin: 40px 0; border-color: #ffd70033;">
                 <div class="swap-interface">
                     <h3 class="web3-subheading">⚡️ Jupiter Terminal (AFOX Swap)</h3>
                     <p>Connect your wallet and swap AFOX at the best rate.</p>
@@ -682,6 +769,7 @@
                 </div>
             </div>
         </section>
+        
         </main>
 
     <footer class="footer">
@@ -702,6 +790,23 @@
         </div>
     </footer>
 
+    <div class="ai-diagnostic-module">
+        <div class="ai-insights-module">
+            <h3 class="visually-hidden">AI Diagnostic Tool</h3>
+            <div class="ai-diagnostic-tool__controls">
+                <select class="ai-diagnostic-tool__selector" aria-label="Select diagnostic type">
+                    <option value="test">AI Test</option>
+                    <option value="debug">Debug Mode</option>
+                    <option value="status">Status Check</option>
+                </select>
+                <input type="text" class="ai-diagnostic-tool__input" placeholder="Enter Parameter">
+                <button id="runDiagnosticBtn" class="ai-diagnostic-tool__button" aria-label="Run AI Diagnostic">
+                    <span class="icon-red-dot"></span> Run Diagnostic
+                </button>
+            </div>
+            <div id="diagnosticOutput" class="ai-diagnostic-tool__output visually-hidden">Ready.</div>
+        </div>
+    </div>
     <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">
         <div class="modal-content">
             <span class="close-button" aria-label="Close NFT details modal">&times;</span>
@@ -764,26 +869,328 @@
 
     <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    
+    <script>
+        // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ (ИСПРАВЛЕНО)
+        // КЛЮЧ FIREBASE: Вставлена ваша конфигурация
+        const firebaseConfig = {
+            apiKey: "", 
+            authDomain: "aurum-fox.firebaseapp.com",
+            projectId: "aurum-fox",
+            storageBucket: "aurum-fox.firebasestorage.app", // Использован ключ storageBucket из предоставленной конфигурации
+            messagingSenderId: "650661732233",
+            appId: "1:650661732233:web:e8b12d73c1df56cde70b58",
+            measurementId: "G-L9XHK0DPB7" // Добавлен ключ Google Analytics (measurementId)
+        };
+        
+        // 3. ИНИЦИАЛИЗАЦИЯ И ГЛОБАЛЬНЫЙ ДОСТУП
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = app.firestore();
+        const auth = app.auth();
+        const storage = app.storage();
+        
+        // Инициализация Google Analytics
+        // Это требует отдельной библиотеки. Если вы хотите использовать Google Analytics, 
+        // добавьте <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
+        // и раскомментируйте или добавьте следующую строку:
+        // const analytics = firebase.analytics();
+
+
+        // Делаем их доступными для script.js (который подключается как type="module")
+        window.db = db;
+        window.auth = auth;
+        window.storage = storage;
+        window.firebase = firebase; // Сохраняем доступ к пространству имен firebase (для FieldValue.serverTimestamp())
+        
+        console.log("Firebase initialized and services are available globally.");
+
+        // Ваши константы и функции встраиваются в этот скрипт, чтобы иметь доступ к db и auth.
+        // Я их переношу сюда, а затем вставляю ваш код, чтобы он заработал.
+
+        const COLLECTIONS = {
+            NEWS: 'news',
+            ANNOUNCEMENTS: 'announcements',
+            CONTACTS: 'contacts',
+            GAMES: 'games',
+            ADS: 'ads'
+        };
+
+        /**
+         * Утилита для отображения уведомлений (добавим ее здесь, чтобы использовать)
+         */
+        function showNotification(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('notificationContainer');
+            if (!container) return;
+
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+
+            // Стилизация (минимальная, чтобы было видно)
+            notification.style.cssText = `
+                margin-bottom: 10px;
+                padding: 10px 15px;
+                border-radius: 8px;
+                color: #fff;
+                font-family: 'Poppins', sans-serif;
+                font-size: 0.9em;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                background-color: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#3498db'};
+                transition: opacity 0.5s ease-in-out;
+            `;
+
+            container.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 500);
+            }, duration);
+        }
+
+        /**
+         * 1. Получение и отображение Новостей (News)
+         */
+        async function fetchNews() {
+            const newsListElement = document.querySelector('.news-list');
+            if (!newsListElement) return;
+
+            try {
+                const snapshot = await db.collection(COLLECTIONS.NEWS)
+                    .orderBy('timestamp', 'desc')
+                    .limit(5)
+                    .get();
+
+                if (snapshot.empty) {
+                    newsListElement.innerHTML = '<p>Новостей пока нет.</p>';
+                    return;
+                }
+
+                let newsHtml = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Используем toDate() для объектов Timestamp
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
+                    newsHtml += `
+                        <div class="news-item">
+                            <h4>${data.title || 'Заголовок новости'}</h4>
+                            <p>${data.content || 'Содержание новости...'}</p>
+                            <small>${date}</small>
+                        </div>
+                    `;
+                });
+                newsListElement.innerHTML = newsHtml;
+
+            } catch (error) {
+                console.error("Ошибка при получении новостей:", error);
+                showNotification('Не удалось загрузить новости.', 'error');
+                newsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить новости. Попробуйте позже.</p>';
+            }
+        }
+
+        /**
+         * 2. Получение и отображение Объявлений (Announcements)
+         */
+        async function fetchAnnouncements() {
+            const announcementsListElement = document.getElementById('announcementsList');
+            if (!announcementsListElement) return;
+
+            try {
+                const snapshot = await db.collection(COLLECTIONS.ANNOUNCEMENTS)
+                    .orderBy('timestamp', 'desc')
+                    .limit(5)
+                    .get();
+
+                if (snapshot.empty) {
+                    announcementsListElement.innerHTML = '<p class="web3-placeholder">Объявлений пока нет.</p>';
+                    return;
+                }
+
+                let annHtml = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
+                    annHtml += `
+                        <div class="announcement-item">
+                            <h4>${data.title || 'Заголовок объявления'}</h4>
+                            <p>${data.content || 'Содержание объявления...'}</p>
+                            <small>${date}</small>
+                        </div>
+                    `;
+                });
+                announcementsListElement.innerHTML = annHtml;
+
+            } catch (error) {
+                console.error("Ошибка при получении объявлений:", error);
+                showNotification('Не удалось загрузить объявления.', 'error');
+                announcementsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить объявления.</p>';
+            }
+        }
+
+        /**
+         * 3. Публикация Нового Объявления (Админ-функция) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         */
+        function handlePublishAnnouncement() {
+            const publishButton = document.getElementById('publishButton');
+            const announcementInput = document.getElementById('announcementInput');
+            if (!publishButton || !announcementInput) return;
+
+            publishButton.addEventListener('click', async () => {
+                const content = announcementInput.value.trim();
+                // Используем первую строку как заголовок, если он не задан
+                const title = content.split('\n')[0].substring(0, 50) + (content.length > 50 ? '...' : ''); 
+                if (content.length < 10) {
+                    showNotification("Объявление слишком короткое.", 'warning');
+                    return;
+                }
+
+                publishButton.disabled = true;
+                publishButton.textContent = 'Публикация...';
+                showNotification('Публикация объявления...', 'info');
+
+                try {
+                    // Используем глобальный объект firebase для доступа к FieldValue
+                    await db.collection(COLLECTIONS.ANNOUNCEMENTS).add({
+                        title: title,
+                        content: content,
+                        // Используем auth.currentUser, который определен в глобальной области
+                        author: auth.currentUser ? auth.currentUser.email : 'Admin (Unauthenticated)',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    announcementInput.value = ''; 
+                    showNotification("Объявление успешно опубликовано!", 'success');
+                    fetchAnnouncements(); 
+
+                } catch (error) {
+                    console.error("Ошибка при публикации объявления:", error);
+                    showNotification("Ошибка публикации: " + error.message, 'error');
+                } finally {
+                    publishButton.disabled = false;
+                    publishButton.textContent = 'Publish Announcement';
+                }
+            });
+        }
+
+        /**
+         * 4. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         */
+        function handleContactForm() {
+            const contactForm = document.getElementById('contactForm');
+            if (!contactForm) return;
+
+            contactForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(contactForm);
+                const data = Object.fromEntries(formData.entries());
+
+                const submitButton = contactForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Отправка...';
+                showNotification('Отправка сообщения...', 'info');
+
+                try {
+                    await db.collection(COLLECTIONS.CONTACTS).add({
+                        name: data.name,
+                        email: data.email,
+                        subject: data.subject,
+                        message: data.message,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: 'New'
+                    });
+
+                    showNotification("Ваше сообщение успешно отправлено! Мы скоро свяжемся с вами.", 'success');
+                    contactForm.reset();
+
+                } catch (error) {
+                    console.error("Ошибка при отправке контактной формы:", error);
+                    showNotification("Ошибка при отправке сообщения: " + error.message, 'error');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Send Message';
+                }
+            });
+        }
+        
+        /**
+         * 5. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         */
+         async function fetchContentList(collectionName, listElementId) {
+            const listElement = document.getElementById(listElementId);
+            if (!listElement) return;
+            
+            try {
+                const snapshot = await db.collection(collectionName)
+                    .orderBy('order', 'asc') 
+                    .limit(10)
+                    .get();
+
+                if (snapshot.empty) {
+                    listElement.innerHTML = `<p class="web3-placeholder">Пока нет данных в разделе ${collectionName}.</p>`;
+                    return;
+                }
+
+                let html = '';
+                const itemClass = collectionName === COLLECTIONS.GAMES ? 'game' : 'ad';
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    html += `
+                        <div class="placeholder-item web3-placeholder ${itemClass}">
+                            <a href="${data.url || '#'}" target="_blank" rel="noopener noreferrer">
+                                <strong>${data.title || 'No Title'}</strong>: ${data.description || 'Description not available.'}
+                            </a>
+                        </div>
+                    `;
+                });
+                listElement.innerHTML = html;
+
+            } catch (error) {
+                console.error(`Ошибка при загрузке ${collectionName}:`, error);
+                listElement.innerHTML = `<p style="color: #e74c3c;">Не удалось загрузить контент.</p>`;
+            }
+        }
+
+        // Запуск функций при загрузке DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchNews();
+            fetchAnnouncements();
+            handlePublishAnnouncement();
+            handleContactForm();
+            
+            // Загрузка списков с контентом
+            fetchContentList(COLLECTIONS.GAMES, 'game-list');
+            fetchContentList(COLLECTIONS.ADS, 'ad-list');
+        });
+    </script> 
+    <script>
+        // УДАЛЕНА ЛОГИКА runDiagnosticBtn
+    </script>
+
+
     <script type="module">
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-        // Зберігаємо оригінальний елемент Birdeye та його батьківський елемент
         let birdeyeContainer = null;
         let birdeyeParent = null;
 
         /**
-         * Ініціалізує Jupiter Terminal з функцією фізичного видалення Birdeye.
+         * Initializes Jupiter Terminal with the function to physically remove Birdeye.
          */
         function initializeJupiterTerminal() {
-            birdeyeContainer = document.getElementById('afoxChartContainer');
+            // В вашем оригинальном HTML не было элемента #afoxChartContainer,
+            // но логика DOM-манипуляции остаётся для предотвращения конфликтов.
+            birdeyeContainer = document.getElementById('afoxChartContainer'); 
             if (birdeyeContainer) {
-                // Батьківський елемент Birdeye - це div.live-trading-info
                 birdeyeParent = birdeyeContainer.parentNode; 
             }
 
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-                // Функція для повного видалення Birdeye
+                // Function for complete removal of Birdeye
                 const removeBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
                         birdeyeParent.removeChild(birdeyeContainer);
@@ -791,60 +1198,6 @@
                     }
                 };
 
-                // Функція для повернення Birdeye
+                // Function to restore Birdeye
                 const restoreBirdeye = () => {
-                    if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
-                        // Використовуємо .insertBefore() або .appendChild(), щоб додати елемент назад.
-                        // Оскільки нам потрібно додати Birdeye перед <hr> у live-trading-info, 
-                        // нам потрібна надійна точка вставки.
-                        // Якщо ми додамо його до birdeyeParent (div.live-trading-info), він буде в кінці, що підходить.
-                        birdeyeParent.appendChild(birdeyeContainer); 
-                        console.log("Birdeye chart **restored** after wallet connection.");
-                    }
-                };
-
-                window.Jupiter.init({
-                    displayMode: 'widget',
-                    widgetStyle: {
-                        'container.id': 'jupiter-swap-widget', 
-                        'container.zIndex': 9999, 
-                    },
-                    theme: 'dark', 
-                    formProps: {
-                        fixedInputMint: true, 
-                        initialInputMint: AFOX_MINT,
-                        initialOutputMint: SOL_MINT,
-                    },
-                    swapSwitchboard: true, 
-                    strictTokenList: false, 
-
-                    // ✅ НОВЕ ВИПРАВЛЕННЯ: Повне видалення елемента при ініціації підключення
-                    onConnectWallet: (callback) => {
-                        removeBirdeye(); // Видаляємо Birdeye
-                        // Даємо короткий час для оновлення DOM перед викликом гаманця
-                        setTimeout(callback, 50); 
-                    },
-
-                    // ✅ Відновлення після успіху
-                    onSuccess: () => {
-                         restoreBirdeye();
-                    },
-                    
-                    // ✅ Відновлення після помилки або закриття 
-                    onError: () => {
-                         restoreBirdeye();
-                    }
-                });
-                console.log("Jupiter Terminal initialized with DOM manipulation fixes.");
-            } else {
-                // Якщо Jupiter ще не завантажився, пробуємо знову
-                setTimeout(initializeJupiterTerminal, 500);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
-    </script>
-    
-    <script src="script.js" type="module"></script>
-</body>
-</html>
+                    if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(bir
