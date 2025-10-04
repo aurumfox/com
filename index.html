@@ -49,13 +49,15 @@
     <style>
         /* Style for the AI Diagnostic module, integrated with the Aurum Fox theme */
         
-        /* ВОССТАНОВЛЕННЫЕ СТИЛИ ДЛЯ AI-МОДУЛЯ, КОТОРЫЙ ВЫ ХОТЕЛИ ВЕРНУТЬ */
+        /* ВОССТАНОВЛЕННЫЕ И ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ AI-МОДУЛЯ */
         .ai-diagnostic-module {
+            /* Ключевые стили для позиционирования внизу по центру */
             position: fixed;
             bottom: 0;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10000;
+            
             padding: 10px 15px;
             background-color: #2c3e50; /* Темный фон, подходит к Web3 секциям */
             border-top-left-radius: 10px;
@@ -113,9 +115,16 @@
             border-radius: 50%;
             margin-right: 5px;
         }
-        /* КОНЕЦ ВОССТАНОВЛЕННЫХ СТИЛЕЙ */
-
-
+        
+        /* ИСПРАВЛЕНИЕ: Скрываем область вывода, если она не должна быть видна по умолчанию */
+        .ai-diagnostic-tool__output {
+            /* Модуль был скрыт через .visually-hidden в прошлой версии, 
+            но если вы хотите, чтобы он был просто скрыт, без стилей */
+            display: none; 
+            padding-top: 5px;
+            color: #f1c40f; 
+        }
+        
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -804,7 +813,7 @@
                     <span class="icon-red-dot"></span> Run Diagnostic
                 </button>
             </div>
-            <div id="diagnosticOutput" class="ai-diagnostic-tool__output visually-hidden">Ready.</div>
+            <div id="diagnosticOutput" class="ai-diagnostic-tool__output">Ready.</div>
         </div>
     </div>
     <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">
@@ -1200,4 +1209,49 @@
 
                 // Function to restore Birdeye
                 const restoreBirdeye = () => {
-                    if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(bir
+                    if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
+                        birdeyeParent.appendChild(birdeyeContainer); 
+                        console.log("Birdeye chart **restored** after wallet connection.");
+                    }
+                };
+
+                window.Jupiter.init({
+                    displayMode: 'widget',
+                    widgetStyle: {
+                        'container.id': 'jupiter-swap-widget', 
+                        'container.zIndex': 9999, 
+                    },
+                    theme: 'dark', 
+                    formProps: {
+                        fixedInputMint: true, 
+                        initialInputMint: AFOX_MINT,
+                        initialOutputMint: SOL_MINT,
+                    },
+                    swapSwitchboard: true, 
+                    strictTokenList: false, 
+
+                    onConnectWallet: (callback) => {
+                        removeBirdeye(); 
+                        setTimeout(callback, 50); 
+                    },
+
+                    onSuccess: () => {
+                         restoreBirdeye();
+                    },
+                    
+                    onError: () => {
+                         restoreBirdeye();
+                    }
+                });
+                console.log("Jupiter Terminal initialized with DOM manipulation fixes.");
+            } else {
+                setTimeout(initializeJupiterTerminal, 500);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
+    </script>
+    
+    <script src="script.js" type="module"></script>
+</body>
+</html>
