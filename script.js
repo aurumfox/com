@@ -21,22 +21,22 @@ let birdeyeContainer = null;
 let birdeyeContainerOriginalDisplay = 'block'; // To store the original display style
 
 // --- CONSTANTS AND SETTINGS ---
-const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
-const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
+const AFOX_TOKEN_MINT_ADDRESS = new solanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
+const STAKING_PROGRAM_ID = new solanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
 const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // Оставлено, так как это внешний API
 const API_BASE_URL = 'MOCK_BASE_URL'; // Заглушка
 const AFOX_MINT_ADDRESS_STRING = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
 
 // Mint addresses for tokens supported in the swap functionality
 const TOKEN_MINT_ADDRESSES = {
-    'SOL': new SolanaWeb3.PublicKey('So11111111111111111111111111111111111111112'),
+    'SOL': new solanaWeb3.PublicKey('So11111111111111111111111111111111111111112'),
     'AFOX': AFOX_TOKEN_MINT_ADDRESS,
 };
 
 const AFOX_DECIMALS = 6;
 const SOL_DECIMALS = 9;
 
-const NETWORK = SolanaWeb3.WalletAdapterNetwork.Mainnet;
+const NETWORK = solanaWeb3.WalletAdapterNetwork.Mainnet;
 
 // --- GLOBAL WALLET & CONNECTION STATE ---
 let walletPublicKey = null;
@@ -450,7 +450,7 @@ function updateWalletUI(address) {
 
 /**
  * Handles changes in the wallet's public key (e.g., user switches accounts).
- * @param {SolanaWeb3.PublicKey | null} publicKey
+ * @param {solanaWeb3.PublicKey | null} publicKey
  */
 async function handlePublicKeyChange(publicKey) {
     if (publicKey) {
@@ -515,7 +515,7 @@ function registerProviderListeners() {
  */
 async function connectWallet() {
     try {
-        if (!SolanaWeb3 || !SolanaWalletAdapterPhantom) {
+        if (!solanaWeb3 || !SolanaWalletAdapterPhantom) {
             showNotification('Solana Web3 or Wallet Adapter libraries not loaded. Check script imports.', 'error');
             return;
         }
@@ -530,7 +530,7 @@ async function connectWallet() {
         // It's good to have a single connection instance that persists.
         if (!connection) {
             // Use the backup RPC for general connection tasks (more stable for general use)
-            connection = new SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+            connection = new solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
         }
 
         if (selectedWallet.connected && selectedWallet.publicKey) {
@@ -617,7 +617,7 @@ function handleWalletDisconnect() {
 
 /**
  * Fetches the token decimals for a given mint address.
- * @param {SolanaWeb3.PublicKey} mintAddress
+ * @param {solanaWeb3.PublicKey} mintAddress
  * @returns {number}
  */
 function getTokenDecimals(mintAddress) {
@@ -653,7 +653,7 @@ async function updateSwapBalances() {
         if (fromTokenMint.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
             const solBalance = await connection.getBalance(walletPublicKey);
             if (uiElements.swapFromBalanceSpan) {
-                uiElements.swapFromBalanceSpan.textContent = `${(solBalance / SolanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
+                uiElements.swapFromBalanceSpan.textContent = `${(solBalance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4)} SOL`;
             }
         } else {
             const tokenAccount = await connection.getParsedTokenAccountsByOwner(
@@ -777,7 +777,7 @@ async function executeSwap() {
     }
     // Ensure connection is established, though it should be if wallet is connected
     if (!connection) {
-        connection = new SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        connection = new solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
     }
 
     showNotification('Preparing swap transaction...', 'info');
@@ -801,7 +801,7 @@ async function executeSwap() {
 
         const { swapTransaction } = await response.json();
         const transactionBuf = Buffer.from(swapTransaction, 'base64');
-        const transaction = SolanaWeb3.Transaction.from(transactionBuf);
+        const transaction = solanaWeb3.Transaction.from(transactionBuf);
 
         // Fetch recent blockhash dynamically for transaction
         transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
@@ -1066,7 +1066,7 @@ async function updateStakingUI() {
 
     // Ensure connection is active
     if (!connection) {
-        connection = new SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        connection = new solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
     }
 
     try {
@@ -1805,7 +1805,7 @@ async function handleTransferNft() {
     }
     let recipientPublicKey;
     try {
-        recipientPublicKey = new SolanaWeb3.PublicKey(recipientAddress);
+        recipientPublicKey = new solanaWeb3.PublicKey(recipientAddress);
         if (recipientPublicKey.toBase58() === senderWallet) {
             showNotification("Cannot transfer NFT to your own address.", "warning");
             return;
@@ -1932,7 +1932,7 @@ async function handleMaxAmount(event) {
         return;
     }
     if (!connection) {
-        connection = new SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        connection = new solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
     }
     if (!uiElements.swapFromTokenSelect) {
         console.error("Swap from token select not found.");
@@ -1950,7 +1950,7 @@ async function handleMaxAmount(event) {
         if (fromTokenMint.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
             const solBalance = await connection.getBalance(walletPublicKey);
             // Leave a small amount for transaction fees (e.g., 0.005 SOL)
-            const maxSol = (solBalance / SolanaWeb3.LAMPORTS_PER_SOL) - 0.005;
+            const maxSol = (solBalance / solanaWeb3.LAMPORTS_PER_SOL) - 0.005;
             inputElement.value = Math.max(0, maxSol).toFixed(4).replace(/\.?0+$/, ''); // Ensure non-negative and clean trailing zeros
         } else {
             const tokenAccount = await connection.getParsedTokenAccountsByOwner(
@@ -2172,7 +2172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (selectedWallet && selectedWallet.connected && selectedWallet.publicKey) {
             walletPublicKey = selectedWallet.publicKey;
             provider = selectedWallet;
-            connection = new SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+            connection = new solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
 
             updateWalletUI(walletPublicKey.toBase58());
 
