@@ -19,7 +19,7 @@
     <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
     
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
+    <link rel="icon" href="./assets/favicon.png" type="image/png"> 
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
     
     <script
@@ -920,42 +920,32 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
     <script>
-        // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ (ИСПРАВЛЕНО)
-        // КЛЮЧ FIREBASE: Вставлена ваша конфигурация
+        // 2. FIREBASE CONFIGURATION
         const firebaseConfig = {
             apiKey: "ff", 
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
-            storageBucket: "aurum-fox.firebasestorage.app", // Использован ключ storageBucket из предоставленной конфигурации
+            storageBucket: "aurum-fox.firebasestorage.app", 
             messagingSenderId: "650661732233",
             appId: "1:650661732233:web:e8b12d73c1df56cde70b58",
-            measurementId: "G-L9XHK0DPB7" // Добавлен ключ Google Analytics (measurementId)
+            measurementId: "G-L9XHK0DPB7" 
         };
         
-        // 3. ИНИЦИАЛИЗАЦИЯ И ГЛОБАЛЬНЫЙ ДОСТУП
+        // 3. INITIALIZATION AND GLOBAL ACCESS
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
         const auth = app.auth();
         const storage = app.storage();
         
-        // Инициализация Google Analytics
-        // Это требует отдельной библиотеки. Если вы хотите использовать Google Analytics, 
-        // добавьте <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
-        // и раскомментируйте или добавьте следующую строку:
-        // const analytics = firebase.analytics();
-
-
-        // Делаем их доступными для script.js (который подключается как type="module")
+        // Make them globally available for script.js
         window.db = db;
         window.auth = auth;
         window.storage = storage;
-        window.firebase = firebase; // Сохраняем доступ к пространству имен firebase (для FieldValue.serverTimestamp())
+        window.firebase = firebase; 
         
         console.log("Firebase initialized and services are available globally.");
 
-        // Ваши константы и функции встраиваются в этот скрипт, чтобы иметь доступ к db и auth.
-        // Я их переношу сюда, а затем вставляю ваш код, чтобы он заработал.
-
+        // Utility functions (News, Announcements, Forms, etc.)
         const COLLECTIONS = {
             NEWS: 'news',
             ANNOUNCEMENTS: 'announcements',
@@ -964,9 +954,6 @@
             ADS: 'ads'
         };
 
-        /**
-         * Утилита для отображения уведомлений (добавим ее здесь, чтобы использовать)
-         */
         function showNotification(message, type = 'info', duration = 3000) {
             const container = document.getElementById('notificationContainer');
             if (!container) return;
@@ -975,7 +962,7 @@
             notification.className = `notification notification-${type}`;
             notification.textContent = message;
 
-            // Стилизация (минимальная, чтобы было видно)
+            // Minimal inline styling for functionality
             notification.style.cssText = `
                 margin-bottom: 10px;
                 padding: 10px 15px;
@@ -996,9 +983,6 @@
             }, duration);
         }
 
-        /**
-         * 1. Получение и отображение Новостей (News)
-         */
         async function fetchNews() {
             const newsListElement = document.querySelector('.news-list');
             if (!newsListElement) return;
@@ -1010,19 +994,18 @@
                     .get();
 
                 if (snapshot.empty) {
-                    newsListElement.innerHTML = '<p>Новостей пока нет.</p>';
+                    newsListElement.innerHTML = '<p>No news yet.</p>';
                     return;
                 }
 
                 let newsHtml = '';
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // Используем toDate() для объектов Timestamp
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'Unknown date';
                     newsHtml += `
                         <div class="news-item">
-                            <h4>${data.title || 'Заголовок новости'}</h4>
-                            <p>${data.content || 'Содержание новости...'}</p>
+                            <h4>${data.title || 'News Title'}</h4>
+                            <p>${data.content || 'News content...'}</p>
                             <small>${date}</small>
                         </div>
                     `;
@@ -1030,15 +1013,12 @@
                 newsListElement.innerHTML = newsHtml;
 
             } catch (error) {
-                console.error("Ошибка при получении новостей:", error);
-                showNotification('Не удалось загрузить новости.', 'error');
-                newsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить новости. Попробуйте позже.</p>';
+                console.error("Error fetching news:", error);
+                showNotification('Failed to load news.', 'error');
+                newsListElement.innerHTML = '<p style="color: #e74c3c;">Failed to load news. Try again later.</p>';
             }
         }
 
-        /**
-         * 2. Получение и отображение Объявлений (Announcements)
-         */
         async function fetchAnnouncements() {
             const announcementsListElement = document.getElementById('announcementsList');
             if (!announcementsListElement) return;
@@ -1050,18 +1030,18 @@
                     .get();
 
                 if (snapshot.empty) {
-                    announcementsListElement.innerHTML = '<p class="web3-placeholder">Объявлений пока нет.</p>';
+                    announcementsListElement.innerHTML = '<p class="web3-placeholder">No announcements yet.</p>';
                     return;
                 }
 
                 let annHtml = '';
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'Unknown date';
                     annHtml += `
                         <div class="announcement-item">
-                            <h4>${data.title || 'Заголовок объявления'}</h4>
-                            <p>${data.content || 'Содержание объявления...'}</p>
+                            <h4>${data.title || 'Announcement Title'}</h4>
+                            <p>${data.content || 'Announcement content...'}</p>
                             <small>${date}</small>
                         </div>
                     `;
@@ -1069,50 +1049,47 @@
                 announcementsListElement.innerHTML = annHtml;
 
             } catch (error) {
-                console.error("Ошибка при получении объявлений:", error);
-                showNotification('Не удалось загрузить объявления.', 'error');
-                announcementsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить объявления.</p>';
+                console.error("Error fetching announcements:", error);
+                showNotification('Failed to load announcements.', 'error');
+                announcementsListElement.innerHTML = '<p style="color: #e74c3c;">Failed to load announcements.</p>';
             }
         }
 
-        /**
-         * 3. Публикация Нового Объявления (Админ-функция) - ИСПОЛЬЗУЕТСЯ FIRESTORE
-         */
         function handlePublishAnnouncement() {
             const publishButton = document.getElementById('publishButton');
             const announcementInput = document.getElementById('announcementInput');
             if (!publishButton || !announcementInput) return;
 
+            // Simple authentication check is not implemented here but should be in production
+            // If auth is not used, the author will be 'Admin (Unauthenticated)'
+            
             publishButton.addEventListener('click', async () => {
                 const content = announcementInput.value.trim();
-                // Используем первую строку как заголовок, если он не задан
                 const title = content.split('\n')[0].substring(0, 50) + (content.length > 50 ? '...' : ''); 
                 if (content.length < 10) {
-                    showNotification("Объявление слишком короткое.", 'warning');
+                    showNotification("Announcement is too short.", 'warning');
                     return;
                 }
 
                 publishButton.disabled = true;
-                publishButton.textContent = 'Публикация...';
-                showNotification('Публикация объявления...', 'info');
+                publishButton.textContent = 'Publishing...';
+                showNotification('Publishing announcement...', 'info');
 
                 try {
-                    // Используем глобальный объект firebase для доступа к FieldValue
                     await db.collection(COLLECTIONS.ANNOUNCEMENTS).add({
                         title: title,
                         content: content,
-                        // Используем auth.currentUser, который определен в глобальной области
                         author: auth.currentUser ? auth.currentUser.email : 'Admin (Unauthenticated)',
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     
                     announcementInput.value = ''; 
-                    showNotification("Объявление успешно опубликовано!", 'success');
+                    showNotification("Announcement published successfully!", 'success');
                     fetchAnnouncements(); 
 
                 } catch (error) {
-                    console.error("Ошибка при публикации объявления:", error);
-                    showNotification("Ошибка публикации: " + error.message, 'error');
+                    console.error("Error publishing announcement:", error);
+                    showNotification("Publishing Error: " + error.message, 'error');
                 } finally {
                     publishButton.disabled = false;
                     publishButton.textContent = 'Publish Announcement';
@@ -1120,9 +1097,6 @@
             });
         }
 
-        /**
-         * 4. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
-         */
         function handleContactForm() {
             const contactForm = document.getElementById('contactForm');
             if (!contactForm) return;
@@ -1134,8 +1108,8 @@
 
                 const submitButton = contactForm.querySelector('button[type="submit"]');
                 submitButton.disabled = true;
-                submitButton.textContent = 'Отправка...';
-                showNotification('Отправка сообщения...', 'info');
+                submitButton.textContent = 'Sending...';
+                showNotification('Sending message...', 'info');
 
                 try {
                     await db.collection(COLLECTIONS.CONTACTS).add({
@@ -1147,12 +1121,12 @@
                         status: 'New'
                     });
 
-                    showNotification("Ваше сообщение успешно отправлено! Мы скоро свяжемся с вами.", 'success');
+                    showNotification("Your message has been sent successfully! We will contact you shortly.", 'success');
                     contactForm.reset();
 
                 } catch (error) {
-                    console.error("Ошибка при отправке контактной формы:", error);
-                    showNotification("Ошибка при отправке сообщения: " + error.message, 'error');
+                    console.error("Error sending contact form:", error);
+                    showNotification("Error sending message: " + error.message, 'error');
                 } finally {
                     submitButton.disabled = false;
                     submitButton.textContent = 'Send Message';
@@ -1160,9 +1134,6 @@
             });
         }
         
-        /**
-         * 5. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE
-         */
          async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
             if (!listElement) return;
@@ -1174,7 +1145,7 @@
                     .get();
 
                 if (snapshot.empty) {
-                    listElement.innerHTML = `<p class="web3-placeholder">Пока нет данных в разделе ${collectionName}.</p>`;
+                    listElement.innerHTML = `<p class="web3-placeholder">No content in ${collectionName} yet.</p>`;
                     return;
                 }
 
@@ -1194,25 +1165,25 @@
                 listElement.innerHTML = html;
 
             } catch (error) {
-                console.error(`Ошибка при загрузке ${collectionName}:`, error);
-                listElement.innerHTML = `<p style="color: #e74c3c;">Не удалось загрузить контент.</p>`;
+                console.error(`Error loading ${collectionName}:`, error);
+                listElement.innerHTML = `<p style="color: #e74c3c;">Failed to load content.</p>`;
             }
         }
 
-        // Запуск функций при загрузке DOM
+        // Run functions on DOM load
         document.addEventListener('DOMContentLoaded', () => {
             fetchNews();
             fetchAnnouncements();
             handlePublishAnnouncement();
             handleContactForm();
             
-            // Загрузка списков с контентом
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
             fetchContentList(COLLECTIONS.ADS, 'ad-list');
         });
     </script>
     
     <script>
+        // AI Diagnostic Tool Logic
         document.addEventListener('DOMContentLoaded', () => {
             const runDiagnosticBtn = document.getElementById('runDiagnosticBtn');
             const functionSelector = document.getElementById('functionSelector');
@@ -1279,7 +1250,6 @@
         });
     </script>
 
-
     <script type="module">
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -1291,32 +1261,33 @@
          * Initializes Jupiter Terminal with the function to physically remove Birdeye.
          */
         function initializeJupiterTerminal() {
-            // В вашем оригинальном HTML не было элемента #afoxChartContainer,
-            // но логика DOM-манипуляции остаётся для предотвращения конфликтов.
+            // This is a placeholder, as the actual Birdeye container is not present in the final HTML
             birdeyeContainer = document.getElementById('afoxChartContainer'); 
             if (birdeyeContainer) {
                 birdeyeParent = birdeyeContainer.parentNode; 
             }
 
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-                // Function for complete removal of Birdeye
+                // Function for complete removal of the chart placeholder (if it existed)
                 const removeBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
-                        birdeyeParent.removeChild(birdeyeContainer);
-                        console.log("Birdeye chart **removed** for wallet connection.");
+                        // birdeyeParent.removeChild(birdeyeContainer); // Kept commented as container is not in the DOM
+                        console.log("Chart placeholder removal logic executed.");
                     }
                 };
 
-                // Function to restore Birdeye
+                // Function to restore the chart placeholder
                 const restoreBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
-                        birdeyeParent.appendChild(birdeyeContainer); 
-                        console.log("Birdeye chart **restored** after wallet connection.");
+                        // birdeyeParent.appendChild(birdeyeContainer); // Kept commented as container is not in the DOM
+                        console.log("Chart placeholder restoration logic executed.");
                     }
                 };
 
                 window.Jupiter.init({
                     displayMode: 'widget',
+                    endpoint: 'mainnet-beta',
+                    passThroughWallet: false, // Prevents Jupiter from connecting without user action
                     widgetStyle: {
                         'container.id': 'jupiter-swap-widget', 
                         'container.zIndex': 9999, 
@@ -1327,6 +1298,7 @@
                         initialInputMint: AFOX_MINT,
                         initialOutputMint: SOL_MINT,
                     },
+                    // Optional parameters
                     swapSwitchboard: true, 
                     strictTokenList: false, 
 
@@ -1343,15 +1315,21 @@
                          restoreBirdeye();
                     }
                 });
-                console.log("Jupiter Terminal initialized with DOM manipulation fixes.");
+                console.log("Jupiter Terminal initialized.");
             } else {
+                // Retry in case Jupiter script is still loading
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
 
         document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
+
+        // Your main modular JavaScript file containing wallet connection, 
+        // Solanajs logic, and other complex interactions.
+        // It must run AFTER the wallet adapter IIFE scripts and Firebase initialization.
+        // This is the correct place for the single module script.
+        import './script.js';
     </script>
-    
-    <script src="script.js" type="module"></script>
+
 </body>
 </html>
