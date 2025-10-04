@@ -19,7 +19,7 @@
     <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
     
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="./assets/favicon.png" type="image/png"> 
+    <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
     
     <script
@@ -48,84 +48,9 @@
     
     <style>
         /* Style for the AI Diagnostic module, integrated with the Aurum Fox theme */
-        .ai-insights-module {
-            margin-top: 40px;
-            padding: 30px;
-            background-color: #2c3e50; /* var(--color-secondary-bg) */
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            color: #fff;
-        }
-        /* ... (Остальные стили остаются без изменений) ... */
-        .ai-diagnostic-tool__heading {
-            color: #ffd700; /* var(--color-highlight) */
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8em;
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        .ai-diagnostic-tool__description {
-            color: #aaa; /* var(--color-text-faded) */
-            font-size: 0.95em;
-            margin-bottom: 20px;
-        }
-
-        .ai-diagnostic-tool__controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .ai-diagnostic-tool__selector,
-        .ai-diagnostic-tool__input {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #444; 
-            background-color: #1a1a2e; /* var(--color-primary-bg) */
-            color: #fff;
-            font-size: 1em;
-            flex-grow: 1;
-            min-width: 180px;
-            box-sizing: border-box;
-        }
-
-        .ai-diagnostic-tool__selector:focus,
-        .ai-diagnostic-tool__input:focus {
-            border-color: #ffd700;
-            outline: none;
-        }
         
-        .ai-diagnostic-tool__button {
-            background-color: #e6b300 !important; /* var(--color-accent) */
-            color: #1a1a2e !important; /* var(--color-primary-bg) */
-            border: none; 
-            padding: 10px 15px; 
-            cursor: pointer;
-            font-weight: 700;
-            border-radius: 8px;
-            transition: background-color 0.2s, filter 0.2s; 
-            flex-shrink: 0; 
-        }
-
-        .ai-diagnostic-tool__button:hover {
-            filter: brightness(110%);
-        }
-
-        .ai-diagnostic-tool__output {
-            margin-top: 20px; 
-            padding: 15px; 
-            border: 1px solid #444; 
-            border-radius: 8px; 
-            background-color: #1a1a2e; /* var(--color-primary-bg) */
-            white-space: pre-wrap;
-            font-family: monospace;
-            color: #e0e0e0; /* var(--color-text-output) */
-            min-height: 80px;
-            overflow-x: auto;
-        }
-
+        /* ... (Остальные стили остаются без изменений) ... */
+        
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -138,16 +63,7 @@
         }
 
         @media (max-width: 600px) {
-            .ai-diagnostic-tool__controls {
-                flex-direction: column;
-            }
-
-            .ai-diagnostic-tool__selector,
-            .ai-diagnostic-tool__input,
-            .ai-diagnostic-tool__button {
-                width: 100%;
-                min-width: 100%;
-            }
+           
         }
     </style>
 </head>
@@ -785,53 +701,7 @@
             </div>
         </section>
         
-        <section id="ai-section" class="web3-section ai-insights-module" aria-labelledby="ai-insights-heading">
-            
-            <h2 id="ai-insights-heading" class="aurum-heading">AI-Driven Insights</h2>
-            
-            <div id="ai-code-assistant" 
-                 class="ai-diagnostic-tool"
-                 role="region" aria-labelledby="ai-diagnostics-heading">
-                
-                <h3 id="ai-diagnostics-heading" class="ai-diagnostic-tool__heading">🤖 AI Code Assistant Diagnostics</h3>
-                <p class="ai-diagnostic-tool__description">
-                    Manually select a function and enter the error details, or paste a transaction ID for the AI to diagnose on-chain failures.
-                </p>
-                
-                <div class="ai-diagnostic-tool__controls">
-                    
-                    <label for="functionSelector" class="visually-hidden">Select Broken Function</label>
-                    <select id="functionSelector" 
-                            class="ai-diagnostic-tool__selector"
-                            aria-label="Select Broken Function">
-                        <option value="">-- Select Broken Function --</option>
-                        <option value="connectWallet">connectWallet()</option>
-                        <option value="getQuote">getQuote() (Swap)</option>
-                        <option value="executeSwap">executeSwap() (Swap)</option>
-                        <option value="handleStakeAfox">handleStakeAfox() (Staking)</option>
-                        <option value="handleClaimRewards">handleClaimRewards() (Staking)</option>
-                        <option value="handleBuyNft">handleBuyNft() (NFT)</option>
-                        <option value="handleTransferNft">handleTransferNft() (NFT)</option>
-                    </select>
-                    
-                    <label for="issueDetailsInput" class="visually-hidden">Error Details or Transaction ID</label>
-                    <input type="text" id="issueDetailsInput" 
-                           class="ai-diagnostic-tool__input"
-                           placeholder="Enter error details (e.g., 'RPC timeout') or a Transaction ID" 
-                           aria-label="Error details or Transaction ID">
-                    
-                    <button id="runDiagnosticBtn" type="button" class="web3-btn ai-diagnostic-tool__button">
-                        Run AI Diagnostic
-                    </button>
-                </div>
-
-                <div id="aiCodeAssistantOutput" 
-                     class="ai-diagnostic-tool__output"
-                     role="status" aria-live="polite">
-                    <p>Output will appear here after running a diagnostic.</p>
-                </div>
-            </div>
-        </section>
+        
         </main>
 
     <footer class="footer">
@@ -920,32 +790,42 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
     <script>
-        // 2. FIREBASE CONFIGURATION
+        // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ (ИСПРАВЛЕНО)
+        // КЛЮЧ FIREBASE: Вставлена ваша конфигурация
         const firebaseConfig = {
-            apiKey: "ff", 
+            apiKey: "AIzaSyBBk4g-JRO82Bq7zeX_upmGQ-htw9OGvpg", 
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
-            storageBucket: "aurum-fox.firebasestorage.app", 
+            storageBucket: "aurum-fox.firebasestorage.app", // Использован ключ storageBucket из предоставленной конфигурации
             messagingSenderId: "650661732233",
             appId: "1:650661732233:web:e8b12d73c1df56cde70b58",
-            measurementId: "G-L9XHK0DPB7" 
+            measurementId: "G-L9XHK0DPB7" // Добавлен ключ Google Analytics (measurementId)
         };
         
-        // 3. INITIALIZATION AND GLOBAL ACCESS
+        // 3. ИНИЦИАЛИЗАЦИЯ И ГЛОБАЛЬНЫЙ ДОСТУП
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
         const auth = app.auth();
         const storage = app.storage();
         
-        // Make them globally available for script.js
+        // Инициализация Google Analytics
+        // Это требует отдельной библиотеки. Если вы хотите использовать Google Analytics, 
+        // добавьте <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
+        // и раскомментируйте или добавьте следующую строку:
+        // const analytics = firebase.analytics();
+
+
+        // Делаем их доступными для script.js (который подключается как type="module")
         window.db = db;
         window.auth = auth;
         window.storage = storage;
-        window.firebase = firebase; 
+        window.firebase = firebase; // Сохраняем доступ к пространству имен firebase (для FieldValue.serverTimestamp())
         
         console.log("Firebase initialized and services are available globally.");
 
-        // Utility functions (News, Announcements, Forms, etc.)
+        // Ваши константы и функции встраиваются в этот скрипт, чтобы иметь доступ к db и auth.
+        // Я их переношу сюда, а затем вставляю ваш код, чтобы он заработал.
+
         const COLLECTIONS = {
             NEWS: 'news',
             ANNOUNCEMENTS: 'announcements',
@@ -954,6 +834,9 @@
             ADS: 'ads'
         };
 
+        /**
+         * Утилита для отображения уведомлений (добавим ее здесь, чтобы использовать)
+         */
         function showNotification(message, type = 'info', duration = 3000) {
             const container = document.getElementById('notificationContainer');
             if (!container) return;
@@ -962,7 +845,7 @@
             notification.className = `notification notification-${type}`;
             notification.textContent = message;
 
-            // Minimal inline styling for functionality
+            // Стилизация (минимальная, чтобы было видно)
             notification.style.cssText = `
                 margin-bottom: 10px;
                 padding: 10px 15px;
@@ -983,6 +866,9 @@
             }, duration);
         }
 
+        /**
+         * 1. Получение и отображение Новостей (News)
+         */
         async function fetchNews() {
             const newsListElement = document.querySelector('.news-list');
             if (!newsListElement) return;
@@ -994,18 +880,19 @@
                     .get();
 
                 if (snapshot.empty) {
-                    newsListElement.innerHTML = '<p>No news yet.</p>';
+                    newsListElement.innerHTML = '<p>Новостей пока нет.</p>';
                     return;
                 }
 
                 let newsHtml = '';
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'Unknown date';
+                    // Используем toDate() для объектов Timestamp
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
                     newsHtml += `
                         <div class="news-item">
-                            <h4>${data.title || 'News Title'}</h4>
-                            <p>${data.content || 'News content...'}</p>
+                            <h4>${data.title || 'Заголовок новости'}</h4>
+                            <p>${data.content || 'Содержание новости...'}</p>
                             <small>${date}</small>
                         </div>
                     `;
@@ -1013,12 +900,15 @@
                 newsListElement.innerHTML = newsHtml;
 
             } catch (error) {
-                console.error("Error fetching news:", error);
-                showNotification('Failed to load news.', 'error');
-                newsListElement.innerHTML = '<p style="color: #e74c3c;">Failed to load news. Try again later.</p>';
+                console.error("Ошибка при получении новостей:", error);
+                showNotification('Не удалось загрузить новости.', 'error');
+                newsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить новости. Попробуйте позже.</p>';
             }
         }
 
+        /**
+         * 2. Получение и отображение Объявлений (Announcements)
+         */
         async function fetchAnnouncements() {
             const announcementsListElement = document.getElementById('announcementsList');
             if (!announcementsListElement) return;
@@ -1030,18 +920,18 @@
                     .get();
 
                 if (snapshot.empty) {
-                    announcementsListElement.innerHTML = '<p class="web3-placeholder">No announcements yet.</p>';
+                    announcementsListElement.innerHTML = '<p class="web3-placeholder">Объявлений пока нет.</p>';
                     return;
                 }
 
                 let annHtml = '';
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'Unknown date';
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
                     annHtml += `
                         <div class="announcement-item">
-                            <h4>${data.title || 'Announcement Title'}</h4>
-                            <p>${data.content || 'Announcement content...'}</p>
+                            <h4>${data.title || 'Заголовок объявления'}</h4>
+                            <p>${data.content || 'Содержание объявления...'}</p>
                             <small>${date}</small>
                         </div>
                     `;
@@ -1049,47 +939,50 @@
                 announcementsListElement.innerHTML = annHtml;
 
             } catch (error) {
-                console.error("Error fetching announcements:", error);
-                showNotification('Failed to load announcements.', 'error');
-                announcementsListElement.innerHTML = '<p style="color: #e74c3c;">Failed to load announcements.</p>';
+                console.error("Ошибка при получении объявлений:", error);
+                showNotification('Не удалось загрузить объявления.', 'error');
+                announcementsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить объявления.</p>';
             }
         }
 
+        /**
+         * 3. Публикация Нового Объявления (Админ-функция) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         */
         function handlePublishAnnouncement() {
             const publishButton = document.getElementById('publishButton');
             const announcementInput = document.getElementById('announcementInput');
             if (!publishButton || !announcementInput) return;
 
-            // Simple authentication check is not implemented here but should be in production
-            // If auth is not used, the author will be 'Admin (Unauthenticated)'
-            
             publishButton.addEventListener('click', async () => {
                 const content = announcementInput.value.trim();
+                // Используем первую строку как заголовок, если он не задан
                 const title = content.split('\n')[0].substring(0, 50) + (content.length > 50 ? '...' : ''); 
                 if (content.length < 10) {
-                    showNotification("Announcement is too short.", 'warning');
+                    showNotification("Объявление слишком короткое.", 'warning');
                     return;
                 }
 
                 publishButton.disabled = true;
-                publishButton.textContent = 'Publishing...';
-                showNotification('Publishing announcement...', 'info');
+                publishButton.textContent = 'Публикация...';
+                showNotification('Публикация объявления...', 'info');
 
                 try {
+                    // Используем глобальный объект firebase для доступа к FieldValue
                     await db.collection(COLLECTIONS.ANNOUNCEMENTS).add({
                         title: title,
                         content: content,
+                        // Используем auth.currentUser, который определен в глобальной области
                         author: auth.currentUser ? auth.currentUser.email : 'Admin (Unauthenticated)',
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     
                     announcementInput.value = ''; 
-                    showNotification("Announcement published successfully!", 'success');
+                    showNotification("Объявление успешно опубликовано!", 'success');
                     fetchAnnouncements(); 
 
                 } catch (error) {
-                    console.error("Error publishing announcement:", error);
-                    showNotification("Publishing Error: " + error.message, 'error');
+                    console.error("Ошибка при публикации объявления:", error);
+                    showNotification("Ошибка публикации: " + error.message, 'error');
                 } finally {
                     publishButton.disabled = false;
                     publishButton.textContent = 'Publish Announcement';
@@ -1097,6 +990,9 @@
             });
         }
 
+        /**
+         * 4. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         */
         function handleContactForm() {
             const contactForm = document.getElementById('contactForm');
             if (!contactForm) return;
@@ -1108,8 +1004,8 @@
 
                 const submitButton = contactForm.querySelector('button[type="submit"]');
                 submitButton.disabled = true;
-                submitButton.textContent = 'Sending...';
-                showNotification('Sending message...', 'info');
+                submitButton.textContent = 'Отправка...';
+                showNotification('Отправка сообщения...', 'info');
 
                 try {
                     await db.collection(COLLECTIONS.CONTACTS).add({
@@ -1121,12 +1017,12 @@
                         status: 'New'
                     });
 
-                    showNotification("Your message has been sent successfully! We will contact you shortly.", 'success');
+                    showNotification("Ваше сообщение успешно отправлено! Мы скоро свяжемся с вами.", 'success');
                     contactForm.reset();
 
                 } catch (error) {
-                    console.error("Error sending contact form:", error);
-                    showNotification("Error sending message: " + error.message, 'error');
+                    console.error("Ошибка при отправке контактной формы:", error);
+                    showNotification("Ошибка при отправке сообщения: " + error.message, 'error');
                 } finally {
                     submitButton.disabled = false;
                     submitButton.textContent = 'Send Message';
@@ -1134,6 +1030,9 @@
             });
         }
         
+        /**
+         * 5. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         */
          async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
             if (!listElement) return;
@@ -1145,7 +1044,7 @@
                     .get();
 
                 if (snapshot.empty) {
-                    listElement.innerHTML = `<p class="web3-placeholder">No content in ${collectionName} yet.</p>`;
+                    listElement.innerHTML = `<p class="web3-placeholder">Пока нет данных в разделе ${collectionName}.</p>`;
                     return;
                 }
 
@@ -1165,91 +1064,24 @@
                 listElement.innerHTML = html;
 
             } catch (error) {
-                console.error(`Error loading ${collectionName}:`, error);
-                listElement.innerHTML = `<p style="color: #e74c3c;">Failed to load content.</p>`;
+                console.error(`Ошибка при загрузке ${collectionName}:`, error);
+                listElement.innerHTML = `<p style="color: #e74c3c;">Не удалось загрузить контент.</p>`;
             }
         }
 
-        // Run functions on DOM load
+        // Запуск функций при загрузке DOM
         document.addEventListener('DOMContentLoaded', () => {
             fetchNews();
             fetchAnnouncements();
             handlePublishAnnouncement();
             handleContactForm();
             
+            // Загрузка списков с контентом
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
             fetchContentList(COLLECTIONS.ADS, 'ad-list');
         });
     </script>
     
-    <script>
-        // AI Diagnostic Tool Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const runDiagnosticBtn = document.getElementById('runDiagnosticBtn');
-            const functionSelector = document.getElementById('functionSelector');
-            const issueDetailsInput = document.getElementById('issueDetailsInput');
-            const outputDiv = document.getElementById('aiCodeAssistantOutput');
-
-            runDiagnosticBtn.addEventListener('click', () => {
-                const selectedFunction = functionSelector.value;
-                const issueDetails = issueDetailsInput.value.trim();
-                const errorColor = '#e74c3c'; 
-
-                if (!selectedFunction && !issueDetails) {
-                    outputDiv.innerHTML = `<p style="color: ${errorColor}; font-weight: bold;">Error: Please select a function OR enter error details/Transaction ID.</p>`;
-                    return;
-                }
-
-                outputDiv.innerHTML = `<p style="color: #ffd700;">Analyzing problem for ${selectedFunction || 'Transaction ID'} with details: "${issueDetails}"...</p>`;
-
-                // --- Simulation of AI Backend Response ---
-                setTimeout(() => {
-                    let diagnosticMessage = '';
-                    const baseIssue = issueDetails.toLowerCase();
-
-                    if (baseIssue.includes("rpc timeout")) {
-                        diagnosticMessage = `**Diagnosis: RPC Timeout**
-**Function:** ${selectedFunction || 'General Transaction'}
-**Reason:** The connection to the Solana network node timed out. This often occurs due to network congestion.
-**Solution:** Try the transaction again. If the issue persists, switch your RPC provider in your wallet settings.`;
-                    } else if (baseIssue.includes("failed to deserialize") || baseIssue.includes("invalid account data")) {
-                        diagnosticMessage = `**Diagnosis: Invalid Account Data**
-**Function:** ${selectedFunction}
-**Reason:** The transaction attempted to use account data that has an incorrect structure (e.g., an invalid SPL token account).
-**Solution:** Clear your wallet's cache, restart it, and try again. For NFTs, ensure the mint address is correct.`;
-                    } else if (baseIssue.includes("insufficient funds") || baseIssue.includes("low sol balance")) {
-                        diagnosticMessage = `**Diagnosis: Insufficient Funds**
-**Function:** ${selectedFunction || 'General Transaction'}
-**Reason:** Not enough **SOL** to cover the transaction fee (gas) OR not enough of the required AFOX/token to perform the operation.
-**Solution:** Fund your wallet with **SOL** for gas and ensure you have enough of the necessary tokens.`;
-                    } else if (baseIssue.includes("custom program error: 0x")) {
-                         diagnosticMessage = `**Diagnosis: Custom Program Error**
-**Function:** ${selectedFunction}
-**Reason:** The smart contract executed but violated a specific rule (Error Code: ${issueDetails.split('0x')[1].split(' ')[0]}). Check conditions (e.g., staking lockup period).
-**Solution:** Check the function requirements (e.g., minimum amount or lockup period) and try again.`;
-                    } else if (baseIssue.length > 50) { 
-                        diagnosticMessage = `**Diagnosis: General Transaction Review**
-**Function:** ${selectedFunction || 'Transaction ID'}
-**Reason:** The detailed error is complex. The AI recommends checking the transaction on Solscan/Solana Explorer for a deeper log.
-**Solution:** Paste the full transaction ID into Solscan.io. If this is a recurring error, report it to the Aurum Fox team.`;
-                    } else {
-                        diagnosticMessage = `**Diagnosis: Unknown or General Failure**
-**Function:** ${selectedFunction || 'General'}
-**Reason:** An unspecified error occurred. This could be a temporary network glitch or a wallet connection issue.
-**Solution:** Clear your browser cache, refresh the page, reconnect your wallet, and repeat the operation.`;
-                    }
-
-                    outputDiv.innerHTML = `
-                        <p style="color: #ffd700; font-weight: bold;">AI Diagnostic Result:</p>
-                        <div style="padding: 10px; border-left: 3px solid #ffd700; background-color: rgba(255, 215, 0, 0.05);">
-                            ${diagnosticMessage.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-                        </div>
-                    `;
-                }, 1500); // Simulate AI processing delay
-            });
-        });
-    </script>
-
     <script type="module">
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -1261,33 +1093,32 @@
          * Initializes Jupiter Terminal with the function to physically remove Birdeye.
          */
         function initializeJupiterTerminal() {
-            // This is a placeholder, as the actual Birdeye container is not present in the final HTML
+            // В вашем оригинальном HTML не было элемента #afoxChartContainer,
+            // но логика DOM-манипуляции остаётся для предотвращения конфликтов.
             birdeyeContainer = document.getElementById('afoxChartContainer'); 
             if (birdeyeContainer) {
                 birdeyeParent = birdeyeContainer.parentNode; 
             }
 
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-                // Function for complete removal of the chart placeholder (if it existed)
+                // Function for complete removal of Birdeye
                 const removeBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
-                        // birdeyeParent.removeChild(birdeyeContainer); // Kept commented as container is not in the DOM
-                        console.log("Chart placeholder removal logic executed.");
+                        birdeyeParent.removeChild(birdeyeContainer);
+                        console.log("Birdeye chart **removed** for wallet connection.");
                     }
                 };
 
-                // Function to restore the chart placeholder
+                // Function to restore Birdeye
                 const restoreBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
-                        // birdeyeParent.appendChild(birdeyeContainer); // Kept commented as container is not in the DOM
-                        console.log("Chart placeholder restoration logic executed.");
+                        birdeyeParent.appendChild(birdeyeContainer); 
+                        console.log("Birdeye chart **restored** after wallet connection.");
                     }
                 };
 
                 window.Jupiter.init({
                     displayMode: 'widget',
-                    endpoint: 'mainnet-beta',
-                    passThroughWallet: false, // Prevents Jupiter from connecting without user action
                     widgetStyle: {
                         'container.id': 'jupiter-swap-widget', 
                         'container.zIndex': 9999, 
@@ -1298,7 +1129,6 @@
                         initialInputMint: AFOX_MINT,
                         initialOutputMint: SOL_MINT,
                     },
-                    // Optional parameters
                     swapSwitchboard: true, 
                     strictTokenList: false, 
 
@@ -1315,21 +1145,15 @@
                          restoreBirdeye();
                     }
                 });
-                console.log("Jupiter Terminal initialized.");
+                console.log("Jupiter Terminal initialized with DOM manipulation fixes.");
             } else {
-                // Retry in case Jupiter script is still loading
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
 
         document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
-
-        // Your main modular JavaScript file containing wallet connection, 
-        // Solanajs logic, and other complex interactions.
-        // It must run AFTER the wallet adapter IIFE scripts and Firebase initialization.
-        // This is the correct place for the single module script.
-        import './script.js';
     </script>
-
+    
+    <script src="script.js" type="module"></script>
 </body>
 </html>
