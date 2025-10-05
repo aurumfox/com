@@ -431,14 +431,9 @@
                 <h2 class="aurum-heading">Aurum Fox News and Updates</h2>
                 <div class="news-content news-list">
                     <div class="news-item">
-                        <h4>Aurum Fox Staking Platform Launched!</h4>
-                        <p>We are excited to announce the launch of our staking platform. Stake your AFOX to earn rewards!</p>
-                        <small>June 26, 2025</small>
-                    </div>
-                    <div class="news-item">
-                        <h4>DAO Governance Implemented</h4>
-                        <p>Our Decentralized Autonomous Organization is now active, empowering community voting.</p>
-                        <small>June 20, 2025</small>
+                        <h4>Loading News...</h4>
+                        <p>Please wait while we fetch the latest updates in real-time.</p>
+                        <small>--</small>
                     </div>
                 </div>
             </div>
@@ -456,14 +451,9 @@
                 <h3>Published Announcements</h3>
                 <div id="announcementsList" class="announcements-list">
                     <div class="announcement-item">
-                        <h4>New Partnership with GameFi Studio XYZ</h4>
-                        <p>Exciting collaboration to integrate AFOX into upcoming blockchain games.</p>
-                        <small>June 25, 2025</small>
-                    </div>
-                    <div class="announcement-item">
-                        <h4>Community AMA Session Scheduled</h4>
-                        <p>Join us for an Ask Me Anything session with the team next Friday at 3 PM UTC.</p>
-                        <small>June 24, 2025</small>
+                        <h4>Loading Announcements...</h4>
+                        <p>Real-time updates are loading.</p>
+                        <small>--</small>
                     </div>
                 </div>
             </div>
@@ -573,10 +563,7 @@
                 <p>This section will display user-uploaded games.</p>
                 <button id="uploadGameBtnWeb3" class="web3-btn" aria-label="Upload a new game">Upload New Game</button>
                 <div id="game-list" class="content-area web3-content-area games-grid">
-                    <div class="placeholder-item web3-placeholder game">Game 1: Title</div>
-                    <div class="placeholder-item web3-placeholder game">Game 2: Title</div>
-                    <div class="placeholder-item web3-placeholder game">Game Title 3</div>
-                    <div class="placeholder-item web3-placeholder game">Game Title 4</div>
+                    <p class="web3-placeholder">Loading Games...</p>
                 </div>
                 <button id="loadMoreGamesBtn" class="web3-btn" aria-label="Load More Games">Load More Games</button>
             </div>
@@ -657,8 +644,7 @@
                 <p>Place your advertisements here!</p>
                 <button id="postAdBtnWeb3" class="web3-btn" aria-label="Post a new advertisement">Post Ad</button>
                 <div id="ad-list" class="content-area web3-content-area ad-list">
-                    <div class="placeholder-item ad web3-placeholder">Ad 1: Great Products!</div>
-                    <div class="placeholder-item ad web3-placeholder">Ad 2: Best Services!</div>
+                    <p class="web3-placeholder">Loading Ads...</p>
                 </div>
             </div>
         </section>
@@ -678,20 +664,12 @@
                 <h3 class="web3-subheading">Active Proposals</h3>
                 <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
                     <div class="dao-proposal-item web3-placeholder">
-                        <h4>Proposal #1: Add New Feature X</h4>
-                        <p>Description: This proposal aims to add Feature X, which will improve user experience.</p>
-                        <p>Creator: <span class="dao-creator">0xABC...DEF</span></p>
-                        <p>Votes For: <span class="dao-votes-for">150</span> | Votes Against: <span class="dao-votes-against">20</span></p>
+                        <h4>Loading Proposal #1</h4>
+                        <p>Description: Real-time DAO proposals are loading here.</p>
+                        <p>Creator: <span class="dao-creator">...</span></p>
+                        <p>Votes For: <span class="dao-votes-for">...</span> | Votes Against: <span class="dao-votes-against">...</span></p>
                         <button class="web3-btn dao-vote-btn" data-proposal-id="1" data-vote-type="for" aria-label="Vote FOR Proposal 1">Vote FOR</button>
                         <button class="web3-btn dao-vote-btn" data-proposal-id="1" data-vote-type="against" aria-label="Vote AGAINST Proposal 1">Vote AGAINST</button>
-                    </div>
-                    <div class="dao-proposal-item web3-placeholder">
-                        <h4>Proposal #2: Change Transaction Fees</h4>
-                        <p>Description: This proposal suggests adjusting current fees to incentivize AFOX usage.</p>
-                        <p>Creator: <span class="dao-creator">0x123...456</span></p>
-                        <p>Votes For: <span class="dao-votes-for">80</span> | Votes Against: <span class="dao-votes-against">95</span></p>
-                        <button class="web3-btn dao-vote-btn" data-proposal-id="2" data-vote-type="for" aria-label="Vote FOR Proposal 2">Vote FOR</button>
-                        <button class="web3-btn dao-vote-btn" data-proposal-id="2" data-vote-type="against" aria-label="Vote AGAINST Proposal 2">Vote AGAINST</button>
                     </div>
                 </div>
 
@@ -748,10 +726,15 @@
                         <input type="number" id="stakeAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX amount to stake" aria-label="Amount to stake">
                         <button id="stakeAfoxBtn" class="web3-btn" aria-label="Stake AFOX tokens">Stake</button>
                     </div>
-
-                    <h3 class="web3-subheading">Manage Staking</h3>
+                    
+                    <h3 class="web3-subheading">Unstake AFOX (Withdraw)</h3>
+                    <div class="input-group">
+                        <input type="number" id="unstakeAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX amount to unstake" aria-label="Amount to unstake">
+                        <button id="unstakeAfoxBtn" class="web3-btn" aria-label="Unstake AFOX tokens">Unstake Tokens</button>
+                    </div>
+                    
+                    <h3 class="web3-subheading">Claim Rewards</h3>
                     <button id="claimRewardsBtn" class="web3-btn" aria-label="Claim AFOX staking rewards">Claim Rewards</button>
-                    <button id="unstakeAfoxBtn" class="web3-btn" aria-label="Unstake AFOX tokens">Unstake Tokens</button>
                 </div>
 
                 <div class="staking-details">
@@ -877,21 +860,7 @@
             </div>
         </div>
     </div>
-
-    <div id="nftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftModalTitle" style="display:none;">
-        <div class="modal-content">
-            <span class="close-button" id="closeNftModal" aria-label="Close NFT modal">&times;</span>
-            <h3 id="nftModalTitle">NFT Details</h3>
-            <img id="nftModalImage" src="" alt="NFT Image" class="modal-nft-image">
-            <p><strong>Description:</strong> <span id="nftModalDescription"></span></p>
-            <p><strong>Owner:</strong> <span id="nftModalOwner"></span></p>
-            <p><strong>Collection:</strong> <span id="nftModalCollection"></span></p>
-            <p><strong>Price:</strong> <span id="nftModalPrice"></span></p>
-            <button class="web3-btn" id="listForSaleBtn" aria-label="List NFT for sale">List for Sale</button>
-            <button class="web3-btn" id="buyNftBtn" aria-label="Buy NFT">Buy NFT</button>
-        </div>
-    </div>
-
+    
     <div id="mintNftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="mintNftModalTitle" style="display:none;">
         <div class="modal-content">
             <span class="close-button" id="closeMintNftModal" aria-label="Close mint NFT modal">&times;</span>
@@ -937,16 +906,15 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
     <script>
-        // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ (ИСПРАВЛЕНО)
-        // КЛЮЧ FIREBASE: Вставлена ваша конфигурация
+        // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ
         const firebaseConfig = {
             apiKey: "AIzaSyBBk4g-JRO82Bq7zeX_upmGQ-htw9OGvpg", 
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
-            storageBucket: "aurum-fox.firebasestorage.app", // Использован ключ storageBucket из предоставленной конфигурации
+            storageBucket: "aurum-fox.firebasestorage.app",
             messagingSenderId: "650661732233",
             appId: "1:650661732233:web:e8b12d73c1df56cde70b58",
-            measurementId: "G-L9XHK0DPB7" // Добавлен ключ Google Analytics (measurementId)
+            measurementId: "G-L9XHK0DPB7" 
         };
         
         // 3. ИНИЦИАЛИЗАЦИЯ И ГЛОБАЛЬНЫЙ ДОСТУП
@@ -955,23 +923,13 @@
         const auth = app.auth();
         const storage = app.storage();
         
-        // Инициализация Google Analytics
-        // Это требует отдельной библиотеки. Если вы хотите использовать Google Analytics, 
-        // добавьте <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
-        // и раскомментируйте или добавьте следующую строку:
-        // const analytics = firebase.analytics();
-
-
         // Делаем их доступными для script.js (который подключается как type="module")
         window.db = db;
         window.auth = auth;
         window.storage = storage;
-        window.firebase = firebase; // Сохраняем доступ к пространству имен firebase (для FieldValue.serverTimestamp())
+        window.firebase = firebase; 
         
         console.log("Firebase initialized and services are available globally.");
-
-        // Ваши константы и функции встраиваются в этот скрипт, чтобы иметь доступ к db и auth.
-        // Я их переношу сюда, а затем вставляю ваш код, чтобы он заработал.
 
         const COLLECTIONS = {
             NEWS: 'news',
@@ -1015,82 +973,75 @@
         }
 
         /**
-         * 1. Получение и отображение Новостей (News)
+         * 1. Реальное время: Получение и отображение Новостей (News)
          */
-        async function fetchNews() {
+        function setupNewsListener() {
             const newsListElement = document.querySelector('.news-list');
             if (!newsListElement) return;
 
-            try {
-                const snapshot = await db.collection(COLLECTIONS.NEWS)
-                    .orderBy('timestamp', 'desc')
-                    .limit(5)
-                    .get();
+            db.collection(COLLECTIONS.NEWS)
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .onSnapshot(snapshot => { // <-- ИСПОЛЬЗУЕМ СЛУШАТЕЛЬ
+                    if (snapshot.empty) {
+                        newsListElement.innerHTML = '<p>Новостей пока нет.</p>';
+                        return;
+                    }
 
-                if (snapshot.empty) {
-                    newsListElement.innerHTML = '<p>Новостей пока нет.</p>';
-                    return;
-                }
-
-                let newsHtml = '';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    // Используем toDate() для объектов Timestamp
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
-                    newsHtml += `
-                        <div class="news-item">
-                            <h4>${data.title || 'Заголовок новости'}</h4>
-                            <p>${data.content || 'Содержание новости...'}</p>
-                            <small>${date}</small>
-                        </div>
-                    `;
+                    let newsHtml = '';
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
+                        newsHtml += `
+                            <div class="news-item">
+                                <h4>${data.title || 'Заголовок новости'}</h4>
+                                <p>${data.content || 'Содержание новости...'}</p>
+                                <small>${date}</small>
+                            </div>
+                        `;
+                    });
+                    newsListElement.innerHTML = newsHtml;
+                    console.log("News updated in real-time.");
+                }, error => {
+                    console.error("Ошибка слушателя новостей:", error);
+                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить новости в реальном времени.</p>';
                 });
-                newsListElement.innerHTML = newsHtml;
-
-            } catch (error) {
-                console.error("Ошибка при получении новостей:", error);
-                showNotification('Не удалось загрузить новости.', 'error');
-                newsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить новости. Попробуйте позже.</p>';
-            }
         }
 
         /**
-         * 2. Получение и отображение Объявлений (Announcements)
+         * 2. Реальное время: Получение и отображение Объявлений (Announcements)
          */
-        async function fetchAnnouncements() {
+        function setupAnnouncementsListener() {
             const announcementsListElement = document.getElementById('announcementsList');
             if (!announcementsListElement) return;
 
-            try {
-                const snapshot = await db.collection(COLLECTIONS.ANNOUNCEMENTS)
-                    .orderBy('timestamp', 'desc')
-                    .limit(5)
-                    .get();
+            db.collection(COLLECTIONS.ANNOUNCEMENTS)
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .onSnapshot(snapshot => { // <-- ИСПОЛЬЗУЕМ СЛУШАТЕЛЬ
+                    if (snapshot.empty) {
+                        announcementsListElement.innerHTML = '<p class="web3-placeholder">Объявлений пока нет.</p>';
+                        return;
+                    }
 
-                if (snapshot.empty) {
-                    announcementsListElement.innerHTML = '<p class="web3-placeholder">Объявлений пока нет.</p>';
-                    return;
-                }
-
-                let annHtml = '';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
-                    annHtml += `
-                        <div class="announcement-item">
-                            <h4>${data.title || 'Заголовок объявления'}</h4>
-                            <p>${data.content || 'Содержание объявления...'}</p>
-                            <small>${date}</small>
-                        </div>
-                    `;
+                    let annHtml = '';
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
+                        annHtml += `
+                            <div class="announcement-item">
+                                <h4>${data.title || 'Заголовок объявления'}</h4>
+                                <p>${data.content || 'Содержание объявления...'}</p>
+                                <small>${date}</small>
+                            </div>
+                        `;
+                    });
+                    announcementsListElement.innerHTML = annHtml;
+                    console.log("Announcements updated in real-time.");
+                }, error => {
+                    console.error("Ошибка слушателя объявлений:", error);
+                    announcementsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить объявления в реальном времени.</p>';
                 });
-                announcementsListElement.innerHTML = annHtml;
-
-            } catch (error) {
-                console.error("Ошибка при получении объявлений:", error);
-                showNotification('Не удалось загрузить объявления.', 'error');
-                announcementsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить объявления.</p>';
-            }
         }
 
         /**
@@ -1102,14 +1053,13 @@
             if (!publishButton || !announcementInput) return;
 
             publishButton.addEventListener('click', async () => {
-                // ПРОВЕРКА АДМИНА: Убедитесь, что пользователь авторизован
+                // ПРОВЕРКА АДМИНА
                 if (!auth.currentUser) {
                     showNotification("Вам необходимо войти как администратор для публикации.", 'error');
                     return;
                 }
                 
                 const content = announcementInput.value.trim();
-                // Используем первую строку как заголовок, если он не задан
                 const title = content.split('\n')[0].substring(0, 50) + (content.length > 50 ? '...' : ''); 
                 if (content.length < 10) {
                     showNotification("Объявление слишком короткое.", 'warning');
@@ -1121,19 +1071,16 @@
                 showNotification('Публикация объявления...', 'info');
 
                 try {
-                    // Используем глобальный объект firebase для доступа к FieldValue
                     await db.collection(COLLECTIONS.ANNOUNCEMENTS).add({
                         title: title,
                         content: content,
-                        // Используем auth.currentUser, который определен в глобальной области
                         author: auth.currentUser ? auth.currentUser.email : 'Admin',
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     
                     announcementInput.value = ''; 
                     showNotification("Объявление успешно опубликовано!", 'success');
-                    fetchAnnouncements(); 
-
+                    // Слушатель обновит список автоматически
                 } catch (error) {
                     console.error("Ошибка при публикации объявления:", error);
                     showNotification("Ошибка публикации: " + error.message, 'error');
@@ -1185,7 +1132,7 @@
         }
         
         /**
-         * 5. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         * 5. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE (ПОКА ОДНОКРАТНАЯ ЗАГРУЗКА)
          */
          async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
@@ -1223,16 +1170,16 @@
             }
         }
 
-        // ----------------------------------------------------------------
-        // >>> ИСПРАВЛЕНИЕ 4: НОВАЯ ЛОГИКА КОНТРОЛЯ ДОСТУПА ДЛЯ AI-ДИАГНОСТИКИ <<<
-        // ----------------------------------------------------------------
+        // >>> ЛОГИКА КОНТРОЛЯ ДОСТУПА И ЗАПУСКА СЛУШАТЕЛЕЙ <<<
         document.addEventListener('DOMContentLoaded', () => {
-            fetchNews();
-            fetchAnnouncements();
+            // Запуск слушателей реального времени
+            setupNewsListener();
+            setupAnnouncementsListener();
+            
             handlePublishAnnouncement();
             handleContactForm();
             
-            // Загрузка списков с контентом
+            // Загрузка списков с контентом (пока без реального времени)
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
             fetchContentList(COLLECTIONS.ADS, 'ad-list');
 
@@ -1248,6 +1195,7 @@
                     aiSection.style.display = isVisible ? 'block' : 'none';
                 }
                 if (adminLoginBtn) {
+                    // Кнопка логина скрывается, если пользователь вошел
                     adminLoginBtn.style.display = isVisible ? 'none' : 'block';
                 }
             }
@@ -1384,8 +1332,6 @@
          * Initializes Jupiter Terminal with the function to physically remove Birdeye.
          */
         function initializeJupiterTerminal() {
-            // В вашем оригинальном HTML не было элемента #afoxChartContainer,
-            // но логика DOM-манипуляции остаётся для предотвращения конфликтов.
             birdeyeContainer = document.getElementById('afoxChartContainer'); 
             if (birdeyeContainer) {
                 birdeyeParent = birdeyeContainer.parentNode; 
