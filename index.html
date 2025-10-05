@@ -357,11 +357,6 @@
         <section id="aurum-announcements" class="section aurum-fox-section">
             <div class="container">
                 <h2 class="aurum-heading">Aurum Fox Announcements</h2>
-                <div class="admin-announcement-section">
-                    <h3>Publish New Announcement (Admin Only)</h3>
-                    <textarea id="announcementInput" placeholder="Enter your new announcement here..." aria-label="New announcement text input"></textarea>
-                    <button id="publishButton" aria-label="Publish announcement">Publish Announcement</button>
-                </div>
                 <hr>
                 <h3>Published Announcements</h3>
                 <div id="announcementsList" class="announcements-list">
@@ -896,52 +891,6 @@
                 });
         }
 
-        /**
-         * 3. Публикация Нового Объявления (Админ-функция) - ИСПОЛЬЗУЕТСЯ FIRESTORE
-         */
-        function handlePublishAnnouncement() {
-            const publishButton = document.getElementById('publishButton');
-            const announcementInput = document.getElementById('announcementInput');
-            if (!publishButton || !announcementInput) return;
-
-            publishButton.addEventListener('click', async () => {
-                // ПРОВЕРКА АДМИНА
-                if (!auth.currentUser) {
-                    showNotification("Вам необходимо войти как администратор для публикации.", 'error');
-                    return;
-                }
-                
-                const content = announcementInput.value.trim();
-                const title = content.split('\n')[0].substring(0, 50) + (content.length > 50 ? '...' : ''); 
-                if (content.length < 10) {
-                    showNotification("Объявление слишком короткое.", 'warning');
-                    return;
-                }
-
-                publishButton.disabled = true;
-                publishButton.textContent = 'Публикация...';
-                showNotification('Публикация объявления...', 'info');
-
-                try {
-                    await db.collection(COLLECTIONS.ANNOUNCEMENTS).add({
-                        title: title,
-                        content: content,
-                        author: auth.currentUser ? auth.currentUser.email : 'Admin',
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    announcementInput.value = ''; 
-                    showNotification("Объявление успешно опубликовано!", 'success');
-                    // Слушатель обновит список автоматически
-                } catch (error) {
-                    console.error("Ошибка при публикации объявления:", error);
-                    showNotification("Ошибка публикации: " + error.message, 'error');
-                } finally {
-                    publishButton.disabled = false;
-                    publishButton.textContent = 'Publish Announcement';
-                }
-            });
-        }
 
         /**
          * 4. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
@@ -1034,7 +983,6 @@
             setupNewsListener();
             setupAnnouncementsListener();
             
-            handlePublishAnnouncement();
             handleContactForm();
             
             // Загрузка списков с контентом (пока без реального времени)
