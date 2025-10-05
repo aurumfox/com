@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana</title>
-    <meta name="description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, Advertising, DAO, Staking, Swaps) and a multimedia hub (Photos, Posts, Mini-Games). Your gateway to the AFOX ecosystem on Solana.">
+    <meta name="description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub (Photos, Posts, Mini-Games). Your gateway to the AFOX ecosystem on Solana.">
     <meta name="keywords" content="Aurum Fox, AFOX, Solana, meme coin, Web3, NFT, DAO, Staking, Crypto Games, Decentralized Advertising, DeFi, Blockchain, SPL Token, Raydium, Orca, Phantom Wallet">
     <meta name="author" content="Aurum Fox Community">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://aurumfox.github.io/com/"> 
     <meta property="og:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
-    <meta property="og:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, Advertising, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
+    <meta property="og:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
     <meta property="og:image" content="./assets/foxcoin-hero.png.jpg"> 
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://aurumfox.github.io/com/"> 
     <meta property="twitter:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
-    <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, Advertising, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
+    <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
     <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
     
     <link rel="stylesheet" href="style.css">
@@ -102,7 +102,6 @@
                     <li><a href="#web3-site-home">Web3 Overview</a></li>
                     <li><a href="#games-section">Games</a></li>
                     <li><a href="#nft-section">NFT Portal</a></li>
-                    <li><a href="#ads-section">Advertising</a></li>
                     <li><a href="#dao-section">DAO</a></li>
                     <li><a href="#staking-section">Staking</a></li>
                     <li><a href="#swap-section">Swap</a></li>
@@ -449,11 +448,6 @@
                         <p>Browse your NFT collections, mint new ones, and explore marketplaces.</p>
                         <a href="#nft-section" class="web3-link">Explore NFTs</a>
                     </div>
-                    <div class="feature-card">
-                        <h3>📢 Ads</h3>
-                        <p>Place and view decentralized advertisements.</p>
-                        <a href="#ads-section" class="web3-link">View Ads</a>
-                    </div>
                      <div class="feature-card">
                         <h3>🏛️ DAO</h3>
                         <p>Participate in governance and vote on proposals.</p>
@@ -550,17 +544,6 @@
 
                         <button type="submit" class="web3-btn" aria-label="Mint NFT">Mint NFT</button>
                     </form>
-                </div>
-            </div>
-        </section>
-
-        <section id="ads-section" class="section web3-section">
-            <div class="container">
-                <h2 class="web3-heading">📢 Ads</h2>
-                <p>Place your advertisements here!</p>
-                <button id="postAdBtnWeb3" class="web3-btn" aria-label="Post a new advertisement">Post Ad</button>
-                <div id="ad-list" class="content-area web3-content-area ad-list">
-                    <p class="web3-placeholder">Loading Ads...</p>
                 </div>
             </div>
         </section>
@@ -805,7 +788,7 @@
             ANNOUNCEMENTS: 'announcements',
             CONTACTS: 'contacts',
             GAMES: 'games',
-            ADS: 'ads'
+            // ADS: 'ads' <--- REMOVED ADS COLLECTION
         };
 
         /**
@@ -1001,12 +984,18 @@
         }
         
         /**
-         * 5. Получение списка Игр/Объявлений (Games/Ads) - ИСПОЛЬЗУЕТСЯ FIRESTORE (ПОКА ОДНОКРАТНАЯ ЗАГРУЗКА)
+         * 5. Получение списка Игр (Games) - ИСПОЛЬЗУЕТСЯ FIRESTORE (ПОКА ОДНОКРАТНАЯ ЗАГРУЗКА)
          */
          async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
             if (!listElement) return;
             
+            // Check if collectionName is the 'ads' collection (which we explicitly removed the functionality for)
+            // if (collectionName === 'ads') {
+            //     listElement.innerHTML = `<p class="web3-placeholder">The advertising feature has been removed as per request.</p>`;
+            //     return;
+            // }
+
             try {
                 const snapshot = await db.collection(collectionName)
                     .orderBy('order', 'asc') 
@@ -1019,7 +1008,7 @@
                 }
 
                 let html = '';
-                const itemClass = collectionName === COLLECTIONS.GAMES ? 'game' : 'ad';
+                const itemClass = collectionName === COLLECTIONS.GAMES ? 'game' : 'item'; // 'item' is a fallback, but only 'games' should pass
                 
                 snapshot.forEach(doc => {
                     const data = doc.data();
@@ -1050,7 +1039,7 @@
             
             // Загрузка списков с контентом (пока без реального времени)
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
-            fetchContentList(COLLECTIONS.ADS, 'ad-list');
+            // fetchContentList(COLLECTIONS.ADS, 'ad-list'); <-- REMOVED CALL TO FETCH ADS
 
             // Получение DOM-элементов для логина
             const adminLoginBtn = document.getElementById('adminLoginBtn');
