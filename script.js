@@ -39,7 +39,7 @@ let areProviderListenersAttached = false;
 let currentJupiterQuote = null;
 let currentOpenNft = null;
 
-// --- UI ELEMENT CACHING (Не изменено) ---
+// --- UI ELEMENT CACHING ---
 const uiElements = {
     // General Wallet & Display
     connectWalletButtons: [],
@@ -57,9 +57,13 @@ const uiElements = {
     nftDetailMint: null, attributesList: null, nftDetailSolscanLink: null, nftDetailBuyBtn: null,
     nftDetailSellBtn: null, nftDetailTransferBtn: null, nftDetailHistory: null,
     // Announcements Section
-    announcementsList: null, announcementInput: null, publishButton: null,
+    announcementsList: null, // ✅ ОСТАВЛЕНО: Для отображения
+    // ❌ УДАЛЕНО: announcementInput: null,
+    // ❌ УДАЛЕНО: publishButton: null,
     // Games & Ads Section
-    gameList: null, uploadGameBtnWeb3: null, adList: null, postAdBtnWeb3: null,
+    gameList: null, uploadGameBtnWeb3: null,
+    // ❌ УДАЛЕНО: adList: null,
+    // ❌ УДАЛЕНО: postAdBtnWeb3: null,
     // Staking Section Elements
     userAfoxBalance: null, userStakedAmount: null, userRewardsAmount: null, stakingApr: null,
     stakeAmountInput: null, stakeAfoxBtn: null, claimRewardsBtn: null, unstakeAfoxBtn: null,
@@ -73,8 +77,8 @@ const uiElements = {
     // Contact Form
     contactForm: null, contactNameInput: null, contactEmailInput: null, contactSubjectInput: null, contactMessageInput: null,
     notificationContainer: null,
-    // AI Forecast Section
-    aiPriceForecast: null,
+    // ❌ УДАЛЕНО: AI Price Forecast Element
+    // aiPriceForecast: null,
 };
 
 
@@ -93,9 +97,7 @@ const MOCK_DB = {
     games: [
         { title: 'Solana Runner (MOCK)', description: 'Бесконечный раннер, симуляция игры.', url: '#' }
     ],
-    ads: [
-        { title: 'Купи AFOX (MOCK Ad)', content: 'Лучший токен на Solana!', imageUrl: 'https://via.placeholder.com/300x100/dc3545/ffffff?text=MOCK+AD', link: '#' }
-    ],
+    // ❌ УДАЛЕНО: ads: [ ... ]
     // Симуляция истории транзакций
     nftHistory: JSON.parse(localStorage.getItem('mockNftHistory')) || {
         'NFT1_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 86400000).toISOString(), to: 'INITIAL_OWNER' }],
@@ -205,7 +207,7 @@ function initializeJupiterTerminal(useBackupRpc = false) {
 
 
 /**
- * Initializes UI element references. Called once on DOMContentLoaded. (Не изменено)
+ * Initializes UI element references. Called once on DOMContentLoaded.
  */
 function cacheUIElements() {
     // Filter out nulls to ensure no errors if an element is missing
@@ -261,13 +263,13 @@ function cacheUIElements() {
     uiElements.nftDetailHistory = document.getElementById('nftDetailHistory');
 
     uiElements.announcementsList = document.getElementById('announcementsList');
-    uiElements.announcementInput = document.getElementById('announcementInput');
-    uiElements.publishButton = document.getElementById('publishButton');
+    // ❌ УДАЛЕНО: uiElements.announcementInput = document.getElementById('announcementInput');
+    // ❌ УДАЛЕНО: uiElements.publishButton = document.getElementById('publishButton');
 
     uiElements.gameList = document.getElementById('game-list');
     uiElements.uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
-    uiElements.adList = document.getElementById('ad-list');
-    uiElements.postAdBtnWeb3 = document.getElementById('postAdBtnWeb3');
+    // ❌ УДАЛЕНО: uiElements.adList = document.getElementById('ad-list');
+    // ❌ УДАЛЕНО: uiElements.postAdBtnWeb3 = document.getElementById('postAdBtnWeb3');
 
     uiElements.userAfoxBalance = document.getElementById('userAfoxBalance');
     uiElements.userStakedAmount = document.getElementById('userStakedAmount');
@@ -305,8 +307,7 @@ function cacheUIElements() {
 
     uiElements.notificationContainer = document.getElementById('notificationContainer');
 
-    // ✅ NEW: AI Price Forecast Element
-    uiElements.aiPriceForecast = document.getElementById('aiPriceForecast');
+    // ❌ УДАЛЕНО: uiElements.aiPriceForecast = document.getElementById('aiPriceForecast');
 }
 
 // --- HELPER UTILITIES (Не изменено) ---
@@ -531,7 +532,7 @@ async function connectWallet() {
         // ✅ ДОБАВЛЕНИЕ: Обновление владельцев моковых NFT и стейкинга
         MOCK_DB.nfts.forEach(nft => {
             if (nft.owner === 'NO_WALLET_CONNECTED') {
-                nft.owner = walletPublicKey.toBase58();
+                nft.owner = walletPublicKey.toBase558();
             }
         });
         persistMockData();
@@ -1333,43 +1334,37 @@ async function loadGames() {
     }
 }
 
-/**
- * ✅ ИЗМЕНЕНИЕ: Загрузка рекламы из MOCK_DB.
- */
-async function loadAds() {
-    if (!uiElements.adList) return;
-    uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Loading ads...</p>';
-    try {
-        // --- ЗАМЕНА FETCH НА ЛОКАЛЬНЫЕ ДАННЫЕ ---
-        const data = MOCK_DB.ads;
-        // ------------------------------------------
-
-        uiElements.adList.innerHTML = ''; // Clear loading message
-
-        if (!Array.isArray(data) || data.length === 0) {
-            uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">No ads yet.</p>';
-            return;
-        }
-        data.forEach(ad => {
-            const div = document.createElement('div');
-            div.className = 'ad-item web3-placeholder'; // Specific class for ads
-            div.innerHTML = `
-                <h3>${ad.title || 'Untitled Ad'}</h3>
-                <p>${ad.content || 'No content'}</p>
-                ${ad.imageUrl ? `<img src="${ad.imageUrl}" alt="Advertisement image" style="max-width:100%; height:auto; margin-top:10px; border-radius:5px;">` : ''}
-                ${ad.link ? `<a href="${ad.link}" target="_blank" rel="noopener noreferrer" class="web3-btn small-btn" style="margin-top:10px;">Learn more</a>` : ''}
-            `;
-            uiElements.adList.appendChild(div);
-        });
-    } catch (error) {
-        console.error('Error loading ads (MOCK):', error);
-        showNotification(`Failed to load ads: ${error.message}. (MOCK)`, 'error');
-        uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Failed to load ads.</p>';
-    }
-}
+// ❌ УДАЛЕНО: loadAds()
+// async function loadAds() {
+//     if (!uiElements.adList) return;
+//     uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Loading ads...</p>';
+//     try {
+//         const data = MOCK_DB.ads;
+//         uiElements.adList.innerHTML = '';
+//         if (!Array.isArray(data) || data.length === 0) {
+//             uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">No ads yet.</p>';
+//             return;
+//         }
+//         data.forEach(ad => {
+//             const div = document.createElement('div');
+//             div.className = 'ad-item web3-placeholder';
+//             div.innerHTML = `
+//                 <h3>${ad.title || 'Untitled Ad'}</h3>
+//                 <p>${ad.content || 'No content'}</p>
+//                 ${ad.imageUrl ? `<img src="${ad.imageUrl}" alt="Advertisement image" style="max-width:100%; height:auto; margin-top:10px; border-radius:5px;">` : ''}
+//                 ${ad.link ? `<a href="${ad.link}" target="_blank" rel="noopener noreferrer" class="web3-btn small-btn" style="margin-top:10px;">Learn more</a>` : ''}
+//             `;
+//             uiElements.adList.appendChild(div);
+//         });
+//     } catch (error) {
+//         console.error('Error loading ads (MOCK):', error);
+//         showNotification(`Failed to load ads: ${error.message}. (MOCK)`, 'error');
+//         uiElements.adList.innerHTML = '<p class="placeholder-item ad web3-placeholder">Failed to load ads.</p>';
+//     }
+// }
 
 
-// --- EVENT LISTENERS INITIALIZATION (Не изменено) ---
+// --- EVENT LISTENERS INITIALIZATION (Не изменено, кроме удаленных функций) ---
 
 /**
  * Initializes all global event listeners.
@@ -1459,10 +1454,10 @@ function initializeEventListeners() {
         uiElements.listNftForm.addEventListener('submit', handleListNftSubmit);
     }
 
-    // Announcement Publish Button
-    if (uiElements.publishButton) {
-        uiElements.publishButton.addEventListener('click', handlePublishAnnouncement);
-    }
+    // ❌ УДАЛЕНО: Announcement Publish Button listener
+    // if (uiElements.publishButton) {
+    //     uiElements.publishButton.addEventListener('click', handlePublishAnnouncement);
+    // }
 
     // Game Upload & Ad Post Buttons (Placeholders)
     if (uiElements.uploadGameBtnWeb3) {
@@ -1470,11 +1465,12 @@ function initializeEventListeners() {
             showNotification('Game upload is a placeholder. (MOCK)', 'info', 5000);
         });
     }
-    if (uiElements.postAdBtnWeb3) {
-        uiElements.postAdBtnWeb3.addEventListener('click', () => {
-            showNotification('Ad posting is a placeholder. (MOCK)', 'info', 5000);
-        });
-    }
+    // ❌ УДАЛЕНО: Ad Post Button listener
+    // if (uiElements.postAdBtnWeb3) {
+    //     uiElements.postAdBtnWeb3.addEventListener('click', () => {
+    //         showNotification('Ad posting is a placeholder. (MOCK)', 'info', 5000);
+    //     });
+    // }
 
     // Staking Button Handlers
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
@@ -1667,40 +1663,34 @@ async function handleListNftSubmit(e) {
     }
 }
 
-/**
- * ✅ ИЗМЕНЕНИЕ: Симуляция публикации объявления (MOCK).
- */
-async function handlePublishAnnouncement() {
-    if (!uiElements.announcementInput || !uiElements.publishButton) {
-        showNotification('Announcement form elements not found.', 'error');
-        return;
-    }
-    const text = uiElements.announcementInput.value.trim();
-    if (!text) {
-        showNotification('Please enter an announcement before publishing.', 'warning');
-        return;
-    }
+// ❌ УДАЛЕНО: handlePublishAnnouncement()
+// async function handlePublishAnnouncement() {
+//     if (!uiElements.announcementInput || !uiElements.publishButton) {
+//         showNotification('Announcement form elements not found.', 'error');
+//         return;
+//     }
+//     const text = uiElements.announcementInput.value.trim();
+//     if (!text) {
+//         showNotification('Please enter an announcement before publishing.', 'warning');
+//         return;
+//     }
 
-    try {
-        uiElements.publishButton.disabled = true; // Disable button to prevent multiple submissions
-        showNotification('Publishing announcement (simulation)...', 'info');
-
-        // --- ЗАМЕНА FETCH НА ЛОКАЛЬНУЮ ЛОГИКУ ---
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        MOCK_DB.announcements.push({ text: text, date: new Date().toISOString() });
-        persistMockData(); // Сохраняем в localStorage
-        // ------------------------------------------
-
-        uiElements.announcementInput.value = '';
-        await loadAnnouncements();
-        showNotification('Announcement published successfully (Simulation)!', 'success');
-    } catch (error) {
-        console.error('Error publishing announcement (MOCK):', error);
-        showNotification('Server connection error while publishing announcement (MOCK).', 'error');
-    } finally {
-        uiElements.publishButton.disabled = false; // Re-enable button
-    }
-}
+//     try {
+//         uiElements.publishButton.disabled = true;
+//         showNotification('Publishing announcement (simulation)...', 'info');
+//         await new Promise(resolve => setTimeout(resolve, 1000));
+//         MOCK_DB.announcements.push({ text: text, date: new Date().toISOString() });
+//         persistMockData();
+//         uiElements.announcementInput.value = '';
+//         await loadAnnouncements();
+//         showNotification('Announcement published successfully (Simulation)!', 'success');
+//     } catch (error) {
+//         console.error('Error publishing announcement (MOCK):', error);
+//         showNotification('Server connection error while publishing announcement (MOCK).', 'error');
+//     } finally {
+//         uiElements.publishButton.disabled = false;
+//     }
+// }
 
 /**
  * ✅ ИЗМЕНЕНИЕ: Симуляция покупки NFT (MOCK).
@@ -2015,52 +2005,48 @@ function handleContactFormSubmit(e) {
 
 // --- LIVE TRADING DATA AND AI FORECAST FUNCTIONS (Остаются внешними или MOCK) ---
 
-/**
- * ✅ ИЗМЕНЕНИЕ: PSEUDO-FUNCTION: Fetches an AI-driven price forecast for AFOX (MOCK).
- */
-async function fetchAIForecast(currentMarketData) {
-    if (!uiElements.aiPriceForecast) return;
-
-    uiElements.aiPriceForecast.innerHTML = '<span style="color:#aaa;">AI is calculating (MOCK)...</span>';
-
-    // --- MOCK AI LOGIC (Simulated Heuristic) ---
-    try {
-        const change = parseFloat(currentMarketData.priceChange.h24);
-
-        let forecastMessage;
-        let styleColor;
-
-        if (change > 5) {
-            forecastMessage = "STRONG BUY: AI detects strong upward momentum (Bullish).";
-            styleColor = 'var(--color-success, #28a745)'; // Green
-        } else if (change > 0.5) {
-            forecastMessage = "BUY: AI suggests a likely slight price increase.";
-            styleColor = 'var(--color-info, #17a2b8)'; // Blue/Cyan
-        } else if (change < -5) {
-            forecastMessage = "SELL/WAIT: AI warns of strong downward pressure (Bearish).";
-            styleColor = 'var(--color-error, #dc3545)'; // Red
-        } else {
-            forecastMessage = "NEUTRAL: AI predicts continued sideways trading (Stable).";
-            styleColor = 'var(--color-warning, #ffc107)'; // Yellow
-        }
-
-        const currentPrice = parseFloat(currentMarketData.priceNative);
-        const next24hPrice = (currentPrice * (1 + change / 100)).toFixed(9).replace(/\.?0+$/, '');
-
-        // Display result in UI
-        uiElements.aiPriceForecast.innerHTML = `
-            <strong>24H Outlook (MOCK):</strong> <span style="color:${styleColor}; font-weight:bold;">${forecastMessage}</span><br>
-            *Projected price in 24h: ≈ <span style="font-weight:bold;">${next24hPrice} SOL</span>
-        `;
-
-    } catch (error) {
-        console.error("Failed to fetch AI forecast (MOCK):", error);
-        uiElements.aiPriceForecast.innerHTML = 'AI Forecast: <span style="color:#dc3545;">Service Unavailable.</span>';
-    }
-}
+// ❌ УДАЛЕНО: fetchAIForecast(currentMarketData)
+// async function fetchAIForecast(currentMarketData) {
+//     if (!uiElements.aiPriceForecast) return;
+//
+//     uiElements.aiPriceForecast.innerHTML = '<span style="color:#aaa;">AI is calculating (MOCK)...</span>';
+//
+//     try {
+//         const change = parseFloat(currentMarketData.priceChange.h24);
+//
+//         let forecastMessage;
+//         let styleColor;
+//
+//         if (change > 5) {
+//             forecastMessage = "STRONG BUY: AI detects strong upward momentum (Bullish).";
+//             styleColor = 'var(--color-success, #28a745)';
+//         } else if (change > 0.5) {
+//             forecastMessage = "BUY: AI suggests a likely slight price increase.";
+//             styleColor = 'var(--color-info, #17a2b8)';
+//         } else if (change < -5) {
+//             forecastMessage = "SELL/WAIT: AI warns of strong downward pressure (Bearish).";
+//             styleColor = 'var(--color-error, #dc3545)';
+//         } else {
+//             forecastMessage = "NEUTRAL: AI predicts continued sideways trading (Stable).";
+//             styleColor = 'var(--color-warning, #ffc107)';
+//         }
+//
+//         const currentPrice = parseFloat(currentMarketData.priceNative);
+//         const next24hPrice = (currentPrice * (1 + change / 100)).toFixed(9).replace(/\.?0+$/, '');
+//
+//         uiElements.aiPriceForecast.innerHTML = `
+//             <strong>24H Outlook (MOCK):</strong> <span style="color:${styleColor}; font-weight:bold;">${forecastMessage}</span><br>
+//             *Projected price in 24h: ≈ <span style="font-weight:bold;">${next24hPrice} SOL</span>
+//         `;
+//
+//     } catch (error) {
+//         console.error("Failed to fetch AI forecast (MOCK):", error);
+//         uiElements.aiPriceForecast.innerHTML = 'AI Forecast: <span style="color:#dc3545;">Service Unavailable.</span>';
+//     }
+// }
 
 /**
- * Fetches and displays trading data for the AFOX/SOL pair from Dexscreener. (Не изменено)
+ * Fetches and displays trading data for the AFOX/SOL pair from Dexscreener. (Не изменено, кроме удаления AI call)
  */
 async function fetchAndDisplayTradingData() {
     // Это внешний API, его оставляем
@@ -2080,7 +2066,7 @@ async function fetchAndDisplayTradingData() {
         }
         if (liquidityElement) liquidityElement.textContent = message;
         if (chartContainer) chartContainer.innerHTML = `<p class="placeholder-item">Failed to load chart.</p>`;
-        if (uiElements.aiPriceForecast) uiElements.aiPriceForecast.innerHTML = 'AI Forecast: <span style="color:#dc3545;">No Data.</span>'; // Reset AI on error
+        // ❌ УДАЛЕНО: AI forecast reset: if (uiElements.aiPriceForecast) uiElements.aiPriceForecast.innerHTML = 'AI Forecast: <span style="color:#dc3545;">No Data.</span>';
     };
 
     try {
@@ -2130,8 +2116,8 @@ async function fetchAndDisplayTradingData() {
             `;
         }
 
-        // ✅ AI INTEGRATION: Call the AI forecast function
-        await fetchAIForecast(pair);
+        // ❌ УДАЛЕНО: AI INTEGRATION: Call the AI forecast function
+        // await fetchAIForecast(pair);
 
     } catch (error) {
         console.error("Failed to fetch trading data:", error);
@@ -2140,7 +2126,7 @@ async function fetchAndDisplayTradingData() {
     }
 }
 
-// --- DOMContentLoaded EXECUTION (Не изменено, кроме добавления loadMarketplaceNFTs) ---
+// --- DOMContentLoaded EXECUTION ---
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize UI elements and cache references
@@ -2159,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await Promise.all([
         loadAnnouncements(),
         loadGames(),
-        loadAds(),
+        // ❌ УДАЛЕНО: loadAds(),
         loadMarketplaceNFTs()
     ]);
 
