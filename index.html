@@ -18,6 +18,8 @@
     <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
     <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
     
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://terminal.jup.ag; script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com; connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://via.placeholder.com data:; object-src 'none'; base-uri 'self';">
+    
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
@@ -39,11 +41,11 @@
         Sentry.setTag("context", "Web3 Solana Interface");
     </script>
     
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-wallets@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.25/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.17/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-wallets@0.19.22/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.js"></script>
     <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
     
     <style>
@@ -94,7 +96,7 @@
                     <li><a href="#aurum-nfc">Aurum NFC</a></li>
                     <li><a href="#aurum-roadmap">Roadmap</a></li>
                     <li><a href="#aurum-news">News</a></li>
-                    <li><a href="#aurum-announcements">Announcements</a></li>
+                    
                     <li><a href="#aurum-community">Community</a></li>
                     <li><a href="#contact-us">Contact Us</a></li>
                     
@@ -354,21 +356,6 @@
             </div>
         </section>
 
-        <section id="aurum-announcements" class="section aurum-fox-section">
-            <div class="container">
-                <h2 class="aurum-heading">Aurum Fox Announcements</h2>
-                <hr>
-                <h3>Published Announcements</h3>
-                <div id="announcementsList" class="announcements-list">
-                    <div class="announcement-item">
-                        <h4>Loading Announcements...</h4>
-                        <p>Real-time updates are loading.</p>
-                        <small>--</small>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <section id="aurum-community" class="section aurum-fox-section-alt">
             <div class="container">
                 <h2 class="aurum-heading">Join the AFOX Community!</h2>
@@ -382,7 +369,7 @@
                         <svg class="social-icon" viewBox="0 0 496 512"><path fill="currentColor" d="M248 8C111.03 8 0 119.03 0 256s111.03 248 248 248 248-111.03 248-248S384.97 8 248 8zm121.841 185.556l-67.453 61.248c-1.391 1.264-3.12 1.94-4.887 1.94H192.5c-3.155 0-5.748-2.593-5.748-5.748V177.16c0-3.155 2.593-5.748 5.748-5.748h22.684c3.155 0 5.748 2.593 5.748 5.748v44.204l44.383-40.354c1.391-1.264 3.12-1.94 4.887-1.94s3.496.676 4.887 1.94l13.568 12.355c3.784 3.443 3.966 9.617.408 13.24L261.2 264.408c-3.558 3.623-3.74 9.797-.408 13.24l68.212 62.062c3.784 3.443 9.957 3.26 13.568-.408l13.568-12.355c3.496-3.186 3.65-9.255.408-12.698L307.72 264.408c-3.558-3.623-3.74-9.797-.408-13.24l68.212-62.062c3.784-3.443 3.966-9.617.408-13.24l-13.568-12.355c-3.496-3.186-9.565-3.032-12.91-1.423zM157.994 286.91l-38.384 34.908c-3.784 3.443-3.966 9.617-.408 13.24l13.568 12.355c3.496 3.186 9.565 3.032 12.91-1.423l38.384-34.908c3.558-3.623 3.74-9.797-.408-13.24l-13.568-12.355c-3.496-3.186-9.565-3.032-12.91 1.423z"/></svg>
                         Telegram
                     </a>
-                    <a href="https://x.com/AURUMFOX_?t=9uwh4e6XYoMRHJxZTs9bsg&s=08 target="_blank" rel="noopener noreferrer" class="social-btn twitter-btn" aria-label="Follow us on Twitter (X)">
+                    <a href="https://x.com/AURUMFOX_?t=9uwh4e6XYoMRHJxZTs9bsg&s=08" target="_blank" rel="noopener noreferrer" class="social-btn twitter-btn" aria-label="Follow us on Twitter (X)">
                         <svg class="social-icon" viewBox="0 0 512 512"><path fill="currentColor" d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.2 275.5 26.8 48H172.4L272.9 183.7 389.2 48zM364.4 421.8h39.1L123.6 90.1H80.5L364.4 421.8z"/></svg>
                         Twitter (X)
                     </a>
@@ -390,10 +377,7 @@
                         <svg class="social-icon" viewBox="0 0 576 512" ><path fill="currentColor" d="M573.5 241.1C559.5 245.9 544.7 248 529.7 248H528c-18.7 0-33.8 15.1-33.8 33.8v80.4c0 30.6-24.8 55.4-55.4 55.4h-35.3c-14.7 0-26.6 11.9-26.6 26.6v29.6c0 14.7 11.9 26.6 26.6 26.6H502c30.6 0 55.4-24.8 55.4-55.4v-30.8c0-10.9 9-19.9 19.9-19.9h.2c10.9 0 19.9 9 19.9 19.9v30.8c0 52.4-42.5 94.9-94.9 94.9h-35.3c-52.4 0-94.9-42.5-94.9-94.9V362.2c0-14.7-11.9-26.6-26.6-26.6h-35.3c-30.6 0-55.4-24.8-55.4-55.4V281.8c0-18.7-15.1-33.8-33.8-33.8h-1.7c-15 0-29.8-2.1-43.8-6.9-49.3-17.4-87.8-64.7-87.8-119.5C96 55.4 138.5 13 190.9 13H384c17.7 0 32 14.3 32 32s-14.3 32-32 32h-193.1c-17 0-30.8 13.8-30.8 30.8s13.8 30.8 30.8 30.8H352c17.7 0 32 14.3 32 32s-14.3 32-32 32H190.9c-52.4 0-94.9 42.5-94.9 94.9 0 32.5 16.4 61.5 41.5 78.4 2.6 1.8 5.4 3.2 8.3 4.3 12.1 4.7 24.8 7.2 37.8 7.2h1.7c18.7 0 33.8 15.1 33.8 33.8v80.4c0 30.6 24.8 55.4 55.4 55.4h35.3c14.7 0 26.6 11.9-26.6 26.6v29.6c0 14.7-11.9 26.6-26.6 26.6h-35.3c-52.4 0-94.9-42.5-94.9-94.9V409.8c0-10.9-9-19.9-19.9-19.9h-.2c-10.9 0-19.9 9-19.9 19.9v30.8c0 52.4 42.5 94.9 94.9 94.9h35.3c52.4 0 94.9-42.5 94.9-94.9V409.8c0-18.7 15.1-33.8 33.8-33.8h1.7c15 0 29.8-2.1 43.8-6.9C523.5 351.7 562 304.4 562 249.6c0-32.5-16.4-61.5-41.5-78.4z"/></svg>
                         Solscan
                     </a>
-                    <a href="#aurum-announcements" class="social-btn news-btn" aria-label="View latest announcements">
-                        <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32zM576 224c0-17.7-14.3-32-32-32H480c-17.7 0-32 14.3-32 32v64c0 17.7 14.3 32 32 32h64c17.7 0 32-14.3 32-32V224z"/></svg>
-                        Announcements
-                    </a>
+                    
                 </div>
             </div>
         </section>
@@ -752,7 +736,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
-    <script>
+    <script id="main-inline-script">
         // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ
         const firebaseConfig = {
             apiKey: "G", 
@@ -770,7 +754,6 @@
         const auth = app.auth();
         const storage = app.storage();
         
-        // Делаем их доступными для script.js (который подключается как type="module")
         window.db = db;
         window.auth = auth;
         window.storage = storage;
@@ -783,11 +766,27 @@
             ANNOUNCEMENTS: 'announcements',
             CONTACTS: 'contacts',
             GAMES: 'games',
-            // ADS: 'ads' <--- REMOVED ADS COLLECTION
         };
 
         /**
-         * Утилита для отображения уведомлений (добавим ее здесь, чтобы использовать)
+         * 🟢 ЗАЩИТА ОТ XSS: Функция для очистки текста от HTML-тегов.
+         */
+        function sanitizeText(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '/': '&#x2F;',
+            };
+            const reg = /[&<>"'\/]/ig;
+            return (text.toString()).replace(reg, (match)=>(map[match]));
+        }
+
+        /**
+         * Утилита для отображения уведомлений
          */
         function showNotification(message, type = 'info', duration = 3000) {
             const container = document.getElementById('notificationContainer');
@@ -797,7 +796,6 @@
             notification.className = `notification notification-${type}`;
             notification.textContent = message;
 
-            // Стилизация (минимальная, чтобы было видно)
             notification.style.cssText = `
                 margin-bottom: 10px;
                 padding: 10px 15px;
@@ -820,7 +818,7 @@
         }
 
         /**
-         * 1. Реальное время: Получение и отображение Новостей (News)
+         * 1. Реальное время: Получение и отображение Новостей (с sanitizeText)
          */
         function setupNewsListener() {
             const newsListElement = document.querySelector('.news-list');
@@ -829,7 +827,7 @@
             db.collection(COLLECTIONS.NEWS)
                 .orderBy('timestamp', 'desc')
                 .limit(5)
-                .onSnapshot(snapshot => { // <-- ИСПОЛЬЗУЕМ СЛУШАТЕЛЬ
+                .onSnapshot(snapshot => { 
                     if (snapshot.empty) {
                         newsListElement.innerHTML = '<p>Новостей пока нет.</p>';
                         return;
@@ -839,16 +837,16 @@
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
+                        // Применение sanitizeText
                         newsHtml += `
                             <div class="news-item">
-                                <h4>${data.title || 'Заголовок новости'}</h4>
-                                <p>${data.content || 'Содержание новости...'}</p>
+                                <h4>${sanitizeText(data.title || 'Заголовок новости')}</h4>
+                                <p>${sanitizeText(data.content || 'Содержание новости...')}</p>
                                 <small>${date}</small>
                             </div>
                         `;
                     });
                     newsListElement.innerHTML = newsHtml;
-                    console.log("News updated in real-time.");
                 }, error => {
                     console.error("Ошибка слушателя новостей:", error);
                     newsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить новости в реальном времени.</p>';
@@ -856,44 +854,7 @@
         }
 
         /**
-         * 2. Реальное время: Получение и отображение Объявлений (Announcements)
-         */
-        function setupAnnouncementsListener() {
-            const announcementsListElement = document.getElementById('announcementsList');
-            if (!announcementsListElement) return;
-
-            db.collection(COLLECTIONS.ANNOUNCEMENTS)
-                .orderBy('timestamp', 'desc')
-                .limit(5)
-                .onSnapshot(snapshot => { // <-- ИСПОЛЬЗУЕМ СЛУШАТЕЛЬ
-                    if (snapshot.empty) {
-                        announcementsListElement.innerHTML = '<p class="web3-placeholder">Объявлений пока нет.</p>';
-                        return;
-                    }
-
-                    let annHtml = '';
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
-                        annHtml += `
-                            <div class="announcement-item">
-                                <h4>${data.title || 'Заголовок объявления'}</h4>
-                                <p>${data.content || 'Содержание объявления...'}</p>
-                                <small>${date}</small>
-                            </div>
-                        `;
-                    });
-                    announcementsListElement.innerHTML = annHtml;
-                    console.log("Announcements updated in real-time.");
-                }, error => {
-                    console.error("Ошибка слушателя объявлений:", error);
-                    announcementsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить объявления в реальном времени.</p>';
-                });
-        }
-
-
-        /**
-         * 4. Обработка Контактной Формы (Contact Form) - ИСПОЛЬЗУЕТСЯ FIRESTORE
+         * 4. Обработка Контактной Формы (с sanitizeText)
          */
         function handleContactForm() {
             const contactForm = document.getElementById('contactForm');
@@ -910,11 +871,12 @@
                 showNotification('Отправка сообщения...', 'info');
 
                 try {
+                    // Применение sanitizeText к данным перед отправкой в Firestore
                     await db.collection(COLLECTIONS.CONTACTS).add({
-                        name: data.name,
-                        email: data.email,
-                        subject: data.subject,
-                        message: data.message,
+                        name: sanitizeText(data.name),
+                        email: sanitizeText(data.email),
+                        subject: sanitizeText(data.subject),
+                        message: sanitizeText(data.message),
                         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                         status: 'New'
                     });
@@ -933,17 +895,12 @@
         }
         
         /**
-         * 5. Получение списка Игр (Games) - ИСПОЛЬЗУЕТСЯ FIRESTORE (ПОКА ОДНОКРАТНАЯ ЗАГРУЗКА)
+         * 5. Получение списка Игр (с sanitizeText)
          */
          async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
             if (!listElement) return;
             
-            // Check if collectionName is the 'ads' collection (which we explicitly removed the functionality for)
-            // if (collectionName === 'ads') {
-            //     listElement.innerHTML = `<p class="web3-placeholder">The advertising feature has been removed as per request.</p>`;
-            //     return;
-            // }
 
             try {
                 const snapshot = await db.collection(collectionName)
@@ -957,14 +914,15 @@
                 }
 
                 let html = '';
-                const itemClass = collectionName === COLLECTIONS.GAMES ? 'game' : 'item'; // 'item' is a fallback, but only 'games' should pass
+                const itemClass = collectionName === COLLECTIONS.GAMES ? 'game' : 'item';
                 
                 snapshot.forEach(doc => {
                     const data = doc.data();
+                    // Применение sanitizeText
                     html += `
                         <div class="placeholder-item web3-placeholder ${itemClass}">
-                            <a href="${data.url || '#'}" target="_blank" rel="noopener noreferrer">
-                                <strong>${data.title || 'No Title'}</strong>: ${data.description || 'Description not available.'}
+                            <a href="${sanitizeText(data.url || '#')}" target="_blank" rel="noopener noreferrer">
+                                <strong>${sanitizeText(data.title || 'No Title')}</strong>: ${sanitizeText(data.description || 'Description not available.')}
                             </a>
                         </div>
                     `;
@@ -979,32 +937,21 @@
 
         // >>> ЛОГИКА КОНТРОЛЯ ДОСТУПА И ЗАПУСКА СЛУШАТЕЛЕЙ <<<
         document.addEventListener('DOMContentLoaded', () => {
-            // Запуск слушателей реального времени
             setupNewsListener();
-            setupAnnouncementsListener();
-            
             handleContactForm();
-            
-            // Загрузка списков с контентом (пока без реального времени)
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
-            // fetchContentList(COLLECTIONS.ADS, 'ad-list'); <-- REMOVED CALL TO FETCH ADS
 
-            // Получение DOM-элементов для логина
             const adminLoginBtn = document.getElementById('adminLoginBtn');
             const loginModal = document.getElementById('adminLoginModal');
             const closeLoginModal = document.getElementById('closeAdminLoginModal');
             const loginForm = document.getElementById('loginForm');
 
-            // Since ai-section is removed, we only need to manage adminLoginBtn visibility
             function toggleAdminTools(isVisible) {
                 if (adminLoginBtn) {
-                    // Кнопка логина скрывается, если пользователь вошел
                     adminLoginBtn.style.display = isVisible ? 'none' : 'block';
                 }
-                // The ai-section no longer exists, so no need to toggle its display
             }
             
-            // ОБРАБОТЧИКИ МОДАЛЬНОГО ОКНА
             if (adminLoginBtn) {
                 adminLoginBtn.onclick = () => {
                     loginModal.style.display = 'block';
@@ -1016,22 +963,18 @@
                 };
             }
 
-            // ПРОВЕРКА СТАТУСА АУТЕНТИФИКАЦИИ FIREBASE
             if (typeof auth !== 'undefined') {
                 auth.onAuthStateChanged(user => {
                     if (user) {
-                        // 1. ПОЛЬЗОВАТЕЛЬ ВОШЕЛ: Показываем инструменты
                         toggleAdminTools(true);
-                        loginModal.style.display = 'none'; // Скрываем модальное окно, если оно открыто
+                        loginModal.style.display = 'none';
                         showNotification(`Добро пожаловать, ${user.email.split('@')[0]}!`, 'success');
                     } else {
-                        // 2. ПОЛЬЗОВАТЕЛЬ ВЫШЕЛ: Скрываем инструменты
                         toggleAdminTools(false);
                     }
                 });
             }
 
-            // ОБРАБОТКА ФОРМЫ ВХОДА
             if (loginForm) {
                 loginForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
@@ -1039,9 +982,7 @@
                     const password = document.getElementById('adminPassword').value;
                     
                     try {
-                        // Вызов аутентификации Firebase
                         await auth.signInWithEmailAndPassword(email, password);
-                        // При успехе onAuthStateChanged автоматически обновит секцию
                     } catch (error) {
                         console.error("Login Error:", error);
                         showNotification(`Ошибка входа: ${error.message.replace('Firebase:', '').trim()}`, 'error', 5000);
@@ -1059,7 +1000,7 @@
         let birdeyeParent = null;
 
         /**
-         * Initializes Jupiter Terminal with the function to physically remove Birdeye.
+         * Initializes Jupiter Terminal.
          */
         function initializeJupiterTerminal() {
             birdeyeContainer = document.getElementById('afoxChartContainer'); 
@@ -1068,7 +1009,6 @@
             }
 
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-                // Function for complete removal of Birdeye
                 const removeBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
                         birdeyeParent.removeChild(birdeyeContainer);
@@ -1076,7 +1016,6 @@
                     }
                 };
 
-                // Function to restore Birdeye
                 const restoreBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
                         birdeyeParent.appendChild(birdeyeContainer); 
@@ -1112,7 +1051,6 @@
                          restoreBirdeye();
                     }
                 });
-                console.log("Jupiter Terminal initialized with DOM manipulation fixes.");
             } else {
                 setTimeout(initializeJupiterTerminal, 500);
             }
