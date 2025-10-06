@@ -663,8 +663,7 @@
             <p>&copy; 2025 Aurum Fox Unified Portal. All rights reserved.</p>
             <p>Created with ❤️ for the Web3 community.</p>
             <p>Contract Address: <span id="footerContractAddress">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn" aria-label="Copy AFOX contract address from footer">Copy</button></p>
-            <button id="adminLoginBtn" class="web3-btn" style="background-color: #c0392b; color: #fff; border: none; margin-top: 15px;">🔒 Admin Login</button>
-        </div>
+            </div>
     </footer>
 
     <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">
@@ -711,22 +710,6 @@
         </div>
     </div>
     
-    <div id="adminLoginModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="loginModalTitle" style="display:none;">
-        <div class="modal-content" style="max-width: 400px; background-color: #1a1a2e; border: 1px solid #ffd700;">
-            <span class="close-button" id="closeAdminLoginModal" aria-label="Close login modal" style="color: #ffd700;">&times;</span>
-            <h3 id="loginModalTitle" class="web3-heading" style="color: #ffd700;">🔑 Admin Access</h3>
-            <form id="loginForm" class="web3-form">
-                <label for="adminEmail" style="color: #fff;">Email:</label>
-                <input type="email" id="adminEmail" name="adminEmail" required style="background-color: #2c3e50; color: #fff;">
-                
-                <label for="adminPassword" style="color: #fff;">Password:</label>
-                <input type="password" id="adminPassword" name="adminPassword" required style="background-color: #2c3e50; color: #fff;">
-
-                <button type="submit" class="web3-btn" aria-label="Sign in as Administrator">Sign In</button>
-            </form>
-        </div>
-    </div>
-
     <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
 
     <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
@@ -738,8 +721,11 @@
     
     <script id="main-inline-script">
         // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ
+        // 🚨 КРИТИЧЕСКИ ВАЖНО: Замените 'YOUR_FIREBASE_API_KEY' на ваш реальный ключ.
+        // ПОМНИТЕ: Этот ключ публичен. Вы должны ограничить его использование в консоли Google Cloud
+        // только доменом aurumfox.github.io для предотвращения злоупотреблений.
         const firebaseConfig = {
-            apiKey: "G", 
+            apiKey: "YOUR_FIREBASE_API_KEY", // <--- ИСПРАВЛЕНО
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
             storageBucket: "aurum-fox.firebasestorage.app",
@@ -748,18 +734,19 @@
             measurementId: "G-L9XHK0DPB7" 
         };
         
-        // 3. ИНИЦИАЛИЗАЦИЯ И ГЛОБАЛЬНЫЙ ДОСТУП
+        // 3. ИНИЦИАЛИЗАЦИЯ
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
         const auth = app.auth();
         const storage = app.storage();
         
-        window.db = db;
-        window.auth = auth;
-        window.storage = storage;
-        window.firebase = firebase; 
+        // 🟢 ИСПРАВЛЕНО: Убран ненужный глобальный доступ:
+        // window.db = db;
+        // window.auth = auth;
+        // window.storage = storage;
+        // window.firebase = firebase; 
         
-        console.log("Firebase initialized and services are available globally.");
+        console.log("Firebase initialized and services are available.");
 
         const COLLECTIONS = {
             NEWS: 'news',
@@ -941,54 +928,8 @@
             handleContactForm();
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
 
-            const adminLoginBtn = document.getElementById('adminLoginBtn');
-            const loginModal = document.getElementById('adminLoginModal');
-            const closeLoginModal = document.getElementById('closeAdminLoginModal');
-            const loginForm = document.getElementById('loginForm');
-
-            function toggleAdminTools(isVisible) {
-                if (adminLoginBtn) {
-                    adminLoginBtn.style.display = isVisible ? 'none' : 'block';
-                }
-            }
+            // УДАЛЕНА ВСЯ ЛОГИКА АДМИНИСТРАТИВНОГО ВХОДА И УПРАВЛЕНИЯ МОДАЛЬНЫМ ОКНОМ
             
-            if (adminLoginBtn) {
-                adminLoginBtn.onclick = () => {
-                    loginModal.style.display = 'block';
-                };
-            }
-            if (closeLoginModal) {
-                closeLoginModal.onclick = () => {
-                    loginModal.style.display = 'none';
-                };
-            }
-
-            if (typeof auth !== 'undefined') {
-                auth.onAuthStateChanged(user => {
-                    if (user) {
-                        toggleAdminTools(true);
-                        loginModal.style.display = 'none';
-                        showNotification(`Добро пожаловать, ${user.email.split('@')[0]}!`, 'success');
-                    } else {
-                        toggleAdminTools(false);
-                    }
-                });
-            }
-
-            if (loginForm) {
-                loginForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const email = document.getElementById('adminEmail').value;
-                    const password = document.getElementById('adminPassword').value;
-                    
-                    try {
-                        await auth.signInWithEmailAndPassword(email, password);
-                    } catch (error) {
-                        console.error("Login Error:", error);
-                        showNotification(`Ошибка входа: ${error.message.replace('Firebase:', '').trim()}`, 'error', 5000);
-                    }
-                });
-            }
         });
     </script>
     
