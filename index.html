@@ -11,18 +11,19 @@
     <meta property="og:url" content="https://aurumfox.github.io/com/"> 
     <meta property="og:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
     <meta property="og:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
-    <meta property="og:image" content="./assets/foxcoin-hero.png.jpg"> 
+    <meta property="og:image" content="./assets/foxcoin-hero.png"> 
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://aurumfox.github.io/com/"> 
     <meta property="twitter:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
     <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
-    <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
+    <meta property="twitter:image" content="./assets/foxcoin-hero.png"> 
     
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://terminal.jup.ag; script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com; connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://via.placeholder.com data:; object-src 'none'; base-uri 'self';">
     
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="./assets/favicon.png" type="image/png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     
     <script
       src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js"
@@ -78,16 +79,16 @@
     <header class="header">
         <div class="container">
             <div class="logo">
-                <img src="./assets/foxcoin-hero.png.jpg" alt="Aurum Fox Logo" class="logo-img">
+                <img src="./assets/foxcoin-hero.png" alt="Aurum Fox Logo" class="logo-img">
                 <span class="logo-text">Aurum Fox Portal</span>
             </div>
             <nav class="nav">
-                <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
+                <button id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation menu">
                     <div class="hamburger"></div>
-                </div>
+                </button>
                 <ul id="mainNav" class="main-nav" role="navigation" aria-hidden="true">
-                    <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
-
+                    <button class="close-menu-button" id="closeMainMenuCross" aria-label="Close menu">&times;</button>
+                    
                     <li><a href="#aurum-fox-home">Aurum Fox</a></li>
                     <li><a href="#about-afox">About AFOX</a></li>
                     <li><a href="#tokenomics">Tokenomics</a></li>
@@ -100,7 +101,7 @@
                     <li><a href="#aurum-community">Community</a></li>
                     <li><a href="#contact-us">Contact Us</a></li>
                     
-                    <li class="nav-separator">--- Web3 Portal ---</li> 
+                    <li class="nav-separator"><span class="visually-hidden">Web3 Portal Links:</span>--- Web3 Portal ---</li> 
                     <li><a href="#web3-site-home">Web3 Overview</a></li>
                     <li><a href="#games-section">Games</a></li>
                     <li><a href="#nft-section">NFT Portal</a></li>
@@ -124,7 +125,7 @@
                     </div>
                 </div>
                 <div class="hero-image">
-                    <img src="./assets/foxcoin-hero.png.jpg" alt="Aurum Fox golden coin with fox image and 'Aurum Fox' text">
+                    <img src="./assets/foxcoin-hero.png" alt="Aurum Fox golden coin with fox image and 'Aurum Fox' text">
                 </div>
             </div>
         </section>
@@ -200,8 +201,14 @@
                     </div>
                 </div>
                 
-                <div class="contract-address">
-                    <p><strong>AFOX Contract Address:</strong> <span id="contractAddress" class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn" aria-label="Copy AFOX contract address">Copy</button></p>
+                <div class="contract-address-group" role="group" aria-labelledby="afoxContractLabel">
+                    <dl class="contract-address">
+                        <dt id="afoxContractLabel" style="font-weight: bold;">AFOX Contract Address:</dt>
+                        <dd>
+                            <span id="contractAddress" class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> 
+                            <button class="copy-btn" aria-label="Copy AFOX contract address">Copy</button>
+                        </dd>
+                    </dl>
                 </div>
                 <p class="tokenomics-note">Our tokenomics are designed for long-term sustainability and community growth.</p>
             </div>
@@ -240,7 +247,7 @@
                     </li>
                 </ol>
                 <p class="tip">Make sure you have enough SOL to cover network fees.</p>
-                <p class="tip"><i>Liquidity pool link will be available soon!</i></p>
+                <p class="tip"><small>Liquidity pool link will be available soon!</small></p>
                 <button class="web3-btn" aria-label="Trade AFOX on Raydium">Trade AFOX on Raydium</button>
             </div>
         </section>
@@ -389,7 +396,15 @@
                 <div class="contact-info">
                     <p><strong>General Inquiries:</strong> <a href="mailto:info@aurumfox.com">info@aurumfox.com</a></p>
                     <p><strong>Partnerships:</strong> <a href="mailto:partnerships@aurumfox.com">partnerships@aurumfox.com</a></p>
-                    <p><strong>AFOX Contract Address:</strong> <span class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn" aria-label="Copy AFOX contract address from contact section">Copy</button></p>
+                    <div class="contract-address-group" role="group" aria-labelledby="contactContractLabel">
+                        <dl class="contract-address">
+                            <dt id="contactContractLabel" style="font-weight: bold;">AFOX Contract Address:</dt>
+                            <dd>
+                                <span class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> 
+                                <button class="copy-btn" aria-label="Copy AFOX contract address from contact section">Copy</button>
+                            </dd>
+                        </dl>
+                    </div>
                 </div>
                 <form id="contactForm" class="contact-form">
                     <label for="contact-name">Your Name:</label>
@@ -409,7 +424,7 @@
                 <p class="disclaimer"><i>Disclaimer: Aurum Fox (AFOX) is a meme token. The cryptocurrency market is highly volatile, and investments in meme tokens carry high risks. Always conduct your own research (DYOR).</i></p>
             </div>
         </section>
-
+        
         <section id="web3-site-home" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🎮 My Web3 Portal</h2>
@@ -662,13 +677,21 @@
             </div>
             <p>&copy; 2025 Aurum Fox Unified Portal. All rights reserved.</p>
             <p>Created with ❤️ for the Web3 community.</p>
-            <p>Contract Address: <span id="footerContractAddress">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn" aria-label="Copy AFOX contract address from footer">Copy</button></p>
+            <div class="contract-address-group" role="group" aria-labelledby="footerContractLabel">
+                <dl class="contract-address">
+                    <dt id="footerContractLabel" style="font-weight: bold;">Contract Address:</dt>
+                    <dd>
+                        <span id="footerContractAddress">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> 
+                        <button class="copy-btn" aria-label="Copy AFOX contract address from footer">Copy</button>
+                    </dd>
+                </dl>
             </div>
+        </div>
     </footer>
 
     <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">
         <div class="modal-content">
-            <span class="close-button" aria-label="Close NFT details modal">&times;</span>
+            <button class="close-button" aria-label="Close NFT details modal">&times;</button>
             <div id="nftDetailsContent" class="nft-detail-view">
                 <img id="nftDetailImage" src="" alt="NFT Image" class="nft-detail-image">
                 <h3 id="nftDetailName"></h3>
@@ -693,7 +716,7 @@
     
     <div id="mintNftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="mintNftModalTitle" style="display:none;">
         <div class="modal-content">
-            <span class="close-button" id="closeMintNftModal" aria-label="Close mint NFT modal">&times;</span>
+            <button class="close-button" id="closeMintNftModal" aria-label="Close mint NFT modal">&times;</button>
             <h3 id="mintNftModalTitle" class="web3-heading">Mint Your New NFT</h3>
             <form id="mintNftForm" class="web3-form">
                 <label for="nftName">NFT Name:</label>
