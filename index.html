@@ -18,7 +18,7 @@
     <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
     <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
     
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://terminal.jup.ag https://birdeye.so https://widgets.birdeye.so https://dexscreener.com; script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com; connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://via.placeholder.com data:; object-src 'none'; base-uri 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://terminal.jup.ag; script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com; connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://via.placeholder.com data:; object-src 'none'; base-uri 'self';">
     
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
@@ -58,49 +58,6 @@
             overflow: hidden;
             clip: rect(0, 0, 0, 0);
             border: 0;
-        }
-
-        .swap-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 40px;
-            align-items: flex-start;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        @media (min-width: 900px) {
-            .swap-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-        
-        .swap-widget-container, .chart-container {
-            padding: 15px;
-            border-radius: 12px;
-            background-color: #1a1a2e;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .afox-chart-placeholder {
-            min-height: 400px;
-            max-width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            /* Устанавливаем transition для плавного исчезновения */
-            transition: opacity 0.3s ease-in-out; 
-        }
-        
-        #jupiter-swap-widget, .chart-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            min-height: 400px;
         }
 
         @media (max-width: 600px) {
@@ -452,7 +409,7 @@
                 <p class="disclaimer"><i>Disclaimer: Aurum Fox (AFOX) is a meme token. The cryptocurrency market is highly volatile, and investments in meme tokens carry high risks. Always conduct your own research (DYOR).</i></p>
             </div>
         </section>
-        
+
         <section id="web3-site-home" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🎮 My Web3 Portal</h2>
@@ -673,45 +630,18 @@
 
         <section id="swap-section" class="section web3-section-alt">
             <div class="container">
-                <h2 class="web3-heading">🔄 Обмен AFOX и Живой График</h2>
+                <h2 class="web3-heading">🔄 AFOX Swap & Live Trading</h2>
                 <p class="web3-intro">
-                    Обменивайте ваши токены AFOX на SOL или другие SPL токены напрямую, а также отслеживайте актуальную рыночную цену! 
-                    Для обмена используйте **Jupiter Terminal** — лучший агрегатор ликвидности на Solana.
+                    Swap your AFOX tokens for SOL or other SPL tokens directly, and track the live market price!
+                    For exchange, use **Jupiter Terminal** — the best liquidity aggregator on Solana.
                 </p>
 
-                <div class="swap-grid">
+                <div class="swap-interface">
+                    <h3 class="web3-subheading">⚡️ Jupiter Terminal (AFOX Swap)</h3>
+                    <p>Connect your wallet and swap AFOX at the best rate.</p>
                     
-                    <div class="swap-widget-container">
-                        <h3 class="web3-subheading">⚡️ Jupiter Terminal (Обмен AFOX)</h3>
-                        <p>Подключите кошелек и обменяйте AFOX по лучшей цене.</p>
-                        <div id="jupiter-swap-widget" style="min-height: 400px; max-width: 100%; margin: 20px auto 0; position: relative; z-index: 10000;">
-                        </div>
+                    <div id="jupiter-swap-widget" style="min-height: 400px; max-width: 450px; margin: 20px auto; position: relative; z-index: 10000;">
                     </div>
-
-                    <div class="chart-container">
-                        <h3 class="web3-subheading">📈 Живой График Цены AFOX/SOL</h3>
-                        <p>Отслеживайте динамику цены AFOX/SOL в реальном времени. (Источник: Dexscreener)</p>
-                        
-                        <div id="afoxChartContainer" class="afox-chart-placeholder" style="min-height: 400px; max-width: 100%; margin: 20px auto 0; padding: 0;">
-                            <iframe 
-                                class="chart-iframe"
-                                src="https://dexscreener.com/solana/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?embed=1&theme=dark&trades=0" 
-                                style="border: none; width: 100%; height: 100%; min-height: 400px;" 
-                                allow="clipboard-write">
-                            </iframe>
-                            <a href="https://dexscreener.com/solana/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer" class="web3-link" style="margin-top: 10px;">Открыть график на Dexscreener</a>
-                        </div>
-                    </div>
-                    
-                </div>
-                <div style="text-align: center; margin-top: 30px;">
-                     <h3 class="web3-subheading">Агрегаторы и Данные</h3>
-                     <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
-                        <li><a href="https://www.geckoterminal.com/solana/pools/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer" class="web3-link">GeckoTerminal</a></li>
-                        <li><a href="https://www.dextools.io/app/solana/pair-explorer/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer" class="web3-link">DEXTools</a></li>
-                        <li><a href="https://birdeye.so/solana/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer" class="web3-link">Birdeye</a></li>
-                        <li><a href="https://dexscreener.com/solana/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer" class="web3-link">Dexscreener</a></li>
-                    </ul>
                 </div>
             </div>
         </section>
@@ -790,8 +720,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
     <script id="main-inline-script">
+        // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ
+        // 🚨 КРИТИЧЕСКИ ВАЖНО: Замените 'YOUR_FIREBASE_API_KEY' на ваш реальный ключ.
+        // ПОМНИТЕ: Этот ключ публичен. Вы должны ограничить его использование в консоли Google Cloud
+        // только доменом aurumfox.github.io для предотвращения злоупотреблений.
         const firebaseConfig = {
-            apiKey: "YOUR_FIREBASE_API_KEY", // <--- ЗАМЕНИТЬ НА РЕАЛЬНЫЙ КЛЮЧ
+            apiKey: "YOUR_FIREBASE_API_KEY", // <--- ИСПРАВЛЕНО
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
             storageBucket: "aurum-fox.firebasestorage.app",
@@ -800,22 +734,47 @@
             measurementId: "G-L9XHK0DPB7" 
         };
         
+        // 3. ИНИЦИАЛИЗАЦИЯ
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
+        const auth = app.auth();
+        const storage = app.storage();
+        
+        // 🟢 ИСПРАВЛЕНО: Убран ненужный глобальный доступ:
+        // window.db = db;
+        // window.auth = auth;
+        // window.storage = storage;
+        // window.firebase = firebase; 
         
         console.log("Firebase initialized and services are available.");
 
         const COLLECTIONS = {
             NEWS: 'news',
+            ANNOUNCEMENTS: 'announcements',
+            CONTACTS: 'contacts',
+            GAMES: 'games',
         };
 
+        /**
+         * 🟢 ЗАЩИТА ОТ XSS: Функция для очистки текста от HTML-тегов.
+         */
         function sanitizeText(text) {
             if (!text) return '';
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '/': '&#x2F;' };
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '/': '&#x2F;',
+            };
             const reg = /[&<>"'\/]/ig;
             return (text.toString()).replace(reg, (match)=>(map[match]));
         }
 
+        /**
+         * Утилита для отображения уведомлений
+         */
         function showNotification(message, type = 'info', duration = 3000) {
             const container = document.getElementById('notificationContainer');
             if (!container) return;
@@ -845,10 +804,132 @@
             }, duration);
         }
 
-        // ... (другие вспомогательные функции, как в вашем проекте) ...
+        /**
+         * 1. Реальное время: Получение и отображение Новостей (с sanitizeText)
+         */
+        function setupNewsListener() {
+            const newsListElement = document.querySelector('.news-list');
+            if (!newsListElement) return;
 
+            db.collection(COLLECTIONS.NEWS)
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .onSnapshot(snapshot => { 
+                    if (snapshot.empty) {
+                        newsListElement.innerHTML = '<p>Новостей пока нет.</p>';
+                        return;
+                    }
+
+                    let newsHtml = '';
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
+                        // Применение sanitizeText
+                        newsHtml += `
+                            <div class="news-item">
+                                <h4>${sanitizeText(data.title || 'Заголовок новости')}</h4>
+                                <p>${sanitizeText(data.content || 'Содержание новости...')}</p>
+                                <small>${date}</small>
+                            </div>
+                        `;
+                    });
+                    newsListElement.innerHTML = newsHtml;
+                }, error => {
+                    console.error("Ошибка слушателя новостей:", error);
+                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить новости в реальном времени.</p>';
+                });
+        }
+
+        /**
+         * 4. Обработка Контактной Формы (с sanitizeText)
+         */
+        function handleContactForm() {
+            const contactForm = document.getElementById('contactForm');
+            if (!contactForm) return;
+
+            contactForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(contactForm);
+                const data = Object.fromEntries(formData.entries());
+
+                const submitButton = contactForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Отправка...';
+                showNotification('Отправка сообщения...', 'info');
+
+                try {
+                    // Применение sanitizeText к данным перед отправкой в Firestore
+                    await db.collection(COLLECTIONS.CONTACTS).add({
+                        name: sanitizeText(data.name),
+                        email: sanitizeText(data.email),
+                        subject: sanitizeText(data.subject),
+                        message: sanitizeText(data.message),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: 'New'
+                    });
+
+                    showNotification("Ваше сообщение успешно отправлено! Мы скоро свяжемся с вами.", 'success');
+                    contactForm.reset();
+
+                } catch (error) {
+                    console.error("Ошибка при отправке контактной формы:", error);
+                    showNotification("Ошибка при отправке сообщения: " + error.message, 'error');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Send Message';
+                }
+            });
+        }
+        
+        /**
+         * 5. Получение списка Игр (с sanitizeText)
+         */
+         async function fetchContentList(collectionName, listElementId) {
+            const listElement = document.getElementById(listElementId);
+            if (!listElement) return;
+            
+
+            try {
+                const snapshot = await db.collection(collectionName)
+                    .orderBy('order', 'asc') 
+                    .limit(10)
+                    .get();
+
+                if (snapshot.empty) {
+                    listElement.innerHTML = `<p class="web3-placeholder">Пока нет данных в разделе ${collectionName}.</p>`;
+                    return;
+                }
+
+                let html = '';
+                const itemClass = collectionName === COLLECTIONS.GAMES ? 'game' : 'item';
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Применение sanitizeText
+                    html += `
+                        <div class="placeholder-item web3-placeholder ${itemClass}">
+                            <a href="${sanitizeText(data.url || '#')}" target="_blank" rel="noopener noreferrer">
+                                <strong>${sanitizeText(data.title || 'No Title')}</strong>: ${sanitizeText(data.description || 'Description not available.')}
+                            </a>
+                        </div>
+                    `;
+                });
+                listElement.innerHTML = html;
+
+            } catch (error) {
+                console.error(`Ошибка при загрузке ${collectionName}:`, error);
+                listElement.innerHTML = `<p style="color: #e74c3c;">Не удалось загрузить контент.</p>`;
+            }
+        }
+
+        // >>> ЛОГИКА КОНТРОЛЯ ДОСТУПА И ЗАПУСКА СЛУШАТЕЛЕЙ <<<
         document.addEventListener('DOMContentLoaded', () => {
-            // ... (вызовы функций, не связанных со swap) ...
+            setupNewsListener();
+            handleContactForm();
+            fetchContentList(COLLECTIONS.GAMES, 'game-list');
+
+            // УДАЛЕНА ВСЯ ЛОГИКА АДМИНИСТРАТИВНОГО ВХОДА И УПРАВЛЕНИЯ МОДАЛЬНЫМ ОКНОМ
+            
         });
     </script>
     
@@ -856,106 +937,67 @@
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-        let chartIframe = null; 
-        
-        function getChartElements() {
-             const chartContainer = document.getElementById('afoxChartContainer');
-             if (chartContainer) {
-                 chartIframe = chartContainer.querySelector('.chart-iframe');
-             }
-        }
+        let birdeyeContainer = null;
+        let birdeyeParent = null;
 
         /**
-         * Initializes Jupiter Terminal with retry logic.
+         * Initializes Jupiter Terminal.
          */
         function initializeJupiterTerminal() {
-            const MAX_RETRIES = 20; // Увеличиваем количество попыток
-            let retries = 0;
+            birdeyeContainer = document.getElementById('afoxChartContainer'); 
+            if (birdeyeContainer) {
+                birdeyeParent = birdeyeContainer.parentNode; 
+            }
 
-            const attemptInit = () => {
-                getChartElements(); 
-                const widgetContainer = document.getElementById('jupiter-swap-widget');
-
-                // Проверяем наличие глобального объекта Jupiter И контейнера
-                if (window.Jupiter && widgetContainer) {
-                    
-                    const hideChart = () => {
-                        // Скрываем контейнер графика, чтобы Jupiter мог работать
-                        const chartContainer = document.getElementById('afoxChartContainer');
-                        if (chartContainer) chartContainer.style.opacity = '0';
-                        if (chartIframe) chartIframe.style.display = 'none';
-                    };
-
-                    const showChart = () => {
-                        // Показываем контейнер графика
-                        const chartContainer = document.getElementById('afoxChartContainer');
-                        if (chartContainer) chartContainer.style.opacity = '1';
-                        if (chartIframe) chartIframe.style.display = 'block';
-                    };
-                    
-                    try {
-                        window.Jupiter.init({
-                            displayMode: 'widget',
-                            widgetStyle: {
-                                'container.id': 'jupiter-swap-widget', 
-                                'container.zIndex': 10000, 
-                                'container.height': '500px', // Гарантируем высоту
-                            },
-                            theme: 'dark', 
-                            formProps: {
-                                fixedInputMint: true, 
-                                initialInputMint: AFOX_MINT,
-                                initialOutputMint: SOL_MINT,
-                            },
-                            swapSwitchboard: true, 
-                            strictTokenList: false, 
-
-                            onConnectWallet: (callback) => {
-                                hideChart(); 
-                                setTimeout(callback, 50); 
-                            },
-
-                            onSuccess: () => {
-                                 showChart();
-                                 if (typeof showNotification === 'function') {
-                                    showNotification("Обмен успешно завершен!", 'success');
-                                 }
-                            },
-                            
-                            onError: () => {
-                                 showChart();
-                            },
-                            
-                            onRequestClose: () => {
-                                 showChart();
-                            }
-                        });
-                        console.log("Jupiter Terminal initialized successfully.");
-                    } catch(e) {
-                         console.error("Failed to initialize Jupiter Terminal:", e);
-                         widgetContainer.innerHTML = '<p style="color: #e74c3c;">Ошибка инициализации Jupiter. Пожалуйста, обновите страницу.</p>';
+            if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
+                const removeBirdeye = () => {
+                    if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
+                        birdeyeParent.removeChild(birdeyeContainer);
+                        console.log("Birdeye chart **removed** for wallet connection.");
                     }
+                };
 
-                } else if (retries < MAX_RETRIES) {
-                    // Повторная попытка инициализации через 500мс
-                    retries++;
-                    setTimeout(attemptInit, 500);
-                } else {
-                     console.error("Failed to initialize Jupiter Terminal after max retries.");
-                     if (widgetContainer) {
-                         widgetContainer.innerHTML = '<p style="color: #e74c3c; text-align: center; padding-top: 50px;">Виджет обмена не загрузился. Проверьте подключение или попробуйте позже.</p>';
-                     }
-                }
-            };
+                const restoreBirdeye = () => {
+                    if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
+                        birdeyeParent.appendChild(birdeyeContainer); 
+                        console.log("Birdeye chart **restored** after wallet connection.");
+                    }
+                };
 
-            attemptInit();
+                window.Jupiter.init({
+                    displayMode: 'widget',
+                    widgetStyle: {
+                        'container.id': 'jupiter-swap-widget', 
+                        'container.zIndex': 9999, 
+                    },
+                    theme: 'dark', 
+                    formProps: {
+                        fixedInputMint: true, 
+                        initialInputMint: AFOX_MINT,
+                        initialOutputMint: SOL_MINT,
+                    },
+                    swapSwitchboard: true, 
+                    strictTokenList: false, 
+
+                    onConnectWallet: (callback) => {
+                        removeBirdeye(); 
+                        setTimeout(callback, 50); 
+                    },
+
+                    onSuccess: () => {
+                         restoreBirdeye();
+                    },
+                    
+                    onError: () => {
+                         restoreBirdeye();
+                    }
+                });
+            } else {
+                setTimeout(initializeJupiterTerminal, 500);
+            }
         }
 
-        // Запуск при полной загрузке (самый надежный способ для внешних скриптов)
-        window.onload = initializeJupiterTerminal;
-        
-        // Запуск при готовности DOM (для скорости)
-        document.addEventListener('DOMContentLoaded', initializeJupiterTerminal); 
+        document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
     </script>
     
     <script src="script.js" type="module"></script>
