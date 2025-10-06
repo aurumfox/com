@@ -92,6 +92,8 @@
             align-items: center;
             justify-content: center;
             text-align: center;
+            /* Устанавливаем transition для плавного исчезновения */
+            transition: opacity 0.3s ease-in-out; 
         }
         
         #jupiter-swap-widget, .chart-iframe {
@@ -800,14 +802,11 @@
         
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
-        // const auth = app.auth(); // Не используется, закомментировано
-        // const storage = app.storage(); // Не используется, закомментировано
         
         console.log("Firebase initialized and services are available.");
 
         const COLLECTIONS = {
             NEWS: 'news',
-            // ... другие коллекции
         };
 
         function sanitizeText(text) {
@@ -846,23 +845,10 @@
             }, duration);
         }
 
-        function setupNewsListener() {
-            // ... (логика получения новостей)
-        }
-
-        function handleContactForm() {
-            // ... (логика контактной формы)
-        }
-        
-        function fetchContentList(collectionName, listElementId) {
-            // ... (логика получения контента)
-        }
+        // ... (другие вспомогательные функции, как в вашем проекте) ...
 
         document.addEventListener('DOMContentLoaded', () => {
-            // setupNewsListener(); // Закомментировано для краткости, но должно быть в финальном коде
-            // handleContactForm(); // Закомментировано для краткости, но должно быть в финальном коде
-            // fetchContentList(COLLECTIONS.GAMES, 'game-list'); // Закомментировано для краткости, но должно быть в финальном коде
-            
+            // ... (вызовы функций, не связанных со swap) ...
         });
     </script>
     
@@ -872,7 +858,6 @@
 
         let chartIframe = null; 
         
-        // Находим iFrame графика цены
         function getChartElements() {
              const chartContainer = document.getElementById('afoxChartContainer');
              if (chartContainer) {
@@ -881,74 +866,96 @@
         }
 
         /**
-         * Initializes Jupiter Terminal.
+         * Initializes Jupiter Terminal with retry logic.
          */
         function initializeJupiterTerminal() {
-            getChartElements(); 
+            const MAX_RETRIES = 20; // Увеличиваем количество попыток
+            let retries = 0;
 
-            if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-                
-                const hideChart = () => {
-                    if (chartIframe) {
-                        chartIframe.style.display = 'none';
+            const attemptInit = () => {
+                getChartElements(); 
+                const widgetContainer = document.getElementById('jupiter-swap-widget');
+
+                // Проверяем наличие глобального объекта Jupiter И контейнера
+                if (window.Jupiter && widgetContainer) {
+                    
+                    const hideChart = () => {
+                        // Скрываем контейнер графика, чтобы Jupiter мог работать
+                        const chartContainer = document.getElementById('afoxChartContainer');
+                        if (chartContainer) chartContainer.style.opacity = '0';
+                        if (chartIframe) chartIframe.style.display = 'none';
+                    };
+
+                    const showChart = () => {
+                        // Показываем контейнер графика
+                        const chartContainer = document.getElementById('afoxChartContainer');
+                        if (chartContainer) chartContainer.style.opacity = '1';
+                        if (chartIframe) chartIframe.style.display = 'block';
+                    };
+                    
+                    try {
+                        window.Jupiter.init({
+                            displayMode: 'widget',
+                            widgetStyle: {
+                                'container.id': 'jupiter-swap-widget', 
+                                'container.zIndex': 10000, 
+                                'container.height': '500px', // Гарантируем высоту
+                            },
+                            theme: 'dark', 
+                            formProps: {
+                                fixedInputMint: true, 
+                                initialInputMint: AFOX_MINT,
+                                initialOutputMint: SOL_MINT,
+                            },
+                            swapSwitchboard: true, 
+                            strictTokenList: false, 
+
+                            onConnectWallet: (callback) => {
+                                hideChart(); 
+                                setTimeout(callback, 50); 
+                            },
+
+                            onSuccess: () => {
+                                 showChart();
+                                 if (typeof showNotification === 'function') {
+                                    showNotification("Обмен успешно завершен!", 'success');
+                                 }
+                            },
+                            
+                            onError: () => {
+                                 showChart();
+                            },
+                            
+                            onRequestClose: () => {
+                                 showChart();
+                            }
+                        });
+                        console.log("Jupiter Terminal initialized successfully.");
+                    } catch(e) {
+                         console.error("Failed to initialize Jupiter Terminal:", e);
+                         widgetContainer.innerHTML = '<p style="color: #e74c3c;">Ошибка инициализации Jupiter. Пожалуйста, обновите страницу.</p>';
                     }
-                };
 
-                const showChart = () => {
-                    if (chartIframe) {
-                        chartIframe.style.display = 'block';
-                    }
-                };
-                
-                try {
-                    window.Jupiter.init({
-                        displayMode: 'widget',
-                        widgetStyle: {
-                            'container.id': 'jupiter-swap-widget', 
-                            'container.zIndex': 9999, 
-                        },
-                        theme: 'dark', 
-                        formProps: {
-                            fixedInputMint: true, 
-                            initialInputMint: AFOX_MINT,
-                            initialOutputMint: SOL_MINT,
-                        },
-                        swapSwitchboard: true, 
-                        strictTokenList: false, 
-
-                        // Скрытие графика при подключении кошелька для лучшего UX
-                        onConnectWallet: (callback) => {
-                            hideChart(); 
-                            setTimeout(callback, 50); 
-                        },
-
-                        // Восстановление графика
-                        onSuccess: () => {
-                             showChart();
-                             if (typeof showNotification === 'function') {
-                                showNotification("Обмен успешно завершен!", 'success');
-                             }
-                        },
-                        
-                        onError: () => {
-                             showChart();
-                        },
-                        
-                        onRequestClose: () => {
-                             showChart();
-                        }
-                    });
-                } catch(e) {
-                     console.error("Failed to initialize Jupiter Terminal:", e);
+                } else if (retries < MAX_RETRIES) {
+                    // Повторная попытка инициализации через 500мс
+                    retries++;
+                    setTimeout(attemptInit, 500);
+                } else {
+                     console.error("Failed to initialize Jupiter Terminal after max retries.");
+                     if (widgetContainer) {
+                         widgetContainer.innerHTML = '<p style="color: #e74c3c; text-align: center; padding-top: 50px;">Виджет обмена не загрузился. Проверьте подключение или попробуйте позже.</p>';
+                     }
                 }
+            };
 
-            } else {
-                // Повторная попытка
-                setTimeout(initializeJupiterTerminal, 500);
-            }
+            attemptInit();
         }
 
-        document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
+        // Запуск при полной загрузке (самый надежный способ для внешних скриптов)
+        window.onload = initializeJupiterTerminal;
+        
+        // Запуск при готовности DOM (для скорости)
+        document.addEventListener('DOMContentLoaded', initializeJupiterTerminal); 
     </script>
     
     <script src="script.js" type="module"></script>
