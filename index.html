@@ -98,7 +98,6 @@
                     <li><a href="#aurum-news">News</a></li>
                     
                     <li><a href="#aurum-community">Community</a></li>
-                    <li><a href="#contact-us">Contact Us</a></li>
                     
                     <li class="nav-separator">--- Web3 Portal ---</li> 
                     <li><a href="#web3-site-home">Web3 Overview</a></li>
@@ -382,33 +381,7 @@
             </div>
         </section>
 
-        <section id="contact-us" class="section contact-section">
-            <div class="container">
-                <h2 class="main-heading">Contact Us</h2>
-                <p>Questions or suggestions? Contact us!</p>
-                <div class="contact-info">
-                    <p><strong>General Inquiries:</strong> <a href="mailto:info@aurumfox.com">info@aurumfox.com</a></p>
-                    <p><strong>Partnerships:</strong> <a href="mailto:partnerships@aurumfox.com">partnerships@aurumfox.com</a></p>
-                    <p><strong>AFOX Contract Address:</strong> <span class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> <button class="copy-btn" aria-label="Copy AFOX contract address from contact section">Copy</button></p>
-                </div>
-                <form id="contactForm" class="contact-form">
-                    <label for="contact-name">Your Name:</label>
-                    <input type="text" id="contact-name" name="name" required aria-required="true">
-
-                    <label for="contact-email">Your Email:</label>
-                    <input type="email" id="contact-email" name="email" required aria-required="true">
-
-                    <label for="contact-subject">Subject:</label>
-                    <input type="text" id="contact-subject" name="subject">
-
-                    <label for="contact-message">Message:</label>
-                    <textarea id="contact-message" name="message" rows="5" required aria-required="true"></textarea>
-
-                    <button type="submit" class="btn btn-primary primary-btn" aria-label="Send contact message">Send Message</button>
-                </form>
-                <p class="disclaimer"><i>Disclaimer: Aurum Fox (AFOX) is a meme token. The cryptocurrency market is highly volatile, and investments in meme tokens carry high risks. Always conduct your own research (DYOR).</i></p>
-            </div>
-        </section>
+        
 
         <section id="web3-site-home" class="section web3-section-alt">
             <div class="container">
@@ -841,6 +814,8 @@
         /**
          * 4. Обработка Контактной Формы (с sanitizeText)
          */
+        /*
+        // УДАЛЕНА ФУНКЦИЯ handleContactForm()
         function handleContactForm() {
             const contactForm = document.getElementById('contactForm');
             if (!contactForm) return;
@@ -878,6 +853,7 @@
                 }
             });
         }
+        */
         
         /**
          * 5. Получение списка Игр (с sanitizeText)
@@ -923,7 +899,7 @@
         // >>> ЛОГИКА КОНТРОЛЯ ДОСТУПА И ЗАПУСКА СЛУШАТЕЛЕЙ <<<
         document.addEventListener('DOMContentLoaded', () => {
             setupNewsListener();
-            handleContactForm();
+            // handleContactForm(); // <-- КОММЕНТАРИЙ: Функция handleContactForm() больше не вызывается
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
 
             // УДАЛЕНА ВСЯ ЛОГИКА АДМИНИСТРАТИВНОГО ВХОДА И УПРАВЛЕНИЯ МОДАЛЬНЫМ ОКНОМ
