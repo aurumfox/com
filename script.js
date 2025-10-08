@@ -1,12 +1,12 @@
-// script.js - Полностью реализованный код для работы с Solana без бэкенда (MOCK-режим).
-// Требует, чтобы библиотеки SolanaWeb3, Anchor, и Wallet Adapters были подключены в HTML.
+// script.js - Fully implemented code for interacting with Solana without a backend (MOCK mode).
+// Requires SolanaWeb3, Anchor, and Wallet Adapters libraries to be included in the HTML.
 
 // =========================================================================================
-// 🚨 ⚠️ ⚠️ НЕОБХОДИМЫЕ ИЗМЕНЕНИЯ (Оставьте заглушки для автономной работы) ⚠️ ⚠️ 🚨
+// 🚨 ⚠️ ⚠️ REQUIRED CHANGES (Leave stubs for standalone operation) ⚠️ ⚠️ 🚨
 // =========================================================================================
 
-// 1. ВСТАВЬТЕ ВАШ IDL (JSON-схема программы стейкинга)
-// Оставлено как заглушка. Для реального стейкинга заменить на ваш IDL JSON.
+// 1. INSERT YOUR IDL (JSON schema of the staking program)
+// Left as a stub. Replace with your IDL JSON for real staking.
 const STAKING_IDL = {
     version: "0.1.0",
     name: "alphafox_staking",
@@ -59,37 +59,37 @@ const STAKING_IDL = {
     ]
 };
 
-// 2. ВСТАВЬТЕ ВАШ SEED (Ключевое слово для PDA стейкинг-аккаунта из вашей Rust-программы)
+// 2. INSERT YOUR SEED (Keyword for the staking account PDA from your Rust program)
 const STAKING_ACCOUNT_SEED = "alphafox_staking_pda";
 
-// 3. 🔑 БЕЗОПАСНЫЕ ИЗМЕНЕНИЯ: HELIUS API Key удален, HELIUS_BASE_URL заменен на ваш Cloudflare Worker
-// ⚠️ Ваш публичный ключ Helius был удален из этого файла.
+// 3. 🔑 SECURE CHANGES: Helius API Key removed, HELIUS_BASE_URL replaced with your Cloudflare Worker
+// ⚠️ Your public Helius key has been removed from this file.
 // const HELIUS_API_KEY = '2ed0cb0f-85fc-410d-98da-59729966ec05'; 
-// 👇 ИСПОЛЬЗУЕМ ВАШ CLOUDFLARE WORKER КАК ПРОКСИ
+// 👇 USING YOUR CLOUDFLARE WORKER AS A PROXY
 const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addresses/'; 
 
 // =========================================================================================
-// КОНСТАНТЫ ПРОЕКТА
+// PROJECT CONSTANTS
 // =========================================================================================
 
 // ==============================================================================
-// 🟢 БЕЗОПАСНОЕ ЛОГИРОВАНИЕ: УДАЛЕНИЕ КЛЮЧА И ДОБАВЛЕНИЕ ПРОКСИ-АДРЕСА
+// 🟢 SECURE LOGGING: KEY REMOVAL AND PROXY ADDRESS ADDITION
 // ==============================================================================
-// ❌ const FIREBASE_API_KEY = "AIzaSyBBk4g-JRO82Bq7zeX_upmGQ-htw9OGvpg"; // УДАЛЕНО!
-// 🟢 АДРЕС ВАШЕГО БЕЗОПАСНОГО ПРОКСИ
+// ❌ const FIREBASE_API_KEY = "AIzaSyBBk4g-JRO82Bq7zeX_upmGQ-htw9OGvpg"; // REMOVED!
+// 🟢 YOUR SECURE PROXY ADDRESS
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
 // ==============================================================================
 
-// *** Вставьте здесь код инициализации Firebase, если он используется ***
+// *** Insert Firebase initialization code here if used ***
 
-// Поскольку в предоставленном коде нет импортов для Firebase,
-// а инициализация должна быть выполнена один раз, я оставляю заглушку, 
-// но отмечаю, что эти константы и инициализация должны быть вставлены 
-// в правильное место, если Firebase используется в других частях кода.
-// Я ПРЕДПОЛАГАЮ, что инициализация Firebase будет происходить через импорт 
-// в верхней части этого файла или в другом месте, где доступны модули.
+// Since there are no Firebase imports in the provided code,
+// and initialization should be done once, I'm leaving a stub,
+// but noting that these constants and initialization should be inserted
+// in the correct place if Firebase is used elsewhere in the code.
+// I ASSUME that Firebase initialization will occur via an import
+// at the top of this file or elsewhere where modules are available.
 
-const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd'; // Изменен для большей уникальности MOCK
+const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd'; // Changed for greater MOCK uniqueness
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
@@ -126,19 +126,19 @@ const appState = {
 const uiElements = {};
 const WALLETS = [new SolanaWalletAdapterPhantom.PhantomWalletAdapter()];
 
-// --- ЛОКАЛЬНАЯ СИМУЛЯЦИЯ БЭКЕНДА (MOCK DB) ---
+// --- LOCAL BACKEND SIMULATION (MOCK DB) ---
 const MOCK_DB = {
     nfts: [
-        // Начальные MOCK-данные для автономной работы
+        // Initial MOCK data for standalone operation
         { mint: 'NFT1_MOCK_MINT', name: 'Alpha Fox #001 (Listed)', description: 'Rare Alpha Fox NFT. Buy me!', owner: 'NO_WALLET_CONNECTED', price: 5.5, isListed: true, image: 'https://via.placeholder.com/180x180/007bff/ffffff?text=Fox+001', attributes: [{ trait_type: 'Rarity', value: 'Epic' }, { trait_type: 'Edition', value: 'First' }] },
         { mint: 'NFT2_MOCK_MINT', name: 'Alpha Fox #002 (Owned)', description: 'Common Alpha Fox NFT. My personal collection.', owner: 'NO_WALLET_CONNECTED', price: 0, isListed: false, image: 'https://via.placeholder.com/180x180/17a2b8/ffffff?text=Fox+002', attributes: [{ trait_type: 'Rarity', value: 'Common' }] }
     ],
     announcements: [
-        { text: 'Добро пожаловать в автономную симуляцию! Staking и NFT-Marketplace работают на MOCK-данных.', date: new Date(Date.now() - 3600000).toISOString() },
-        { text: 'Swap использует реальный Jupiter API для котировок, но транзакция симулируется.', date: new Date().toISOString() }
+        { text: 'Welcome to the standalone simulation! Staking and NFT-Marketplace run on MOCK data.', date: new Date(Date.now() - 3600000).toISOString() },
+        { text: 'Swap uses the real Jupiter API for quotes, but the transaction is simulated.', date: new Date().toISOString() }
     ],
     games: [
-        { title: 'Solana Runner (MOCK)', description: 'Бесконечный раннер, симуляция игры.', url: '#' }
+        { title: 'Solana Runner (MOCK)', description: 'Infinite runner, game simulation.', url: '#' }
     ],
     nftHistory: {
         'NFT1_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 86400000).toISOString(), to: 'INITIAL_OWNER' }],
@@ -148,27 +148,27 @@ const MOCK_DB = {
 };
 
 /**
- * MOCK: Сохраняет текущее состояние MOCK_DB (только в памяти).
+ * MOCK: Persists the current state of MOCK_DB (memory-only).
  */
 function persistMockData() {
-    // В реальном коде здесь были бы реальные вызовы Solana программ.
+    // In real code, this would involve real Solana program calls.
 }
 
 // =========================================================================================
-// 🟢 НОВАЯ ФУНКЦИЯ: БЕЗОПАСНАЯ ОТПРАВКА ЛОГОВ ЧЕРЕЗ ПРОКСИ
+// 🟢 NEW FUNCTION: SECURE LOG SENDING VIA PROXY
 // =========================================================================================
 
 /**
- * Отправляет данные лога через Cloudflare Worker (прокси), который использует скрытый FIREBASE_API_KEY.
+ * Sends log data via a Cloudflare Worker (proxy) that uses the hidden FIREBASE_API_KEY.
  *
- * @param {string} walletAddress - Публичный ключ кошелька пользователя.
- * @param {string} actionType - Тип действия ('STAKE', 'UNSTAKE', 'CLAIM').
- * @param {bigint | string | number} amount - Сумма операции.
+ * @param {string} walletAddress - The user's wallet public key.
+ * @param {string} actionType - The type of action ('STAKE', 'UNSTAKE', 'CLAIM').
+ * @param {bigint | string | number} amount - The transaction amount.
  */
 async function sendLogToFirebase(walletAddress, actionType, amount) {
     if (!walletAddress || !actionType) return; 
     
-    // Преобразуем сумму в строку для JSON
+    // Convert amount to string for JSON
     const amountString = (typeof amount === 'bigint') ? amount.toString() : String(amount);
     
     try {
@@ -181,15 +181,15 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
                 amount: amountString 
             })
         });
-        // Успех! Логирование прошло через прокси.
+        // Success! Logging went through the proxy.
         console.log(`Log sent via Worker: ${actionType} by ${walletAddress.substring(0, 8)}...`);
     } catch (error) {
-        console.error("Ошибка при отправке лога через Worker:", error);
+        console.error("Error sending log via Worker:", error);
     }
 }
 
 // =========================================================================================
-// --- HELPER UTILITIES (Полностью реализовано) ---
+// --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
 /**
@@ -266,8 +266,8 @@ function debounce(func, delay) {
 /**
  * Universal function to display notifications.
  *
- * ✅ ИСПРАВЛЕНИЕ БЕЗОПАСНОСТИ: Использует .textContent по умолчанию для предотвращения XSS.
- * Разрешает ограниченный HTML (например, <a>) только при наличии явных тегов.
+ * ✅ SECURITY FIX: Uses .textContent by default to prevent XSS.
+ * Allows limited HTML (e.g., <a>) only if explicit tags are present.
  */
 function showNotification(message, type = 'info', duration = null) {
     if (!uiElements.notificationContainer) {
@@ -280,12 +280,12 @@ function showNotification(message, type = 'info', duration = null) {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
 
-    // ✅ БЕЗОПАСНОСТЬ: Использовать .textContent, чтобы исключить выполнение скриптов
-    // В виде исключения, разрешаем вставку HTML только если сообщение содержит тег <a> (например, для ссылки на установку кошелька).
+    // ✅ SECURITY: Use .textContent to exclude script execution
+    // As an exception, allow HTML insertion only if the message contains <a> tags (e.g., for a wallet installation link).
     if (message.includes('<a') && message.includes('</a>')) {
         notification.innerHTML = message;
     } else {
-        // Стандартный, безопасный способ для всех остальных сообщений
+        // Standard, safe way for all other messages
         notification.textContent = message;
     }
 
@@ -297,7 +297,7 @@ function showNotification(message, type = 'info', duration = null) {
 }
 
 /**
- * Форматирует BigInt с учетом десятичных знаков.
+ * Formats BigInt considering decimal places.
  */
 function formatBigInt(amount, decimals) {
     if (amount === undefined || amount === null || decimals === undefined || decimals === null || isNaN(decimals)) return '0';
@@ -323,7 +323,7 @@ function formatBigInt(amount, decimals) {
 }
 
 /**
- * Преобразует строковое значение (ввод пользователя) в BigInt.
+ * Converts a string value (user input) into BigInt.
  */
 function parseAmountToBigInt(amountStr, decimals) {
     if (!amountStr || amountStr.trim() === '') return BigInt(0);
@@ -377,9 +377,9 @@ function closeAllPopups() {
 async function updateStakingAndBalanceUI() {
     try {
         await Promise.all([
-            fetchUserBalances(), // Обновляем MOCK/реальные балансы
+            fetchUserBalances(), // Update MOCK/real balances
             updateStakingUI(),
-            updateSwapBalances() // Используем обновленные MOCK/реальные балансы
+            updateSwapBalances() // Use updated MOCK/real balances
         ]);
     } catch (error) {
         console.error("Error refreshing staking/balance UI after transaction:", error);
@@ -388,7 +388,7 @@ async function updateStakingAndBalanceUI() {
 }
 
 /**
- * Возвращает экземпляр программы Anchor.
+ * Returns an Anchor program instance.
  */
 function getAnchorProgram(programId, idl) {
     if (!appState.connection || !appState.provider) {
@@ -423,7 +423,7 @@ function getSolanaTxnFeeReserve() {
 }
 
 // =========================================================================================
-// --- WALLET & CONNECTION FUNCTIONS (Полностью реализовано) ---
+// --- WALLET & CONNECTION FUNCTIONS (Fully implemented) ---
 // =========================================================================================
 
 /**
@@ -440,7 +440,7 @@ async function checkRpcHealth(connection) {
 }
 
 /**
- * Надежная функция для получения рабочего соединения RPC.
+ * Robust function to get a working RPC connection.
  */
 async function getRobustConnection() {
     const connectionOptions = { commitment: 'confirmed' };
@@ -488,13 +488,13 @@ function handlePublicKeyChange(newPublicKey) {
         // MOCK: Handle initial state for MOCK DB and Balances
         if (!MOCK_DB.staking[address]) {
              MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', stakeHistory: [] };
-             // Инициализируем MOCK-балансы при первом подключении
+             // Initialize MOCK balances on first connection
              appState.userBalances.AFOX = parseAmountToBigInt('1000.0', AFOX_DECIMALS);
              appState.userBalances.SOL = parseAmountToBigInt('1.0', SOL_DECIMALS);
              persistMockData();
         }
 
-        // Обновляем владельцев MOCK-NFT с 'NO_WALLET_CONNECTED' на реального пользователя
+        // Update MOCK NFT owners from 'NO_WALLET_CONNECTED' to the actual user
         MOCK_DB.nfts.filter(n => n.owner === 'NO_WALLET_CONNECTED').forEach(n => n.owner = address);
 
         loadUserNFTs();
@@ -585,7 +585,7 @@ async function fetchUserBalances() {
         showNotification("Warning: Could not fetch real SOL balance. Using MOCK fallback.", 'warning');
     }
 
-    // MOCK AFOX: Обновляем MOCK-баланс AFOX, если он отсутствует в MOCK_DB
+    // MOCK AFOX: Update MOCK AFOX balance if not present in MOCK_DB
     const userKey = appState.walletPublicKey.toBase58();
     if (!MOCK_DB.staking[userKey] && appState.userBalances.AFOX === BigInt(0)) {
          appState.userBalances.AFOX = parseAmountToBigInt('1000.0', AFOX_DECIMALS);
@@ -627,7 +627,7 @@ async function updateStakingUI() {
 }
 
 /**
- * ✅ Реализовано: Чтение данных стейкинга с блокчейна (MOCK ANCHOR).
+ * ✅ Implemented: Reading staking data from the blockchain (MOCK ANCHOR).
  */
 async function fetchUserStakingData() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -640,7 +640,7 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Расчет PDA
+        // 1. PDA calculation
         const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
             [
                 Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED),
@@ -649,20 +649,20 @@ async function fetchUserStakingData() {
             STAKING_PROGRAM_ID
         );
 
-        // 2. Десериализация (MOCK-ЧТЕНИЕ: Если реальный аккаунт не найден, используем MOCK_DB)
+        // 2. Deserialization (MOCK-READ: If the real account is not found, use MOCK_DB)
         try {
-            // В реальном коде: const stakingData = await program.account.userStakingAccount.fetch(userStakingAccountPDA);
+            // In real code: const stakingData = await program.account.userStakingAccount.fetch(userStakingAccountPDA);
             // MOCK:
             const userKey = sender.toBase58();
             const mockData = MOCK_DB.staking[userKey];
 
             if (!mockData) throw new Error("MOCK data not initialized.");
 
-            // ⚠️ ИЗМЕНИТЕ: ИМЕНА ПОЛЕЙ ДОЛЖНЫ СОВПАДАТЬ С ВАШИМ IDL!
+            // ⚠️ CHANGE: FIELD NAMES MUST MATCH YOUR IDL!
             appState.userStakingData.stakedAmount = BigInt(mockData.stakedAmount.toString());
             appState.userStakingData.rewards = BigInt(mockData.rewards.toString());
         } catch (e) {
-            // Аккаунт не найден (или MOCK не инициализирован)
+            // Account not found (or MOCK not initialized)
             appState.userStakingData.stakedAmount = BigInt(0);
             appState.userStakingData.rewards = BigInt(0);
         }
@@ -676,11 +676,11 @@ async function fetchUserStakingData() {
 
 
 /**
- * ✅ Реализовано: Отправка транзакции стейкинга AFOX (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending AFOX staking transaction (ANCHOR TEMPLATE + MOCK).
  */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
-        showNotification('Кошелек не подключен или IDL программы отсутствует.', 'warning');
+        showNotification('Wallet not connected or program IDL missing.', 'warning');
         return;
     }
     const amountStr = uiElements.stakeAmountInput.value;
@@ -688,25 +688,25 @@ async function handleStakeAfox() {
 
     try {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-        if (stakeAmountBigInt === BigInt(0)) throw new Error('Введите корректную сумму для стейкинга.');
-        if (appState.userBalances.AFOX < stakeAmountBigInt) throw new Error('Недостаточно AFOX для стейкинга.');
+        if (stakeAmountBigInt === BigInt(0)) throw new Error('Enter a valid amount for staking.');
+        if (appState.userBalances.AFOX < stakeAmountBigInt) throw new Error('Insufficient AFOX for staking.');
 
-        showNotification(`Подготовка транзакции для стейкинга ${formatBigInt(stakeAmountBigInt, AFOX_DECIMALS)} AFOX... (Simulation)`, 'info', 5000);
+        showNotification(`Preparing transaction to stake ${formatBigInt(stakeAmountBigInt, AFOX_DECIMALS)} AFOX... (Simulation)`, 'info', 5000);
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Получение ATA пользователя
+        // 1. Get user's ATA
         const userAfoxATA = await SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
-        // 2. Расчет PDA стейкинг-аккаунта
+        // 2. Calculate staking account PDA
         const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
             [Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), sender.toBuffer()],
             STAKING_PROGRAM_ID
         );
 
-        // 🔴 ВАШ КОД: Создание инструкции (ANCHOR TEMPLATE)
+        // 🔴 YOUR CODE: Create instruction (ANCHOR TEMPLATE)
         const tx = await program.methods.stake(new Anchor.BN(stakeAmountBigInt.toString()))
             .accounts({
                 staker: sender,
@@ -714,11 +714,11 @@ async function handleStakeAfox() {
                 tokenFrom: userAfoxATA,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 systemProgram: SYSTEM_PROGRAM_ID,
-                // ⚠️ ДОБАВИТЬ ВСЕ ОСТАЛЬНЫЕ КЛЮЧИ АККАУНТОВ ИЗ ВАШЕЙ RUST ПРОГРАММЫ (напр., poolState)
+                // ⚠️ ADD ALL OTHER ACCOUNT KEYS FROM YOUR RUST PROGRAM (e.g., poolState)
             })
             .transaction();
 
-        // 🟢 РЕАЛЬНАЯ ОТПРАВКА (Заменена MOCK-логикой)
+        // 🟢 REAL SUBMISSION (Replaced by MOCK logic)
         // const signature = await appState.provider.sendAndConfirm(tx, []);
 
         // --- MOCK LOGIC START ---
@@ -738,61 +738,61 @@ async function handleStakeAfox() {
         const signature = 'MOCK_STAKE_SIG_' + Date.now();
         // --- MOCK LOGIC END ---
 
-        // 🟢 БЕЗОПАСНОЕ ЛОГИРОВАНИЕ ЧЕРЕЗ WORKER
+        // 🟢 SECURE LOGGING VIA WORKER
         await sendLogToFirebase(userKey, 'STAKE', stakeAmountBigInt); 
 
-        showNotification(`Успешный стейкинг! Подпись: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 7000);
+        showNotification(`Successful staking! Signature: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 7000);
 
         uiElements.stakeAmountInput.value = '';
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        showNotification(`Стейкинг не удался: ${error.message.substring(0, 100)}`, 'error');
+        showNotification(`Staking failed: ${error.message.substring(0, 100)}`, 'error');
     } finally {
         setLoadingState(false, uiElements.stakeAfoxBtn);
     }
 }
 
 /**
- * ✅ Реализовано: Отправка транзакции клейма наград (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending claim rewards transaction (ANCHOR TEMPLATE + MOCK).
  */
 async function handleClaimRewards() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
-        showNotification('Кошелек не подключен или IDL программы отсутствует.', 'warning');
+        showNotification('Wallet not connected or program IDL missing.', 'warning');
         return;
     }
     setLoadingState(true, uiElements.claimRewardsBtn);
 
     try {
-        if (appState.userStakingData.rewards === BigInt(0)) { showNotification('Наград для клейма нет.', 'warning', 3000); return; }
+        if (appState.userStakingData.rewards === BigInt(0)) { showNotification('No rewards to claim.', 'warning', 3000); return; }
 
-        showNotification('Подготовка транзакции клейма наград... (Simulation)', 'info');
+        showNotification('Preparing claim rewards transaction... (Simulation)', 'info');
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Расчет PDA стейкинг-аккаунта
+        // 1. Calculate staking account PDA
         const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
             [Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), sender.toBuffer()],
             STAKING_PROGRAM_ID
         );
-        // 2. ATA пользователя для наград
+        // 2. User's ATA for rewards
         const userRewardATA = await SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 ВАШ КОД: Создание инструкции (ANCHOR TEMPLATE)
+        // 🔴 YOUR CODE: Create instruction (ANCHOR TEMPLATE)
          const tx = await program.methods.claimRewards()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
                 userRewardTokenAccount: userRewardATA,
                 tokenProgram: TOKEN_PROGRAM_ID,
-                // ⚠️ ДОБАВИТЬ ВСЕ ОСТАЛЬНЫЕ КЛЮЧИ АККАУНТОВ (например, vault пула)
+                // ⚠️ ADD ALL OTHER ACCOUNT KEYS (e.g., pool vault)
             })
             .transaction();
 
-        // 🟢 РЕАЛЬНАЯ ОТПРАВКА (Заменена MOCK-логикой)
+        // 🟢 REAL SUBMISSION (Replaced by MOCK logic)
         // const signature = await appState.provider.sendAndConfirm(tx, []);
 
         // --- MOCK LOGIC START ---
@@ -806,60 +806,60 @@ async function handleClaimRewards() {
         const signature = 'MOCK_CLAIM_SIG_' + Date.now();
         // --- MOCK LOGIC END ---
 
-        // 🟢 БЕЗОПАСНОЕ ЛОГИРОВАНИЕ ЧЕРЕЗ WORKER
+        // 🟢 SECURE LOGGING VIA WORKER
         await sendLogToFirebase(userKey, 'CLAIM', claimedAmountBigInt);
 
-        showNotification(`Награды успешно получены! Подпись: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 5000);
+        showNotification(`Rewards successfully claimed! Signature: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 5000);
 
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        showNotification(`Клейм не удался. Детали: ${error.message.substring(0, 100)}`, 'error');
+        showNotification(`Claim failed. Details: ${error.message.substring(0, 100)}`, 'error');
     } finally {
         setLoadingState(false, uiElements.claimRewardsBtn);
     }
 }
 
 /**
- * ✅ Реализовано: Отправка транзакции анстейкинга (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending unstaking transaction (ANCHOR TEMPLATE + MOCK).
  */
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
-        showNotification('Кошелек не подключен или IDL программы отсутствует.', 'warning');
+        showNotification('Wallet not connected or program IDL missing.', 'warning');
         return;
     }
     setLoadingState(true, uiElements.unstakeAfoxBtn);
 
     try {
-        if (appState.userStakingData.stakedAmount === BigInt(0)) { showNotification('Нет AFOX в стейкинге.', 'warning', 3000); return; }
+        if (appState.userStakingData.stakedAmount === BigInt(0)) { showNotification('No AFOX staked.', 'warning', 3000); return; }
 
-        showNotification('Подготовка транзакции для анстейкинга... (Simulation)', 'info', 5000);
+        showNotification('Preparing transaction for unstaking... (Simulation)', 'info', 5000);
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Расчет PDA стейкинг-аккаунта
+        // 1. Calculate staking account PDA
         const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
             [Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), sender.toBuffer()],
             STAKING_PROGRAM_ID
         );
-        // 2. ATA пользователя для AFOX
+        // 2. User's ATA for AFOX
         const userAfoxATA = await SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 ВАШ КОД: Создание инструкции (ANCHOR TEMPLATE)
+        // 🔴 YOUR CODE: Create instruction (ANCHOR TEMPLATE)
          const tx = await program.methods.unstake()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
-                tokenTo: userAfoxATA, // ATA пользователя
+                tokenTo: userAfoxATA, // User's ATA
                 tokenProgram: TOKEN_PROGRAM_ID,
-                // ⚠️ ДОБАВИТЬ ВСЕ ОСТАЛЬНЫЕ КЛЮЧИ АККАУНТОВ (например, vault пула)
+                // ⚠️ ADD ALL OTHER ACCOUNT KEYS (e.g., pool vault)
             })
             .transaction();
 
-        // 🟢 РЕАЛЬНАЯ ОТПРАВКА (Заменена MOCK-логикой)
+        // 🟢 REAL SUBMISSION (Replaced by MOCK logic)
         // const signature = await appState.provider.sendAndConfirm(tx, []);
 
         // --- MOCK LOGIC START ---
@@ -873,15 +873,15 @@ async function handleUnstakeAfox() {
         const signature = 'MOCK_UNSTAKE_SIG_' + Date.now();
         // --- MOCK LOGIC END ---
 
-        // 🟢 БЕЗОПАСНОЕ ЛОГИРОВАНИЕ ЧЕРЕЗ WORKER
+        // 🟢 SECURE LOGGING VIA WORKER
         await sendLogToFirebase(userKey, 'UNSTAKE', stakedAmountBigInt);
 
-        showNotification(`Успешный анстейкинг! Подпись: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 7000);
+        showNotification(`Successful unstaking! Signature: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 7000);
 
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        showNotification(`Анстейкинг не удался. Детали: ${error.message.substring(0, 100)}`, 'error');
+        showNotification(`Unstaking failed. Details: ${error.message.substring(0, 100)}`, 'error');
     } finally {
         setLoadingState(false, uiElements.unstakeAfoxBtn);
     }
@@ -1110,7 +1110,7 @@ async function handleBuyNft() {
         closeAllPopups();
         loadUserNFTs();
         loadMarketplaceNFTs();
-        await updateStakingAndBalanceUI(); // Обновляем балансы
+        await updateStakingAndBalanceUI(); // Update balances
 
     } catch (error) {
         showNotification(`Purchase failed: ${error.message.substring(0, 70)}...`, 'error');
@@ -1176,7 +1176,7 @@ function handleMintNftSubmit(event) {
     const description = form.elements['mint-description'].value.trim();
     const image = form.elements['mint-image'].value.trim() || 'https://via.placeholder.com/180x180/6c757d/ffffff?text=New+Fox';
 
-    // ✅ ИСПРАВЛЕНИЕ БЕЗОПАСНОСТИ: Усиленная проверка на опасные символы для предотвращения XSS/Injection.
+    // ✅ SECURITY FIX: Stronger check for dangerous characters to prevent XSS/Injection.
     const invalidCharRegex = /[<>&'"\\]/g; 
 
     if (!name || name.length < 3 || name.length > 50 || invalidCharRegex.test(name)) {
@@ -1330,14 +1330,14 @@ async function handleTransferNft() {
         const recipientPublicKey = new SolanaWeb3.PublicKey(recipientAddress);
         const newOwner = recipientPublicKey.toBase58();
 
-        // 🔴 ИСПРАВЛЕНИЕ БЕЗОПАСНОСТИ: Удалена избыточная и потенциально вводящая в заблуждение проверка Program ID.
-        // Проверка на отправку себе оставлена.
+        // 🔴 SECURITY FIX: Removed redundant and potentially misleading Program ID check.
+        // Check for sending to self is kept.
         if (newOwner === appState.walletPublicKey.toBase58()) {
              throw new Error('Cannot transfer to your own address.');
         }
 
-        // В реальном коде здесь была бы логика создания транзакции SPL Token
-        // Здесь используется MOCK-логика для обновления MOCK_DB
+        // In real code, this would be the logic for creating an SPL Token transaction
+        // Here, MOCK logic is used to update MOCK_DB
         const nft = appState.currentOpenNft;
         const oldOwner = nft.owner;
 
@@ -1519,7 +1519,7 @@ async function executeSwap() {
     const outputAmountBigInt = BigInt(appState.currentJupiterQuote.outAmount);
 
     try {
-        // Вызов /swap и получение транзакции (REAL API CALL)
+        // Call /swap and get the transaction (REAL API CALL)
         const response = await fetchWithTimeout(`${JUPITER_API_URL}/swap`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1535,16 +1535,16 @@ async function executeSwap() {
             throw new Error(`Failed to get swap transaction: ${errorData.error || response.statusText}`);
         }
 
-        // const { swapTransaction } = await response.json(); // Десериализация реальной транзакции
+        // const { swapTransaction } = await response.json(); // Deserialize the real transaction
         // const transactionBuf = Buffer.from(swapTransaction, 'base64');
         // const transaction = SolanaWeb3.Transaction.from(transactionBuf);
-        // const signature = await appState.provider.sendAndConfirm(transaction); // Реальная отправка
+        // const signature = await appState.provider.sendAndConfirm(transaction); // Real submission
 
         // --- MOCK LOGIC START ---
         const signature = 'MOCK_TXN_SIG_' + Date.now();
         await new Promise(resolve => setTimeout(resolve, 5000));
 
-        // MOCK: Обновление балансов после успешного свапа
+        // MOCK: Update balances after successful swap
         if (fromToken === 'AFOX') {
             appState.userBalances.AFOX = appState.userBalances.AFOX - inputAmountBigInt;
         }
@@ -1618,7 +1618,7 @@ async function handleMaxAmount(event) {
 
 
 // =========================================================================================
-// --- INITIALIZATION AND EVENT LISTENERS (Полностью реализовано) ---
+// --- INITIALIZATION AND EVENT LISTENERS (Fully implemented) ---
 // =========================================================================================
 
 /**
@@ -1902,7 +1902,7 @@ async function init() {
     updateStakingUI();
     updateWalletUI(null);
 
-    // Пытаемся установить соединение сразу при запуске
+    // Attempt to establish connection immediately on startup
     try {
         appState.connection = await getRobustConnection();
     } catch (e) {
