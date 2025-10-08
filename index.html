@@ -18,7 +18,16 @@
     <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
     <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
     
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://terminal.jup.ag; script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com; connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://via.placeholder.com data:; object-src 'none'; base-uri 'self';">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self' https://terminal.jup.ag;
+        script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com 'unsafe-eval'; 
+        connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag; 
+        style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; 
+        font-src 'self' https://fonts.gstatic.com; 
+        img-src 'self' https://via.placeholder.com data: https://cdn.jup.ag; 
+        object-src 'none'; 
+        base-uri 'self';
+    ">
     
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
@@ -727,7 +736,7 @@
                 <a href="https://www.geckoterminal.com/solana/pools/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   style="display: inline-block; padding: 10px 15px; background-color: #00bf75; color: #fff; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background-color 0.3s;">
+                   style="display: inline-block; padding: 10px 15px; background-color: #00bf75; color: #fff; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background-color 0.3s ease;">
                     <img src="https://www.geckoterminal.com/favicon-16x16.png" alt="GeckoTerminal Logo" style="height: 16px; margin-right: 8px; vertical-align: middle;">
                     View on GeckoTerminal
                 </a>
@@ -918,50 +927,6 @@
         }
 
         /**
-         * 4. Contact Form Handling (with sanitizeText)
-         */
-        /*
-        // handleContactForm() FUNCTION REMOVED
-        function handleContactForm() {
-            const contactForm = document.getElementById('contactForm');
-            if (!contactForm) return;
-
-            contactForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(contactForm);
-                const data = Object.fromEntries(formData.entries());
-
-                const submitButton = contactForm.querySelector('button[type="submit"]');
-                submitButton.disabled = true;
-                submitButton.textContent = 'Sending...';
-                showNotification('Sending message...', 'info');
-
-                try {
-                    // Apply sanitizeText to data before sending to Firestore
-                    await db.collection(COLLECTIONS.CONTACTS).add({
-                        name: sanitizeText(data.name),
-                        email: sanitizeText(data.email),
-                        subject: sanitizeText(data.subject),
-                        message: sanitizeText(data.message),
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        status: 'New'
-                    });
-
-                    showNotification("Your message has been successfully sent! We will contact you soon.", 'success');
-                    contactForm.reset();
-
-                } catch (error) {
-                    console.error("Error sending contact form:", error);
-                    showNotification("Error sending message: " + error.message, 'error');
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Send Message';
-                }
-            });
-        }
-        */
-        
-        /**
          * 5. Fetching Games List (with sanitizeText)
          */
          async function fetchContentList(collectionName, listElementId) {
@@ -1005,7 +970,6 @@
         // >>> ACCESS CONTROL AND LISTENER STARTUP LOGIC <<<
         document.addEventListener('DOMContentLoaded', () => {
             setupNewsListener();
-            // handleContactForm(); // <-- COMMENT: handleContactForm() function is no longer called
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
 
             // ALL ADMINISTRATIVE LOGIN AND MODAL MANAGEMENT LOGIC REMOVED
@@ -1014,40 +978,37 @@
     </script>
     
     <script type="module">
+        // Константы токенов
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-        // 🟢 FIXED: birdeyeContainer will now be found in the DOM,
-        // as the element <div id="afoxChartContainer"> has been added.
-        let birdeyeContainer = null;
-        let birdeyeParent = null;
+        // Получаем элементы до инициализации, чтобы избежать ошибок
+        let birdeyeContainer = document.getElementById('afoxChartContainer');
+        let birdeyeParent = birdeyeContainer ? birdeyeContainer.parentNode : null;
 
         /**
          * Initializes Jupiter Terminal.
          */
         function initializeJupiterTerminal() {
-            birdeyeContainer = document.getElementById('afoxChartContainer'); 
-            if (birdeyeContainer) {
-                birdeyeParent = birdeyeContainer.parentNode; 
-            }
 
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
+                
                 const removeBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
-                        // Use check to avoid error if element is not found
                         try {
                            birdeyeParent.removeChild(birdeyeContainer);
-                           console.log("Birdeye chart **removed** for wallet connection.");
+                           console.log("Birdeye chart removed for wallet connection.");
                         } catch(e) {
-                            console.warn("Could not remove birdeyeContainer. Element might be missing or already removed.", e);
+                            console.warn("Could not remove birdeyeContainer. Element might be missing.", e);
                         }
                     }
                 };
 
                 const restoreBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
-                        birdeyeParent.appendChild(birdeyeContainer); 
-                        console.log("Birdeye chart **restored** after wallet connection.");
+                        // Вставляем график перед виджетом (если он там был)
+                        birdeyeParent.insertBefore(birdeyeContainer, document.getElementById('jupiter-swap-widget'));
+                        console.log("Birdeye chart restored after wallet action.");
                     }
                 };
 
@@ -1067,19 +1028,37 @@
                     strictTokenList: false, 
 
                     onConnectWallet: (callback) => {
+                        // Jupiter сам покажет свою кнопку Connect Wallet. 
+                        // Эта функция вызывается в процессе, скрываем график, чтобы не мешал.
                         removeBirdeye(); 
                         setTimeout(callback, 50); 
                     },
-
-                    onSuccess: () => {
+                    
+                    onSwapSuccess: () => {
                          restoreBirdeye();
+                         // Предполагаем наличие функции showNotification из другого скрипта
+                         if (typeof showNotification === 'function') {
+                             showNotification("Swap successful!", 'success');
+                         }
                     },
                     
-                    onError: () => {
+                    onError: (error) => {
                          restoreBirdeye();
+                         console.error("Jupiter Error:", error);
+                         if (typeof showNotification === 'function') {
+                             showNotification("Swap error: See console for details.", 'error');
+                         }
+                    },
+                    
+                    onClose: () => {
+                        restoreBirdeye();
                     }
                 });
+                
+                console.log("Jupiter Terminal initialized.");
+
             } else {
+                // Повторная попытка инициализации, если скрипт Jupiter не успел загрузиться
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
