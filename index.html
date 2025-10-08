@@ -37,6 +37,7 @@
             ],
             tracesSampleRate: 1.0, 
             release: "aurum-fox-portal@1.0.0", 
+            environment: "production",
         });
         Sentry.setTag("context", "Web3 Solana Interface");
     </script>
@@ -608,65 +609,65 @@
 
         <section id="lending-section" class="section web3-section-alt">
             <div class="container">
-                <h2 class="web3-heading">🏦 AFOX DeFi Кредитование (Lending & Borrowing)</h2>
-                <p class="web3-intro">Предоставляйте AFOX или SOL в пулы ликвидности, чтобы зарабатывать проценты, или используйте их в качестве залога для получения займа.</p>
+                <h2 class="web3-heading">🏦 AFOX DeFi Lending (Lending & Borrowing)</h2>
+                <p class="web3-intro">Lend AFOX or SOL to liquidity pools to earn interest, or use them as collateral to take out a loan.</p>
                 
-                <button id="connectWalletBtnLending" class="web3-btn" aria-label="Connect wallet to DeFi Lending section">Подключить Кошелек</button>
-                <p class="web3-wallet-display">Ваш Адрес Кошелька: <span id="walletAddressDisplayLending">Не Подключен</span></p>
+                <button id="connectWalletBtnLending" class="web3-btn" aria-label="Connect wallet to DeFi Lending section">Connect Wallet</button>
+                <p class="web3-wallet-display">Your Wallet Address: <span id="walletAddressDisplayLending">Not Connected</span></p>
 
                 <div class="staking-info-grid">
                     <div class="info-card">
-                        <h3>APR за Предоставление (AFOX)</h3>
+                        <h3>APR for Lending (AFOX)</h3>
                         <p id="afoxLendApr" class="info-value">--%</p>
                     </div>
                     <div class="info-card">
-                        <h3>Процент Займа (SOL)</h3>
+                        <h3>Borrowing Rate (SOL)</h3>
                         <p id="solBorrowRate" class="info-value">--%</p>
                     </div>
                     <div class="info-card">
-                        <h3>Предоставлено Вами</h3>
+                        <h3>Your Lent Amount</h3>
                         <p id="userLentAmount" class="info-value">0 AFOX</p>
                     </div>
                     <div class="info-card">
-                        <h3>Ваш Заем</h3>
+                        <h3>Your Loan</h3>
                         <p id="userBorrowedAmount" class="info-value">0 SOL</p>
                     </div>
                 </div>
 
                 <div class="staking-actions" style="margin-top: 30px;">
-                    <h3 class="web3-subheading">Предоставить AFOX (Lend)</h3>
+                    <h3 class="web3-subheading">Lend AFOX</h3>
                     <div class="input-group">
-                        <input type="number" id="lendAmountInput" min="0.000001" step="0.000001" placeholder="Введите AFOX для предоставления" aria-label="Amount to lend">
-                        <button id="lendAfoxBtn" class="web3-btn" aria-label="Lend AFOX tokens">Предоставить</button>
+                        <input type="number" id="lendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to lend" aria-label="Amount to lend">
+                        <button id="lendAfoxBtn" class="web3-btn" aria-label="Lend AFOX tokens">Lend</button>
                     </div>
-                    <h3 class="web3-subheading">Снять Предоставленные AFOX (Withdraw)</h3>
+                    <h3 class="web3-subheading">Withdraw Lent AFOX</h3>
                     <div class="input-group">
-                        <input type="number" id="withdrawLendAmountInput" min="0.000001" step="0.000001" placeholder="Введите AFOX для снятия" aria-label="Amount to withdraw from lending">
-                        <button id="withdrawLendBtn" class="web3-btn" aria-label="Withdraw lent AFOX tokens">Снять</button>
+                        <input type="number" id="withdrawLendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to withdraw" aria-label="Amount to withdraw from lending">
+                        <button id="withdrawLendBtn" class="web3-btn" aria-label="Withdraw lent AFOX tokens">Withdraw</button>
                     </div>
                 </div>
 
                 <div class="staking-actions" style="margin-top: 30px;">
-                    <h3 class="web3-subheading">Занять SOL (Borrow)</h3>
+                    <h3 class="web3-subheading">Borrow SOL</h3>
                     <div class="input-group">
-                        <input type="number" id="borrowAmountInput" min="0.000001" step="0.000001" placeholder="Введите SOL для займа" aria-label="Amount to borrow">
-                        <button id="borrowSolBtn" class="web3-btn" aria-label="Borrow SOL">Занять</button>
+                        <input type="number" id="borrowAmountInput" min="0.000001" step="0.000001" placeholder="Enter SOL to borrow" aria-label="Amount to borrow">
+                        <button id="borrowSolBtn" class="web3-btn" aria-label="Borrow SOL">Borrow</button>
                     </div>
-                    <h3 class="web3-subheading">Погасить Заем SOL (Repay)</h3>
+                    <h3 class="web3-subheading">Repay SOL Loan</h3>
                     <div class="input-group">
-                        <input type="number" id="repayAmountInput" min="0.000001" step="0.000001" placeholder="Введите SOL для погашения" aria-label="Amount to repay">
-                        <button id="repaySolBtn" class="web3-btn" aria-label="Repay SOL loan">Погасить Заем</button>
+                        <input type="number" id="repayAmountInput" min="0.000001" step="0.000001" placeholder="Enter SOL to repay" aria-label="Amount to repay">
+                        <button id="repaySolBtn" class="web3-btn" aria-label="Repay SOL loan">Repay Loan</button>
                     </div>
                 </div>
                 
                 <div class="staking-details">
-                    <h3 class="web3-subheading">Условия Кредитования</h3>
+                    <h3 class="web3-subheading">Lending Terms</h3>
                     <ul>
-                        <li><strong>Лимит Залога (LTV):</strong> <span id="ltvRatio">75%</span></li>
-                        <li><strong>AFOX в Пуле:</strong> <span id="poolAfoxAmount">... AFOX</span></li>
-                        <li><strong>SOL в Пуле:</strong> <span id="poolSolAmount">... SOL</span></li>
+                        <li><strong>Loan-to-Value (LTV) Limit:</strong> <span id="ltvRatio">75%</span></li>
+                        <li><strong>AFOX in Pool:</strong> <span id="poolAfoxAmount">... AFOX</span></li>
+                        <li><strong>SOL in Pool:</strong> <span id="poolSolAmount">... SOL</span></li>
                     </ul>
-                    <p class="web3-note">Функционал DeFi Кредитования находится в разработке и требует подключения к протоколу на Solana.</p>
+                    <p class="web3-note">DeFi Lending functionality is under development and requires connection to a Solana protocol.</p>
                 </div>
             </div>
         </section>
@@ -766,12 +767,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
     <script id="main-inline-script">
-        // 2. ВАША КОНФИГУРАЦИЯ С КЛЮЧАМИ
-        // 🚨 КРИТИЧЕСКИ ВАЖНО: Замените 'ВАШ_РЕАЛЬНЫЙ_FIREBASE_API_KEY' на ваш реальный ключ.
-        // ПОМНИТЕ: Этот ключ публичен. Вы должны ограничить его использование в консоли Google Cloud
-        // только доменом aurumfox.github.io для предотвращения злоупотреблений.
+        // 2. YOUR CONFIGURATION WITH KEYS
+        // 🚨 CRITICAL: Replace 'ВАШ_РЕАЛЬНЫЙ_FIREBASE_API_KEY' with your actual key.
+        // REMEMBER: This key is public. You should restrict its usage in the Google Cloud console
+        // only to the aurumfox.github.io domain to prevent misuse.
         const firebaseConfig = {
-            apiKey: "ВАШ_РЕАЛЬНЫЙ_FIREBASE_API_KEY", // <--- ЗАМЕНИТЬ!
+            apiKey: "YOUR_REAL_FIREBASE_API_KEY", // <--- REPLACE!
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
             storageBucket: "aurum-fox.firebasestorage.app",
@@ -780,7 +781,7 @@
             measurementId: "G-L9XHK0DPB7" 
         };
         
-        // 3. ИНИЦИАЛИЗАЦИЯ
+        // 3. INITIALIZATION
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
         const auth = app.auth();
@@ -796,7 +797,7 @@
         };
 
         /**
-         * 🟢 ЗАЩИТА ОТ XSS: Функция для очистки текста от HTML-тегов.
+         * 🟢 XSS PROTECTION: Function to sanitize text from HTML tags.
          */
         function sanitizeText(text) {
             if (!text) return '';
@@ -813,7 +814,7 @@
         }
 
         /**
-         * Утилита для отображения уведомлений
+         * Utility for displaying notifications
          */
         function showNotification(message, type = 'info', duration = 3000) {
             const container = document.getElementById('notificationContainer');
@@ -845,7 +846,7 @@
         }
 
         /**
-         * 1. Реальное время: Получение и отображение Новостей (с sanitizeText)
+         * 1. Real-time: Fetching and displaying News (with sanitizeText)
          */
         function setupNewsListener() {
             const newsListElement = document.querySelector('.news-list');
@@ -856,35 +857,35 @@
                 .limit(5)
                 .onSnapshot(snapshot => { 
                     if (snapshot.empty) {
-                        newsListElement.innerHTML = '<p>Новостей пока нет.</p>';
+                        newsListElement.innerHTML = '<p>No news yet.</p>';
                         return;
                     }
 
                     let newsHtml = '';
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'Неизвестная дата';
-                        // Применение sanitizeText
+                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'Unknown date';
+                        // Apply sanitizeText
                         newsHtml += `
                             <div class="news-item">
-                                <h4>${sanitizeText(data.title || 'Заголовок новости')}</h4>
-                                <p>${sanitizeText(data.content || 'Содержание новости...')}</p>
+                                <h4>${sanitizeText(data.title || 'News Title')}</h4>
+                                <p>${sanitizeText(data.content || 'News content...')}</p>
                                 <small>${date}</small>
                             </div>
                         `;
                     });
                     newsListElement.innerHTML = newsHtml;
                 }, error => {
-                    console.error("Ошибка слушателя новостей:", error);
-                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Не удалось загрузить новости в реальном времени.</p>';
+                    console.error("News listener error:", error);
+                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Failed to load real-time news.</p>';
                 });
         }
 
         /**
-         * 4. Обработка Контактной Формы (с sanitizeText)
+         * 4. Contact Form Handling (with sanitizeText)
          */
         /*
-        // УДАЛЕНА ФУНКЦИЯ handleContactForm()
+        // handleContactForm() FUNCTION REMOVED
         function handleContactForm() {
             const contactForm = document.getElementById('contactForm');
             if (!contactForm) return;
@@ -896,11 +897,11 @@
 
                 const submitButton = contactForm.querySelector('button[type="submit"]');
                 submitButton.disabled = true;
-                submitButton.textContent = 'Отправка...';
-                showNotification('Отправка сообщения...', 'info');
+                submitButton.textContent = 'Sending...';
+                showNotification('Sending message...', 'info');
 
                 try {
-                    // Применение sanitizeText к данным перед отправкой в Firestore
+                    // Apply sanitizeText to data before sending to Firestore
                     await db.collection(COLLECTIONS.CONTACTS).add({
                         name: sanitizeText(data.name),
                         email: sanitizeText(data.email),
@@ -910,12 +911,12 @@
                         status: 'New'
                     });
 
-                    showNotification("Ваше сообщение успешно отправлено! Мы скоро свяжемся с вами.", 'success');
+                    showNotification("Your message has been successfully sent! We will contact you soon.", 'success');
                     contactForm.reset();
 
                 } catch (error) {
-                    console.error("Ошибка при отправке контактной формы:", error);
-                    showNotification("Ошибка при отправке сообщения: " + error.message, 'error');
+                    console.error("Error sending contact form:", error);
+                    showNotification("Error sending message: " + error.message, 'error');
                 } finally {
                     submitButton.disabled = false;
                     submitButton.textContent = 'Send Message';
@@ -925,7 +926,7 @@
         */
         
         /**
-         * 5. Получение списка Игр (с sanitizeText)
+         * 5. Fetching Games List (with sanitizeText)
          */
          async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
@@ -939,7 +940,7 @@
                     .get();
 
                 if (snapshot.empty) {
-                    listElement.innerHTML = `<p class="web3-placeholder">Пока нет данных в разделе ${collectionName}.</p>`;
+                    listElement.innerHTML = `<p class="web3-placeholder">No data in the ${collectionName} section yet.</p>`;
                     return;
                 }
 
@@ -948,7 +949,7 @@
                 
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // Применение sanitizeText
+                    // Apply sanitizeText
                     html += `
                         <div class="placeholder-item web3-placeholder ${itemClass}">
                             <a href="${sanitizeText(data.url || '#')}" target="_blank" rel="noopener noreferrer">
@@ -960,18 +961,18 @@
                 listElement.innerHTML = html;
 
             } catch (error) {
-                console.error(`Ошибка при загрузке ${collectionName}:`, error);
-                listElement.innerHTML = `<p style="color: #e74c3c;">Не удалось загрузить контент.</p>`;
+                console.error(`Error loading ${collectionName}:`, error);
+                listElement.innerHTML = `<p style="color: #e74c3c;">Failed to load content.</p>`;
             }
         }
 
-        // >>> ЛОГИКА КОНТРОЛЯ ДОСТУПА И ЗАПУСКА СЛУШАТЕЛЕЙ <<<
+        // >>> ACCESS CONTROL AND LISTENER STARTUP LOGIC <<<
         document.addEventListener('DOMContentLoaded', () => {
             setupNewsListener();
-            // handleContactForm(); // <-- КОММЕНТАРИЙ: Функция handleContactForm() больше не вызывается
+            // handleContactForm(); // <-- COMMENT: handleContactForm() function is no longer called
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
 
-            // УДАЛЕНА ВСЯ ЛОГИКА АДМИНИСТРАТИВНОГО ВХОДА И УПРАВЛЕНИЯ МОДАЛЬНЫМ ОКНОМ
+            // ALL ADMINISTRATIVE LOGIN AND MODAL MANAGEMENT LOGIC REMOVED
             
         });
     </script>
@@ -980,8 +981,8 @@
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-        // 🟢 ИСПРАВЛЕНО: Теперь birdeyeContainer будет найден в DOM,
-        // так как элемент <div id="afoxChartContainer"> добавлен.
+        // 🟢 FIXED: birdeyeContainer will now be found in the DOM,
+        // as the element <div id="afoxChartContainer"> has been added.
         let birdeyeContainer = null;
         let birdeyeParent = null;
 
@@ -997,7 +998,7 @@
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
                 const removeBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
-                        // Используем проверку, чтобы избежать ошибки, если элемент не найден
+                        // Use check to avoid error if element is not found
                         try {
                            birdeyeParent.removeChild(birdeyeContainer);
                            console.log("Birdeye chart **removed** for wallet connection.");
