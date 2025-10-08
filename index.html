@@ -73,6 +73,26 @@
                 min-width: 100%;
             }
         }
+        
+        /* Добавим минимальный стиль для новой кнопки, если его нет в style.css */
+        .primary-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #f39c12; /* Пример золотисто-оранжевого цвета */
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 15px; /* Отступ сверху */
+        }
+        
+        .primary-btn:hover {
+            background-color: #e67e22; /* Темнее при наведении */
+        }
     </style>
 </head>
 <body>
@@ -241,6 +261,11 @@
                 </ol>
                 <p class="tip">Make sure you have enough SOL to cover network fees.</p>
                 <p class="tip"><i>Liquidity pool link will be available soon!</i></p>
+                
+                <a href="#swap-section" class="web3-btn primary-btn" aria-label="Go to AFOX Swap Terminal">
+                    🔄 Go to Swap Terminal
+                </a>
+
                 <button class="web3-btn" aria-label="Trade AFOX on Raydium">Trade AFOX on Raydium</button>
             </div>
         </section>
