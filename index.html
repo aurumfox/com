@@ -105,7 +105,7 @@
                     <li><a href="#nft-section">NFT Portal</a></li>
                     <li><a href="#dao-section">DAO</a></li>
                     <li><a href="#staking-section">Staking</a></li>
-                    <li><a href="#swap-section">Swap</a></li>
+                    <li><a href="#lending-section">Lending</a></li> <li><a href="#swap-section">Swap</a></li>
                 </ul>
             </nav>
         </div>
@@ -331,6 +331,7 @@
                             <li>Preparation for potential listings on Centralized Exchanges (CEX).</li>
                             <li>Implementation of DAO and governance.</li>
                             <li>Development of a staking platform.</li>
+                            <li>**Development of a lending/borrowing platform (DeFi).**</li>
                             <li>Gaming integrations.</li>
                             <li>Multimedia portal enhancements.</li>
                             <li>NFC utility development.</li>
@@ -410,6 +411,10 @@
                         <p>Stake your AFOX tokens to earn passive income.</p>
                         <a href="#staking-section" class="web3-link">Start Staking</a>
                     </div>
+                     <div class="feature-card">
+                        <h3>🏦 Lending</h3>
+                        <p>Lend or borrow crypto assets.</p>
+                        <a href="#lending-section" class="web3-link">Go to Lending</a> </div>
                      <div class="feature-card">
                         <h3>🔄 Swap</h3>
                         <p>Exchange AFOX for other tokens easily.</p>
@@ -601,6 +606,70 @@
             </div>
         </section>
 
+        <section id="lending-section" class="section web3-section-alt">
+            <div class="container">
+                <h2 class="web3-heading">🏦 AFOX DeFi Кредитование (Lending & Borrowing)</h2>
+                <p class="web3-intro">Предоставляйте AFOX или SOL в пулы ликвидности, чтобы зарабатывать проценты, или используйте их в качестве залога для получения займа.</p>
+                
+                <button id="connectWalletBtnLending" class="web3-btn" aria-label="Connect wallet to DeFi Lending section">Подключить Кошелек</button>
+                <p class="web3-wallet-display">Ваш Адрес Кошелька: <span id="walletAddressDisplayLending">Не Подключен</span></p>
+
+                <div class="staking-info-grid">
+                    <div class="info-card">
+                        <h3>APR за Предоставление (AFOX)</h3>
+                        <p id="afoxLendApr" class="info-value">--%</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>Процент Займа (SOL)</h3>
+                        <p id="solBorrowRate" class="info-value">--%</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>Предоставлено Вами</h3>
+                        <p id="userLentAmount" class="info-value">0 AFOX</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>Ваш Заем</h3>
+                        <p id="userBorrowedAmount" class="info-value">0 SOL</p>
+                    </div>
+                </div>
+
+                <div class="staking-actions" style="margin-top: 30px;">
+                    <h3 class="web3-subheading">Предоставить AFOX (Lend)</h3>
+                    <div class="input-group">
+                        <input type="number" id="lendAmountInput" min="0.000001" step="0.000001" placeholder="Введите AFOX для предоставления" aria-label="Amount to lend">
+                        <button id="lendAfoxBtn" class="web3-btn" aria-label="Lend AFOX tokens">Предоставить</button>
+                    </div>
+                    <h3 class="web3-subheading">Снять Предоставленные AFOX (Withdraw)</h3>
+                    <div class="input-group">
+                        <input type="number" id="withdrawLendAmountInput" min="0.000001" step="0.000001" placeholder="Введите AFOX для снятия" aria-label="Amount to withdraw from lending">
+                        <button id="withdrawLendBtn" class="web3-btn" aria-label="Withdraw lent AFOX tokens">Снять</button>
+                    </div>
+                </div>
+
+                <div class="staking-actions" style="margin-top: 30px;">
+                    <h3 class="web3-subheading">Занять SOL (Borrow)</h3>
+                    <div class="input-group">
+                        <input type="number" id="borrowAmountInput" min="0.000001" step="0.000001" placeholder="Введите SOL для займа" aria-label="Amount to borrow">
+                        <button id="borrowSolBtn" class="web3-btn" aria-label="Borrow SOL">Занять</button>
+                    </div>
+                    <h3 class="web3-subheading">Погасить Заем SOL (Repay)</h3>
+                    <div class="input-group">
+                        <input type="number" id="repayAmountInput" min="0.000001" step="0.000001" placeholder="Введите SOL для погашения" aria-label="Amount to repay">
+                        <button id="repaySolBtn" class="web3-btn" aria-label="Repay SOL loan">Погасить Заем</button>
+                    </div>
+                </div>
+                
+                <div class="staking-details">
+                    <h3 class="web3-subheading">Условия Кредитования</h3>
+                    <ul>
+                        <li><strong>Лимит Залога (LTV):</strong> <span id="ltvRatio">75%</span></li>
+                        <li><strong>AFOX в Пуле:</strong> <span id="poolAfoxAmount">... AFOX</span></li>
+                        <li><strong>SOL в Пуле:</strong> <span id="poolSolAmount">... SOL</span></li>
+                    </ul>
+                    <p class="web3-note">Функционал DeFi Кредитования находится в разработке и требует подключения к протоколу на Solana.</p>
+                </div>
+            </div>
+        </section>
         <section id="swap-section" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🔄 AFOX Swap & Live Trading</h2>
