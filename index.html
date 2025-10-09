@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,44 +19,43 @@
     <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
     
     <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' https://terminal.jup.ag;
-        script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com 'unsafe-eval'; 
-        connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag; 
-        style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; 
+        default-src 'self' https://terminal.jup.ag https://api.mainnet-beta.solana.com;
+        script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com https://cdn.jup.ag 'unsafe-eval'; 
+        connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com; 
+        style-src 'self' https://fonts.googleapis.com 'unsafe-inline' https://unpkg.com; 
         font-src 'self' https://fonts.gstatic.com; 
-        img-src 'self' https://via.placeholder.com data: https://cdn.jup.ag; 
+        img-src 'self' https://via.placeholder.com data: https:; 
         object-src 'none'; 
         base-uri 'self';
+        frame-src https://terminal.jup.ag;
     ">
     
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
     
-    <script
-      src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js"
-      crossorigin="anonymous"
-    ></script>
-    
+    <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
     <script>
         Sentry.init({
             dsn: "https://93b9760a7026c9acedf1f14b044146c6@o4505059231873024.ingest.sentry.io/4505059233642496", 
-            integrations: [
-                new Sentry.BrowserTracing(),
-            ],
+            integrations: [ new Sentry.BrowserTracing() ],
             tracesSampleRate: 1.0, 
             release: "aurum-fox-portal@1.0.0", 
             environment: "production",
         });
         Sentry.setTag("context", "Web3 Solana Interface");
     </script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
-    <script src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.25/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.17/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-wallets@0.19.22/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
     
     <style>
         .visually-hidden {
@@ -70,24 +69,35 @@
             border: 0;
         }
 
-        @media (max-width: 600px) {
-            .ai-diagnostic-tool__controls {
-                flex-direction: column;
-            }
-
-            .ai-diagnostic-tool__selector,
-            .ai-diagnostic-tool__input,
-            .ai-diagnostic-tool__button {
-                width: 100%;
-                min-width: 100%;
-            }
+        /* Стиль для кнопки кошелька */
+        .wallet-connect-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: 2px solid #FF8C00; 
+            background-color: #000;
+            color: #FF8C00;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+            font-weight: bold;
+            font-family: 'Montserrat', sans-serif;
+            margin-left: 15px; /* Для отступа от навигации */
         }
-        
-        /* Добавим минимальный стиль для новой кнопки, если его нет в style.css */
+        .wallet-connect-btn:hover {
+            background-color: #FF8C00;
+            color: #000;
+        }
+        .wallet-connect-btn.connected {
+            background-color: #4CAF50; /* Зеленый цвет для подключенного состояния */
+            color: white;
+            border: 2px solid #4CAF50;
+            cursor: default;
+        }
+        .error { color: red; }
         .primary-btn {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #f39c12; /* Пример золотисто-оранжевого цвета */
+            background-color: #f39c12; 
             color: #ffffff;
             border: none;
             border-radius: 8px;
@@ -96,11 +106,31 @@
             text-decoration: none;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-top: 15px; /* Отступ сверху */
+            margin-top: 15px;
         }
         
         .primary-btn:hover {
-            background-color: #e67e22; /* Темнее при наведении */
+            background-color: #e67e22; 
+        }
+        /* Стили для объединенного Web3 Display */
+        .web3-wallet-display {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+        .web3-wallet-display strong {
+            color: #fff;
+        }
+        
+        @media (max-width: 600px) {
+            .ai-diagnostic-tool__controls {
+                flex-direction: column;
+            }
+            .wallet-connect-btn {
+                width: 100%;
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
@@ -126,7 +156,6 @@
                     <li><a href="#aurum-nfc">Aurum NFC</a></li>
                     <li><a href="#aurum-roadmap">Roadmap</a></li>
                     <li><a href="#aurum-news">News</a></li>
-                    
                     <li><a href="#aurum-community">Community</a></li>
                     
                     <li class="nav-separator">--- Web3 Portal ---</li> 
@@ -135,8 +164,12 @@
                     <li><a href="#nft-section">NFT Portal</a></li>
                     <li><a href="#dao-section">DAO</a></li>
                     <li><a href="#staking-section">Staking</a></li>
-                    <li><a href="#lending-section">Lending</a></li> <li><a href="#swap-section">Swap</a></li>
+                    <li><a href="#lending-section">Lending</a></li> 
+                    <li><a href="#swap-section">Swap</a></li>
                 </ul>
+                <button id="connectWalletBtn" class="wallet-connect-btn">
+                    Подключить Кошелек
+                </button>
             </nav>
         </div>
     </header>
@@ -412,7 +445,6 @@
                         <svg class="social-icon" viewBox="0 0 576 512" ><path fill="currentColor" d="M573.5 241.1C559.5 245.9 544.7 248 529.7 248H528c-18.7 0-33.8 15.1-33.8 33.8v80.4c0 30.6-24.8 55.4-55.4 55.4h-35.3c-14.7 0-26.6 11.9-26.6 26.6v29.6c0 14.7 11.9 26.6 26.6 26.6H502c30.6 0 55.4-24.8 55.4-55.4v-30.8c0-10.9 9-19.9 19.9-19.9h.2c10.9 0 19.9 9 19.9 19.9v30.8c0 52.4-42.5 94.9-94.9 94.9h-35.3c-52.4 0-94.9-42.5-94.9-94.9V362.2c0-14.7-11.9-26.6-26.6-26.6h-35.3c-30.6 0-55.4-24.8-55.4-55.4V281.8c0-18.7-15.1-33.8-33.8-33.8h-1.7c-15 0-29.8-2.1-43.8-6.9-49.3-17.4-87.8-64.7-87.8-119.5C96 55.4 138.5 13 190.9 13H384c17.7 0 32 14.3 32 32s-14.3 32-32 32h-193.1c-17 0-30.8 13.8-30.8 30.8s13.8 30.8 30.8 30.8H352c17.7 0 32 14.3 32 32s-14.3 32-32 32H190.9c-52.4 0-94.9 42.5-94.9 94.9 0 32.5 16.4 61.5 41.5 78.4 2.6 1.8 5.4 3.2 8.3 4.3 12.1 4.7 24.8 7.2 37.8 7.2h1.7c18.7 0 33.8 15.1 33.8 33.8v80.4c0 30.6 24.8 55.4 55.4 55.4h35.3c14.7 0 26.6 11.9-26.6 26.6v29.6c0 14.7-11.9 26.6-26.6 26.6h-35.3c-52.4 0-94.9-42.5-94.9-94.9V409.8c0-10.9-9-19.9-19.9-19.9h-.2c-10.9 0-19.9 9-19.9 19.9v30.8c0 52.4 42.5 94.9 94.9 94.9h35.3c52.4 0 94.9-42.5 94.9-94.9V409.8c0-18.7 15.1-33.8 33.8-33.8h1.7c15 0 29.8-2.1 43.8-6.9C523.5 351.7 562 304.4 562 249.6c0-32.5-16.4-61.5-41.5-78.4z"/></svg>
                         Solscan
                     </a>
-                    
                 </div>
             </div>
         </section>
@@ -422,9 +454,8 @@
         <section id="web3-site-home" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🎮 My Web3 Portal</h2>
-                <p class="web3-intro">Explore decentralized games, manage your NFTs, and discover Web3 advertising opportunities.</p>
-                <button id="connectWalletBtnWeb3" class="web3-btn" aria-label="Connect wallet to Web3 Portal">Connect Wallet</button>
-                <p class="web3-wallet-display">Your Wallet Address: <span id="walletAddressDisplayWeb3">Not Connected</span></p>
+                <p class="web3-intro">Explore decentralized games, manage your NFTs, and discover Web3 advertising opportunities. <strong style="color: #f39c12;">Connect your wallet in the header to activate Web3 functions.</strong></p>
+                <p class="web3-wallet-display">Your Wallet Address: <strong id="walletAddressDisplay">Not Connected</strong></p>
                 <div class="web3-features-grid">
                     <div class="feature-card">
                         <h3>🎮 Games</h3>
@@ -474,10 +505,7 @@
         <section id="nft-section" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🖼️ NFT Collections</h2>
-                <p>Manage your NFTs directly from the website!</p>
-
-                <button id="connectWalletNftBtn" class="web3-btn" aria-label="Connect wallet to NFT section">Connect Wallet</button>
-                <p class="web3-wallet-display">Your Wallet Address: <span id="walletAddressDisplayNft">Not Connected</span></p>
+                <p>Manage your NFTs directly from the website! <strong style="color: #f39c12;">Connect your wallet to enable these features.</strong></p>
 
                 <div class="nft-actions">
                     <button id="viewMyNftsBtn" class="web3-btn" aria-label="View my NFTs">View My NFTs</button>
@@ -517,7 +545,7 @@
         <section id="mint-nft-section" class="section web3-section">
             <div class="container">
                 <h2 class="web3-heading">✨ Create Your Own NFT (Minting)</h2>
-                <p>Unleash your creativity! Upload your artwork and mint it as a unique NFT on the Solana blockchain.</p>
+                <p>Unleash your creativity! Upload your artwork and mint it as a unique NFT on the Solana blockchain. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
 
                 <div class="nft-form-container">
                     <form id="mintNftFormSection" class="web3-form" enctype="multipart/form-data">
@@ -543,10 +571,7 @@
         <section id="dao-section" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🏛️ Decentralized Autonomous Organization (DAO)</h2>
-                <p class="web3-intro">Participate in Aurum Fox governance! Create proposals, vote, and shape the future of the project.</p>
-
-                <button id="connectWalletBtnDao" class="web3-btn" aria-label="Connect wallet to DAO section">Connect Wallet</button>
-                <p class="web3-wallet-display">Your Wallet Address: <span id="walletAddressDisplayDao">Not Connected</span></p>
+                <p class="web3-intro">Participate in Aurum Fox governance! Create proposals, vote, and shape the future of the project. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
 
                 <div class="dao-actions">
                     <button id="createProposalBtn" class="web3-btn" aria-label="Create new DAO proposal">Create Proposal</button>
@@ -590,7 +615,7 @@
         <section id="staking-section" class="section web3-section">
             <div class="container">
                 <h2 class="web3-heading">💰 AFOX Staking</h2>
-                <p class="web3-intro">Stake your AFOX tokens to earn passive income and participate in project governance!</p>
+                <p class="web3-intro">Stake your AFOX tokens to earn passive income and participate in project governance! <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
                 
                 <div class="staking-info-grid">
                     <div class="info-card">
@@ -644,10 +669,7 @@
         <section id="lending-section" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🏦 AFOX DeFi Lending (Lending & Borrowing)</h2>
-                <p class="web3-intro">Lend AFOX or SOL to liquidity pools to earn interest, or use them as collateral to take out a loan.</p>
-                
-                <button id="connectWalletBtnLending" class="web3-btn" aria-label="Connect wallet to DeFi Lending section">Connect Wallet</button>
-                <p class="web3-wallet-display">Your Wallet Address: <span id="walletAddressDisplayLending">Not Connected</span></p>
+                <p class="web3-intro">Lend AFOX or SOL to liquidity pools to earn interest, or use them as collateral to take out a loan. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
 
                 <div class="staking-info-grid">
                     <div class="info-card">
@@ -758,66 +780,16 @@
             </div>
     </footer>
 
-    <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">
-        <div class="modal-content">
-            <span class="close-button" aria-label="Close NFT details modal">&times;</span>
-            <div id="nftDetailsContent" class="nft-detail-view">
-                <img id="nftDetailImage" src="" alt="NFT Image" class="nft-detail-image">
-                <h3 id="nftDetailName"></h3>
-                <p id="nftDetailDescription"></p>
-                <p><strong>Owner:</strong> <span id="nftDetailOwner"></span></p>
-                <p><strong>Mint Address:</strong> <span id="nftDetailMint"></span></p>
-                <div id="nftDetailAttributes">
-                    <h4>Attributes:</h4>
-                    <ul id="attributesList"></ul>
-                </div>
-                <p><strong>Transaction History:</strong> <span id="nftDetailHistory">(Loading...)</span></p>
-                <a id="nftDetailSolscanLink" href="#" target="_blank" rel="noopener noreferrer" class="web3-btn small-btn" aria-label="View NFT on Solscan">View on Solscan</a>
-
-                <div class="nft-detail-actions">
-                    <button id="nftDetailBuyBtn" class="web3-btn green-btn" style="display:none;" aria-label="Buy NFT">Buy NFT</button>
-                    <button id="nftDetailSellBtn" class="web3-btn red-btn" style="display:none;" aria-label="Sell NFT">Sell NFT</button>
-                    <button id="nftDetailTransferBtn" class="web3-btn" aria-label="Transfer NFT">Transfer NFT</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="mintNftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="mintNftModalTitle" style="display:none;">
-        <div class="modal-content">
-            <span class="close-button" id="closeMintNftModal" aria-label="Close mint NFT modal">&times;</span>
-            <h3 id="mintNftModalTitle" class="web3-heading">Mint Your New NFT</h3>
-            <form id="mintNftForm" class="web3-form">
-                <label for="nftName">NFT Name:</label>
-                <input type="text" id="nftName" name="nftName" placeholder="Enter NFT name" required aria-required="true">
-
-                <label for="nftDescription">Description:</label>
-                <textarea id="nftDescription" name="nftDescription" rows="4" placeholder="Describe your NFT" required aria-required="true"></textarea>
-
-                <label for="nftImageFile">Image File:</label>
-                <input type="file" id="nftImageFile" name="nftImageFile" accept="image/*" required aria-required="true">
-
-                <button type="submit" class="web3-btn" aria-label="Mint NFT from modal">Mint NFT</button>
-            </form>
-        </div>
-    </div>
-    
+    <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">...</div>
+    <div id="mintNftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="mintNftModalTitle" style="display:none;">...</div>
     <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
-
     <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    
     <script id="main-inline-script">
+        
         // 2. YOUR CONFIGURATION WITH KEYS
-        // 🚨 CRITICAL: Replace 'ВАШ_РЕАЛЬНЫЙ_FIREBASE_API_KEY' with your actual key.
-        // REMEMBER: This key is public. You should restrict its usage in the Google Cloud console
-        // only to the aurumfox.github.io domain to prevent misuse.
         const firebaseConfig = {
-            apiKey: "YOUR_REAL_FIREBASE_API_KEY", // <--- REPLACE!
+            apiKey: "YOUR_REAL_FIREBASE_API_KEY", // <--- ЗАМЕНИТЬ!
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
             storageBucket: "aurum-fox.firebasestorage.app",
@@ -832,67 +804,94 @@
         const auth = app.auth();
         const storage = app.storage();
         
-        console.log("Firebase initialized and services are available.");
-
         const COLLECTIONS = {
             NEWS: 'news',
-            ANNOUNCEMENTS: 'announcements',
-            CONTACTS: 'contacts',
             GAMES: 'games',
         };
 
-        /**
-         * 🟢 XSS PROTECTION: Function to sanitize text from HTML tags.
-         */
+        const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
+        const SOL_MINT = 'So11111111111111111111111111111111111111112';
+        
+        // Глобальный объект для адаптера кошелька
+        let solanaWalletAdapter = null;
+        
+        // --- XSS PROTECTION & NOTIFICATIONS ---
         function sanitizeText(text) {
             if (!text) return '';
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#x27;',
-                '/': '&#x2F;',
-            };
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '/': '&#x2F;' };
             const reg = /[&<>"'\/]/ig;
             return (text.toString()).replace(reg, (match)=>(map[match]));
         }
 
-        /**
-         * Utility for displaying notifications
-         */
         function showNotification(message, type = 'info', duration = 3000) {
             const container = document.getElementById('notificationContainer');
             if (!container) return;
-
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             notification.textContent = message;
-
+            // Simplified style for brevity
             notification.style.cssText = `
-                margin-bottom: 10px;
-                padding: 10px 15px;
-                border-radius: 8px;
-                color: #fff;
-                font-family: 'Poppins', sans-serif;
-                font-size: 0.9em;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                margin-bottom: 10px; padding: 10px 15px; border-radius: 8px; color: #fff; font-size: 0.9em; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
                 background-color: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#3498db'};
-                transition: opacity 0.5s ease-in-out;
-                z-index: 10000;
+                transition: opacity 0.5s ease-in-out; z-index: 10000;
             `;
-
             container.appendChild(notification);
-
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => notification.remove(), 500);
-            }, duration);
+            setTimeout(() => { notification.style.opacity = '0'; setTimeout(() => notification.remove(), 500); }, duration);
         }
+        // --- /XSS PROTECTION & NOTIFICATIONS ---
 
-        /**
-         * 1. Real-time: Fetching and displaying News (with sanitizeText)
-         */
+        // --- SOLANA WALLET ADAPTER LOGIC ---
+        const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+
+        async function connectWallet() {
+            const btn = document.getElementById('connectWalletBtn');
+            const display = document.getElementById('walletAddressDisplay');
+            
+            btn.disabled = true;
+            btn.textContent = 'Подключение...';
+
+            try {
+                // Использование Phantom Wallet Adapter
+                const adapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
+                await adapter.connect();
+
+                if (adapter.connected) {
+                    const publicKey = adapter.publicKey.toString();
+                    solanaWalletAdapter = adapter;
+
+                    // Обновление UI
+                    btn.textContent = `Подключен: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
+                    btn.classList.add('connected');
+                    display.innerHTML = `<strong>${publicKey.substring(0, 8)}...${publicKey.slice(-8)}</strong>`;
+                    
+                    showNotification('Кошелек успешно подключен!', 'success');
+                }
+
+            } catch (error) {
+                console.error('Ошибка подключения кошелька:', error);
+                let errorMessage = 'Ошибка подключения';
+                
+                if (error.name === 'WalletNotReadyError') {
+                     errorMessage = 'Установите Phantom Wallet.';
+                } else if (error.name === 'WalletConnectionError') {
+                     errorMessage = 'Подключение отклонено.';
+                }
+                
+                btn.textContent = errorMessage;
+                showNotification(errorMessage, 'error', 5000);
+
+                setTimeout(() => {
+                    btn.textContent = 'Подключить Кошелек';
+                    btn.classList.remove('connected');
+                    display.textContent = 'Not Connected';
+                 }, 3000);
+
+            } finally {
+                btn.disabled = false;
+            }
+        }
+        
+        // --- FIREBASE CONTENT LOADING ---
         function setupNewsListener() {
             const newsListElement = document.querySelector('.news-list');
             if (!newsListElement) return;
@@ -905,16 +904,14 @@
                         newsListElement.innerHTML = '<p>No news yet.</p>';
                         return;
                     }
-
                     let newsHtml = '';
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'Unknown date';
-                        // Apply sanitizeText
+                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'N/A';
                         newsHtml += `
                             <div class="news-item">
-                                <h4>${sanitizeText(data.title || 'News Title')}</h4>
-                                <p>${sanitizeText(data.content || 'News content...')}</p>
+                                <h4>${sanitizeText(data.title || 'Заголовок')}</h4>
+                                <p>${sanitizeText(data.content || 'Содержимое...')}</p>
                                 <small>${date}</small>
                             </div>
                         `;
@@ -922,39 +919,29 @@
                     newsListElement.innerHTML = newsHtml;
                 }, error => {
                     console.error("News listener error:", error);
-                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Failed to load real-time news.</p>';
+                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Ошибка загрузки новостей.</p>';
                 });
         }
 
-        /**
-         * 5. Fetching Games List (with sanitizeText)
-         */
-         async function fetchContentList(collectionName, listElementId) {
+        async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
             if (!listElement) return;
             
-
             try {
-                const snapshot = await db.collection(collectionName)
-                    .orderBy('order', 'asc') 
-                    .limit(10)
-                    .get();
+                const snapshot = await db.collection(collectionName).orderBy('order', 'asc').limit(10).get();
 
                 if (snapshot.empty) {
-                    listElement.innerHTML = `<p class="web3-placeholder">No data in the ${collectionName} section yet.</p>`;
+                    listElement.innerHTML = `<p class="web3-placeholder">Нет данных в разделе ${collectionName} .</p>`;
                     return;
                 }
 
                 let html = '';
-                const itemClass = collectionName === COLLECTIONS.GAMES ? 'game' : 'item';
-                
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // Apply sanitizeText
                     html += `
-                        <div class="placeholder-item web3-placeholder ${itemClass}">
+                        <div class="placeholder-item web3-placeholder game">
                             <a href="${sanitizeText(data.url || '#')}" target="_blank" rel="noopener noreferrer">
-                                <strong>${sanitizeText(data.title || 'No Title')}</strong>: ${sanitizeText(data.description || 'Description not available.')}
+                                <strong>${sanitizeText(data.title || 'Без названия')}</strong>: ${sanitizeText(data.description || 'Описание отсутствует.')}
                             </a>
                         </div>
                     `;
@@ -963,61 +950,33 @@
 
             } catch (error) {
                 console.error(`Error loading ${collectionName}:`, error);
-                listElement.innerHTML = `<p style="color: #e74c3c;">Failed to load content.</p>`;
+                listElement.innerHTML = `<p style="color: #e74c3c;">Ошибка загрузки контента.</p>`;
             }
         }
+        // --- /FIREBASE CONTENT LOADING ---
 
-        // >>> ACCESS CONTROL AND LISTENER STARTUP LOGIC <<<
-        document.addEventListener('DOMContentLoaded', () => {
-            setupNewsListener();
-            fetchContentList(COLLECTIONS.GAMES, 'game-list');
-
-            // ALL ADMINISTRATIVE LOGIN AND MODAL MANAGEMENT LOGIC REMOVED
-            
-        });
-    </script>
-    
-    <script type="module">
-        // Константы токенов
-        const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
-        const SOL_MINT = 'So11111111111111111111111111111111111111112';
-
-        // Получаем элементы до инициализации, чтобы избежать ошибок
-        let birdeyeContainer = document.getElementById('afoxChartContainer');
-        let birdeyeParent = birdeyeContainer ? birdeyeContainer.parentNode : null;
-
-        /**
-         * Initializes Jupiter Terminal.
-         */
+        // --- JUPITER TERMINAL LOGIC ---
         function initializeJupiterTerminal() {
+            const birdeyeContainer = document.getElementById('afoxChartContainer');
+            const birdeyeParent = birdeyeContainer ? birdeyeContainer.parentNode : null;
 
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
                 
                 const removeBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
-                        try {
-                           birdeyeParent.removeChild(birdeyeContainer);
-                           console.log("Birdeye chart removed for wallet connection.");
-                        } catch(e) {
-                            console.warn("Could not remove birdeyeContainer. Element might be missing.", e);
-                        }
+                       try { birdeyeParent.removeChild(birdeyeContainer); } catch(e) { /* ignore */ }
                     }
                 };
 
                 const restoreBirdeye = () => {
                     if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
-                        // Вставляем график перед виджетом (если он там был)
                         birdeyeParent.insertBefore(birdeyeContainer, document.getElementById('jupiter-swap-widget'));
-                        console.log("Birdeye chart restored after wallet action.");
                     }
                 };
 
                 window.Jupiter.init({
                     displayMode: 'widget',
-                    widgetStyle: {
-                        'container.id': 'jupiter-swap-widget', 
-                        'container.zIndex': 9999, 
-                    },
+                    widgetStyle: { 'container.id': 'jupiter-swap-widget', 'container.zIndex': 9999 },
                     theme: 'dark', 
                     formProps: {
                         fixedInputMint: true, 
@@ -1027,45 +986,40 @@
                     swapSwitchboard: true, 
                     strictTokenList: false, 
 
-                    onConnectWallet: (callback) => {
-                        // Jupiter сам покажет свою кнопку Connect Wallet. 
-                        // Эта функция вызывается в процессе, скрываем график, чтобы не мешал.
-                        removeBirdeye(); 
-                        setTimeout(callback, 50); 
-                    },
-                    
-                    onSwapSuccess: () => {
-                         restoreBirdeye();
-                         // Предполагаем наличие функции showNotification из другого скрипта
-                         if (typeof showNotification === 'function') {
-                             showNotification("Swap successful!", 'success');
-                         }
-                    },
-                    
-                    onError: (error) => {
-                         restoreBirdeye();
-                         console.error("Jupiter Error:", error);
-                         if (typeof showNotification === 'function') {
-                             showNotification("Swap error: See console for details.", 'error');
-                         }
-                    },
-                    
-                    onClose: () => {
-                        restoreBirdeye();
-                    }
+                    onConnectWallet: (callback) => { removeBirdeye(); setTimeout(callback, 50); },
+                    onSwapSuccess: () => { restoreBirdeye(); showNotification("Swap successful!", 'success'); },
+                    onError: (error) => { restoreBirdeye(); console.error("Jupiter Error:", error); showNotification("Swap error: See console for details.", 'error'); },
+                    onClose: () => { restoreBirdeye(); }
                 });
                 
                 console.log("Jupiter Terminal initialized.");
 
             } else {
-                // Повторная попытка инициализации, если скрипт Jupiter не успел загрузиться
                 setTimeout(initializeJupiterTerminal, 500);
             }
         }
+        // --- /JUPITER TERMINAL LOGIC ---
 
-        document.addEventListener('DOMContentLoaded', initializeJupiterTerminal);
+
+        // --- ЗАПУСК ПОСЛЕ ЗАГРУЗКИ DOM ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Установка обработчика кнопки кошелька
+            const connectWalletBtn = document.getElementById('connectWalletBtn');
+            if (connectWalletBtn) {
+                connectWalletBtn.addEventListener('click', connectWallet);
+            }
+            
+            // 2. Запуск загрузки Firebase контента
+            setupNewsListener();
+            fetchContentList(COLLECTIONS.GAMES, 'game-list');
+
+            // 3. Запуск терминала
+            initializeJupiterTerminal();
+            
+            // Здесь могут быть дополнительные обработчики форм (minting, staking, lending)
+            // Эти обработчики должны использовать глобальный solanaWalletAdapter для транзакций.
+        });
+        
     </script>
-    
-    <script src="script.js" type="module"></script>
 </body>
 </html>
