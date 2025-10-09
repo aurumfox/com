@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -69,7 +69,7 @@
             border: 0;
         }
 
-        /* Стиль для кнопки кошелька */
+        /* Style for the wallet button */
         .wallet-connect-btn {
             display: inline-block;
             padding: 10px 20px;
@@ -81,14 +81,14 @@
             transition: background-color 0.3s, color 0.3s;
             font-weight: bold;
             font-family: 'Montserrat', sans-serif;
-            margin-left: 15px; /* Для отступа от навигации */
+            margin-left: 15px; /* For spacing from navigation */
         }
         .wallet-connect-btn:hover {
             background-color: #FF8C00;
             color: #000;
         }
         .wallet-connect-btn.connected {
-            background-color: #4CAF50; /* Зеленый цвет для подключенного состояния */
+            background-color: #4CAF50; /* Green color for connected state */
             color: white;
             border: 2px solid #4CAF50;
             cursor: default;
@@ -112,7 +112,7 @@
         .primary-btn:hover {
             background-color: #e67e22; 
         }
-        /* Стили для объединенного Web3 Display */
+        /* Styles for the unified Web3 Display */
         .web3-wallet-display {
             font-size: 0.9em;
             color: #ccc;
@@ -168,7 +168,7 @@
                     <li><a href="#swap-section">Swap</a></li>
                 </ul>
                 <button id="connectWalletBtn" class="wallet-connect-btn">
-                    Подключить Кошелек
+                    Connect Wallet
                 </button>
             </nav>
         </div>
@@ -789,7 +789,7 @@
         
         // 2. YOUR CONFIGURATION WITH KEYS
         const firebaseConfig = {
-            apiKey: "YOUR_REAL_FIREBASE_API_KEY", // <--- ЗАМЕНИТЬ!
+            apiKey: "YOUR_REAL_FIREBASE_API_KEY", // <--- REPLACE!
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
             storageBucket: "aurum-fox.firebasestorage.app",
@@ -812,7 +812,7 @@
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
         
-        // Глобальный объект для адаптера кошелька
+        // Global object for the wallet adapter
         let solanaWalletAdapter = null;
         
         // --- XSS PROTECTION & NOTIFICATIONS ---
@@ -848,10 +848,10 @@
             const display = document.getElementById('walletAddressDisplay');
             
             btn.disabled = true;
-            btn.textContent = 'Подключение...';
+            btn.textContent = 'Connecting...';
 
             try {
-                // Использование Phantom Wallet Adapter
+                // Using Phantom Wallet Adapter
                 const adapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
                 await adapter.connect();
 
@@ -859,29 +859,29 @@
                     const publicKey = adapter.publicKey.toString();
                     solanaWalletAdapter = adapter;
 
-                    // Обновление UI
-                    btn.textContent = `Подключен: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
+                    // Update UI
+                    btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
                     btn.classList.add('connected');
                     display.innerHTML = `<strong>${publicKey.substring(0, 8)}...${publicKey.slice(-8)}</strong>`;
                     
-                    showNotification('Кошелек успешно подключен!', 'success');
+                    showNotification('Wallet successfully connected!', 'success');
                 }
 
             } catch (error) {
-                console.error('Ошибка подключения кошелька:', error);
-                let errorMessage = 'Ошибка подключения';
+                console.error('Wallet connection error:', error);
+                let errorMessage = 'Connection Error';
                 
                 if (error.name === 'WalletNotReadyError') {
-                     errorMessage = 'Установите Phantom Wallet.';
+                     errorMessage = 'Please install Phantom Wallet.';
                 } else if (error.name === 'WalletConnectionError') {
-                     errorMessage = 'Подключение отклонено.';
+                     errorMessage = 'Connection rejected.';
                 }
                 
                 btn.textContent = errorMessage;
                 showNotification(errorMessage, 'error', 5000);
 
                 setTimeout(() => {
-                    btn.textContent = 'Подключить Кошелек';
+                    btn.textContent = 'Connect Wallet';
                     btn.classList.remove('connected');
                     display.textContent = 'Not Connected';
                  }, 3000);
@@ -907,11 +907,11 @@
                     let newsHtml = '';
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ru-RU') : 'N/A';
+                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'N/A';
                         newsHtml += `
                             <div class="news-item">
-                                <h4>${sanitizeText(data.title || 'Заголовок')}</h4>
-                                <p>${sanitizeText(data.content || 'Содержимое...')}</p>
+                                <h4>${sanitizeText(data.title || 'Title')}</h4>
+                                <p>${sanitizeText(data.content || 'Content...')}</p>
                                 <small>${date}</small>
                             </div>
                         `;
@@ -919,7 +919,7 @@
                     newsListElement.innerHTML = newsHtml;
                 }, error => {
                     console.error("News listener error:", error);
-                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Ошибка загрузки новостей.</p>';
+                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Error loading news.</p>';
                 });
         }
 
@@ -931,7 +931,7 @@
                 const snapshot = await db.collection(collectionName).orderBy('order', 'asc').limit(10).get();
 
                 if (snapshot.empty) {
-                    listElement.innerHTML = `<p class="web3-placeholder">Нет данных в разделе ${collectionName} .</p>`;
+                    listElement.innerHTML = `<p class="web3-placeholder">No data in the ${collectionName} section.</p>`;
                     return;
                 }
 
@@ -941,7 +941,7 @@
                     html += `
                         <div class="placeholder-item web3-placeholder game">
                             <a href="${sanitizeText(data.url || '#')}" target="_blank" rel="noopener noreferrer">
-                                <strong>${sanitizeText(data.title || 'Без названия')}</strong>: ${sanitizeText(data.description || 'Описание отсутствует.')}
+                                <strong>${sanitizeText(data.title || 'Untitled')}</strong>: ${sanitizeText(data.description || 'Description missing.')}
                             </a>
                         </div>
                     `;
@@ -950,7 +950,7 @@
 
             } catch (error) {
                 console.error(`Error loading ${collectionName}:`, error);
-                listElement.innerHTML = `<p style="color: #e74c3c;">Ошибка загрузки контента.</p>`;
+                listElement.innerHTML = `<p style="color: #e74c3c;">Error loading content.</p>`;
             }
         }
         // --- /FIREBASE CONTENT LOADING ---
@@ -1001,23 +1001,23 @@
         // --- /JUPITER TERMINAL LOGIC ---
 
 
-        // --- ЗАПУСК ПОСЛЕ ЗАГРУЗКИ DOM ---
+        // --- STARTUP AFTER DOM LOAD ---
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Установка обработчика кнопки кошелька
+            // 1. Set up wallet button handler
             const connectWalletBtn = document.getElementById('connectWalletBtn');
             if (connectWalletBtn) {
                 connectWalletBtn.addEventListener('click', connectWallet);
             }
             
-            // 2. Запуск загрузки Firebase контента
+            // 2. Start loading Firebase content
             setupNewsListener();
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
 
-            // 3. Запуск терминала
+            // 3. Initialize the Jupiter terminal
             initializeJupiterTerminal();
             
-            // Здесь могут быть дополнительные обработчики форм (minting, staking, lending)
-            // Эти обработчики должны использовать глобальный solanaWalletAdapter для транзакций.
+            // Additional form handlers (minting, staking, lending) would go here.
+            // These handlers should use the global solanaWalletAdapter for transactions.
         });
         
     </script>
