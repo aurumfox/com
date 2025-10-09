@@ -1627,44 +1627,49 @@ async function handleMaxAmount(event) {
 
 
 // =========================================================================================
-// --- НОВАЯ ОБЕРТКА ДЛЯ КНОПКИ (по запросу) ---
+// --- NEW WRAPPER FOR BUTTON (as requested) ---
 // =========================================================================================
 
 /**
- * Имитирует логику обновления кнопки подключения
- * и вызывает основную функцию connectWallet.
- * @param {HTMLElement} btn - HTML элемент кнопки.
+ * Simulates the connect button update logic
+ * and calls the main connectWallet function.
+ * @param {HTMLElement} btn - The HTML button element.
  */
 async function simulateConnectButtonUpdate(btn) {
     if (!btn) return;
 
     const originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = 'Подключение...';
+    // Original text was 'Подключение...', translated to 'Connecting...'
+    btn.textContent = 'Connecting...';
     btn.classList.remove('connected');
 
     try {
-        // Вызываем вашу основную, интегрированную функцию connectWallet 
+        // Call your main, integrated connectWallet function
         await connectWallet({ name: 'Phantom' });
         
-        // После успешного подключения (обработано основным скриптом)
+        // After successful connection (handled by the main script)
         if (appState.walletPublicKey) {
             const publicKey = appState.walletPublicKey.toBase58();
-            btn.textContent = `Подключен: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
+            // Original text was 'Подключен: ...', translated to 'Connected: ...'
+            btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
             btn.classList.add('connected');
         } else {
-             // Если подключение не удалось (но не выбросило ошибку)
+             // If connection failed (but didn't throw an error)
              btn.textContent = originalText;
         }
 
     } catch (error) {
-        // Ошибки, которые не были пойманы в основной функции (или специфичные для UI)
-        let errorMessage = 'Ошибка подключения';
+        // Errors that weren't caught in the main function (or are UI-specific)
+        // Original text was 'Ошибка подключения', translated to 'Connection Error'
+        let errorMessage = 'Connection Error';
 
         if (error.message.includes('Phantom wallet not found')) {
-            errorMessage = 'Пожалуйста, установите Phantom Wallet.';
+            // Original text was 'Пожалуйста, установите Phantom Wallet.', translated to 'Please install Phantom Wallet.'
+            errorMessage = 'Please install Phantom Wallet.';
         } else if (error.message.includes('Connection failed')) {
-            errorMessage = 'Подключение отклонено пользователем.';
+            // Original text was 'Подключение отклонено пользователем.', translated to 'Connection denied by user.'
+            errorMessage = 'Connection denied by user.';
         }
         
         btn.textContent = errorMessage;
@@ -1726,6 +1731,7 @@ function loadGames() {
         link.href = game.url;
         link.target = '_blank';
         link.className = 'btn btn-secondary';
+        // Original text was 'Play Now (MOCK)', no translation needed
         link.textContent = 'Play Now (MOCK)';
 
         card.appendChild(title);
@@ -1833,8 +1839,7 @@ function cacheUIElements() {
 function initEventListeners() {
     // Wallet Connection
     uiElements.connectWalletButtons.forEach(btn => {
-        // 🔴 ИЗМЕНЕНИЕ ЗДЕСЬ: используем новую функцию-обертку,
-        // чтобы имитировать поведение кнопки, которую вы предоставили.
+        // 🔴 CHANGE HERE: use the new wrapper function to simulate the button behavior you provided.
         btn.addEventListener('click', () => { 
              simulateConnectButtonUpdate(btn);
         });
