@@ -525,7 +525,15 @@ function registerProviderListeners() {
  * Connects the wallet using the provided adapter.
  */
 async function connectWallet(adapter) {
-    setLoadingState(true);
+    // NOTE: setLoadingState(true) is now called by the simulateConnectButtonUpdate wrapper
+    // if the button ID is passed, otherwise it's called here for direct use.
+
+    let shouldSetLoading = true;
+    if (uiElements.connectWalletButtons && uiElements.connectWalletButtons.find(btn => btn.textContent === 'Подключение...')) {
+         shouldSetLoading = false; // The wrapper is already managing the text/loading state
+    }
+    if (shouldSetLoading) setLoadingState(true);
+
     try {
         const selectedAdapter = WALLETS.find(w => w.name === adapter.name);
 
@@ -560,8 +568,9 @@ async function connectWallet(adapter) {
         updateWalletUI(null);
         const message = error.message.includes('Both primary and backup') ? error.message : `Connection failed: ${error.message.substring(0, 70)}...`;
         showNotification(message, 'error');
+        throw error; // Re-throw error for the wrapper to handle button text cleanup
     } finally {
-        setLoadingState(false);
+        if (shouldSetLoading) setLoadingState(false);
     }
 }
 
@@ -1618,6 +1627,59 @@ async function handleMaxAmount(event) {
 
 
 // =========================================================================================
+// --- НОВАЯ ОБЕРТКА ДЛЯ КНОПКИ (по запросу) ---
+// =========================================================================================
+
+/**
+ * Имитирует логику обновления кнопки подключения
+ * и вызывает основную функцию connectWallet.
+ * @param {HTMLElement} btn - HTML элемент кнопки.
+ */
+async function simulateConnectButtonUpdate(btn) {
+    if (!btn) return;
+
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Подключение...';
+    btn.classList.remove('connected');
+
+    try {
+        // Вызываем вашу основную, интегрированную функцию connectWallet 
+        await connectWallet({ name: 'Phantom' });
+        
+        // После успешного подключения (обработано основным скриптом)
+        if (appState.walletPublicKey) {
+            const publicKey = appState.walletPublicKey.toBase58();
+            btn.textContent = `Подключен: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
+            btn.classList.add('connected');
+        } else {
+             // Если подключение не удалось (но не выбросило ошибку)
+             btn.textContent = originalText;
+        }
+
+    } catch (error) {
+        // Ошибки, которые не были пойманы в основной функции (или специфичные для UI)
+        let errorMessage = 'Ошибка подключения';
+
+        if (error.message.includes('Phantom wallet not found')) {
+            errorMessage = 'Пожалуйста, установите Phantom Wallet.';
+        } else if (error.message.includes('Connection failed')) {
+            errorMessage = 'Подключение отклонено пользователем.';
+        }
+        
+        btn.textContent = errorMessage;
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('connected');
+        }, 3000);
+
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+
+// =========================================================================================
 // --- INITIALIZATION AND EVENT LISTENERS (Fully implemented) ---
 // =========================================================================================
 
@@ -1771,7 +1833,11 @@ function cacheUIElements() {
 function initEventListeners() {
     // Wallet Connection
     uiElements.connectWalletButtons.forEach(btn => {
-        btn.addEventListener('click', () => { connectWallet({ name: 'Phantom' }); });
+        // 🔴 ИЗМЕНЕНИЕ ЗДЕСЬ: используем новую функцию-обертку,
+        // чтобы имитировать поведение кнопки, которую вы предоставили.
+        btn.addEventListener('click', () => { 
+             simulateConnectButtonUpdate(btn);
+        });
     });
 
     // Menu Toggle
