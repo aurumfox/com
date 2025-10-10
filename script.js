@@ -6,7 +6,7 @@
 // =========================================================================================
 
 // 1. INSERT YOUR IDL (JSON schema of the staking program)
-// Left as a stub. Replace with your IDL JSON for real staking.
+// ⚠️ ВАЖНО: ЗАМЕНИТЕ ЭТОТ IDL НА ПОЛНЫЙ IDL, СГЕНЕРИРОВАННЫЙ ВАШИМ RUST-КОНТРАКТОМ!
 const STAKING_IDL = {
     version: "0.1.0",
     name: "alphafox_staking",
@@ -17,6 +17,8 @@ const STAKING_IDL = {
                 { name: "staker", isMut: true, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "tokenFrom", isMut: true, isSigner: false },
+                { name: "poolState", isMut: false, isSigner: false }, // NEW
+                { name: "poolVault", isMut: true, isSigner: false },   // NEW
                 { name: "tokenProgram", isMut: false, isSigner: false },
                 { name: "systemProgram", isMut: false, isSigner: false },
             ],
@@ -28,6 +30,8 @@ const STAKING_IDL = {
                 { name: "staker", isMut: false, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "userRewardTokenAccount", isMut: true, isSigner: false },
+                { name: "poolState", isMut: false, isSigner: false }, // NEW
+                { name: "rewardsVault", isMut: true, isSigner: false }, // NEW
                 { name: "tokenProgram", isMut: false, isSigner: false },
             ],
             args: [],
@@ -38,6 +42,9 @@ const STAKING_IDL = {
                 { name: "staker", isMut: false, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "tokenTo", isMut: true, isSigner: false },
+                { name: "poolState", isMut: false, isSigner: false }, // NEW
+                { name: "poolVault", isMut: true, isSigner: false },   // NEW
+                { name: "daoTreasuryVault", isMut: true, isSigner: false }, // NEW
                 { name: "tokenProgram", isMut: false, isSigner: false },
             ],
             args: [],
@@ -50,9 +57,11 @@ const STAKING_IDL = {
                 kind: "struct",
                 fields: [
                     { name: "staker", type: "publicKey" },
+                    { name: "poolId", type: "publicKey" }, // NEW
                     { name: "stakedAmount", type: "u64" },
                     { name: "rewardsAmount", type: "u64" },
                     { name: "lastStakeTime", type: "i64" },
+                    // ⚠️ ADD lockup_end_time и lending
                 ],
             },
         },
@@ -69,25 +78,18 @@ const STAKING_ACCOUNT_SEED = "alphafox_staking_pda";
 const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addresses/'; 
 
 // =========================================================================================
-// PROJECT CONSTANTS
+// PROJECT CONSTANTS (С ИСПРАВЛЕНИЯМИ)
 // =========================================================================================
 
-// ==============================================================================
-// 🟢 SECURE LOGGING: KEY REMOVAL AND PROXY ADDRESS ADDITION
-// ==============================================================================
-// ❌ const FIREBASE_API_KEY = "AIzaSyBBk4g-JRO82Bq7zeX_upmGQ-htw9OGvpg"; // REMOVED!
-// 🟢 YOUR SECURE PROXY ADDRESS
+// --- КРИТИЧЕСКИ ВАЖНЫЕ КЛЮЧИ ПУЛА (ИСПРАВЛЕНО) ---
+// ⚠️ ЗАМЕНИТЕ ЭТИ ЗАГЛУШКИ РЕАЛЬНЫМИ АДРЕСАМИ ПОСЛЕ ДЕПЛОЯ
+const AFOX_POOL_STATE_PUBKEY = new SolanaWeb3.PublicKey('PoolStateAddressPlaceholder___________________'); 
+const AFOX_POOL_VAULT_PUBKEY = new SolanaWeb3.PublicKey('PoolVaultAddressPlaceholder____________________');
+const AFOX_REWARDS_VAULT_PUBKEY = new SolanaWeb3.PublicKey('RewardsVaultAddressPlaceholder________________'); 
+const DAO_TREASURY_VAULT_PUBKEY = new SolanaWeb3.PublicKey('DAOTreasuryVaultAddressPlaceholder_________'); 
+// -----------------------------------------------------------------------------------------
+
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
-// ==============================================================================
-
-// *** Insert Firebase initialization code here if used ***
-
-// Since there are no Firebase imports in the provided code,
-// and initialization should be done once, I'm leaving a stub,
-// but noting that these constants and initialization should be inserted
-// in the correct place if Firebase is used elsewhere in the code.
-// I ASSUME that Firebase initialization will occur via an import
-// at the top of this file or elsewhere where modules are available.
 
 const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd'; // Changed for greater MOCK uniqueness
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -636,7 +638,7 @@ async function updateStakingUI() {
 }
 
 /**
- * ✅ Implemented: Reading staking data from the blockchain (MOCK ANCHOR).
+ * ✅ Implemented: Reading staking data from the blockchain (MOCK ANCHOR). (ИСПРАВЛЕНО PDA)
  */
 async function fetchUserStakingData() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -649,11 +651,12 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. PDA calculation
+        // 1. PDA calculation (ИСПРАВЛЕНО: Добавлен Pool State Pubkey)
         const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
             [
                 Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED),
                 sender.toBuffer(),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(), // 👈 КРИТИЧНОЕ ИЗМЕНЕНИЕ
             ],
             STAKING_PROGRAM_ID
         );
@@ -685,7 +688,7 @@ async function fetchUserStakingData() {
 
 
 /**
- * ✅ Implemented: Sending AFOX staking transaction (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending AFOX staking transaction (ANCHOR TEMPLATE + MOCK). (ИСПРАВЛЕНО CONTEXT)
  */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -709,21 +712,28 @@ async function handleStakeAfox() {
         const userAfoxATA = await SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
-        // 2. Calculate staking account PDA
+        // 2. Calculate staking account PDA (ИСПРАВЛЕНО: Добавлен Pool State Pubkey)
         const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
-            [Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), sender.toBuffer()],
+            [
+                Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
+                sender.toBuffer(),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(), // 👈 ИСПРАВЛЕНО
+            ],
             STAKING_PROGRAM_ID
         );
 
-        // 🔴 YOUR CODE: Create instruction (ANCHOR TEMPLATE)
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
         const tx = await program.methods.stake(new Anchor.BN(stakeAmountBigInt.toString()))
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
                 tokenFrom: userAfoxATA,
+                // НОВЫЕ КЛЮЧИ:
+                poolState: AFOX_POOL_STATE_PUBKEY, 
+                poolVault: AFOX_POOL_VAULT_PUBKEY, // PDA-хранилище пула
                 tokenProgram: TOKEN_PROGRAM_ID,
                 systemProgram: SYSTEM_PROGRAM_ID,
-                // ⚠️ ADD ALL OTHER ACCOUNT KEYS FROM YOUR RUST PROGRAM (e.g., poolState)
+                // ... другие необходимые ключи (например, rent)
             })
             .transaction();
 
@@ -763,7 +773,7 @@ async function handleStakeAfox() {
 }
 
 /**
- * ✅ Implemented: Sending claim rewards transaction (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending claim rewards transaction (ANCHOR TEMPLATE + MOCK). (ИСПРАВЛЕНО CONTEXT)
  */
 async function handleClaimRewards() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -780,9 +790,13 @@ async function handleClaimRewards() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Calculate staking account PDA
+        // 1. Calculate staking account PDA (ИСПРАВЛЕНО: Добавлен Pool State Pubkey)
         const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
-            [Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), sender.toBuffer()],
+            [
+                Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
+                sender.toBuffer(),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(), // 👈 ИСПРАВЛЕНО
+            ],
             STAKING_PROGRAM_ID
         );
         // 2. User's ATA for rewards
@@ -790,14 +804,16 @@ async function handleClaimRewards() {
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 YOUR CODE: Create instruction (ANCHOR TEMPLATE)
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
          const tx = await program.methods.claimRewards()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
                 userRewardTokenAccount: userRewardATA,
+                // НОВЫЕ КЛЮЧИ:
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                rewardsVault: AFOX_REWARDS_VAULT_PUBKEY, // PDA-хранилище наград
                 tokenProgram: TOKEN_PROGRAM_ID,
-                // ⚠️ ADD ALL OTHER ACCOUNT KEYS (e.g., pool vault)
             })
             .transaction();
 
@@ -830,7 +846,7 @@ async function handleClaimRewards() {
 }
 
 /**
- * ✅ Implemented: Sending unstaking transaction (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending unstaking transaction (ANCHOR TEMPLATE + MOCK). (ИСПРАВЛЕНО CONTEXT)
  */
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -847,9 +863,13 @@ async function handleUnstakeAfox() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Calculate staking account PDA
+        // 1. Calculate staking account PDA (ИСПРАВЛЕНО: Добавлен Pool State Pubkey)
         const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
-            [Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), sender.toBuffer()],
+            [
+                Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
+                sender.toBuffer(),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(), // 👈 ИСПРАВЛЕНО
+            ],
             STAKING_PROGRAM_ID
         );
         // 2. User's ATA for AFOX
@@ -857,14 +877,17 @@ async function handleUnstakeAfox() {
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 YOUR CODE: Create instruction (ANCHOR TEMPLATE)
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
          const tx = await program.methods.unstake()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
                 tokenTo: userAfoxATA, // User's ATA
+                // НОВЫЕ КЛЮЧИ:
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                poolVault: AFOX_POOL_VAULT_PUBKEY, // PDA-хранилище пула (откуда выводятся токены)
+                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY, // 👈 Куда идут штрафы
                 tokenProgram: TOKEN_PROGRAM_ID,
-                // ⚠️ ADD ALL OTHER ACCOUNT KEYS (e.g., pool vault)
             })
             .transaction();
 
@@ -876,6 +899,7 @@ async function handleUnstakeAfox() {
         const userKey = sender.toBase58();
         const stakedAmountBigInt = BigInt(MOCK_DB.staking[userKey].stakedAmount || '0');
 
+        // MOCK: Simulate penalty logic if needed, but for now, full unstake in MOCK
         MOCK_DB.staking[userKey].stakedAmount = '0';
         appState.userBalances.AFOX = appState.userBalances.AFOX + stakedAmountBigInt;
         persistMockData();
@@ -1667,7 +1691,7 @@ async function simulateConnectButtonUpdate(btn) {
         if (error.message.includes('Phantom wallet not found')) {
             // Original text was 'Пожалуйста, установите Phantom Wallet.', translated to 'Please install Phantom Wallet.'
             errorMessage = 'Please install Phantom Wallet.';
-        } else if (error.message.includes('Connection failed')) {
+        } else if (error.message.includes('Connection denied by user')) {
             // Original text was 'Подключение отклонено пользователем.', translated to 'Connection denied by user.'
             errorMessage = 'Connection denied by user.';
         }
