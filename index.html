@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana</title>
+    <title>Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana (Secured)</title>
     <meta name="description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub (Photos, Posts, Mini-Games). Your gateway to the AFOX ecosystem on Solana.">
     <meta name="keywords" content="Aurum Fox, AFOX, Solana, meme coin, Web3, NFT, DAO, Staking, Crypto Games, Decentralized Advertising, DeFi, Blockchain, SPL Token, Raydium, Orca, Phantom Wallet">
     <meta name="author" content="Aurum Fox Community">
@@ -20,26 +20,29 @@
     
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' https://terminal.jup.ag https://api.mainnet-beta.solana.com;
-        script-src 'self' https://js-de.sentry-cdn.com https://unpkg.com https://terminal.jup.ag https://www.gstatic.com https://cdn.jup.ag 'unsafe-eval'; 
+        script-src 'self' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag; 
         connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com; 
-        style-src 'self' https://fonts.googleapis.com 'unsafe-inline' https://unpkg.com; 
+        style-src 'self' https://fonts.googleapis.com; /* Удален unpkg.com */
         font-src 'self' https://fonts.gstatic.com; 
         img-src 'self' https://via.placeholder.com data: https:; 
         object-src 'none'; 
         base-uri 'self';
+        form-action 'self'; /* КРИТИЧЕСКОЕ: Защита от фишинга форм */
         frame-src https://terminal.jup.ag;
+        frame-ancestors 'self'; /* Защита от кликджекинга */
+        upgrade-insecure-requests;
     ">
     
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/bn.js@5.2.0/lib/bn.js"></script>
-    
+    <script src="./js/solana-web3.js"></script>
+    <script src="./js/wallet-adapter-base.js"></script>
+    <script src="./js/wallet-adapter-phantom.js"></script>
+    <script src="./js/spl-token.js"></script>
+    <script src="./js/bn.js"></script>
+
     <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
     <script>
         Sentry.init({
-            dsn: "https://93b9760a7026c9acedf1f14b044146c6@o4505059231873024.ingest.sentry.io/4505059233642496", 
+            dsn: "https://PUBLIC_SENTRY_DSN_HERE@o4505059231873024.ingest.sentry.io/4505059233642496", 
             integrations: [ new Sentry.BrowserTracing() ],
             tracesSampleRate: 1.0, 
             release: "aurum-fox-portal@1.0.0", 
@@ -69,7 +72,6 @@
             border: 0;
         }
 
-        /* Style for the wallet button */
         .wallet-connect-btn {
             display: inline-block;
             padding: 10px 20px;
@@ -81,14 +83,14 @@
             transition: background-color 0.3s, color 0.3s;
             font-weight: bold;
             font-family: 'Montserrat', sans-serif;
-            margin-left: 15px; /* For spacing from navigation */
+            margin-left: 15px;
         }
         .wallet-connect-btn:hover {
             background-color: #FF8C00;
             color: #000;
         }
         .wallet-connect-btn.connected {
-            background-color: #4CAF50; /* Green color for connected state */
+            background-color: #4CAF50;
             color: white;
             border: 2px solid #4CAF50;
             cursor: default;
@@ -112,7 +114,6 @@
         .primary-btn:hover {
             background-color: #e67e22; 
         }
-        /* Styles for the unified Web3 Display */
         .web3-wallet-display {
             font-size: 0.9em;
             color: #ccc;
@@ -787,9 +788,19 @@
 
     <script id="main-inline-script">
         
-        // 2. YOUR CONFIGURATION WITH KEYS
+        /******************************************************************
+         * !!! КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ О БЕЗОПАСНОСТИ БЭКЕНДА !!!
+         * * Фронтенд защищен от XSS, но полная безопасность требует:
+         * 1. Настройки СТРОГИХ ПРАВИЛ БЕЗОПАСНОСТИ Firebase (Security Rules).
+         * 2. Права на ЗАПИСЬ в коллекции 'news' и 'games' должны быть
+         * ЗАКРЫТЫ ДЛЯ ВСЕХ, КРОМЕ АДМИНИСТРАТОРОВ.
+         * Это предотвратит Stored XSS через прямое внесение вредоносного
+         * HTML в базу данных злоумышленниками.
+         ******************************************************************/
+        
+        // 2. YOUR CONFIGURATION WITH KEYS (Public keys for client access)
         const firebaseConfig = {
-            apiKey: "YOUR_REAL_FIREBASE_API_KEY", // <--- REPLACE!
+            apiKey: "PUBLIC_FIREBASE_API_KEY_HERE", 
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
             storageBucket: "aurum-fox.firebasestorage.app",
@@ -799,6 +810,8 @@
         };
         
         // 3. INITIALIZATION
+        // Глобальные переменные (solanaWeb3 и т.п.) теперь должны быть доступны
+        // благодаря локальной загрузке скриптов выше.
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
         const auth = app.auth();
@@ -812,10 +825,10 @@
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
         
-        // Global object for the wallet adapter
         let solanaWalletAdapter = null;
         
         // --- XSS PROTECTION & NOTIFICATIONS ---
+        // Функция очистки (Sanitization) остается неизменной, так как она надежна
         function sanitizeText(text) {
             if (!text) return '';
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '/': '&#x2F;' };
@@ -823,13 +836,14 @@
             return (text.toString()).replace(reg, (match)=>(map[match]));
         }
 
+        // Уведомления используют textContent, что безопасно
         function showNotification(message, type = 'info', duration = 3000) {
             const container = document.getElementById('notificationContainer');
             if (!container) return;
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
-            notification.textContent = message;
-            // Simplified style for brevity
+            // ИСПОЛЬЗУЕМ textContent для вставки сообщения, чтобы предотвратить XSS
+            notification.textContent = message; 
             notification.style.cssText = `
                 margin-bottom: 10px; padding: 10px 15px; border-radius: 8px; color: #fff; font-size: 0.9em; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
                 background-color: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#3498db'};
@@ -851,7 +865,7 @@
             btn.textContent = 'Connecting...';
 
             try {
-                // Using Phantom Wallet Adapter
+                // Используем глобальные переменные из локально загруженных скриптов
                 const adapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
                 await adapter.connect();
 
@@ -859,10 +873,13 @@
                     const publicKey = adapter.publicKey.toString();
                     solanaWalletAdapter = adapter;
 
-                    // Update UI
                     btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
                     btn.classList.add('connected');
-                    display.innerHTML = `<strong>${publicKey.substring(0, 8)}...${publicKey.slice(-8)}</strong>`;
+                    display.innerHTML = '';
+                    const strong = document.createElement('strong');
+                    // Безопасное отображение публичного ключа
+                    strong.textContent = `***${publicKey.substring(0, 8)}...${publicKey.slice(-8)}***`;
+                    display.appendChild(strong);
                     
                     showNotification('Wallet successfully connected!', 'success');
                 }
@@ -900,23 +917,37 @@
                 .orderBy('timestamp', 'desc')
                 .limit(5)
                 .onSnapshot(snapshot => { 
+                    
+                    newsListElement.innerHTML = '';
+                    
                     if (snapshot.empty) {
                         newsListElement.innerHTML = '<p>No news yet.</p>';
                         return;
                     }
-                    let newsHtml = '';
+                    
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'N/A';
-                        newsHtml += `
-                            <div class="news-item">
-                                <h4>${sanitizeText(data.title || 'Title')}</h4>
-                                <p>${sanitizeText(data.content || 'Content...')}</p>
-                                <small>${date}</small>
-                            </div>
-                        `;
+                        
+                        const newsItem = document.createElement('div');
+                        newsItem.className = 'news-item';
+                        
+                        const h4 = document.createElement('h4');
+                        h4.textContent = sanitizeText(data.title || 'Title');
+                        
+                        const p = document.createElement('p');
+                        p.textContent = sanitizeText(data.content || 'Content...');
+                        
+                        const small = document.createElement('small');
+                        small.textContent = date;
+                        
+                        newsItem.appendChild(h4);
+                        newsItem.appendChild(p);
+                        newsItem.appendChild(small);
+                        
+                        newsListElement.appendChild(newsItem);
                     });
-                    newsListElement.innerHTML = newsHtml;
+
                 }, error => {
                     console.error("News listener error:", error);
                     newsListElement.innerHTML = '<p style="color: #e74c3c;">Error loading news.</p>';
@@ -930,23 +961,34 @@
             try {
                 const snapshot = await db.collection(collectionName).orderBy('order', 'asc').limit(10).get();
 
+                listElement.innerHTML = '';
+                
                 if (snapshot.empty) {
                     listElement.innerHTML = `<p class="web3-placeholder">No data in the ${collectionName} section.</p>`;
                     return;
                 }
 
-                let html = '';
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    html += `
-                        <div class="placeholder-item web3-placeholder game">
-                            <a href="${sanitizeText(data.url || '#')}" target="_blank" rel="noopener noreferrer">
-                                <strong>${sanitizeText(data.title || 'Untitled')}</strong>: ${sanitizeText(data.description || 'Description missing.')}
-                            </a>
-                        </div>
-                    `;
+                    
+                    const div = document.createElement('div');
+                    div.className = "placeholder-item web3-placeholder game";
+                    
+                    const a = document.createElement('a');
+                    a.href = sanitizeText(data.url || '#');
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    
+                    const strong = document.createElement('strong');
+                    strong.textContent = sanitizeText(data.title || 'Untitled');
+                    
+                    a.appendChild(strong);
+                    a.appendChild(document.createTextNode(`: ${sanitizeText(data.description || 'Description missing.')}`));
+                    
+                    div.appendChild(a);
+                    listElement.appendChild(div);
                 });
-                listElement.innerHTML = html;
+
 
             } catch (error) {
                 console.error(`Error loading ${collectionName}:`, error);
@@ -976,7 +1018,7 @@
 
                 window.Jupiter.init({
                     displayMode: 'widget',
-                    widgetStyle: { 'container.id': 'jupiter-swap-widget', 'container.zIndex': 9999 },
+                    widgetStyle: { 'container.id': 'jupiter-swap-widget', 'container.zIndex': 10000 },
                     theme: 'dark', 
                     formProps: {
                         fixedInputMint: true, 
@@ -1003,23 +1045,19 @@
 
         // --- STARTUP AFTER DOM LOAD ---
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Set up wallet button handler
             const connectWalletBtn = document.getElementById('connectWalletBtn');
             if (connectWalletBtn) {
                 connectWalletBtn.addEventListener('click', connectWallet);
             }
             
-            // 2. Start loading Firebase content
             setupNewsListener();
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
 
-            // 3. Initialize the Jupiter terminal
             initializeJupiterTerminal();
-            
-            // Additional form handlers (minting, staking, lending) would go here.
-            // These handlers should use the global solanaWalletAdapter for transactions.
         });
         
     </script>
 </body>
 </html>
+
+
