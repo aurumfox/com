@@ -194,6 +194,20 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
+// --- 1. НОВАЯ ФУНКЦИЯ: toggleScrollLock (ВСТАВИТЬ) ---
+/**
+ * Toggles the scroll lock class on the <body> element.
+ * @param {boolean} lock - True to lock scroll (add 'modal-open'), False to unlock (remove 'modal-open').
+ */
+function toggleScrollLock(lock) {
+    if (lock) {
+        document.body.classList.add('modal-open');
+    } else {
+        document.body.classList.remove('modal-open');
+    }
+}
+// --------------------------------------------------------
+
 /**
  * Manages the global loading state and button disabling.
  * @param {boolean} isLoading
@@ -353,17 +367,23 @@ function parseAmountToBigInt(amountStr, decimals) {
     return BigInt(integerPart + paddedFractionalPart);
 }
 
+// --- 2. ИСПРАВЛЕННАЯ ФУНКЦИЯ: closeAllPopups (ЗАМЕНИТЬ) ---
 /**
  * Closes all open modals and the main navigation menu.
+ * ИСПРАВЛЕНО: Добавлена логика разблокировки прокрутки.
  */
 function closeAllPopups() {
     const modals = [
         uiElements.nftDetailsModal, uiElements.nftModal, uiElements.mintNftModal, uiElements.createProposalModal
     ].filter(Boolean);
 
+    let wasModalOpen = false;
+
     modals.forEach(modal => {
         if (modal && modal.style.display === 'flex') {
             modal.style.display = 'none';
+            modal.classList.remove('is-open'); 
+            wasModalOpen = true;
         }
     });
 
@@ -371,7 +391,13 @@ function closeAllPopups() {
         uiElements.mainNav.classList.remove('active');
         if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
     }
+
+    // Разблокировать прокрутку, только если было закрыто модальное окно.
+    if (wasModalOpen) {
+        toggleScrollLock(false); 
+    }
 }
+// --------------------------------------------------------
 
 /**
  * Updates staking and balance UI elements after a transaction.
@@ -1099,6 +1125,7 @@ function showNftDetails(nft, isUserNft) {
     }
 
     uiElements.nftDetailsModal.style.display = 'flex';
+    toggleScrollLock(true); // Блокировка прокрутки при открытии модального окна
 }
 
 /**
@@ -1778,6 +1805,7 @@ function handleNftItemClick(event, isUserNft) {
     }
 }
 
+// --- 3. ИСПРАВЛЕННАЯ ФУНКЦИЯ: cacheUIElements (ЗАМЕНИТЬ) ---
 /**
  * Caches all necessary UI elements.
  */
@@ -1791,6 +1819,8 @@ function cacheUIElements() {
     uiElements.nftModal = document.getElementById('nft-modal');
     uiElements.mintNftModal = document.getElementById('mint-nft-modal');
     uiElements.createProposalModal = document.getElementById('create-proposal-modal');
+    // ↓↓↓ ИСПРАВЛЕНИЕ: Добавлена кнопка открытия DAO ↓↓↓
+    uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
 
     Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
         btn.addEventListener('click', closeAllPopups);
@@ -1856,7 +1886,10 @@ function cacheUIElements() {
     uiElements.pageLoader = document.getElementById('page-loader');
     uiElements.contactForm = document.getElementById('contact-form');
 }
+// --------------------------------------------------------
 
+
+// --- 4. ИСПРАВЛЕННАЯ ФУНКЦИЯ: initEventListeners (ЗАМЕНИТЬ) ---
 /**
  * Initializes all event listeners.
  */
@@ -1906,7 +1939,19 @@ function initEventListeners() {
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
     if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
-
+    
+    // ↓↓↓ ИСПРАВЛЕНИЕ: Обработчик для открытия DAO модального окна и блокировки прокрутки ↓↓↓
+    if (uiElements.createProposalBtn) {
+        uiElements.createProposalBtn.addEventListener('click', () => {
+            if (uiElements.createProposalModal) {
+                closeAllPopups(); // Закрываем все другие модальные окна
+                uiElements.createProposalModal.style.display = 'flex';
+                uiElements.createProposalModal.classList.add('is-open');
+                toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
+            }
+        });
+    }
+    // ↑↑↑ КОНЕЦ ИСПРАВЛЕНИЯ ↑↑↑
 
     // SWAP Actions
     const debouncedGetQuote = debounce(getQuote, 500);
@@ -1957,7 +2002,7 @@ function initEventListeners() {
         });
     }
 }
-
+// --------------------------------------------------------
 
 /**
  * Initializes the Jupiter Terminal and adds event listeners.
