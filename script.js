@@ -195,6 +195,18 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // =========================================================================================
 
 /**
+ * Toggles the scroll lock class on the <body> element.
+ * @param {boolean} lock - True to lock scroll (add 'modal-open'), False to unlock (remove 'modal-open').
+ */
+function toggleScrollLock(lock) {
+    if (lock) {
+        document.body.classList.add('modal-open');
+    } else {
+        document.body.classList.remove('modal-open');
+    }
+}
+
+/**
  * Manages the global loading state and button disabling.
  * @param {boolean} isLoading
  * @param {HTMLElement} [button] - Specific button to disable/enable.
@@ -355,21 +367,32 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 /**
  * Closes all open modals and the main navigation menu.
+ * ИСПРАВЛЕНО: Добавлена логика разблокировки прокрутки и закрытия мобильного меню.
  */
 function closeAllPopups() {
     const modals = [
         uiElements.nftDetailsModal, uiElements.nftModal, uiElements.mintNftModal, uiElements.createProposalModal
     ].filter(Boolean);
 
+    let wasModalOpen = false;
+
     modals.forEach(modal => {
-        if (modal && modal.style.display === 'flex') {
+        if (modal && modal.classList.contains('is-open')) {
             modal.style.display = 'none';
+            modal.classList.remove('is-open'); 
+            wasModalOpen = true;
         }
     });
 
+    // 🌟 ИСПРАВЛЕНИЕ: Закрываем мобильное меню, если оно активно
     if (uiElements.mainNav && uiElements.mainNav.classList.contains('active')) {
         uiElements.mainNav.classList.remove('active');
         if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
+    }
+
+    // Разблокировать прокрутку, только если было закрыто модальное окно.
+    if (wasModalOpen) {
+        toggleScrollLock(false); 
     }
 }
 
@@ -1099,6 +1122,8 @@ function showNftDetails(nft, isUserNft) {
     }
 
     uiElements.nftDetailsModal.style.display = 'flex';
+    uiElements.nftDetailsModal.classList.add('is-open');
+    toggleScrollLock(true); // 🌟 Блокировка прокрутки при открытии модального окна
 }
 
 /**
@@ -1791,6 +1816,8 @@ function cacheUIElements() {
     uiElements.nftModal = document.getElementById('nft-modal');
     uiElements.mintNftModal = document.getElementById('mint-nft-modal');
     uiElements.createProposalModal = document.getElementById('create-proposal-modal');
+    // 🌟 ИСПРАВЛЕНИЕ: Добавлена кнопка открытия DAO
+    uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
 
     Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
         btn.addEventListener('click', closeAllPopups);
@@ -1857,6 +1884,7 @@ function cacheUIElements() {
     uiElements.contactForm = document.getElementById('contact-form');
 }
 
+
 /**
  * Initializes all event listeners.
  */
@@ -1876,6 +1904,7 @@ function initEventListeners() {
             uiElements.menuToggle.classList.toggle('active');
         });
     }
+    // 🌟 ИСПРАВЛЕНИЕ: closeAllPopups теперь обрабатывает закрытие меню
     if (uiElements.closeMainMenuCross) uiElements.closeMainMenuCross.addEventListener('click', closeAllPopups);
     uiElements.navLinks.forEach(link => link.addEventListener('click', closeAllPopups));
 
@@ -1906,7 +1935,19 @@ function initEventListeners() {
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
     if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
-
+    
+    // 🌟 ИСПРАВЛЕНИЕ: Обработчик для открытия DAO модального окна и блокировки прокрутки
+    if (uiElements.createProposalBtn) {
+        uiElements.createProposalBtn.addEventListener('click', () => {
+            if (uiElements.createProposalModal) {
+                closeAllPopups(); // Закрываем все другие модальные окна, включая меню
+                uiElements.createProposalModal.style.display = 'flex';
+                uiElements.createProposalModal.classList.add('is-open');
+                toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
+            }
+        });
+    }
+    // ↑↑↑ КОНЕЦ ИСПРАВЛЕНИЯ ↑↑↑
 
     // SWAP Actions
     const debouncedGetQuote = debounce(getQuote, 500);
