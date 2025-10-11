@@ -1,5 +1,6 @@
 // script.js - Fully implemented code for interacting with Solana without a backend (MOCK mode).
-// Requires SolanaWeb3, Anchor, and Wallet Adapters libraries to be included in the HTML.
+// Requires solanaWeb3, anchor, and Wallet Adapters libraries to be included in the HTML.
+// ИСПРАВЛЕНИЕ: Глобальные переменные переименованы на solanaWeb3 и anchor.
 
 // =========================================================================================
 // 🚨 ⚠️ ⚠️ REQUIRED CHANGES (Leave stubs for standalone operation) ⚠️ ⚠️ 🚨
@@ -83,10 +84,10 @@ const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addr
 
 // --- КРИТИЧЕСКИ ВАЖНЫЕ КЛЮЧИ ПУЛА (ИСПРАВЛЕНО) ---
 // ⚠️ ЗАМЕНИТЕ ЭТИ ЗАГЛУШКИ РЕАЛЬНЫМИ АДРЕСАМИ ПОСЛЕ ДЕПЛОЯ
-const AFOX_POOL_STATE_PUBKEY = new SolanaWeb3.PublicKey('PoolStateAddressPlaceholder___________________'); 
-const AFOX_POOL_VAULT_PUBKEY = new SolanaWeb3.PublicKey('PoolVaultAddressPlaceholder____________________');
-const AFOX_REWARDS_VAULT_PUBKEY = new SolanaWeb3.PublicKey('RewardsVaultAddressPlaceholder________________'); 
-const DAO_TREASURY_VAULT_PUBKEY = new SolanaWeb3.PublicKey('DAOTreasuryVaultAddressPlaceholder_________'); 
+const AFOX_POOL_STATE_PUBKEY = new solanaWeb3.PublicKey('PoolStateAddressPlaceholder___________________'); 
+const AFOX_POOL_VAULT_PUBKEY = new solanaWeb3.PublicKey('PoolVaultAddressPlaceholder____________________');
+const AFOX_REWARDS_VAULT_PUBKEY = new solanaWeb3.PublicKey('RewardsVaultAddressPlaceholder________________'); 
+const DAO_TREASURY_VAULT_PUBKEY = new solanaWeb3.PublicKey('DAOTreasuryVaultAddressPlaceholder_________'); 
 // -----------------------------------------------------------------------------------------
 
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
@@ -97,20 +98,20 @@ const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const TXN_FEE_RESERVE_SOL = 0.005;
 
-const AFOX_TOKEN_MINT_ADDRESS = new SolanaWeb3.PublicKey(AFOX_MINT);
-const STAKING_PROGRAM_ID = new SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
+const AFOX_TOKEN_MINT_ADDRESS = new solanaWeb3.PublicKey(AFOX_MINT);
+const STAKING_PROGRAM_ID = new solanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
 const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
-const TOKEN_PROGRAM_ID = new SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-const ASSOCIATED_TOKEN_PROGRAM_ID = new SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbnPUb4A5L5EyrgFP1G8AtiT');
-const SYSTEM_PROGRAM_ID = SolanaWeb3.SystemProgram.programId;
+const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+const ASSOCIATED_TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbnPUb4A5L5EyrgFP1G8AtiT');
+const SYSTEM_PROGRAM_ID = solanaWeb3.SystemProgram.programId;
 
 const TOKEN_MINT_ADDRESSES = {
-    'SOL': new SolanaWeb3.PublicKey(SOL_MINT),
+    'SOL': new solanaWeb3.PublicKey(SOL_MINT),
     'AFOX': AFOX_TOKEN_MINT_ADDRESS,
 };
 const AFOX_DECIMALS = 6;
 const SOL_DECIMALS = 9;
-const NETWORK = SolanaWeb3.WalletAdapterNetwork.Mainnet;
+const NETWORK = solanaWeb3.WalletAdapterNetwork.Mainnet;
 
 // --- GLOBAL APP STATE & WALLET ADAPTERS ---
 const appState = {
@@ -126,7 +127,7 @@ const appState = {
     marketplaceNFTs: []
 };
 const uiElements = {};
-const WALLETS = [new SolanaWalletAdapterPhantom.PhantomWalletAdapter()];
+const WALLETS = [new SolanaWalletAdapterPhantom.PhantomWalletAdapter()]; // Предполагается, что эта библиотека также глобальна
 
 // --- LOCAL BACKEND SIMULATION (MOCK DB) ---
 const MOCK_DB = {
@@ -387,20 +388,12 @@ function closeAllPopups() {
         }
     });
 
-    // Toggle menu
-    const menuToggle = document.getElementById('menuToggle');
-    const mainNav = document.getElementById('mainNav');
-
-    if (mainNav && mainNav.classList.contains('active')) {
-        mainNav.classList.remove('active');
-        // Убедимся, что гамбургер-иконка тоже обновляется
-        if (menuToggle) menuToggle.classList.remove('is-active'); 
-        if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false'); 
+    if (uiElements.mainNav && uiElements.mainNav.classList.contains('active')) {
+        uiElements.mainNav.classList.remove('active');
+        if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
     }
 
     // Разблокировать прокрутку, только если было закрыто модальное окно.
-    // Примечание: Если навигация - это модальное окно, это нужно пересмотреть. 
-    // В данном случае, прокрутка блокируется только модалами (кроме навигации).
     if (wasModalOpen) {
         toggleScrollLock(false); 
     }
@@ -430,7 +423,8 @@ function getAnchorProgram(programId, idl) {
     if (!appState.connection || !appState.provider) {
         throw new Error("Wallet not connected or connection unavailable for Anchor.");
     }
-    const anchorProvider = new Anchor.AnchorProvider(
+    // ИСПРАВЛЕНИЕ: Anchor заменен на anchor.
+    const anchorProvider = new anchor.AnchorProvider(
         appState.connection,
         appState.provider,
         { commitment: "confirmed" }
@@ -438,7 +432,8 @@ function getAnchorProgram(programId, idl) {
     if (!idl || !idl.version) {
         throw new Error("STAKING_IDL is missing or empty. Cannot interact with the program.");
     }
-    return new Anchor.Program(idl, programId, anchorProvider);
+    // ИСПРАВЛЕНИЕ: Anchor заменен на anchor.
+    return new anchor.Program(idl, programId, anchorProvider);
 }
 
 /**
@@ -481,7 +476,8 @@ async function checkRpcHealth(connection) {
 async function getRobustConnection() {
     const connectionOptions = { commitment: 'confirmed' };
 
-    const primaryConnection = new SolanaWeb3.Connection(JUPITER_RPC_ENDPOINT, connectionOptions);
+    // ИСПРАВЛЕНИЕ: SolanaWeb3 заменен на solanaWeb3.
+    const primaryConnection = new solanaWeb3.Connection(JUPITER_RPC_ENDPOINT, connectionOptions);
 
     if (await checkRpcHealth(primaryConnection)) {
         console.log('Using Primary RPC:', JUPITER_RPC_ENDPOINT);
@@ -489,7 +485,8 @@ async function getRobustConnection() {
     }
 
     console.warn('Primary RPC failed check. Using backup endpoint.');
-    const backupConnection = new SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, connectionOptions);
+    // ИСПРАВЛЕНИЕ: SolanaWeb3 заменен на solanaWeb3.
+    const backupConnection = new solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, connectionOptions);
 
     if (await checkRpcHealth(backupConnection)) {
         console.log('Using Backup RPC:', BACKUP_RPC_ENDPOINT);
@@ -685,10 +682,10 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. PDA calculation (ИСПРАВЛЕНО: Добавлен Pool State Pubkey)
-        const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
+        // 1. PDA calculation (ИСПРАВЛЕНИЕ: Anchor заменен на anchor)
+        const [userStakingAccountPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [
-                Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED),
+                anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED),
                 sender.toBuffer(),
                 AFOX_POOL_STATE_PUBKEY.toBuffer(), // 👈 КРИТИЧНОЕ ИЗМЕНЕНИЕ
             ],
@@ -742,22 +739,22 @@ async function handleStakeAfox() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Get user's ATA
-        const userAfoxATA = await SolanaWeb3.Token.getAssociatedTokenAddress(
+        // 1. Get user's ATA (ИСПРАВЛЕНИЕ: SolanaWeb3 заменен на solanaWeb3)
+        const userAfoxATA = await solanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
-        // 2. Calculate staking account PDA (ИСПРАВЛЕНО: Добавлен Pool State Pubkey)
-        const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
+        // 2. Calculate staking account PDA (ИСПРАВЛЕНИЕ: Anchor заменен на anchor)
+        const [userStakingAccountPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [
-                Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
+                anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
                 sender.toBuffer(),
                 AFOX_POOL_STATE_PUBKEY.toBuffer(), // 👈 ИСПРАВЛЕНО
             ],
             STAKING_PROGRAM_ID
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
-        const tx = await program.methods.stake(new Anchor.BN(stakeAmountBigInt.toString()))
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНИЕ: Anchor заменен на anchor)
+        const tx = await program.methods.stake(new anchor.BN(stakeAmountBigInt.toString()))
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
@@ -824,21 +821,21 @@ async function handleClaimRewards() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Calculate staking account PDA (ИСПРАВЛЕНО: Добавлен Pool State Pubkey)
-        const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
+        // 1. Calculate staking account PDA (ИСПРАВЛЕНИЕ: Anchor заменен на anchor)
+        const [userStakingAccountPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [
-                Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
+                anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
                 sender.toBuffer(),
                 AFOX_POOL_STATE_PUBKEY.toBuffer(), // 👈 ИСПРАВЛЕНО
             ],
             STAKING_PROGRAM_ID
         );
-        // 2. User's ATA for rewards
-        const userRewardATA = await SolanaWeb3.Token.getAssociatedTokenAddress(
+        // 2. User's ATA for rewards (ИСПРАВЛЕНИЕ: SolanaWeb3 заменен на solanaWeb3)
+        const userRewardATA = await solanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE)
          const tx = await program.methods.claimRewards()
             .accounts({
                 staker: sender,
@@ -897,21 +894,21 @@ async function handleUnstakeAfox() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Calculate staking account PDA (ИСПРАВЛЕНО: Добавлен Pool State Pubkey)
-        const [userStakingAccountPDA] = SolanaWeb3.PublicKey.findProgramAddressSync(
+        // 1. Calculate staking account PDA (ИСПРАВЛЕНИЕ: Anchor заменен на anchor)
+        const [userStakingAccountPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [
-                Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
+                anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
                 sender.toBuffer(),
                 AFOX_POOL_STATE_PUBKEY.toBuffer(), // 👈 ИСПРАВЛЕНО
             ],
             STAKING_PROGRAM_ID
         );
-        // 2. User's ATA for AFOX
-        const userAfoxATA = await SolanaWeb3.Token.getAssociatedTokenAddress(
+        // 2. User's ATA for AFOX (ИСПРАВЛЕНИЕ: SolanaWeb3 заменен на solanaWeb3)
+        const userAfoxATA = await solanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE)
          const tx = await program.methods.unstake()
             .accounts({
                 staker: sender,
@@ -1354,7 +1351,8 @@ function handleListNftSubmit(event) {
  */
 function isValidSolanaAddress(address) {
     try {
-        new SolanaWeb3.PublicKey(address);
+        // ИСПРАВЛЕНИЕ: SolanaWeb3 заменен на solanaWeb3.
+        new solanaWeb3.PublicKey(address);
         return true;
     } catch (e) {
         return false;
@@ -1395,7 +1393,8 @@ async function handleTransferNft() {
     setLoadingState(true, uiElements.nftDetailTransferBtn);
 
     try {
-        const recipientPublicKey = new SolanaWeb3.PublicKey(recipientAddress);
+        // ИСПРАВЛЕНИЕ: SolanaWeb3 заменен на solanaWeb3.
+        const recipientPublicKey = new solanaWeb3.PublicKey(recipientAddress);
         const newOwner = recipientPublicKey.toBase58();
 
         // 🔴 SECURITY FIX: Removed redundant and potentially misleading Program ID check.
@@ -1605,7 +1604,7 @@ async function executeSwap() {
 
         // const { swapTransaction } = await response.json(); // Deserialize the real transaction
         // const transactionBuf = Buffer.from(swapTransaction, 'base64');
-        // const transaction = SolanaWeb3.Transaction.from(transactionBuf);
+        // const transaction = solanaWeb3.Transaction.from(transactionBuf); // ИСПРАВЛЕНИЕ
         // const signature = await appState.provider.sendAndConfirm(transaction); // Real submission
 
         // --- MOCK LOGIC START ---
@@ -1835,9 +1834,9 @@ function cacheUIElements() {
     });
 
     // Menu Elements
-    uiElements.mainNav = document.getElementById('mainNav'); // Использование ID из оригинального кода
-    uiElements.menuToggle = document.getElementById('menuToggle'); // Использование ID из оригинального кода
-    uiElements.closeMainMenuCross = document.getElementById('closeMainMenuCross'); // Использование ID из оригинального кода
+    uiElements.mainNav = document.querySelector('nav');
+    uiElements.menuToggle = document.getElementById('menu-toggle');
+    uiElements.closeMainMenuCross = document.querySelector('.close-menu');
     uiElements.navLinks = Array.from(document.querySelectorAll('nav a'));
 
     // NFT Section
@@ -1910,15 +1909,13 @@ function initEventListeners() {
         });
     });
 
-    // Menu Toggle (Использование логики из setupMenuToggle для корректного обновления классов)
-    if (uiElements.menuToggle && uiElements.mainNav) {
-        // NOTE: setupMenuToggle is now called in DOMContentLoaded and handles its own listeners.
-        // We only need to ensure closeAllPopups uses the correct menu elements, which is handled in cacheUIElements.
+    // Menu Toggle
+    if (uiElements.menuToggle) {
+        uiElements.menuToggle.addEventListener('click', () => {
+            uiElements.mainNav.classList.toggle('active');
+            uiElements.menuToggle.classList.toggle('active');
+        });
     }
-    
-    // The closeAllPopups already handles closing the menu when a link or cross is clicked.
-    // However, if closeMainMenuCross exists in HTML, it needs a specific listener if it's not a general .close-modal
-    // If it's *not* a .close-modal, it's covered by setupMenuToggle, but we explicitly add it here just in case.
     if (uiElements.closeMainMenuCross) uiElements.closeMainMenuCross.addEventListener('click', closeAllPopups);
     uiElements.navLinks.forEach(link => link.addEventListener('click', closeAllPopups));
 
@@ -1951,13 +1948,14 @@ function initEventListeners() {
     if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
     
     // ↓↓↓ ИСПРАВЛЕНИЕ: Обработчик для открытия DAO модального окна и блокировки прокрутки ↓↓↓
-    if (uiElements.createProposalBtn && uiElements.createProposalModal) {
-        uiElements.createProposalBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeAllPopups(); // Закрываем все другие модальные окна и навигацию
-            uiElements.createProposalModal.style.display = 'flex';
-            uiElements.createProposalModal.classList.add('is-open');
-            toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
+    if (uiElements.createProposalBtn) {
+        uiElements.createProposalBtn.addEventListener('click', () => {
+            if (uiElements.createProposalModal) {
+                closeAllPopups(); // Закрываем все другие модальные окна
+                uiElements.createProposalModal.style.display = 'flex';
+                uiElements.createProposalModal.classList.add('is-open');
+                toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
+            }
         });
     }
     // ↑↑↑ КОНЕЦ ИСПРАВЛЕНИЯ ↑↑↑
@@ -2013,7 +2011,6 @@ function initEventListeners() {
 }
 // --------------------------------------------------------
 
-
 /**
  * Initializes the Jupiter Terminal and adds event listeners.
  */
@@ -2063,54 +2060,3 @@ async function init() {
 
 // Ensure the script runs after the entire document is loaded
 document.addEventListener('DOMContentLoaded', init);
-
-
-// --------------------------------------------------------
-// --- ФУНКЦИЯ ДЛЯ ГАМБУРГЕР-МЕНЮ (Из вашего оригинального блока) ---
-// --------------------------------------------------------
-function setupMenuToggle() {
-    // 1. Получаем ссылки на элементы
-    const menuToggle = document.getElementById('menuToggle'); // Кнопка гамбургера
-    const mainNav = document.getElementById('mainNav');       // Главное меню
-    // (Я не вижу closeMainMenuCross в вашем HTML, но добавим его, если вы его используете)
-    const closeMenuCross = document.getElementById('closeMainMenuCross'); 
-
-    const toggleMenu = (event) => {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        // 2. Добавляем/удаляем класс 'active'
-        mainNav.classList.toggle('active');
-        // Добавляем класс 'is-active' к самому гамбургеру для анимации
-        menuToggle.classList.toggle('is-active', mainNav.classList.contains('active')); 
-        
-        // Для доступности (Accessibility)
-        const isExpanded = mainNav.classList.contains('active');
-        menuToggle.setAttribute('aria-expanded', isExpanded);
-    };
-
-    if (menuToggle && mainNav) {
-        menuToggle.addEventListener('click', toggleMenu);
-        // Добавьте обработчики для закрытия меню, если нужно
-        if (closeMenuCross) {
-            closeMenuCross.addEventListener('click', toggleMenu);
-        }
-        
-        // Закрытие меню при клике на ссылку
-        mainNav.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                if (mainNav.classList.contains('active')) {
-                    toggleMenu();
-                }
-            });
-        });
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    // ... ваш остальной код JS ...
-    
-    // !!! ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ !!!
-    setupMenuToggle(); 
-});
