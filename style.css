@@ -1421,6 +1421,17 @@ hr {
     color: var(--text-color-white);
 }
 
+.nft-detail-view #nftDetailMint,
+.nft-detail-view #nftDetailOwner {
+    font-size: 0.95em;
+    word-break: break-all;
+    background-color: #3a3a4c;
+    padding: 5px 10px;
+    border-radius: var(--border-radius-small);
+    display: inline-block;
+    margin-top: 5px;
+}
+
 #attributesList {
     list-style: none;
     padding: 0;
@@ -2353,7 +2364,7 @@ hr {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Залишимо 2 колонки, якщо карточки маленькі */
     }
 
-    /* Адаптация таблиці токеноміки (Horizontal Scrolling или Card View) */
+    /* Адаптація таблиці токеноміки (Horizontal Scrolling або Card View) */
     .tokenomics-item table {
         width: 100%;
         display: block;
@@ -2451,7 +2462,7 @@ hr {
 ========================================================================== */
 .web3-button.connected {
     background-color: #4CAF50; /* Зеленый цвет для подключенного состояния */
-    color: var(--text-color-white);
+    color: white;
     border: 1px solid #4CAF50;
     cursor: default; /* Изменяем курсор, чтобы показать, что кнопка некликабельна в этом состоянии */
     box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4); /* Добавляем тень для лучшего вида */
@@ -2460,61 +2471,6 @@ hr {
 }
 .web3-button.connected:hover {
     background-color: #4CAF50; /* Отключаем hover-эффект */
-    color: var(--text-color-white);
+    color: white;
     box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
-}
-
-
-
-/* --- СТИЛИ, ПЕРЕНЕСЕННЫЕ ИЗ HTML В СВЯЗИ С НОВЫМ CSP --- */
-
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-}
-
-/* Style for the wallet button - Используем дизайн-токены */
-.wallet-connect-btn {
-    display: inline-block;
-    padding: 10px 20px;
-    border: 2px solid var(--primary-color); 
-    background-color: var(--color-bg-dark);
-    color: var(--primary-color);
-    cursor: pointer;
-    border-radius: var(--border-radius-small);
-    transition: background-color 0.3s, color 0.3s;
-    font-weight: bold;
-    font-family: var(--font-primary);
-    margin-left: var(--spacing-sm); /* For spacing from navigation */
-}
-.wallet-connect-btn:hover {
-    background-color: var(--primary-color);
-    color: var(--color-bg-dark);
-}
-.wallet-connect-btn.connected {
-    background-color: var(--success-color); /* Green color for connected state */
-    color: var(--text-color-white);
-    border: 2px solid var(--success-color);
-    cursor: default;
-}
-.error { 
-    color: var(--error-color); 
-}
-/* Стили для .primary-btn уже определены выше, удалены дубликаты */
-/* Стили для .web3-wallet-display уже определены выше, удалены дубликаты */
-
-@media (max-width: 600px) {
-    .ai-diagnostic-tool__controls {
-        flex-direction: column;
-    }
-    .wallet-connect-btn {
-        width: 100%;
-        margin-top: 10px;
-    }
-}
+   }
