@@ -194,6 +194,7 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
+// --- 1. НОВАЯ ФУНКЦИЯ: toggleScrollLock (ВСТАВИТЬ) ---
 /**
  * Toggles the scroll lock class on the <body> element.
  * @param {boolean} lock - True to lock scroll (add 'modal-open'), False to unlock (remove 'modal-open').
@@ -205,6 +206,7 @@ function toggleScrollLock(lock) {
         document.body.classList.remove('modal-open');
     }
 }
+// --------------------------------------------------------
 
 /**
  * Manages the global loading state and button disabling.
@@ -365,9 +367,10 @@ function parseAmountToBigInt(amountStr, decimals) {
     return BigInt(integerPart + paddedFractionalPart);
 }
 
+// --- 2. ИСПРАВЛЕННАЯ ФУНКЦИЯ: closeAllPopups (ЗАМЕНИТЬ) ---
 /**
  * Closes all open modals and the main navigation menu.
- * ИСПРАВЛЕНО: Добавлена логика разблокировки прокрутки и закрытия мобильного меню.
+ * ИСПРАВЛЕНО: Добавлена логика разблокировки прокрутки.
  */
 function closeAllPopups() {
     const modals = [
@@ -377,24 +380,32 @@ function closeAllPopups() {
     let wasModalOpen = false;
 
     modals.forEach(modal => {
-        if (modal && modal.classList.contains('is-open')) {
+        if (modal && modal.style.display === 'flex') {
             modal.style.display = 'none';
             modal.classList.remove('is-open'); 
             wasModalOpen = true;
         }
     });
 
-    // 🌟 ИСПРАВЛЕНИЕ: Закрываем мобильное меню, если оно активно
-    if (uiElements.mainNav && uiElements.mainNav.classList.contains('active')) {
-        uiElements.mainNav.classList.remove('active');
-        if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
+    // Toggle menu
+    const menuToggle = document.getElementById('menuToggle');
+    const mainNav = document.getElementById('mainNav');
+
+    if (mainNav && mainNav.classList.contains('active')) {
+        mainNav.classList.remove('active');
+        // Убедимся, что гамбургер-иконка тоже обновляется
+        if (menuToggle) menuToggle.classList.remove('is-active'); 
+        if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false'); 
     }
 
     // Разблокировать прокрутку, только если было закрыто модальное окно.
+    // Примечание: Если навигация - это модальное окно, это нужно пересмотреть. 
+    // В данном случае, прокрутка блокируется только модалами (кроме навигации).
     if (wasModalOpen) {
         toggleScrollLock(false); 
     }
 }
+// --------------------------------------------------------
 
 /**
  * Updates staking and balance UI elements after a transaction.
@@ -1122,8 +1133,7 @@ function showNftDetails(nft, isUserNft) {
     }
 
     uiElements.nftDetailsModal.style.display = 'flex';
-    uiElements.nftDetailsModal.classList.add('is-open');
-    toggleScrollLock(true); // 🌟 Блокировка прокрутки при открытии модального окна
+    toggleScrollLock(true); // Блокировка прокрутки при открытии модального окна
 }
 
 /**
@@ -1803,6 +1813,7 @@ function handleNftItemClick(event, isUserNft) {
     }
 }
 
+// --- 3. ИСПРАВЛЕННАЯ ФУНКЦИЯ: cacheUIElements (ЗАМЕНИТЬ) ---
 /**
  * Caches all necessary UI elements.
  */
@@ -1816,7 +1827,7 @@ function cacheUIElements() {
     uiElements.nftModal = document.getElementById('nft-modal');
     uiElements.mintNftModal = document.getElementById('mint-nft-modal');
     uiElements.createProposalModal = document.getElementById('create-proposal-modal');
-    // 🌟 ИСПРАВЛЕНИЕ: Добавлена кнопка открытия DAO
+    // ↓↓↓ ИСПРАВЛЕНИЕ: Добавлена кнопка открытия DAO ↓↓↓
     uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
 
     Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
@@ -1824,9 +1835,9 @@ function cacheUIElements() {
     });
 
     // Menu Elements
-    uiElements.mainNav = document.querySelector('nav');
-    uiElements.menuToggle = document.getElementById('menu-toggle');
-    uiElements.closeMainMenuCross = document.querySelector('.close-menu');
+    uiElements.mainNav = document.getElementById('mainNav'); // Использование ID из оригинального кода
+    uiElements.menuToggle = document.getElementById('menuToggle'); // Использование ID из оригинального кода
+    uiElements.closeMainMenuCross = document.getElementById('closeMainMenuCross'); // Использование ID из оригинального кода
     uiElements.navLinks = Array.from(document.querySelectorAll('nav a'));
 
     // NFT Section
@@ -1883,8 +1894,10 @@ function cacheUIElements() {
     uiElements.pageLoader = document.getElementById('page-loader');
     uiElements.contactForm = document.getElementById('contact-form');
 }
+// --------------------------------------------------------
 
 
+// --- 4. ИСПРАВЛЕННАЯ ФУНКЦИЯ: initEventListeners (ЗАМЕНИТЬ) ---
 /**
  * Initializes all event listeners.
  */
@@ -1897,14 +1910,15 @@ function initEventListeners() {
         });
     });
 
-    // Menu Toggle
-    if (uiElements.menuToggle) {
-        uiElements.menuToggle.addEventListener('click', () => {
-            uiElements.mainNav.classList.toggle('active');
-            uiElements.menuToggle.classList.toggle('active');
-        });
+    // Menu Toggle (Использование логики из setupMenuToggle для корректного обновления классов)
+    if (uiElements.menuToggle && uiElements.mainNav) {
+        // NOTE: setupMenuToggle is now called in DOMContentLoaded and handles its own listeners.
+        // We only need to ensure closeAllPopups uses the correct menu elements, which is handled in cacheUIElements.
     }
-    // 🌟 ИСПРАВЛЕНИЕ: closeAllPopups теперь обрабатывает закрытие меню
+    
+    // The closeAllPopups already handles closing the menu when a link or cross is clicked.
+    // However, if closeMainMenuCross exists in HTML, it needs a specific listener if it's not a general .close-modal
+    // If it's *not* a .close-modal, it's covered by setupMenuToggle, but we explicitly add it here just in case.
     if (uiElements.closeMainMenuCross) uiElements.closeMainMenuCross.addEventListener('click', closeAllPopups);
     uiElements.navLinks.forEach(link => link.addEventListener('click', closeAllPopups));
 
@@ -1936,15 +1950,14 @@ function initEventListeners() {
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
     if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
     
-    // 🌟 ИСПРАВЛЕНИЕ: Обработчик для открытия DAO модального окна и блокировки прокрутки
-    if (uiElements.createProposalBtn) {
-        uiElements.createProposalBtn.addEventListener('click', () => {
-            if (uiElements.createProposalModal) {
-                closeAllPopups(); // Закрываем все другие модальные окна, включая меню
-                uiElements.createProposalModal.style.display = 'flex';
-                uiElements.createProposalModal.classList.add('is-open');
-                toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
-            }
+    // ↓↓↓ ИСПРАВЛЕНИЕ: Обработчик для открытия DAO модального окна и блокировки прокрутки ↓↓↓
+    if (uiElements.createProposalBtn && uiElements.createProposalModal) {
+        uiElements.createProposalBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeAllPopups(); // Закрываем все другие модальные окна и навигацию
+            uiElements.createProposalModal.style.display = 'flex';
+            uiElements.createProposalModal.classList.add('is-open');
+            toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
         });
     }
     // ↑↑↑ КОНЕЦ ИСПРАВЛЕНИЯ ↑↑↑
@@ -1998,6 +2011,7 @@ function initEventListeners() {
         });
     }
 }
+// --------------------------------------------------------
 
 
 /**
@@ -2049,3 +2063,54 @@ async function init() {
 
 // Ensure the script runs after the entire document is loaded
 document.addEventListener('DOMContentLoaded', init);
+
+
+// --------------------------------------------------------
+// --- ФУНКЦИЯ ДЛЯ ГАМБУРГЕР-МЕНЮ (Из вашего оригинального блока) ---
+// --------------------------------------------------------
+function setupMenuToggle() {
+    // 1. Получаем ссылки на элементы
+    const menuToggle = document.getElementById('menuToggle'); // Кнопка гамбургера
+    const mainNav = document.getElementById('mainNav');       // Главное меню
+    // (Я не вижу closeMainMenuCross в вашем HTML, но добавим его, если вы его используете)
+    const closeMenuCross = document.getElementById('closeMainMenuCross'); 
+
+    const toggleMenu = (event) => {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        // 2. Добавляем/удаляем класс 'active'
+        mainNav.classList.toggle('active');
+        // Добавляем класс 'is-active' к самому гамбургеру для анимации
+        menuToggle.classList.toggle('is-active', mainNav.classList.contains('active')); 
+        
+        // Для доступности (Accessibility)
+        const isExpanded = mainNav.classList.contains('active');
+        menuToggle.setAttribute('aria-expanded', isExpanded);
+    };
+
+    if (menuToggle && mainNav) {
+        menuToggle.addEventListener('click', toggleMenu);
+        // Добавьте обработчики для закрытия меню, если нужно
+        if (closeMenuCross) {
+            closeMenuCross.addEventListener('click', toggleMenu);
+        }
+        
+        // Закрытие меню при клике на ссылку
+        mainNav.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (mainNav.classList.contains('active')) {
+                    toggleMenu();
+                }
+            });
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // ... ваш остальной код JS ...
+    
+    // !!! ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ !!!
+    setupMenuToggle(); 
+});
