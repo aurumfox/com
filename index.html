@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,7 @@
     <meta name="description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub (Photos, Posts, Mini-Games). Your gateway to the AFOX ecosystem on Solana.">
     <meta name="keywords" content="Aurum Fox, AFOX, Solana, meme coin, Web3, NFT, DAO, Staking, Crypto Games, Decentralized Advertising, DeFi, Blockchain, SPL Token, Raydium, Orca, Phantom Wallet">
     <meta name="author" content="Aurum Fox Community">
+    
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://aurumfox.github.io/com/"> 
     <meta property="og:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
@@ -30,47 +31,22 @@
         object-src 'none'; 
         base-uri 'self';
         form-action 'self';
-        frame-src https://terminal.jup.ag;
+        frame-src https://terminal.jup.ag https://birdeye.so;
         frame-ancestors 'self';
         upgrade-insecure-requests;
     ">
     
-    <script 
-        src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js"
-        onload="window.solanaWeb3 = solanaWeb3;" 
-        onerror="console.error('Failed to load solanaWeb3.js');"
-    ></script>
-
-    <script 
-        src="https://unpkg.com/@coral-xyz/anchor@0.29.0/dist/browser/index.js"
-        onload="window.anchor = anchor;"
-        onerror="console.error('Failed to load anchor.js');"
-    ></script>
-    
-    <script 
-        src="https://unpkg.com/@solana/wallet-adapter-base@0.9.20/lib/index.iife.js"
-        onload="window.SolanaWalletAdapterBase = SolanaWalletAdapterBase;"
-    ></script>
-
-    <script 
-        src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.19/lib/index.iife.js"
-        onload="window.solanaWalletAdapterPhantom = SolanaWalletAdapterPhantom;" 
-    ></script>
-
-    <script 
-        src="https://unpkg.com/@solana/spl-token@0.4.7/lib/index.iife.js"
-        onload="window.splToken = splToken;"
-    ></script>
-
-    <script 
-        src="https://unpkg.com/bn.js@5.2.1/lib/bn.js"
-        onload="window.BN = BN;"
-    ></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js" onload="window.solanaWeb3 = solanaWeb3;" onerror="console.error('Failed to load solanaWeb3.js');"></script>
+    <script src="https://unpkg.com/@coral-xyz/anchor@0.29.0/dist/browser/index.js" onload="window.anchor = anchor;" onerror="console.error('Failed to load anchor.js');"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.20/lib/index.iife.js" onload="window.SolanaWalletAdapterBase = SolanaWalletAdapterBase;"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.19/lib/index.iife.js" onload="window.solanaWalletAdapterPhantom = SolanaWalletAdapterPhantom;"></script>
+    <script src="https://unpkg.com/@solana/spl-token@0.4.7/lib/index.iife.js" onload="window.splToken = splToken;"></script>
+    <script src="https://unpkg.com/bn.js@5.2.1/lib/bn.js" onload="window.BN = BN;"></script>
 
     <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
     <script>
         Sentry.init({
-            dsn: "https://PUBLIC_SENTRY_DSN_HERE@o4505059231873024.ingest.sentry.io/4505059233642496", 
+            dsn: "https://SENTRY_DSN_PLACEHOLDER@o4505059231873024.ingest.sentry.io/4505059233642496", 
             integrations: [ new Sentry.BrowserTracing() ],
             tracesSampleRate: 1.0, 
             release: "aurum-fox-portal@1.0.0", 
@@ -118,10 +94,16 @@
             color: #000;
         }
         .wallet-connect-btn.connected {
+            /* Цвет для Connected: Зеленый */
             background-color: #4CAF50;
             color: white;
             border: 2px solid #4CAF50;
-            cursor: default;
+            cursor: pointer; /* Сделано clickable для Disconnect */
+        }
+        .wallet-connect-btn.connected:hover {
+             /* Цвет для Disconnect: Красный */
+            background-color: #e74c3c;
+            border: 2px solid #e74c3c;
         }
         .error { color: red; }
         .primary-btn {
@@ -161,6 +143,11 @@
                 margin-top: 10px;
             }
         }
+        /* Стили для уведомлений */
+        .notification-success { background-color: #2ecc71; }
+        .notification-error { background-color: #e74c3c; }
+        .notification-info { background-color: #3498db; }
+        .notification-warning { background-color: #f39c12; }
     </style>
 </head>
 <body>
@@ -444,11 +431,7 @@
             <div class="container">
                 <h2 class="aurum-heading">Aurum Fox News and Updates</h2>
                 <div class="news-content news-list">
-                    <div class="news-item">
-                        <h4>Loading News...</h4>
-                        <p>Please wait while we fetch the latest updates in real-time.</p>
-                        <small>--</small>
-                    </div>
+                    <p class="web3-placeholder">Loading News...</p>
                 </div>
             </div>
         </section>
@@ -769,7 +752,12 @@
                     <p>Connect your wallet and swap AFOX at the best rate.</p>
                     
                     <div id="afoxChartContainer" style="min-height: 250px; margin: 15px auto;">
-                        <p class="web3-placeholder">Loading AFOX/SOL Chart...</p>
+                        <iframe 
+                            src="https://birdeye.so/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?chain=mainnet&amp;theme=dark&amp;chart=true" 
+                            width="100%" 
+                            height="250px" 
+                            style="border:none; border-radius: 8px;">
+                        </iframe>
                     </div>
                     
                     <div id="jupiter-swap-widget" style="min-height: 400px; max-width: 450px; margin: 20px auto; position: relative; z-index: 10000;">
@@ -819,17 +807,17 @@
         
         /******************************************************************
          * !!! КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ О БЕЗОПАСНОСТИ БЭКЕНДА !!!
-         * * Фронтенд защищен от XSS, но полная безопасность требует:
-         * 1. Настройки СТРОГИХ ПРАВИЛ БЕЗОПАСНОСТИ Firebase (Security Rules).
-         * 2. Права на ЗАПИСЬ в коллекции 'news' и 'games' должны быть
-         * ЗАКРЫТЫ ДЛЯ ВСЕХ, КРОМЕ АДМИНИСТРАТОРОВ.
-         * Это предотвратит Stored XSS через прямое внесение вредоносного
-         * HTML в базу данных злоумышленниками.
+         * * Фронтенд защищен от XSS, но полная безопасность требует
+         * * СТРОГИХ ПРАВИЛ БЕЗОПАСНОСТИ Firebase.
+         * * ВНИМАНИЕ: Все формы записи (Mint NFT, DAO, Upload Game)
+         * * ЗАБЛОКИРОВАНЫ ФУНКЦИЕЙ preventSubmission, пока вы не
+         * * настроите бэкенд-защиту и аутентификацию администратора!
          ******************************************************************/
         
         // 2. YOUR CONFIGURATION WITH KEYS (Public keys for client access)
         const firebaseConfig = {
-            apiKey: "PUBLIC_FIREBASE_API_KEY_HERE", 
+            // ВАЖНО: ЗАМЕНИТЕ ЭТОТ ПЛЕЙСХОЛДЕР НА ВАШ РЕАЛЬНЫЙ КЛЮЧ!
+            apiKey: "FIREBASE_API_KEY_PLACEHOLDER", 
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
             storageBucket: "aurum-fox.firebasestorage.app",
@@ -839,8 +827,6 @@
         };
         
         // 3. INITIALIZATION
-        // Глобальные переменные (solanaWeb3, anchor и т.п.) теперь должны быть доступны
-        // благодаря CDN-подключениям выше.
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
         const auth = app.auth();
@@ -857,21 +843,20 @@
         let solanaWalletAdapter = null;
         
         // --- XSS PROTECTION & NOTIFICATIONS ---
-        // Функция очистки (Sanitization) остается неизменной, так как она надежна
         function sanitizeText(text) {
             if (!text) return '';
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '/': '&#x2F;' };
             const reg = /[&<>"'\/]/ig;
+            // Используем String.prototype.replace с функцией замены для корректного экранирования
             return (text.toString()).replace(reg, (match)=>(map[match]));
         }
 
-        // Уведомления используют textContent, что безопасно
         function showNotification(message, type = 'info', duration = 3000) {
             const container = document.getElementById('notificationContainer');
             if (!container) return;
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
-            // ИСПОЛЬЗУЕМ textContent для вставки сообщения, чтобы предотвратить XSS
+            // БЕЗОПАСНО: Используем textContent для предотвращения XSS
             notification.textContent = message; 
             notification.style.cssText = `
                 margin-bottom: 10px; padding: 10px 15px; border-radius: 8px; color: #fff; font-size: 0.9em; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -884,61 +869,89 @@
         // --- /XSS PROTECTION & NOTIFICATIONS ---
 
         // --- SOLANA WALLET ADAPTER LOGIC ---
-        // solanaWeb3.Connection теперь доступна
         const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
 
-        async function connectWallet() {
+        function updateWalletUI(adapter) {
             const btn = document.getElementById('connectWalletBtn');
             const display = document.getElementById('walletAddressDisplay');
             
+            if (adapter && adapter.connected && adapter.publicKey) {
+                const publicKey = adapter.publicKey.toString();
+                
+                btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
+                btn.classList.add('connected');
+                
+                display.innerHTML = '';
+                const strong = document.createElement('strong');
+                strong.textContent = `***${publicKey.substring(0, 8)}...${publicKey.slice(-8)}***`;
+                display.appendChild(strong);
+                
+                // Установка обработчика отключения
+                btn.removeEventListener('click', connectWallet);
+                btn.addEventListener('click', disconnectWallet);
+            } else {
+                btn.textContent = 'Connect Wallet';
+                btn.classList.remove('connected');
+                display.textContent = 'Not Connected';
+                
+                // Установка обработчика подключения
+                btn.removeEventListener('click', disconnectWallet);
+                btn.addEventListener('click', connectWallet);
+            }
+        }
+
+        async function connectWallet() {
+            const btn = document.getElementById('connectWalletBtn');
             btn.disabled = true;
             btn.textContent = 'Connecting...';
 
             try {
-                // Используем глобальную переменную window.solanaWalletAdapterPhantom
                 const adapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
-                await adapter.connect();
-
-                if (adapter.connected) {
-                    const publicKey = adapter.publicKey.toString();
+                
+                adapter.on('connect', () => {
                     solanaWalletAdapter = adapter;
-
-                    btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
-                    btn.classList.add('connected');
-                    display.innerHTML = '';
-                    const strong = document.createElement('strong');
-                    // Безопасное отображение публичного ключа
-                    strong.textContent = `***${publicKey.substring(0, 8)}...${publicKey.slice(-8)}***`;
-                    display.appendChild(strong);
-                    
+                    updateWalletUI(adapter);
                     showNotification('Wallet successfully connected!', 'success');
-                }
+                });
+                adapter.on('disconnect', () => {
+                    solanaWalletAdapter = null;
+                    updateWalletUI(null);
+                    showNotification('Wallet disconnected.', 'info');
+                });
+
+                await adapter.connect();
 
             } catch (error) {
                 console.error('Wallet connection error:', error);
                 let errorMessage = 'Connection Error';
                 
                 if (error.name === 'WalletNotReadyError') {
-                     errorMessage = 'Please install Phantom Wallet.';
+                        errorMessage = 'Please install Phantom Wallet.';
                 } else if (error.name === 'WalletConnectionError') {
-                     errorMessage = 'Connection rejected.';
+                        errorMessage = 'Connection rejected.';
                 }
                 
-                btn.textContent = errorMessage;
                 showNotification(errorMessage, 'error', 5000);
-
-                setTimeout(() => {
-                    btn.textContent = 'Connect Wallet';
-                    btn.classList.remove('connected');
-                    display.textContent = 'Not Connected';
-                 }, 3000);
+                updateWalletUI(null);
 
             } finally {
                 btn.disabled = false;
             }
         }
         
-        // --- FIREBASE CONTENT LOADING ---
+        async function disconnectWallet() {
+            if (solanaWalletAdapter) {
+                try {
+                    await solanaWalletAdapter.disconnect();
+                } catch (error) {
+                    console.error('Error disconnecting wallet:', error);
+                    showNotification('Error during disconnection.', 'error');
+                }
+            }
+        }
+        // --- /SOLANA WALLET ADAPTER LOGIC ---
+        
+        // --- FIREBASE CONTENT LOADING (С ИСПРАВЛЕННЫМ САНИТАЙЗИНГОМ) ---
         function setupNewsListener() {
             const newsListElement = document.querySelector('.news-list');
             if (!newsListElement) return;
@@ -963,9 +976,11 @@
                         newsItem.className = 'news-item';
                         
                         const h4 = document.createElement('h4');
+                        // БЕЗОПАСНО: Санитайзинг текста
                         h4.textContent = sanitizeText(data.title || 'Title');
                         
                         const p = document.createElement('p');
+                        // БЕЗОПАСНО: Санитайзинг текста
                         p.textContent = sanitizeText(data.content || 'Content...');
                         
                         const small = document.createElement('small');
@@ -1005,14 +1020,17 @@
                     div.className = "placeholder-item web3-placeholder game";
                     
                     const a = document.createElement('a');
+                    // БЕЗОПАСНО: Санитайзинг URL
                     a.href = sanitizeText(data.url || '#');
                     a.target = '_blank';
                     a.rel = 'noopener noreferrer';
                     
                     const strong = document.createElement('strong');
+                    // БЕЗОПАСНО: Санитайзинг текста
                     strong.textContent = sanitizeText(data.title || 'Untitled');
                     
                     a.appendChild(strong);
+                    // БЕЗОПАСНО: Санитайзинг текста
                     a.appendChild(document.createTextNode(`: ${sanitizeText(data.description || 'Description missing.')}`));
                     
                     div.appendChild(a);
@@ -1029,22 +1047,10 @@
 
         // --- JUPITER TERMINAL LOGIC ---
         function initializeJupiterTerminal() {
-            const birdeyeContainer = document.getElementById('afoxChartContainer');
-            const birdeyeParent = birdeyeContainer ? birdeyeContainer.parentNode : null;
-
+            
             if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
                 
-                const removeBirdeye = () => {
-                    if (birdeyeContainer && birdeyeParent && birdeyeParent.contains(birdeyeContainer)) {
-                       try { birdeyeParent.removeChild(birdeyeContainer); } catch(e) { /* ignore */ }
-                    }
-                };
-
-                const restoreBirdeye = () => {
-                    if (birdeyeContainer && birdeyeParent && !birdeyeParent.contains(birdeyeContainer)) {
-                        birdeyeParent.insertBefore(birdeyeContainer, document.getElementById('jupiter-swap-widget'));
-                    }
-                };
+                console.log("Jupiter Terminal initialization started.");
 
                 window.Jupiter.init({
                     displayMode: 'widget',
@@ -1058,10 +1064,19 @@
                     swapSwitchboard: true, 
                     strictTokenList: false, 
 
-                    onConnectWallet: (callback) => { removeBirdeye(); setTimeout(callback, 50); },
-                    onSwapSuccess: () => { restoreBirdeye(); showNotification("Swap successful!", 'success'); },
-                    onError: (error) => { restoreBirdeye(); console.error("Jupiter Error:", error); showNotification("Swap error: See console for details.", 'error'); },
-                    onClose: () => { restoreBirdeye(); }
+                    onConnectWallet: (callback) => { 
+                        setTimeout(callback, 50); 
+                    },
+                    onSwapSuccess: () => { 
+                        showNotification("Swap successful!", 'success'); 
+                    },
+                    onError: (error) => { 
+                        console.error("Jupiter Error:", error); 
+                        showNotification("Swap error: See console for details.", 'error'); 
+                    },
+                    onClose: () => { 
+                        // Никаких действий с DOM
+                    }
                 });
                 
                 console.log("Jupiter Terminal initialized.");
@@ -1072,7 +1087,13 @@
         }
         // --- /JUPITER TERMINAL LOGIC ---
 
-
+        // --- ФУНКЦИЯ-ЗАГЛУШКА ДЛЯ ПРЕДОТВРАЩЕНИЯ ЗАПИСИ ДАННЫХ ---
+        function preventSubmission(event) {
+            event.preventDefault();
+            showNotification("Security Alert: Data submission is temporarily blocked. Please configure Firebase Security Rules and Admin authentication before enabling write operations (Mint, DAO, Upload Game).", 'warning', 7000);
+            return false;
+        }
+        
         // --- STARTUP AFTER DOM LOAD ---
         document.addEventListener('DOMContentLoaded', () => {
             const connectWalletBtn = document.getElementById('connectWalletBtn');
@@ -1084,8 +1105,31 @@
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
 
             initializeJupiterTerminal();
+            
+            // ПРИВЯЗКА ФУНКЦИИ-ЗАГЛУШКИ К ФОРМАМ ЗАПИСИ
+            const mintNftFormSection = document.getElementById('mintNftFormSection');
+            if (mintNftFormSection) {
+                mintNftFormSection.addEventListener('submit', preventSubmission);
+            }
+
+            const newProposalForm = document.getElementById('newProposalForm');
+            if (newProposalForm) {
+                newProposalForm.addEventListener('submit', preventSubmission);
+            }
+            
+            // Привязка к кнопке Upload Game
+            const uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
+            if (uploadGameBtnWeb3) {
+                uploadGameBtnWeb3.addEventListener('click', (e) => {
+                    // Prevent default action if it was a submission
+                    e.preventDefault(); 
+                    showNotification("Security Alert: Game upload is temporarily blocked. Please configure Firebase Security Rules and Admin authentication.", 'warning', 7000);
+                });
+            }
         });
         
     </script>
 </body>
 </html>
+
+
