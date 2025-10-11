@@ -20,24 +20,52 @@
     
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' https://terminal.jup.ag https://api.mainnet-beta.solana.com;
-        script-src 'self' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag; 
-        connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com; 
-        style-src 'self' https://fonts.googleapis.com; /* Удален unpkg.com */
+        /* ДОБАВЛЕНЫ unpkg.com и cdn.jsdelivr.net для Web3 библиотек */
+        script-src 'self' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag https://unpkg.com https://cdn.jsdelivr.net; 
+        /* ДОБАВЛЕНЫ unpkg.com и cdn.jsdelivr.net для Web3 библиотек */
+        connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com https://unpkg.com https://cdn.jsdelivr.net; 
+        style-src 'self' https://fonts.googleapis.com; 
         font-src 'self' https://fonts.gstatic.com; 
         img-src 'self' https://via.placeholder.com data: https:; 
         object-src 'none'; 
         base-uri 'self';
-        form-action 'self'; /* КРИТИЧЕСКОЕ: Защита от фишинга форм */
+        form-action 'self';
         frame-src https://terminal.jup.ag;
-        frame-ancestors 'self'; /* Защита от кликджекинга */
+        frame-ancestors 'self';
         upgrade-insecure-requests;
     ">
     
-    <script src="./js/solana-web3.js"></script>
-    <script src="./js/wallet-adapter-base.js"></script>
-    <script src="./js/wallet-adapter-phantom.js"></script>
-    <script src="./js/spl-token.js"></script>
-    <script src="./js/bn.js"></script>
+    <script 
+        src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js"
+        onload="window.solanaWeb3 = solanaWeb3;" 
+        onerror="console.error('Failed to load solanaWeb3.js');"
+    ></script>
+
+    <script 
+        src="https://unpkg.com/@coral-xyz/anchor@0.29.0/dist/browser/index.js"
+        onload="window.anchor = anchor;"
+        onerror="console.error('Failed to load anchor.js');"
+    ></script>
+    
+    <script 
+        src="https://unpkg.com/@solana/wallet-adapter-base@0.9.20/lib/index.iife.js"
+        onload="window.SolanaWalletAdapterBase = SolanaWalletAdapterBase;"
+    ></script>
+
+    <script 
+        src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.19/lib/index.iife.js"
+        onload="window.solanaWalletAdapterPhantom = SolanaWalletAdapterPhantom;" 
+    ></script>
+
+    <script 
+        src="https://unpkg.com/@solana/spl-token@0.4.7/lib/index.iife.js"
+        onload="window.splToken = splToken;"
+    ></script>
+
+    <script 
+        src="https://unpkg.com/bn.js@5.2.1/lib/bn.js"
+        onload="window.BN = BN;"
+    ></script>
 
     <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
     <script>
@@ -784,6 +812,7 @@
     <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">...</div>
     <div id="mintNftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="mintNftModalTitle" style="display:none;">...</div>
     <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
+    
     <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
 
     <script id="main-inline-script">
@@ -810,8 +839,8 @@
         };
         
         // 3. INITIALIZATION
-        // Глобальные переменные (solanaWeb3 и т.п.) теперь должны быть доступны
-        // благодаря локальной загрузке скриптов выше.
+        // Глобальные переменные (solanaWeb3, anchor и т.п.) теперь должны быть доступны
+        // благодаря CDN-подключениям выше.
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
         const auth = app.auth();
@@ -855,6 +884,7 @@
         // --- /XSS PROTECTION & NOTIFICATIONS ---
 
         // --- SOLANA WALLET ADAPTER LOGIC ---
+        // solanaWeb3.Connection теперь доступна
         const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
 
         async function connectWallet() {
@@ -865,7 +895,7 @@
             btn.textContent = 'Connecting...';
 
             try {
-                // Используем глобальные переменные из локально загруженных скриптов
+                // Используем глобальную переменную window.solanaWalletAdapterPhantom
                 const adapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
                 await adapter.connect();
 
@@ -1059,5 +1089,3 @@
     </script>
 </body>
 </html>
-
-
