@@ -2029,6 +2029,110 @@ function initEventListeners() {
     if (uiElements.getQuoteBtn) uiElements.getQuoteBtn.addEventListener('click', getQuote);
     if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.addEventListener('click', executeSwap);
     uiElements.maxAmountBtns.forEach(btn => {
+
+// --- 4. ИСПРАВЛЕННАЯ ФУНКЦИЯ: initEventListeners (ЗАМЕНИТЬ) ---
+/**
+ * Initializes all event listeners.
+ */
+function initEventListeners() {
+    // Wallet Connection
+    uiElements.connectWalletButtons.forEach(btn => {
+        // 🔴 CHANGE HERE: use the new wrapper function to simulate the button behavior you provided.
+        btn.addEventListener('click', () => { 
+             simulateConnectButtonUpdate(btn);
+        });
+    });
+
+    // Menu Toggle
+    if (uiElements.menuToggle) {
+        uiElements.menuToggle.addEventListener('click', () => {
+            uiElements.mainNav.classList.toggle('active');
+            uiElements.menuToggle.classList.toggle('active');
+        });
+    }
+    if (uiElements.closeMainMenuCross) uiElements.closeMainMenuCross.addEventListener('click', closeAllPopups);
+    uiElements.navLinks.forEach(link => link.addEventListener('click', closeAllPopups));
+
+
+    // NFT Marketplace (Delegation)
+    if (uiElements.userNftList) {
+        uiElements.userNftList.addEventListener('click', (e) => handleNftItemClick(e, true));
+    }
+    if (uiElements.marketplaceNftList) {
+        uiElements.marketplaceNftList.addEventListener('click', (e) => handleNftItemClick(e, false));
+    }
+
+    // NFT Forms and Actions
+    if (uiElements.mintNftForm) uiElements.mintNftForm.addEventListener('submit', handleMintNftSubmit);
+    if (uiElements.listNftForm) uiElements.listNftForm.addEventListener('submit', handleListNftSubmit);
+    if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.addEventListener('click', handleBuyNft);
+    if (uiElements.nftDetailSellBtn) {
+        uiElements.nftDetailSellBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (appState.currentOpenNft && appState.currentOpenNft.isListed) {
+                handleUnlistNft();
+            }
+        });
+    }
+    if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.addEventListener('click', handleTransferNft);
+
+    // Staking Actions
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
+    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
+    
+    // ↓↓↓ ДОБАВЛЕННЫЙ БЛОК ДЛЯ DAO ACTIONS (КНОПКА) ↓↓↓
+    if (uiElements.createProposalBtn) {
+        uiElements.createProposalBtn.addEventListener('click', () => {
+            if (uiElements.createProposalModal) {
+                closeAllPopups(); // Закрываем все другие модальные окна
+                uiElements.createProposalModal.style.display = 'flex';
+                uiElements.createProposalModal.classList.add('is-open');
+                toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
+            }
+        });
+    }
+    // ↑↑↑
+
+    // ↓↓↓ ДОБАВЛЕННЫЙ БЛОК ДЛЯ DAO ACTIONS (ФОРМА SUBMIT) ↓↓↓
+    if (uiElements.createProposalForm) {
+        // Здесь мы используем простую MOCK-заглушку.
+        // В реальном коде вам нужно будет вызвать handleCreateProposal(e)
+        uiElements.createProposalForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // TODO: Замените этот MOCK-код на вызов реальной функции handleCreateProposal(e)
+            console.log("DAO Proposal Form submitted (MOCK)"); 
+            showNotification('Proposal creation simulated!', 'success', 3000);
+            e.target.reset();
+            closeAllPopups();
+        });
+    }
+    // ↑↑↑
+
+    // SWAP Actions
+    const debouncedGetQuote = debounce(getQuote, 500);
+
+    if (uiElements.swapFromTokenSelect) {
+        uiElements.swapFromTokenSelect.addEventListener('change', () => {
+            updateSwapBalances();
+            clearSwapQuote();
+        });
+    }
+    if (uiElements.swapToTokenSelect) {
+        uiElements.swapToTokenSelect.addEventListener('change', () => {
+            clearSwapQuote();
+            if (uiElements.swapFromAmountInput.value.trim() !== '') debouncedGetQuote();
+        });
+    }
+    if (uiElements.swapFromAmountInput) {
+        uiElements.swapFromAmountInput.addEventListener('input', () => {
+             clearSwapQuote();
+             debouncedGetQuote();
+        });
+    }
+    if (uiElements.getQuoteBtn) uiElements.getQuoteBtn.addEventListener('click', getQuote);
+    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.addEventListener('click', executeSwap);
+    uiElements.maxAmountBtns.forEach(btn => {
         btn.addEventListener('click', handleMaxAmount);
     });
     if (uiElements.swapDirectionBtn) {
