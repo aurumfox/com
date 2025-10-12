@@ -42,7 +42,8 @@
     <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.19/lib/index.iife.js" onload="window.solanaWalletAdapterPhantom = SolanaWalletAdapterPhantom;"></script>
     <script src="https://unpkg.com/@solana/spl-token@0.4.7/lib/index.iife.js" onload="window.splToken = splToken;"></script>
     <script src="https://unpkg.com/bn.js@5.2.1/lib/bn.js" onload="window.BN = BN;"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js"></script>
+    
     <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
     <script>
         Sentry.init({
@@ -212,7 +213,7 @@
                 <h2 class="aurum-heading">About Our AURUM FOX (AFOX) Meme Token</h2>
                 <p>Welcome to the world of <strong>AURUM FOX!</strong> We are a new, fully decentralized meme token, created by the community and for the community. Our goal is to create a fun, dynamic, and truly community-driven meme token on the Solana blockchain.</p>
                 <p><strong>AURUM FOX</strong> is a meme token presented as a golden coin with a cute cartoon fox image and the inscription "AURUM FOX". Its name combines the Latin "Aurum" (gold), symbolizing value, and "Fox" – a popular image for creating viral brands in the meme token space.</p>
-                <p>We believe in transparency and fairness. All permissions for <strong>minting</strong> (creating new tokens) and <strong>freezing</strong> (locking existing tokens) have been **irrevocably revoked**. This ensures a fixed total supply and the inability to lock your assets. No one, not even the creators, can issue new tokens or interfere with your holdings. AURUM FOX (AFOX) is a 100% community-governed meme token.</p>
+                <p>We believe in transparency and fairness. All permissions for <strong>minting</strong> (creating new tokens) and <strong>freezing</strong> (locking existing tokens) have been **irreversibly revoked**. This ensures a fixed total supply and the inability to lock your assets. No one, not even the creators, can issue new tokens or interfere with your holdings. AURUM FOX (AFOX) is a 100% community-governed meme token.</p>
             </div>
         </section>
 
@@ -868,6 +869,40 @@
         }
         // --- /XSS PROTECTION & NOTIFICATIONS ---
 
+
+        // ====================================================================
+        // 🛑 БЛОК 1: КОНФИГУРАЦИЯ RUST/ANCHOR (ВСТАВИТЬ СЮДА!)
+        // ====================================================================
+        
+        // ⚠️ ЗАМЕНИТЕ ЭТИ АДРЕСА И IDL!
+        const STAKING_PROGRAM_ID = new window.solanaWeb3.PublicKey("СТАВЬ_АДРЕС_ПРОГРАММЫ_RUST_СЮДА"); 
+        const POOL_STATE_ID = new window.solanaWeb3.PublicKey("СТАВЬ_АДРЕС_POOL_STATE_PDA_СЮДА"); 
+        // Семена (сиды), которые использовались в lib.rs:
+        const STAKING_POOL_SEED = "alphafox_pool_pda"; // Для PoolState
+        const USER_STAKING_SEED = "alphafox_staking_pda"; // Для UserStakingAccount
+        const AFOX_DECIMALS = 6; // Количество десятичных знаков вашего AFOX-токена (обычно 6 или 9)
+
+        // ⚠️ ВСТАВЬТЕ СЮДА ВАШ ПОЛНЫЙ IDL JSON, полученный из target/idl/
+        const IDL = { 
+            "version": "0.1.0",
+            "name": "aurum_fox_staking",
+            // ------------------------------------
+            // !!! ВСТАВЬТЕ ЗДЕСЬ ВСЕ СОДЕРЖИМОЕ JSON-ФАЙЛА IDL !!!
+            // ------------------------------------
+            "instructions": [
+                // Ваш JSON код инструкций
+            ],
+            "accounts": [
+                // Ваш JSON код аккаунтов (PoolState, UserStakingAccount)
+            ],
+            // ------------------------------------
+            // !!! ВАШ ПОЛНЫЙ IDL JSON СЮДА !!!
+            // ------------------------------------
+        }; 
+        
+        // ====================================================================
+
+
         // --- SOLANA WALLET ADAPTER LOGIC ---
         const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
 
@@ -889,6 +924,10 @@
                 // Установка обработчика отключения
                 btn.removeEventListener('click', connectWallet);
                 btn.addEventListener('click', disconnectWallet);
+
+                // 💡 ВАЖНО: Вызов функции обновления стейкинга после подключения
+                fetchStakingState(); 
+
             } else {
                 btn.textContent = 'Connect Wallet';
                 btn.classList.remove('connected');
@@ -897,6 +936,11 @@
                 // Установка обработчика подключения
                 btn.removeEventListener('click', disconnectWallet);
                 btn.addEventListener('click', connectWallet);
+
+                // Очистка UI стейкинга при отключении
+                document.getElementById('userAfoxBalance').textContent = '0 AFOX';
+                document.getElementById('userStakedAmount').textContent = '0 AFOX';
+                document.getElementById('userRewardsAmount').textContent = '0 AFOX';
             }
         }
 
@@ -908,8 +952,10 @@
             try {
                 const adapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
                 
+                // Используем адаптер как синглтон
+                solanaWalletAdapter = adapter;
+
                 adapter.on('connect', () => {
-                    solanaWalletAdapter = adapter;
                     updateWalletUI(adapter);
                     showNotification('Wallet successfully connected!', 'success');
                 });
@@ -950,7 +996,338 @@
             }
         }
         // --- /SOLANA WALLET ADAPTER LOGIC ---
-        
+
+
+        // ====================================================================
+        // 💡 БЛОК 2: ОСНОВНАЯ ЛОГИКА ANCHOR/WEB3 (ВКЛЮЧАЯ STAKING)
+        // ====================================================================
+
+        /** Инициализирует объект Anchor Program. */
+        function getProgram() {
+            if (!solanaWalletAdapter || !solanaWalletAdapter.publicKey) {
+                showNotification("Please connect your wallet first.", 'warning');
+                return null;
+            }
+
+            // Убедимся, что window.Buffer доступен (загружен из CDN)
+            if (typeof window.Buffer === 'undefined' && typeof Buffer !== 'undefined') {
+                window.Buffer = Buffer;
+            }
+
+            const provider = new window.anchor.AnchorProvider(
+                connection, 
+                solanaWalletAdapter, 
+                { commitment: 'confirmed' }
+            );
+            window.anchor.setProvider(provider);
+            
+            return new window.anchor.Program(IDL, STAKING_PROGRAM_ID, provider);
+        }
+
+        /** Вычисляет PDA-адреса. */
+        function getStakingPDAs(stakerPubkey, poolStatePubkey) {
+            // Pool Authority PDA (для подписи transfer, если нужно)
+            const [poolAuthorityPda] = window.solanaWeb3.PublicKey.findProgramAddressSync(
+                [Buffer.from(STAKING_POOL_SEED)], 
+                STAKING_PROGRAM_ID
+            );
+
+            // User Staking Account PDA
+            const [userStakingAccount] = window.solanaWeb3.PublicKey.findProgramAddressSync(
+                [Buffer.from(USER_STAKING_SEED), stakerPubkey.toBuffer(), poolStatePubkey.toBuffer()],
+                STAKING_PROGRAM_ID
+            );
+
+            return { poolAuthorityPda, userStakingAccount };
+        }
+
+        /** Функция-помощник для получения ATA (Associated Token Account). */
+        async function getAssociatedTokenAccountAddress(mint, owner) {
+            return window.splToken.getAssociatedTokenAddress(
+                new window.solanaWeb3.PublicKey(mint),
+                owner,
+                false, 
+                window.splToken.TOKEN_PROGRAM_ID,
+                window.splToken.ASSOCIATED_TOKEN_PROGRAM_ID
+            );
+        }
+
+        /** Читает состояние и обновляет UI. */
+        async function fetchStakingState() {
+            const program = getProgram();
+            const pubkey = solanaWalletAdapter.publicKey;
+            if (!program || !pubkey) return;
+
+            try {
+                // 1. Получаем общие PDA
+                const { poolAuthorityPda, userStakingAccount } = getStakingPDAs(pubkey, POOL_STATE_ID);
+                
+                // 2. Получаем ATA кошелька
+                const userAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, pubkey);
+                
+                // 3. Получаем данные PoolState (для APR, общей информации)
+                let poolStateData = null;
+                try {
+                    poolStateData = await program.account.poolState.fetch(POOL_STATE_ID);
+                    // Предполагаем, что APR хранится в basis points (BPS)
+                    const apr = (poolStateData.apyBasisPoints.toNumber() / 100).toFixed(2);
+                    document.getElementById('stakingApr').textContent = `${apr}%`;
+                } catch (e) {
+                    console.warn("Could not fetch PoolState. Is the program initialized?", e);
+                    document.getElementById('stakingApr').textContent = '--%';
+                }
+
+                // 4. Получаем баланс AFOX кошелька
+                let afoxBalance = 0;
+                try {
+                    const ataAccount = await window.splToken.getAccount(connection, userAfoxAta);
+                    afoxBalance = Number(ataAccount.amount) / Math.pow(10, AFOX_DECIMALS);
+                } catch (e) {
+                    afoxBalance = 0;
+                }
+                document.getElementById('userAfoxBalance').textContent = `${afoxBalance.toFixed(2)} AFOX`;
+                
+                // 5. Получаем данные UserStakingAccount (стейк и награды)
+                let stakedAmount = 0;
+                let rewardsAmount = 0;
+                let lockupEndTime = 0;
+
+                try {
+                    const stakingData = await program.account.userStakingAccount.fetch(userStakingAccount);
+                    
+                    stakedAmount = Number(stakingData.stakedAmount.toNumber()) / Math.pow(10, AFOX_DECIMALS);
+                    rewardsAmount = Number(stakingData.earnedRewards.toNumber()) / Math.pow(10, AFOX_DECIMALS); 
+                    
+                    lockupEndTime = stakingData.lockupEndTime.toNumber();
+                    
+                } catch (e) {
+                    console.log("User Staking Account not found. Staked amount defaults to 0.", e);
+                }
+
+                document.getElementById('userStakedAmount').textContent = `${stakedAmount.toFixed(2)} AFOX`;
+                document.getElementById('userRewardsAmount').textContent = `${rewardsAmount.toFixed(2)} AFOX`;
+
+                // 6. Обновление UI-защиты (Lockup)
+                const now = Date.now() / 1000;
+                const isLocked = lockupEndTime > now;
+                const unstakeBtn = document.getElementById('unstakeAfoxBtn');
+                const lockupDisplay = document.getElementById('lockupPeriod');
+
+                if (isLocked) {
+                    const remainingSeconds = lockupEndTime - now;
+                    const remainingDays = (remainingSeconds / (60 * 60 * 24)).toFixed(1);
+                    lockupDisplay.textContent = `${remainingDays} days remaining`;
+                    
+                    if (unstakeBtn) {
+                        unstakeBtn.disabled = true;
+                        unstakeBtn.textContent = 'Locked (Wait)';
+                    }
+                } else {
+                    lockupDisplay.textContent = '0 days (Flexible)';
+                    if (unstakeBtn) {
+                        unstakeBtn.disabled = stakedAmount === 0; // Нельзя вывести, если ничего не застейкано
+                        unstakeBtn.textContent = 'Unstake Tokens';
+                    }
+                }
+
+
+            } catch (error) {
+                console.error("Error fetching staking state:", error);
+                showNotification("Error loading staking data.", 'error');
+            }
+        }
+
+
+        /** Обрабатывает транзакцию Staking. */
+        async function handleStake() {
+            const program = getProgram();
+            const pubkey = solanaWalletAdapter.publicKey;
+            if (!program || !pubkey) return;
+
+            const amountInput = document.getElementById('stakeAmountInput');
+            let amount = parseFloat(amountInput.value);
+
+            if (isNaN(amount) || amount <= 0) {
+                showNotification("Please enter a valid amount to stake.", 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('stakeAfoxBtn');
+            btn.disabled = true;
+            btn.textContent = 'Staking...';
+
+            try {
+                // Конвертация в лампарты (u64) и BN
+                const amountLamports = amount * Math.pow(10, AFOX_DECIMALS);
+                const bnAmount = new window.BN(amountLamports);
+
+                // Получение PDA и ATA
+                const { userStakingAccount } = getStakingPDAs(pubkey, POOL_STATE_ID);
+                const userAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, pubkey);
+                const poolAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, getStakingPDAs(pubkey, POOL_STATE_ID).poolAuthorityPda); // ATA PoolAuthority
+
+                const tx = await program.methods
+                    .stake(bnAmount)
+                    .accounts({
+                        staker: pubkey,
+                        poolState: POOL_STATE_ID,
+                        userStakingAccount: userStakingAccount,
+                        stakerAfoxAta: userAfoxAta,
+                        poolAfoxAta: poolAfoxAta,
+                        afoxMint: new window.solanaWeb3.PublicKey(AFOX_MINT),
+                        tokenProgram: window.splToken.TOKEN_PROGRAM_ID,
+                        systemProgram: window.solanaWeb3.SystemProgram.programId,
+                        rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
+                        associatedTokenProgram: window.splToken.ASSOCIATED_TOKEN_PROGRAM_ID,
+                    })
+                    .rpc();
+
+                showNotification(`Stake successful! Transaction: ${tx.substring(0, 10)}...`, 'success', 5000);
+                amountInput.value = '';
+
+            } catch (error) {
+                console.error("Staking failed:", error);
+                let errorMessage = error.message || "An unknown error occurred during staking.";
+                
+                if (errorMessage.includes("0x1771")) { 
+                    errorMessage = "Insufficient AFOX balance or failed to find token account (ATA).";
+                } else if (errorMessage.includes("custom program error: 0x")) {
+                    errorMessage = `Program error: ${errorMessage.split("custom program error: ")[1]}.`;
+                }
+                
+                showNotification(`Staking failed: ${errorMessage.substring(0, 100)}...`, 'error', 7000);
+                
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Stake';
+                fetchStakingState(); // Обновление UI
+            }
+        }
+
+
+        /** Обрабатывает Unstaking. */
+        async function handleUnstake() {
+            const program = getProgram();
+            const pubkey = solanaWalletAdapter.publicKey;
+            if (!program || !pubkey) return;
+
+            const amountInput = document.getElementById('unstakeAmountInput');
+            let amount = parseFloat(amountInput.value);
+
+            if (isNaN(amount) || amount <= 0) {
+                showNotification("Please enter a valid amount to unstake.", 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('unstakeAfoxBtn');
+            btn.disabled = true;
+            btn.textContent = 'Unstaking...';
+
+            try {
+                // Конвертация в лампарты (u64) и BN
+                const amountLamports = amount * Math.pow(10, AFOX_DECIMALS);
+                const bnAmount = new window.BN(amountLamports);
+
+                // Получение PDA и ATA
+                const { poolAuthorityPda, userStakingAccount } = getStakingPDAs(pubkey, POOL_STATE_ID);
+                const userAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, pubkey);
+                const poolAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, poolAuthorityPda); 
+
+                // Проверка лок-апа (для двойной защиты, если fetchStakingState не успел обновить UI)
+                const stakingData = await program.account.userStakingAccount.fetch(userStakingAccount);
+                const now = Date.now() / 1000;
+                if (stakingData.lockupEndTime.toNumber() > now) {
+                    showNotification("Cannot unstake: Tokens are still locked!", 'error', 5000);
+                    return;
+                }
+                // Проверка, что сумма не превышает застейканную
+                const stakedLamports = stakingData.stakedAmount.toNumber();
+                if (bnAmount.toNumber() > stakedLamports) {
+                    showNotification(`Unstake amount (${amount}) exceeds staked amount.`, 'error', 5000);
+                    return;
+                }
+
+                const tx = await program.methods
+                    .unstake(bnAmount)
+                    .accounts({
+                        staker: pubkey,
+                        poolState: POOL_STATE_ID,
+                        userStakingAccount: userStakingAccount,
+                        stakerAfoxAta: userAfoxAta,
+                        poolAfoxAta: poolAfoxAta,
+                        poolAuthority: poolAuthorityPda, 
+                        tokenProgram: window.splToken.TOKEN_PROGRAM_ID,
+                    })
+                    .rpc();
+
+                showNotification(`Unstake successful! Transaction: ${tx.substring(0, 10)}...`, 'success', 5000);
+                amountInput.value = '';
+
+            } catch (error) {
+                console.error("Unstaking failed:", error);
+                showNotification("Unstaking failed. See console for details.", 'error', 7000);
+                
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Unstake Tokens';
+                fetchStakingState(); // Обновление UI
+            }
+        }
+
+
+        /** Обрабатывает Claiming Rewards. */
+        async function handleClaim() {
+            const program = getProgram();
+            const pubkey = solanaWalletAdapter.publicKey;
+            if (!program || !pubkey) return;
+
+            const btn = document.getElementById('claimRewardsBtn');
+            btn.disabled = true;
+            btn.textContent = 'Claiming...';
+
+            try {
+                // Получение PDA и ATA
+                const { poolAuthorityPda, userStakingAccount } = getStakingPDAs(pubkey, POOL_STATE_ID);
+                const userAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, pubkey);
+                const poolAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, poolAuthorityPda); 
+
+                const tx = await program.methods
+                    .claim()
+                    .accounts({
+                        staker: pubkey,
+                        poolState: POOL_STATE_ID,
+                        userStakingAccount: userStakingAccount,
+                        stakerAfoxAta: userAfoxAta,
+                        poolAfoxAta: poolAfoxAta,
+                        poolAuthority: poolAuthorityPda, 
+                        tokenProgram: window.splToken.TOKEN_PROGRAM_ID,
+                    })
+                    .rpc();
+
+                showNotification(`Claim successful! Transaction: ${tx.substring(0, 10)}...`, 'success', 5000);
+
+            } catch (error) {
+                console.error("Claim failed:", error);
+                let errorMessage = error.message || "An unknown error occurred during claiming.";
+                
+                if (errorMessage.includes("0x1785")) { 
+                    errorMessage = "No rewards to claim or lockup period not ended.";
+                } else if (errorMessage.includes("custom program error: 0x")) {
+                    errorMessage = `Program error: ${errorMessage.split("custom program error: ")[1]}.`;
+                }
+
+                showNotification(`Claim failed: ${errorMessage.substring(0, 100)}...`, 'error', 7000);
+                
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Claim Rewards';
+                fetchStakingState(); // Обновление UI
+            }
+        }
+
+        // ====================================================================
+
+
         // --- FIREBASE CONTENT LOADING (С ИСПРАВЛЕННЫМ САНИТАЙЗИНГОМ) ---
         function setupNewsListener() {
             const newsListElement = document.querySelector('.news-list');
@@ -976,11 +1353,9 @@
                         newsItem.className = 'news-item';
                         
                         const h4 = document.createElement('h4');
-                        // БЕЗОПАСНО: Санитайзинг текста
                         h4.textContent = sanitizeText(data.title || 'Title');
                         
                         const p = document.createElement('p');
-                        // БЕЗОПАСНО: Санитайзинг текста
                         p.textContent = sanitizeText(data.content || 'Content...');
                         
                         const small = document.createElement('small');
@@ -1020,17 +1395,14 @@
                     div.className = "placeholder-item web3-placeholder game";
                     
                     const a = document.createElement('a');
-                    // БЕЗОПАСНО: Санитайзинг URL
                     a.href = sanitizeText(data.url || '#');
                     a.target = '_blank';
                     a.rel = 'noopener noreferrer';
                     
                     const strong = document.createElement('strong');
-                    // БЕЗОПАСНО: Санитайзинг текста
                     strong.textContent = sanitizeText(data.title || 'Untitled');
                     
                     a.appendChild(strong);
-                    // БЕЗОПАСНО: Санитайзинг текста
                     a.appendChild(document.createTextNode(`: ${sanitizeText(data.description || 'Description missing.')}`));
                     
                     div.appendChild(a);
@@ -1065,18 +1437,27 @@
                     strictTokenList: false, 
 
                     onConnectWallet: (callback) => { 
-                        setTimeout(callback, 50); 
+                        if (solanaWalletAdapter && solanaWalletAdapter.connected) {
+                            callback({
+                                publicKey: solanaWalletAdapter.publicKey.toString(),
+                                signTransaction: solanaWalletAdapter.signTransaction.bind(solanaWalletAdapter),
+                                signAllTransactions: solanaWalletAdapter.signAllTransactions.bind(solanaWalletAdapter),
+                            });
+                        } else {
+                            // Если кошелек не подключен, вызываем нашу функцию подключения
+                            connectWallet();
+                            callback(null); 
+                        }
                     },
                     onSwapSuccess: () => { 
                         showNotification("Swap successful!", 'success'); 
+                        fetchStakingState(); 
                     },
                     onError: (error) => { 
                         console.error("Jupiter Error:", error); 
                         showNotification("Swap error: See console for details.", 'error'); 
                     },
-                    onClose: () => { 
-                        // Никаких действий с DOM
-                    }
+                    onClose: () => {}
                 });
                 
                 console.log("Jupiter Terminal initialized.");
@@ -1106,6 +1487,26 @@
 
             initializeJupiterTerminal();
             
+            // ====================================================================
+            // 🔗 БЛОК 3: ПРИВЯЗКА КНОПОК STAKING (ВНУТРИ DOMContentLoaded!)
+            // ====================================================================
+            const stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
+            if (stakeAfoxBtn) {
+                stakeAfoxBtn.addEventListener('click', handleStake);
+            }
+            
+            const unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
+            if (unstakeAfoxBtn) {
+                unstakeAfoxBtn.addEventListener('click', handleUnstake);
+            }
+            
+            const claimRewardsBtn = document.getElementById('claimRewardsBtn');
+            if (claimRewardsBtn) {
+                claimRewardsBtn.addEventListener('click', handleClaim);
+            }
+            // ====================================================================
+
+
             // ПРИВЯЗКА ФУНКЦИИ-ЗАГЛУШКИ К ФОРМАМ ЗАПИСИ
             const mintNftFormSection = document.getElementById('mintNftFormSection');
             if (mintNftFormSection) {
@@ -1121,7 +1522,6 @@
             const uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
             if (uploadGameBtnWeb3) {
                 uploadGameBtnWeb3.addEventListener('click', (e) => {
-                    // Prevent default action if it was a submission
                     e.preventDefault(); 
                     showNotification("Security Alert: Game upload is temporarily blocked. Please configure Firebase Security Rules and Admin authentication.", 'warning', 7000);
                 });
@@ -1131,5 +1531,3 @@
     </script>
 </body>
 </html>
-
-
