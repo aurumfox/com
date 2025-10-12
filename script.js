@@ -1853,6 +1853,58 @@ function cacheUIElements() {
 
     // Announcements & Games
     uiElements.announcementsList = document.getElementById('announcements-list');
+// --- 3. ИСПРАВЛЕННАЯ ФУНКЦИЯ: cacheUIElements (ЗАМЕНИТЬ) ---
+/**
+ * Caches all necessary UI elements.
+ */
+function cacheUIElements() {
+    // General Wallet & Display
+    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
+    uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display'));
+
+    // Modals and Close Buttons
+    uiElements.nftDetailsModal = document.getElementById('nft-details-modal');
+    uiElements.nftModal = document.getElementById('nft-modal');
+    uiElements.mintNftModal = document.getElementById('mint-nft-modal');
+    uiElements.createProposalModal = document.getElementById('create-proposal-modal');
+    
+    // ↓↓↓ ДОБАВЛЕННЫЙ ЭЛЕМЕНТ ДЛЯ ФОРМЫ DAO ↓↓↓
+    uiElements.createProposalForm = document.getElementById('create-proposal-form');
+    // ↑↑↑
+    
+    uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
+
+    Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
+        btn.addEventListener('click', closeAllPopups);
+    });
+
+    // Menu Elements
+    uiElements.mainNav = document.querySelector('nav');
+    uiElements.menuToggle = document.getElementById('menu-toggle');
+    uiElements.closeMainMenuCross = document.querySelector('.close-menu');
+    uiElements.navLinks = Array.from(document.querySelectorAll('nav a'));
+
+    // NFT Section
+    uiElements.userNftList = document.getElementById('user-nft-list');
+    uiElements.marketplaceNftList = document.getElementById('marketplace-nft-list');
+    uiElements.nftToSellSelect = document.getElementById('nft-to-sell');
+    uiElements.listNftForm = document.getElementById('list-nft-form');
+    uiElements.mintNftForm = document.getElementById('mint-nft-form');
+
+    // NFT Details Modal elements
+    uiElements.nftDetailImage = document.getElementById('nft-detail-image');
+    uiElements.nftDetailName = document.getElementById('nft-detail-name');
+    uiElements.nftDetailDescription = document.getElementById('nft-detail-description');
+    uiElements.nftDetailOwner = document.getElementById('nft-detail-owner');
+    uiElements.nftDetailMint = document.getElementById('nft-detail-mint');
+    uiElements.attributesList = document.getElementById('attributes-list');
+    uiElements.nftDetailBuyBtn = document.getElementById('nft-detail-buy-btn');
+    uiElements.nftDetailSellBtn = document.getElementById('nft-detail-sell-btn');
+    uiElements.nftDetailTransferBtn = document.getElementById('nft-detail-transfer-btn');
+    uiElements.nftDetailHistory = document.getElementById('nft-detail-history');
+
+    // Announcements & Games
+    uiElements.announcementsList = document.getElementById('announcements-list');
     uiElements.gameList = document.getElementById('game-list');
 
     // Staking Section
