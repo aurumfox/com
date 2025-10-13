@@ -289,7 +289,7 @@
         
         <div class="header-controls-group">
             
-            <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
+            <div id="menuToggle" class="menu-toggle" aria-controls="mainNavContainer" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
                 <div class="hamburger"></div>
             </div>
             
@@ -298,10 +298,11 @@
             </button>
         </div>
         
-        <nav class="nav-mobile-overlay"> 
-            <ul id="mainNav" class="main-nav" role="navigation" aria-hidden="true">
+        <nav id="navOverlay" class="nav-mobile-overlay"> 
+            
+            <span class="close-menu-button" id="closeMenuButton" role="button" tabindex="0" aria-label="Close menu">&times;</span>
                 
-                <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
+            <ul id="mainNav" class="main-nav" role="navigation" aria-hidden="true">
                 
                 <li><a href="#aurum-fox-home">Aurum Fox</a></li>
                 <li><a href="#about-afox">About AFOX</a></li>
@@ -322,7 +323,7 @@
                 <li><a href="#lending-section">Lending</a></li> 
                 <li><a href="#swap-section">Swap</a></li>
                 
-                </ul>
+            </ul>
         </nav>
         
     </div>
@@ -1465,13 +1466,14 @@
 
         // --- HAMBURGER MENU LOGIC (ИСПРАВЛЕНО) ---
         function setupHamburgerMenu() {
+            // ИСПРАВЛЕНО: СЕЛЕКТОРЫ СООТВЕТСТВУЮТ ИСПРАВЛЕННОМУ HTML
             const menuToggle = document.getElementById('menuToggle');
-            const navOverlay = document.querySelector('.nav-mobile-overlay');
-            const closeMenuCross = document.getElementById('closeMainMenuCross');
-            const mainNavLinks = document.querySelectorAll('.main-nav a');
+            const navOverlay = document.getElementById('navOverlay'); 
+            const closeMenuCross = document.getElementById('closeMenuButton'); 
+            const mainNavLinks = document.querySelectorAll('#mainNav a');
 
             if (!menuToggle || !navOverlay || !closeMenuCross) {
-                // Это нормально, если эти элементы не найдены на десктопе, но мы должны их найти
+                // Если элементы не найдены, выходим, чтобы не вызвать ошибку
                 return;
             }
 
@@ -1517,6 +1519,14 @@
                         toggleMenu();
                     }
                 });
+            });
+            
+            // 4. Close the menu when clicking on the overlay background itself (navOverlay)
+            navOverlay.addEventListener('click', (e) => {
+                // Проверяем, что клик был именно по оверлею, а не по его содержимому (ul#mainNav или кнопке)
+                if (e.target.id === 'navOverlay') {
+                    toggleMenu();
+                }
             });
         }
         // --- /HAMBURGER MENU LOGIC ---
@@ -1712,19 +1722,4 @@
                 newProposalForm.addEventListener('submit', preventSubmission);
             }
             
-            // Привязка к кнопке Upload Game
-            const uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
-            if (uploadGameBtnWeb3) {
-                uploadGameBtnWeb3.addEventListener('click', (e) => {
-                    e.preventDefault(); 
-                    showNotification("Security Alert: Game upload is temporarily blocked. Please configure Firebase Security Rules and Admin authentication.", 'warning', 7000);
-                });
-            }
-            
-            // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
-            setupHamburgerMenu(); // <-- ЭТОТ ВЫЗОВ СДЕЛАЕТ МЕНЮ РАБОЧИМ
-        });
-        
-    </script>
-</body>
-</html>
+            //
