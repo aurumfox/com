@@ -225,19 +225,7 @@ function setupHamburgerMenu() {
         });
     }
 }
-// --- КОНЕЦ ЛОГИКИ ГАМБУРГЕР-МЕНЮ ---
-// --- 1. НОВАЯ ФУНКЦИЯ: toggleScrollLock (ВСТАВИТЬ) ---
-/**
- * Toggles the scroll lock class on the <body> element.
- * @param {boolean} lock - True to lock scroll (add 'modal-open'), False to unlock (remove 'modal-open').
- */
-function toggleScrollLock(lock) {
-    if (lock) {
-        document.body.classList.add('modal-open');
-    } else {
-        document.body.classList.remove('modal-open');
-    }
-}
+
 // --------------------------------------------------------
 
 /**
