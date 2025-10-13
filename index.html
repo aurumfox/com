@@ -21,9 +21,7 @@
     
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' https://terminal.jup.ag https://api.mainnet-beta.solana.com;
-        /* ДОБАВЛЕНЫ unpkg.com и cdn.jsdelivr.net для Web3 библиотек */
         script-src 'self' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag https://unpkg.com https://cdn.jsdelivr.net; 
-        /* ДОБАВЛЕНЫ unpkg.com и cdn.jsdelivr.net для Web3 библиотек */
         connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com https://unpkg.com https://cdn.jsdelivr.net; 
         style-src 'self' https://fonts.googleapis.com; 
         font-src 'self' https://fonts.gstatic.com; 
@@ -67,9 +65,58 @@
     
     <style>
         /* ================================================= */
-        /* !!! ВАЖНО: ДОБАВЛЕНЫ БАЗОВЫЕ СТИЛИ ДЛЯ РАБОТЫ МЕНЮ !!! */
+        /* !!! ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ МОДАЛЬНЫХ ОКОН И КНОПОК !!! */
         /* ================================================= */
+        .modal {
+            display: none; /* Скрыть по умолчанию */
+            position: fixed; 
+            z-index: 20000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.7); 
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 5% auto; 
+            padding: 30px;
+            border: 1px solid #FF8C00;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #FF8C00;
+            text-decoration: none;
+            cursor: pointer;
+        }
         
+        /* Стили для предотвращения прокрутки тела при открытом меню */
+        body.menu-open {
+            overflow: hidden;
+        }
+        
+        .web3-btn[disabled] {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Остальные стили (гамбургер, кнопки, уведомления) без изменений */
+
         .menu-toggle {
             display: none; /* Скрыть на десктопе */
             cursor: pointer;
@@ -189,10 +236,6 @@
             overflow: hidden;
         }
         
-        /* ================================================= */
-        /* КОНЕЦ БАЗОВЫХ СТИЛЕЙ ДЛЯ МЕНЮ */
-        /* ================================================= */
-
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -735,13 +778,13 @@
 
                 <h3 class="web3-subheading">Active Proposals</h3>
                 <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
-                    <div class="dao-proposal-item web3-placeholder">
-                        <h4>Loading Proposal #1</h4>
+                    <div class="dao-proposal-item web3-placeholder" data-proposal-id="1">
+                        <h4>Loading Proposal #1: Example Title</h4>
                         <p>Description: Real-time DAO proposals are loading here.</p>
-                        <p>Creator: <span class="dao-creator">...</span></p>
-                        <p>Votes For: <span class="dao-votes-for">...</span> | Votes Against: <span class="dao-votes-against">...</span></p>
-                        <button class="web3-btn dao-vote-btn" data-proposal-id="1" data-vote-type="for" aria-label="Vote FOR Proposal 1">Vote FOR</button>
-                        <button class="web3-btn dao-vote-btn" data-proposal-id="1" data-vote-type="against" aria-label="Vote AGAINST Proposal 1">Vote AGAINST</button>
+                        <p>Creator: <span class="dao-creator">0x123...abc</span></p>
+                        <p>Votes For: <span class="dao-votes-for">100 AFOX</span> | Votes Against: <span class="dao-votes-against">50 AFOX</span></p>
+                        <button class="web3-btn dao-vote-btn" data-vote-type="for" aria-label="Vote FOR Proposal 1">Vote FOR</button>
+                        <button class="web3-btn dao-vote-btn" data-vote-type="against" aria-label="Vote AGAINST Proposal 1">Vote AGAINST</button>
                     </div>
                 </div>
 
@@ -941,9 +984,48 @@
             </div>
     </footer>
 
-    <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">...</div>
-    <div id="mintNftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="mintNftModalTitle" style="display:none;">...</div>
-    <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
+    <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button" id="closeNftDetailsModal" aria-label="Close NFT details">&times;</span>
+            <h3 id="nftDetailName" class="web3-heading">NFT Name Placeholder</h3>
+            <div class="nft-detail-content">
+                <img id="nftDetailImage" src="https://via.placeholder.com/200" alt="NFT Image" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px;">
+                <p><strong>Owner:</strong> <span id="nftDetailOwner">N/A</span></p>
+                <p><strong>Mint Address:</strong> <span id="nftDetailMint">N/A</span></p>
+                <p><strong>Status:</strong> <span id="nftDetailStatus">Not Listed</span></p>
+                <p id="nftDetailPriceContainer" style="display:none;"><strong>Price:</strong> <span id="nftDetailPrice">N/A</span> SOL</p>
+                <p id="nftDetailDescription">A detailed description of the NFT.</p>
+                
+                <div class="nft-detail-actions" style="margin-top: 20px;">
+                    <button id="nftDetailBuyBtn" class="web3-btn" style="display:none;" aria-label="Buy NFT">Buy NFT</button>
+                    
+                    <button id="nftDetailSellBtn" class="web3-btn" style="display:none;" aria-label="List or Unlist NFT">List/Unlist NFT</button>
+                    
+                    <button id="nftDetailTransferBtn" class="web3-btn" style="display:none;" aria-label="Transfer NFT to another wallet">Transfer NFT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="listNftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="listNftModalTitle" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button" id="closeListNftModal" aria-label="Close list NFT modal">&times;</span>
+            <h3 id="listNftModalTitle" class="web3-heading">Create Listing for <span id="listingNftName">NFT Name</span></h3>
+            <form id="listingForm" class="web3-form">
+                <input type="hidden" id="listingNftMintAddress" name="listingNftMintAddress">
+                
+                <label for="listingPriceInput">Sale Price (SOL):</label>
+                <input type="number" id="listingPriceInput" name="listingPriceInput" step="0.000001" min="0.000001" placeholder="e.g., 0.8" required aria-required="true">
+
+                <label for="listingDurationInput">Listing Duration (Days):</label>
+                <input type="number" id="listingDurationInput" name="listingDurationInput" min="1" max="365" value="30" required aria-required="true">
+
+                <button type="submit" id="submitListingBtn" class="web3-btn" aria-label="Confirm NFT Listing">Confirm Listing</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 30000;"></div>
     
     <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
 
@@ -1005,12 +1087,181 @@
             notification.style.cssText = `
                 margin-bottom: 10px; padding: 10px 15px; border-radius: 8px; color: #fff; font-size: 0.9em; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
                 background-color: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#3498db'};
-                transition: opacity 0.5s ease-in-out; z-index: 10000;
+                transition: opacity 0.5s ease-in-out; z-index: 30000;
             `;
             container.appendChild(notification);
             setTimeout(() => { notification.style.opacity = '0'; setTimeout(() => notification.remove(), 500); }, duration);
         }
-        // --- /XSS PROTECTION & NOTIFICATIONS ---
+        
+        // --- MODAL WINDOW LOGIC (ДОБАВЛЕНО) ---
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'block';
+                document.body.classList.add('menu-open'); // Используем тот же класс для блокировки прокрутки
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.classList.remove('menu-open');
+            }
+        }
+
+        function setupModalListeners() {
+            // DAO Modal
+            document.getElementById('createProposalBtn')?.addEventListener('click', () => openModal('createProposalModal'));
+            document.getElementById('closeProposalModal')?.addEventListener('click', () => closeModal('createProposalModal'));
+
+            // NFT Detail Modal
+            document.getElementById('closeNftDetailsModal')?.addEventListener('click', () => closeModal('nftDetailsModal'));
+            
+            // List NFT Modal
+            document.getElementById('closeListNftModal')?.addEventListener('click', () => closeModal('listNftModal'));
+            
+            // Закрытие по клику вне модального окна
+            window.addEventListener('click', (event) => {
+                if (event.target.classList.contains('modal')) {
+                    event.target.style.display = 'none';
+                    document.body.classList.remove('menu-open');
+                }
+            });
+            
+            // Включаем логику, которая при клике на NFT-карточку открывает модалку деталей
+            document.getElementById('marketplace-nft-list')?.addEventListener('click', (e) => {
+                const nftCard = e.target.closest('.nft-card');
+                if (nftCard) {
+                    // MOCK-логика для демонстрации открытия
+                    showNftDetailsMock({
+                        name: nftCard.querySelector('h4').textContent,
+                        mint: 'MockMintAddress123...',
+                        owner: 'MockOwnerAddress456...',
+                        isListed: true, // Имитируем листинг
+                        price: 0.5,
+                        description: 'This is a mock description for the selected NFT. Connect your wallet to see real details.',
+                        isUserOwned: false // Имитируем, что это NFT с маркетплейса
+                    });
+                }
+            });
+            document.getElementById('user-nft-list')?.addEventListener('click', (e) => {
+                const nftCard = e.target.closest('.nft-card');
+                if (nftCard) {
+                    showNftDetailsMock({
+                        name: nftCard.querySelector('h4').textContent,
+                        mint: 'MockMintAddress789...',
+                        owner: solanaWalletAdapter?.publicKey?.toString() || 'Not Connected',
+                        isListed: false, 
+                        price: null,
+                        description: 'This is your unlisted NFT. You can list it now.',
+                        isUserOwned: true 
+                    });
+                }
+            });
+            
+            // MOCK-функция, которая имитирует заполнение модального окна деталями NFT
+            function showNftDetailsMock(nft) {
+                document.getElementById('nftDetailName').textContent = nft.name;
+                document.getElementById('nftDetailOwner').textContent = nft.owner;
+                document.getElementById('nftDetailMint').textContent = nft.mint;
+                document.getElementById('nftDetailDescription').textContent = nft.description;
+
+                const statusSpan = document.getElementById('nftDetailStatus');
+                const priceContainer = document.getElementById('nftDetailPriceContainer');
+                const buyBtn = document.getElementById('nftDetailBuyBtn');
+                const sellBtn = document.getElementById('nftDetailSellBtn');
+                const transferBtn = document.getElementById('nftDetailTransferBtn');
+                
+                // Сброс видимости
+                buyBtn.style.display = 'none';
+                sellBtn.style.display = 'none';
+                transferBtn.style.display = 'none';
+                priceContainer.style.display = 'none';
+
+                if (nft.isListed) {
+                    statusSpan.textContent = 'Listed for Sale';
+                    document.getElementById('nftDetailPrice').textContent = nft.price;
+                    priceContainer.style.display = 'block';
+                    
+                    if (!nft.isUserOwned) {
+                        buyBtn.style.display = 'block';
+                    } else {
+                        // Если владелец, но оно в листинге, он может его снять
+                        sellBtn.textContent = 'Unlist NFT';
+                        sellBtn.style.display = 'block';
+                    }
+                } else {
+                    statusSpan.textContent = 'Not Listed (In Wallet)';
+                    
+                    if (nft.isUserOwned) {
+                        sellBtn.textContent = 'List for Sale';
+                        sellBtn.style.display = 'block';
+                        transferBtn.style.display = 'block';
+                    }
+                }
+                
+                // Привязка действий к кнопкам (MOCK)
+                sellBtn.onclick = () => {
+                    if (sellBtn.textContent === 'List for Sale') {
+                        // Открыть модальное окно листинга
+                        document.getElementById('listingNftName').textContent = nft.name;
+                        document.getElementById('listingNftMintAddress').value = nft.mint;
+                        openModal('listNftModal');
+                        closeModal('nftDetailsModal');
+                    } else {
+                        showNotification(`MOCK: Unlisting NFT ${nft.name}...`, 'info');
+                    }
+                };
+                buyBtn.onclick = () => showNotification(`MOCK: Attempting to buy NFT ${nft.name} for ${nft.price} SOL...`, 'info');
+                transferBtn.onclick = () => showNotification(`MOCK: Opening transfer dialog for ${nft.name}...`, 'info');
+
+                // И, наконец, показать модальное окно
+                openModal('nftDetailsModal');
+            }
+
+            // Дополнительно: Привязка Mint NFT кнопки к секции
+            document.getElementById('mintNftBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Используем ScrollIntoView для скролла к секции Minting
+                document.getElementById('mint-nft-section').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // MOCK: Для отображения NFT в списках
+            function loadMockNftContent() {
+                const mockCard = (name, status) => `
+                    <div class="nft-card web3-placeholder" data-status="${status}">
+                        <img src="https://via.placeholder.com/150/f39c12/000000?text=${name.replace(' ', '+')}" alt="${name}">
+                        <h4>${name}</h4>
+                        <p>Status: ${status}</p>
+                    </div>
+                `;
+                
+                // Рыночные NFT
+                const marketplaceList = document.getElementById('marketplace-nft-list');
+                if (marketplaceList) {
+                    marketplaceList.innerHTML = mockCard('Fox Market NFT #1', 'Listed') + mockCard('Fox Market NFT #2', 'Listed');
+                }
+
+                // Пользовательские NFT
+                const userNftList = document.getElementById('user-nft-list');
+                if (userNftList) {
+                    userNftList.innerHTML = mockCard('My Alpha NFT #A', 'Unlisted') + mockCard('My Rare NFT #B', 'Unlisted');
+                }
+                
+                // Заполнение списка NFT для продажи
+                const nftToSellSelect = document.getElementById('nftToSell');
+                if (nftToSellSelect) {
+                    nftToSellSelect.innerHTML = `
+                        <option value="">-- Please select an NFT --</option>
+                        <option value="mint_a">My Alpha NFT #A</option>
+                        <option value="mint_b">My Rare NFT #B</option>
+                    `;
+                }
+            }
+            loadMockNftContent(); // Вызываем MOCK-загрузку при старте
+        }
+        // --- /MODAL WINDOW LOGIC ---
 
         // ====================================================================
         // 🛑 БЛОК 1: КОНФИГУРАЦИЯ RUST/ANCHOR (ВСТАВИТЬ СЮДА!)
@@ -1670,7 +1921,7 @@
         // --- ФУНКЦИЯ-ЗАГЛУШКА ДЛЯ ПРЕДОТВРАЩЕНИЯ ЗАПИСИ ДАННЫХ ---
         function preventSubmission(event) {
             event.preventDefault();
-            showNotification("Security Alert: Data submission is temporarily blocked. Please configure Firebase Security Rules and Admin authentication before enabling write operations (Mint, DAO, Upload Game).", 'warning', 7000);
+            showNotification("Security Alert: Data submission is temporarily blocked. Please configure Firebase Security Rules and Admin authentication before enabling write operations (Mint, DAO, Upload Game, List NFT, Proposal).", 'warning', 7000);
             return false;
         }
         
@@ -1683,6 +1934,7 @@
             
             setupNewsListener();
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
+            setupModalListeners(); // Инициализация обработчиков модальных окон
 
             initializeJupiterTerminal();
             
@@ -1703,18 +1955,29 @@
             if (claimRewardsBtn) {
                 claimRewardsBtn.addEventListener('click', handleClaim);
             }
+            
+            // ====================================================================
+            // 🛑 ПРИВЯЗКА ФУНКЦИЙ-ЗАГЛУШЕК ДЛЯ ЗАПИСИ ДАННЫХ
             // ====================================================================
 
-
-            // ПРИВЯЗКА ФУНКЦИИ-ЗАГЛУШКИ К ФОРМАМ ЗАПИСИ
             const mintNftFormSection = document.getElementById('mintNftFormSection');
             if (mintNftFormSection) {
                 mintNftFormSection.addEventListener('submit', preventSubmission);
             }
-
+            
+            const listNftForm = document.getElementById('listNftForm');
+            if (listNftForm) {
+                listNftForm.addEventListener('submit', preventSubmission);
+            }
+            
             const newProposalForm = document.getElementById('newProposalForm');
             if (newProposalForm) {
                 newProposalForm.addEventListener('submit', preventSubmission);
+            }
+            
+            const listingForm = document.getElementById('listingForm');
+            if (listingForm) {
+                listingForm.addEventListener('submit', preventSubmission);
             }
             
             // Привязка к кнопке Upload Game
@@ -1726,7 +1989,18 @@
                 });
             }
             
-            // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
+            // Привязка к кнопкам Lending (просто заглушка-уведомление)
+            document.getElementById('lendAfoxBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                showNotification("MOCK: Lending functionality is disabled. Please implement DeFi logic.", 'warning');
+            });
+            document.getElementById('borrowSolBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                showNotification("MOCK: Borrowing functionality is disabled. Please implement DeFi logic.", 'warning');
+            });
+
+
+            // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ
             setupHamburgerMenu(); 
         });
 
