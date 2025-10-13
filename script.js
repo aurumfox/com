@@ -194,64 +194,25 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-/**
- * 💡 ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ГАМБУРГЕР-МЕНЮ (Должна быть вызвана после DOMContentLoaded)
- */
-function setupHamburgerMenu() {
-    // 1. АБСОЛЮТНО КРИТИЧНО: ID должны совпадать с HTML
-    // ИСПОЛЬЗУЕМ menuToggle (как более вероятно в разметке) и closeMenuButton
-    const menuToggle = document.getElementById('menuToggle');
-    const closeMenuButton = document.getElementById('closeMenuButton'); 
-    const mainNav = document.getElementById('mainNav'); // ID вашего тега <nav>
-    const navOverlay = document.getElementById('navOverlay'); 
-    const body = document.body;
+/**// Close buttons for modals - Explicitly get by unique ID for the cross button
+// Ensure these IDs match the IDs you put in your HTML for the close span.
+const closeNftDetailsModalCross = document.getElementById('closeNftDetailsModalCross');
+const closeNftModalCross = document.getElementById('closeNftModalCross');
+const closeMintNftModalCross = document.getElementById('closeMintNftModalCross');
+const closeProposalModalCross = document.getElementById('closeProposalModalCross');
 
-    // Проверка, что элементы найдены 
-    if (!menuToggle || !mainNav || !navOverlay || !closeMenuButton) {
-        console.error("КРИТИЧЕСКАЯ ОШИБКА МЕНЮ: Проверьте ID в HTML! Один или несколько элементов не найдены.");
-        return; 
-    }
+// NEW: Close button for Main Menu
+const closeMainMenuCross = document.getElementById('closeMainMenuCross');
 
-    function openMenu() {
-        mainNav.classList.add('is-open'); 
-        navOverlay.classList.add('is-open'); 
-        menuToggle.classList.add('is-active'); 
-        body.classList.add('menu-open'); // Блокировка скролла через CSS
-        menuToggle.setAttribute('aria-expanded', 'true');
-        // Дополнительная логика блокировки скролла (если CSS не сработает)
-        toggleScrollLock(true);
-    }
 
-    function closeMenu() {
-        mainNav.classList.remove('is-open');
-        navOverlay.classList.remove('is-open');
-        menuToggle.classList.remove('is-active');
-        body.classList.remove('menu-open'); // Разблокировка скролла через CSS
-        menuToggle.setAttribute('aria-expanded', 'false');
-        // Дополнительная логика разблокировки скролла
-        toggleScrollLock(false);
-    }
-
-    // 1. ПЕРЕКЛЮЧЕНИЕ: Главный обработчик гамбургера
-    menuToggle.addEventListener('click', () => {
-        if (mainNav.classList.contains('is-open')) {
-            closeMenu();
-        } else {
-            openMenu();
-        }
-    });
-
-    // 2. ОБРАБОТЧИКИ ЗАКРЫТИЯ
-    closeMenuButton.addEventListener('click', closeMenu);
-    navOverlay.addEventListener('click', closeMenu);
-    
-    // 3. ФУНКЦИЯ ДЛЯ ЗАКРЫТИЯ ПО ССЫЛКЕ
-    window.closeMenuOnLinkClick = function() {
-        if (window.innerWidth <= 992) { // Используем более общее значение для мобильных устройств
-            closeMenu();
-        }
-    };
-}
+// Menu Elements (for navigation)
+// mainNav is your <ul> list inside <nav class="nav"> or the element with ID 'mainNav'
+const mainNav = document.querySelector('.nav ul') || document.getElementById('mainNav'); // Assuming .nav ul is your menu, or directly by ID
+// menuToggle is the supposed hamburger button.
+const menuToggle = document.getElementById('menuToggle');
+// navLinks - All <a> links within the navigation to close the menu after clicking a link
+const navLinks = mainNav ? mainNav.querySelectorAll('a') : [];
+ * 
 // =========================================================
 
 
