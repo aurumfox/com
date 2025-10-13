@@ -2274,5 +2274,11 @@ async function init() {
 }
 // --------------------------------------------------------
 
-// Ensure the script runs after the entire document is loaded
-document.addEventListener('DOMContentLoaded', init);
+// --- STARTUP AFTER DOM LOAD ---
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (весь код, который был здесь) ...
+
+    // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
+    setupHamburgerMenu(); // <--- ЭТОТ ВЫЗОВ СДЕЛАЕТ МЕНЮ РАБОЧИМ
+});
+
