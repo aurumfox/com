@@ -77,8 +77,7 @@
 }
 
 /* ==========================================================================
-   Base Styles (ИСПРАВЛЕНО - Добавлена блокировка прокрутки)
-   Общие стили для всего сайта (сброс, типографика, обертки)
+   Base Styles
 ========================================================================== */
 * {
     box-sizing: border-box;
@@ -87,21 +86,22 @@
 }
 
 html {
-    scroll-behavior: smooth; /* Плавная прокрутка к якорям */
+    scroll-behavior: smooth;
 }
 
 body {
     font-family: var(--font-secondary);
     line-height: 1.6;
-    color: var(--text-color-light); /* Светлый текст по умолчанию */
-    background-color: var(--color-bg-dark); /* Темный фон по умолчанию */
-    overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+    color: var(--text-color-light);
+    background-color: var(--color-bg-dark);
+    overflow-x: hidden;
 }
 
-/* 🛑 ИСПРАВЛЕНИЕ ДЛЯ МОДАЛЬНЫХ ОКОН: Блокировка прокрутки основного контента */
-body.modal-open {
+/* 🛑 ИСПРАВЛЕНИЕ: Блокировка прокрутки основного контента при открытом модальном окне/меню */
+body.modal-open,
+body.menu-open {
     overflow: hidden !important; 
-    position: fixed; /* Для корректной блокировки на мобильных/iOS */
+    position: fixed;
     width: 100%;
     height: 100%;
     top: 0;
@@ -111,7 +111,7 @@ body.modal-open {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md); /* 20px по бокам */
+    padding: 0 var(--spacing-md);
 }
 
 a {
@@ -128,15 +128,15 @@ a:hover {
 img {
     max-width: 100%;
     height: auto;
-    display: block; /* Убирает дополнительный отступ под изображением */
+    display: block;
 }
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-primary);
-    color: var(--primary-color); /* Золотой для заголовков */
-    margin-bottom: var(--spacing-md); /* Общий отступ для заголовков */
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
     line-height: 1.2;
-    text-align: center; /* Центрировать заголовки по умолчанию */
+    text-align: center;
 }
 
 h1 { font-size: 3.5em; font-weight: 700;}
@@ -151,7 +151,7 @@ p {
 
 ul, ol {
     margin-bottom: var(--spacing-sm);
-    padding-left: var(--spacing-lg); /* Отступ для маркеров/номеров */
+    padding-left: var(--spacing-lg);
 }
 
 li {
@@ -162,15 +162,15 @@ li {
    Header and Navigation
 ========================================================================== */
 .header {
-    background-color: rgba(18, 18, 30, 0.9); /* Темный фон хедера с небольшой прозрачностью */
+    background-color: rgba(18, 18, 30, 0.9);
     padding: var(--spacing-md) 0;
     color: var(--text-color-white);
     box-shadow: var(--box-shadow-light);
-    position: sticky; /* Липкий хедер */
+    position: sticky;
     top: 0;
     left: 0;
     width: 100%;
-    z-index: 1000; /* Хедер над контентом */
+    z-index: 1000;
 }
 
 .header .container {
@@ -187,7 +187,7 @@ li {
 }
 
 .logo-img {
-    height: 40px; /* Размер логотипа */
+    height: 40px;
     width: auto;
 }
 
@@ -203,9 +203,9 @@ li {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: flex; /* Flexbox для горизонтального расположения */
-    gap: 15px; /* Отступ между элементами */
-    transition: transform 0.3s ease-in-out; /* Анимация для мобильного меню */
+    display: flex;
+    gap: 15px;
+    transition: transform 0.3s ease-in-out;
 }
 
 .nav ul.main-nav li a {
@@ -213,7 +213,7 @@ li {
     font-family: var(--font-primary);
     font-weight: bold;
     padding: 8px 15px;
-    position: relative; /* Для подчеркивания при наведении */
+    position: relative;
     border-radius: var(--border-radius-small);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -244,8 +244,10 @@ li {
 .menu-toggle {
     display: none;
     cursor: pointer;
-    z-index: 1001; /* Над другими элементами */
-    padding: var(--spacing-sm); /* Для удобства нажатия */
+    z-index: 1001;
+    padding: var(--spacing-sm);
+    background: none; /* Убедитесь, что нет фона */
+    border: none; /* Убедитесь, что нет границы */
 }
 
 .hamburger {
@@ -276,31 +278,61 @@ li {
     transform: translateY(10px);
 }
 
+/* Стили для анимации гамбургера в крестик */
+.menu-toggle.is-active .hamburger {
+    background: transparent;
+}
+.menu-toggle.is-active .hamburger::before {
+    transform: translateY(0) rotate(45deg);
+}
+.menu-toggle.is-active .hamburger::after {
+    transform: translateY(0) rotate(-45deg);
+}
+
 /* Кнопка закрытия меню (скрыта по умолчанию) */
 .close-menu-button {
     display: none;
-    font-size: 2.5em; /* Немного больше для удобства */
+    font-size: 2.5em;
     position: absolute;
     top: var(--spacing-md);
     right: var(--spacing-md);
     cursor: pointer;
-    color: var(--text-color-light); /* Цвет для кнопки закрытия в мобильном меню */
+    color: var(--text-color-light);
     z-index: 1002;
     background: none;
     border: none;
     padding: 0;
-    line-height: 1; /* Убрать дополнительный интервал */
+    line-height: 1;
 }
 .close-menu-button:hover,
 .close-menu-button:focus {
     color: var(--primary-color);
 }
 
+/* НОВЫЙ СТИЛЬ: Полноэкранный оверлей для предотвращения кликов по фону */
+.nav-mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+.nav-mobile-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+
 /* ==========================================================================
    Sections and Layout
 ========================================================================== */
 .section, .aurum-fox-section {
-    padding: var(--spacing-xl) 0; /* Большой вертикальный отступ для секций */
+    padding: var(--spacing-xl) 0;
     text-align: center;
     background-color: var(--color-bg-light);
     color: var(--text-color-light);
@@ -320,7 +352,7 @@ li {
     color: var(--text-color-white);
     padding: var(--spacing-xl) 0;
     text-align: center;
-    min-height: 80vh; /* Минимальная высота для героической секции */
+    min-height: 80vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -332,7 +364,7 @@ li {
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-lg);
-    flex-wrap: wrap; /* Для адаптивности */
+    flex-wrap: wrap;
 }
 
 .hero-content {
@@ -344,17 +376,17 @@ li {
 .hero-image {
     flex: 1;
     min-width: 250px;
-    display: flex; /* Для центрирования изображения */
+    display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .hero-image img {
-    max-width: 100%; /* Изображение не занимает всю ширину */
+    max-width: 100%;
     height: auto;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    animation: pulse 2s infinite alternate; /* Простая анимация */
+    animation: pulse 2s infinite alternate;
     transition: transform 0.3s ease-in-out;
 }
 .hero-image img:hover {
@@ -390,13 +422,13 @@ li {
 
 /* Чередующиеся фоны секций для визуального разделения */
 .aurum-fox-section {
-    background-color: var(--background-color-light); /* Светлый фон */
-    color: var(--text-color-dark); /* Темный текст */
+    background-color: var(--background-color-light);
+    color: var(--text-color-dark);
 }
 
 .aurum-fox-section-alt {
-    background-color: var(--section-bg-light); /* Светлый оттенок серого */
-    color: var(--text-color-dark); /* Темный текст */
+    background-color: var(--section-bg-light);
+    color: var(--text-color-dark);
 }
 
 .web3-section {
@@ -623,7 +655,7 @@ li {
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
-    text-align: justify; /* Выравнивание по ширине */
+    text-align: justify;
     font-size: 1.1em;
 }
 
@@ -675,7 +707,7 @@ li {
 }
 
 .table-responsive {
-    overflow-x: auto; /* Для таблиц на маленьких экранах */
+    overflow-x: auto;
     margin-top: var(--spacing-md);
 }
 
@@ -715,7 +747,7 @@ li {
 .contract-address {
     text-align: center;
     margin-top: var(--spacing-lg);
-    background-color: var(--color-bg-input); /* Изменено на dark-theme compatible */
+    background-color: var(--color-bg-input);
     padding: var(--spacing-md);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
@@ -736,13 +768,13 @@ li {
 }
 
 .contract-address .highlight-text {
-    color: var(--primary-color); /* Золотой для контракта */
-    word-break: break-all; /* Разрыв слова для длинных слов */
+    color: var(--primary-color);
+    word-break: break-all;
 }
 
 /* How to Buy */
 .buy-steps, .how-to-list {
-    list-style: none; /* Убрать маркеры по умолчанию */
+    list-style: none;
     padding: 0;
     max-width: 900px;
     margin: 0 auto;
@@ -755,7 +787,7 @@ li {
     border-radius: var(--border-radius-base);
     box-shadow: var(--box-shadow-medium);
     position: relative;
-    padding-left: 60px; /* Отступ для номера */
+    padding-left: 60px;
     border-left: 5px solid var(--primary-color);
     color: var(--text-color-light);
 }
@@ -783,7 +815,7 @@ li {
     margin-top: 0;
 }
 
-.buy-steps ul, .how-to-list ul { /* Стили для вложенного списка */
+.buy-steps ul, .how-to-list ul {
     list-style: disc;
     margin-top: var(--spacing-sm);
     padding-left: var(--spacing-md);
@@ -812,13 +844,13 @@ li {
 }
 
 .nft-card {
-    background-color: var(--color-bg-card); /* Изменено на dark-theme compatible */
+    background-color: var(--color-bg-card);
     padding: var(--spacing-md);
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow-item); /* Изменено на dark-theme compatible */
+    box-shadow: var(--box-shadow-item);
     text-align: center;
     transition: transform 0.3s ease;
-    color: var(--text-color-light); /* Обеспечить светлый текст на темной карточке */
+    color: var(--text-color-light);
 }
 
 .nft-card:hover {
@@ -831,7 +863,7 @@ li {
     height: auto;
     border-radius: var(--border-radius);
     margin-bottom: var(--spacing-sm);
-    border: 1px solid #4a4a5c; /* Добавлен легкий бордер */
+    border: 1px solid #4a4a5c;
 }
 
 .nft-card h4 {
@@ -1003,7 +1035,7 @@ li {
 .admin-announcement-section h3 {
     text-align: center;
     margin-bottom: var(--spacing-md);
-    color: var(--primary-color); /* Изменено на primary-color для темной темы */
+    color: var(--primary-color);
 }
 
 .admin-announcement-section textarea, textarea#announcementInput {
@@ -1086,7 +1118,7 @@ hr {
 .social-icon {
     width: 24px;
     height: 24px;
-    fill: currentColor; /* Использует цвет текста кнопки */
+    fill: currentColor;
     margin-right: var(--spacing-xs);
 }
 
@@ -1099,10 +1131,10 @@ hr {
 .twitter-btn { background-color: #1DA1F2; color: var(--text-color-white); border: none;}
 .twitter-btn:hover { background-color: color-mix(in srgb, #1DA1F2 90%, black); }
 
-.solscan-btn { background-color: #8C52FF; color: var(--text-color-white); border: none;} /* Пример цвета для Solscan */
+.solscan-btn { background-color: #8C52FF; color: var(--text-color-white); border: none;}
 .solscan-btn:hover { background-color: color-mix(in srgb, #8C52FF 90%, black); }
 
-.news-btn { background-color: #f7b731; color: var(--color-bg-dark); border: none;} /* Произвольный цвет для "Announcements" */
+.news-btn { background-color: #f7b731; color: var(--color-bg-dark); border: none;}
 .news-btn:hover { background-color: color-mix(in srgb, #f7b731 90%, black); }
 
 
@@ -1110,7 +1142,7 @@ hr {
 .contact-section {
     background-color: var(--section-bg-dark);
     color: var(--text-color-light);
-    padding-bottom: var(--spacing-xl); /* Дополнительный отступ, чтобы не сливалось с футером */
+    padding-bottom: var(--spacing-xl);
 }
 
 .contact-info {
@@ -1132,7 +1164,7 @@ hr {
 .contact-form {
     max-width: 600px;
     margin: 0 auto;
-    background-color: var(--background-color-dark); /* Темнее, чем секция */
+    background-color: var(--background-color-dark);
     padding: var(--spacing-lg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-lg);
@@ -1236,7 +1268,7 @@ hr {
     box-shadow: var(--box-shadow-medium);
     text-align: center;
     color: var(--text-color-light);
-    border: 1px solid #3a3a3a; /* Добавить легкий бордер */
+    border: 1px solid #3a3a3a;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1403,7 +1435,7 @@ hr {
 .nft-detail-view {
     text-align: left;
     padding: var(--spacing-md);
-    color: var(--text-color-light); /* Изменено для темной темы */
+    color: var(--text-color-light);
 }
 
 .nft-detail-image {
@@ -1549,7 +1581,7 @@ hr {
 }
 
 .dao-proposal-item .dao-creator {
-    font-family: monospace; /* Моноширинный шрифт для адреса */
+    font-family: monospace;
     color: var(--color-wallet-address);
     font-weight: 600;
     word-break: break-all;
@@ -1661,7 +1693,7 @@ hr {
     justify-content: center;
     gap: 15px;
     margin-bottom: 25px;
-    flex-wrap: wrap; /* Для мобильных */
+    flex-wrap: wrap;
 }
 
 .staking-actions input[type="number"] {
@@ -1721,9 +1753,9 @@ hr {
    Multimedia Hub Sections
 ========================================================================== */
 .multimedia-portal-container {
-    text-align: center; /* Центрировать заголовки и вступительный текст */
-    color: var(--text-color-light); /* Изменено на light для темной темы */
-    background: var(--color-bg-dark); /* Изменено на dark для темной темы */
+    text-align: center;
+    color: var(--text-color-light);
+    background: var(--color-bg-dark);
     padding: var(--spacing-md);
     border-radius: var(--border-radius-base);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -1735,7 +1767,7 @@ hr {
 .multimedia-section-alt .multimedia-subheading,
 .multimedia-section-alt .item,
 .multimedia-section-alt .placeholder-item {
-    color: var(--text-color-light); /* Для светлого текста на темном фоне */
+    color: var(--text-color-light);
 }
 
 .multimedia-features-grid {
@@ -1747,13 +1779,13 @@ hr {
 
 /* Стили карточек функций переиспользуются, просто убедитесь, что цвета соответствуют разделу */
 .multimedia-features-grid .feature-card {
-    background-color: var(--color-bg-card); /* Изменено на dark-theme compatible */
+    background-color: var(--color-bg-card);
     color: var(--text-color-light);
-    border: 1px solid #3a3a4c; /* Темный бордер */
+    border: 1px solid #3a3a4c;
 }
 
 .multimedia-features-grid .feature-card h3 {
-    color: var(--primary-color); /* Отлично сочетается с темной темой */
+    color: var(--primary-color);
 }
 
 .multimedia-features-grid .feature-card .multimedia-link {
@@ -1770,19 +1802,19 @@ hr {
 .upload-form {
     max-width: 700px;
     margin: var(--spacing-lg) auto;
-    background-color: var(--color-bg-input); /* Изменено на dark-theme compatible */
+    background-color: var(--color-bg-input);
     padding: var(--spacing-lg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
-    text-align: left; /* Текст формы выровнен по левому краю */
-    color: var(--text-color-light); /* Текст формы светлый */
+    text-align: left;
+    color: var(--text-color-light);
 }
 
 .upload-form label {
     display: block;
     margin-bottom: var(--spacing-xs);
     font-weight: 600;
-    color: var(--primary-color); /* Золотой для лейблов */
+    color: var(--primary-color);
 }
 
 .upload-form input[type="text"],
@@ -1791,16 +1823,16 @@ hr {
     width: 100%;
     padding: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
-    border: 1px solid #4a4a7e; /* Темный бордер */
+    border: 1px solid #4a4a7e;
     border-radius: 5px;
-    background-color: #2a2a3a; /* Темный фон */
+    background-color: #2a2a3a;
     color: var(--text-color-light);
     font-family: inherit;
     font-size: 1em;
 }
 
 .upload-form input[type="file"] {
-    background-color: #3a3a4c; /* Темнее для инпута файла */
+    background-color: #3a3a4c;
     border: 1px solid #555;
 }
 
@@ -1840,7 +1872,7 @@ hr {
 
 .multimedia-item img {
     max-width: 100%;
-    height: 150px; /* Фиксированная высота для единообразного размера изображений */
+    height: 150px;
     object-fit: cover;
     border-radius: 4px;
     margin-bottom: var(--spacing-sm);
@@ -1873,18 +1905,18 @@ hr {
 }
 
 .game-content input[type="number"] {
-    width: calc(100% - 100px); /* Чтобы уместить кнопку */
+    width: calc(100% - 100px);
     padding: var(--spacing-sm);
     border: 1px solid #ccc;
     border-radius: 5px;
     margin-right: var(--spacing-sm);
     text-align: center;
-    background-color: var(--color-bg-input); /* Изменено для темной темы */
+    background-color: var(--color-bg-input);
     color: var(--text-color-light);
 }
 
 .game-content button {
-    margin-top: var(--spacing-sm); /* Отступ для кнопок */
+    margin-top: var(--spacing-sm);
 }
 
 .multimedia-link {
@@ -1974,7 +2006,7 @@ hr {
 }
 
 .footer .copy-btn {
-    background-color: var(--secondary-color); /* Другой цвет, чем у хедера */
+    background-color: var(--secondary-color);
 }
 
 .footer .copy-btn:hover {
@@ -1986,28 +2018,27 @@ hr {
 }
 
 /* ==========================================================================
-   Modals (ИСПОАВЛЕНО - Скорректирована логика отображения/скрытия)
+   Modals
 ========================================================================== */
 .modal {
-    display: none; /* Скрыто по умолчанию */
-    position: fixed; /* Позиция поверх всего */
-    z-index: 2000; /* Высокий z-index */
+    display: none;
+    position: fixed;
+    z-index: 2000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    /* overflow: auto; удалено, прокрутка теперь управляется классом .is-open */
-    background-color: var(--color-modal-overlay); /* Полупрозрачный черный фон */
-    padding-top: 0; /* Убрано, центрирование через flex */
+    background-color: var(--color-modal-overlay);
+    padding-top: 0;
 }
 
 /* Класс, который ваш JS должен добавлять для отображения модального окна */
 .modal.is-open {
-    display: flex; /* Используем flex для центрирования */
+    display: flex;
     align-items: center;
     justify-content: center;
-    overflow-y: auto; /* Позволяет прокручивать оверлей, если контент не помещается */
-    padding: var(--spacing-md) 0; /* Небольшой вертикальный отступ */
+    overflow-y: auto;
+    padding: var(--spacing-md) 0;
 }
 
 .modal-content {
@@ -2018,11 +2049,11 @@ hr {
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     position: relative;
     max-width: 700px;
-    width: 90%; /* Адаптивная ширина */
-    animation: fadeInScale 0.3s ease-out; /* Анимация появления */
-    color: var(--text-color-light); /* Цвет текста для модального окна */
+    width: 90%;
+    animation: fadeInScale 0.3s ease-out;
+    color: var(--text-color-light);
     max-height: 90vh;
-    overflow-y: auto; /* <--- Прокрутка внутри модального окна */
+    overflow-y: auto;
     border: 1px solid #888;
 }
 
@@ -2033,9 +2064,9 @@ hr {
 }
 
 .modal-content .web3-form {
-    background: none; 
-    box-shadow: none; 
-    padding: 0; 
+    background: none;
+    box-shadow: none;
+    padding: 0;
 }
 
 .modal-content .modal-nft-image {
@@ -2083,11 +2114,11 @@ hr {
     position: fixed;
     top: var(--spacing-md);
     right: var(--spacing-md);
-    z-index: 10000; /* Высокий z-index, чтобы быть поверх всего */
+    z-index: 10000;
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
-    pointer-events: none; /* Позволяет кликать сквозь контейнер, если он пуст */
+    pointer-events: none;
 }
 
 .notification {
@@ -2099,9 +2130,9 @@ hr {
     opacity: 0;
     transform: translateX(100%);
     transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    min-width: 280px; /* Минимальная ширина для уведомлений */
+    min-width: 280px;
     text-align: center;
-    pointer-events: all; /* Включить pointer-events для самого уведомления */
+    pointer-events: all;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -2133,7 +2164,7 @@ hr {
 }
 
 /* ==========================================================================
-   Media Queries for Responsiveness (Original)
+   Media Queries for Responsiveness (ИСХОДНЫЙ КОД + ИСПРАВЛЕНИЯ ДЛЯ МЕНЮ)
 ========================================================================== */
 @media (max-width: 992px) {
     h1 { font-size: 2.5em; }
@@ -2146,66 +2177,69 @@ hr {
 }
 
 @media (max-width: 768px) {
-    /* Стили для мобильного меню уже определены выше */
+    /* Стили для хедера, чтобы логотип и гамбургер были в одной строке */
     .header .container {
-        /* Убрал 'flex-direction: column' чтобы оставить логотип и гамбургер в одной строке */
         flex-wrap: wrap;
-        justify-content: space-between; /* Лого слева, гамбургер справа */
+        justify-content: space-between;
         text-align: left;
-        gap: 0; /* Убираем лишний gap */
+        gap: 0;
     }
 
     .logo {
-        margin-bottom: 0; /* Убираем лишний отступ */
+        margin-bottom: 0;
         width: auto;
         justify-content: flex-start;
     }
-    
+
     .nav {
-        width: auto; /* Навигация только для гамбургера */
+        width: auto;
         display: block;
         justify-content: flex-end;
     }
 
-    /* Стили для мобильной навигации */
+    /* *** ИСПРАВЛЕНИЕ: Стили для мобильной навигации для плавной анимации *** */
     .nav ul.main-nav {
         flex-direction: column;
         position: fixed;
         top: 0;
-        right: 0; /* Начинается справа */
-        width: 70%; /* Ширина мобильного меню */
+        right: 0;
+        width: 70%;
         max-width: 300px;
         height: 100%;
         background-color: var(--color-bg-dark);
         padding: 60px var(--spacing-md) var(--spacing-md);
         box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
-        transform: translateX(100%); /* Скрыто справа */
-        z-index: 1000;
+        transform: translateX(100%); /* СКРЫТО СПРАВА */
+        z-index: 1001; /* Выше оверлея */
         overflow-y: auto;
-        align-items: flex-start; /* Элементы по левому краю */
-        gap: 0; /* Убираем лишний gap */
-        display: none; /* Скрываем по умолчанию, управляется JS */
+        align-items: flex-start;
+        gap: 0;
+        /* Переходы для плавной анимации */
+        transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        visibility: hidden; /* Скрываем, чтобы элементы внутри не были доступны для клика */
+        display: flex; /* Используем flex для расположения элементов */
     }
-    
-    .nav ul.main-nav.open, .nav ul.main-nav.active {
-        transform: translateX(0);
-        display: flex; /* Показываем при открытии */
+
+    /* *** НОВЫЙ СТИЛЬ: Класс, добавляемый JS при открытии *** */
+    .nav ul.main-nav.is-open {
+        transform: translateX(0); /* ПОКАЗАН */
+        visibility: visible; /* Делаем видимым */
     }
 
     .nav ul.main-nav li {
         width: 100%;
         text-align: left;
-        margin-bottom: 0; /* Убираем старый отступ */
-        border-bottom: 1px solid #333; /* Добавляем разделитель */
+        margin-bottom: 0;
+        border-bottom: 1px solid #333;
     }
 
     .nav ul.main-nav li a {
         font-size: 1.2em;
         display: block;
-        padding: 15px 10px; /* Увеличиваем область клика */
+        padding: 15px 10px;
         color: var(--text-color-light);
     }
-    
+
     .nav ul.main-nav li a:hover {
         background-color: #3a3a4c;
         color: var(--primary-color);
@@ -2218,14 +2252,14 @@ hr {
     }
 
     .menu-toggle {
-        display: block;
-        position: static; /* Возвращаем в поток документа */
+        display: block; /* ПОКАЗЫВАЕМ гамбургер */
+        position: static;
         transform: none;
     }
 
     .close-menu-button {
-        display: block;
-        position: absolute; /* Кнопка закрытия внутри меню */
+        display: block; /* ПОКАЗЫВАЕМ кнопку закрытия внутри меню */
+        position: absolute;
         top: 10px;
         right: 15px;
     }
@@ -2241,23 +2275,23 @@ hr {
 
     .hero-content {
         text-align: center;
-        order: 2; /* Контент под изображением */
+        order: 2;
     }
     .hero-content h1, .hero-content .tagline {
-        text-align: center; /* Центрируем текст внутри мобильного контента */
+        text-align: center;
     }
 
 
     .hero-image {
-        order: 1; /* Изображение над контентом */
+        order: 1;
         margin-bottom: var(--spacing-lg);
     }
 
     .call-to-action, .hero-buttons {
-        justify-content: center; /* Центрировать кнопки на мобильных устройствах */
+        justify-content: center;
     }
     .hero-buttons .btn, .hero-buttons .primary-btn {
-        width: 100%; /* Кнопки на всю ширину */
+        width: 100%;
     }
 
     h1 { font-size: 2.8em; }
@@ -2271,7 +2305,7 @@ hr {
         padding: 60px 0;
     }
 
-    /* Одиночная колонка для всех Grid-элементов (Уже было, оставляем) */
+    /* Сетка на одну колонку */
     .tokenomics-grid,
     .nft-showcase,
     .nfc-grid,
@@ -2288,19 +2322,15 @@ hr {
     .gallery,
     .posts,
     .games {
-        grid-template-columns: 1fr; 
+        grid-template-columns: 1fr;
     }
-    
+
     /* Дополнительная адаптация roadmap для читабельности */
-    .roadmap-grid {
-        border-left: none; /* Убираем вертикальную линию, если она была */
-    }
-    
     .roadmap-item {
         padding-left: var(--spacing-md);
         text-align: left;
     }
-    
+
     .buy-steps li {
         padding: 20px;
     }
@@ -2327,13 +2357,13 @@ hr {
     }
 
     .staking-actions .input-group {
-        flex-direction: column; /* Элементы группы ввода в столбец */
+        flex-direction: column;
         align-items: center;
         gap: 10px;
     }
 
     .staking-actions input[type="number"] {
-        max-width: 100%; /* Занимает всю ширину */
+        max-width: 100%;
         margin-right: 0;
         margin-bottom: var(--spacing-sm);
     }
@@ -2342,7 +2372,7 @@ hr {
         width: 95%;
         padding: var(--spacing-md);
     }
-    
+
     /* Адаптация социальных ссылок */
     .social-links {
         flex-direction: column;
@@ -2355,8 +2385,7 @@ hr {
 }
 
 /* ==========================================================================
-   МОБІЛЬНА АДАПТИВНІСТЬ ДЛЯ СІТОК ТА ТАБЛИЦЬ (MAX-WIDTH: 600PX) - НОВИЙ БЛОК
-   Это обеспечит лучшую читабельность на маленьких телефонах.
+   МОБІЛЬНА АДАПТИВНІСТЬ ДЛЯ СІТОК ТА ТАБЛИЦЬ (MAX-WIDTH: 600PX)
    ========================================================================== */
 @media (max-width: 600px) {
     /* Основні сітки на всю ширину (стовпчик), вже були 1fr, але для надійності */
@@ -2372,59 +2401,23 @@ hr {
     .gallery,
     .posts,
     .games {
-        grid-template-columns: 1fr; /* Один стовпчик */
-        gap: 25px; 
-    }
-    
-    .nft-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Залишимо 2 колонки, якщо карточки маленькі */
+        grid-template-columns: 1fr;
+        gap: 25px;
     }
 
-    /* Адаптація таблиці токеноміки (Horizontal Scrolling або Card View) */
+    .nft-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    /* Адаптація таблиці токеноміки (Horizontal Scrolling) */
     .tokenomics-item table {
         width: 100%;
         display: block;
-        overflow-x: auto; /* Дозволяє горизонтальну прокрутку таблиці */
+        overflow-x: auto;
     }
-    
-    /* Або, для кращої мобільної читабельності, перетворимо таблицю на картки: */
-    /*
-    .tokenomics-item table {
-        display: block;
-        width: 100%;
-    }
-    .tokenomics-item thead { 
-        display: none; // Скрыть заголовки 
-    }
-    .tokenomics-item tr { 
-        border: 1px solid #4a4a7e; 
-        margin-bottom: 10px; 
-        display: block; 
-    }
-    .tokenomics-item td { 
-        border: none;
-        border-bottom: 1px solid #4a4a7e; 
-        position: relative;
-        padding-left: 50%; 
-        text-align: right;
-        display: block;
-    }
-    .tokenomics-item td:before { 
-        position: absolute;
-        top: 6px;
-        left: 6px;
-        width: 45%; 
-        padding-right: 10px; 
-        white-space: nowrap;
-        text-align: left;
-        font-weight: bold;
-        color: var(--primary-color);
-        content: attr(data-label); // Потрібен data-label в HTML
-    }
-    */
-    
+
     .dao-vote-btn {
-        width: calc(50% - 7.5px); /* Две кнопки в ряд */
+        width: calc(50% - 7.5px);
         margin: 5px 0;
     }
     .dao-actions {
@@ -2434,27 +2427,27 @@ hr {
 
 
 /* ==========================================================================
-   Media Queries for Responsiveness (The smallest screens - Original)
+   Media Queries for Responsiveness (The smallest screens)
 ========================================================================== */
 @media (max-width: 480px) {
     h1 { font-size: 2em; }
     h2 { font-size: 1.6em; }
     .hero-content h1 { font-size: 2.4em; }
     .hero-content .tagline { font-size: 1.1em; }
-    
+
     .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn {
         padding: var(--spacing-sm);
         font-size: 0.9em;
     }
     .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn {
-        width: 100%; /* Кнопки на всю ширину */
+        width: 100%;
         justify-content: center;
         padding: 12px 20px;
         margin: 5px 0;
     }
-    
+
     .container {
-        padding: 0 var(--spacing-sm); /* 10px по бокам */
+        padding: 0 var(--spacing-sm);
     }
     .section {
         padding: var(--spacing-lg) var(--spacing-sm);
@@ -2462,13 +2455,13 @@ hr {
     .nft-item img {
         height: 150px;
     }
-    
+
     .dao-vote-btn {
-        width: 100%; /* Кнопки голосования на всю ширину */
+        width: 100%;
     }
-    
+
     .tokenomics-item .highlight {
-        font-size: 1.4em; /* Зменшення розміру шрифту для ключових значень */
+        font-size: 1.4em;
     }
 }
 
@@ -2477,16 +2470,16 @@ hr {
    CUSTOM STYLES
 ========================================================================== */
 .web3-button.connected {
-    background-color: #4CAF50; /* Зеленый цвет для подключенного состояния */
+    background-color: #4CAF50;
     color: white;
     border: 1px solid #4CAF50;
-    cursor: default; /* Изменяем курсор, чтобы показать, что кнопка некликабельна в этом состоянии */
-    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4); /* Добавляем тень для лучшего вида */
-    transition: none; /* Убираем hover-эффект при подключении */
+    cursor: default;
+    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
+    transition: none;
     transform: none;
 }
 .web3-button.connected:hover {
-    background-color: #4CAF50; /* Отключаем hover-эффект */
+    background-color: #4CAF50;
     color: white;
     box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
 }
