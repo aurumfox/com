@@ -96,11 +96,11 @@ body {
     overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
 }
 
-/* 🛑 УЛУЧШЕНИЕ: Блокировка прокрутки основного контента при открытии модального окна или меню */
+/* 🛑 ИСПРАВЛЕНИЕ: Блокировка прокрутки основного контента при открытии модального окна или меню */
 body.modal-open,
 body.menu-open { 
     overflow: hidden; /* Блокировка прокрутки */
-    /* Убрано position: fixed; width: 100%; height: 100%; для предотвращения скачков */
+    /* position: fixed; width: 100%; height: 100%; - добавляется в медиа-запросе для мобильных */
 }
 
 /* A11Y: Focus States (Улучшенная доступность для клавиатуры) */
@@ -166,7 +166,7 @@ li {
 }
 
 /* ==========================================================================
-   Header and Navigation (ИСПОЛЬЗУЕМ УЛУЧШЕННЫЕ Z-INDEX)
+   Header and Navigation (ИСПРАВЛЕНО ДЛЯ МОБИЛЬНОГО МЕНЮ)
 ========================================================================== */
 .header {
     background-color: rgba(18, 18, 30, 0.9); /* Темный фон хедера с небольшой прозрачностью */
@@ -204,6 +204,13 @@ li {
     font-weight: 700;
     color: var(--primary-color);
 }
+
+/* 🛑 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Скрываем мобильный оверлей по умолчанию на десктопе, 
+   если он объявлен как отдельный элемент. Если это просто .main-nav, это не повлияет. */
+.nav-mobile-overlay {
+    display: none; 
+}
+
 
 /* Навигация для десктопа */
 .nav ul.main-nav {
@@ -283,16 +290,16 @@ li {
     transform: translateY(10px);
 }
 
-/* Кнопка закрытия меню */
+/* Кнопка закрытия меню (Крестик) */
 .close-menu-button {
-    display: none; 
+    display: none; /* 🛑 ИСПРАВЛЕНИЕ: Скрыт по умолчанию */
     font-size: 2.5em; 
-    position: absolute;
-    top: 10px; /* Скорректировано для мобильного меню */
-    right: 15px; /* Скорректировано для мобильного меню */
+    position: absolute; /* Позиционирование будет скорректировано в медиа-запросе */
+    top: 10px; 
+    right: 15px; 
     cursor: pointer;
     color: var(--text-color-light); 
-    z-index: 1005; /* УВЕЛИЧЕННЫЙ Z-INDEX */
+    z-index: 1005; 
     background: none;
     border: none;
     padding: 0;
@@ -2146,7 +2153,7 @@ hr {
 }
 
 /* ==========================================================================
-   Media Queries for Responsiveness (ИСПРАВЛЕНО)
+   Media Queries for Responsiveness (ИСПРАВЛЕННЫЙ БЛОК)
 ========================================================================== */
 @media (max-width: 992px) {
     h1 { font-size: 2.5em; }
@@ -2159,7 +2166,84 @@ hr {
 }
 
 @media (max-width: 768px) {
-    /* Стили для мобильного меню уже определены выше */
+    /* ----------------------------------------------------- */
+    /* 🛑 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ДЛЯ МОБИЛЬНОГО МЕНЮ */
+    /* ----------------------------------------------------- */
+    
+    /* 💡 1. КОНТЕЙНЕР МЕНЮ: Скрыт по умолчанию сдвигом вправо */
+    .nav ul.main-nav { 
+        /* Эти стили активируются только на мобильных (до 768px) */
+        display: flex; 
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        right: 0; 
+        width: 100%; 
+        max-width: 350px; 
+        height: 100%;
+        background-color: var(--color-bg-dark);
+        padding: 80px var(--spacing-md) var(--spacing-md);
+        box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
+        
+        /* ГАРАНТИРОВАННО СКРЫТО ПРИ ЗАГРУЗКЕ: */
+        transform: translateX(100%); 
+        opacity: 0; 
+        visibility: hidden; 
+        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        
+        z-index: 1001;
+        overflow-y: auto;
+        align-items: flex-start; 
+        gap: 0; 
+    }
+    
+    /* 💡 2. СОСТОЯНИЕ АКТИВНО (ОТКРЫТО) */
+    .nav ul.main-nav.active {
+        /* JS добавляет .active, чтобы показать меню */
+        transform: translateX(0);
+        opacity: 1; 
+        visibility: visible; 
+    }
+    
+    /* 💡 3. ГАМБУРГЕР (menuToggle) */
+    .menu-toggle {
+        display: block; /* Показываем гамбургер на мобильном */
+        position: relative; 
+        z-index: 1004; 
+    }
+    
+    /* 💡 4. КРЕСТИК (close-menu-button) */
+    .close-menu-button {
+        /* Делаем его фиксированным и невидимым по умолчанию */
+        display: block; 
+        position: fixed; 
+        top: 20px;
+        right: 20px;
+        color: var(--text-color-light); 
+        z-index: 1005; 
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease;
+    }
+
+    /* 💡 5. ПОКАЗ КРЕСТИКА */
+    .nav ul.main-nav.active + .close-menu-button, /* Если крестик идет сразу за меню */
+    .nav ul.main-nav.active .close-menu-button { /* Если крестик внутри меню */
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* 🛑 6. БЛОКИРОВКА BODY SCROLL: Чтобы предотвратить скачки при открытии меню */
+    body.menu-open { 
+        position: fixed; 
+        width: 100%;
+        height: 100%;
+    }
+    
+    /* ----------------------------------------------------- */
+    /* ВАШИ ОСТАЛЬНЫЕ СТИЛИ ДЛЯ 768PX (Без изменений) */
+    /* ----------------------------------------------------- */
+
     .header .container {
         flex-wrap: wrap;
         justify-content: space-between; 
@@ -2179,47 +2263,11 @@ hr {
         justify-content: flex-end;
     }
 
-    /* Стили для мобильной навигации (ИСПРАВЛЕНО) */
-    .nav ul.main-nav {
-        flex-direction: column;
-        position: fixed;
-        top: 0;
-        right: 0; 
-        width: 70%; 
-        max-width: 300px;
-        height: 100%;
-        background-color: var(--color-bg-dark);
-        padding: 60px var(--spacing-md) var(--spacing-md);
-        box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
-        
-        /* 🛑 ИСПРАВЛЕНИЕ: МЕНЯЕМ display: none НА OPACITY И VISIBILITY */
-        transform: translateX(100%); 
-        opacity: 0; 
-        visibility: hidden; 
-        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0.3s;
-        
-        z-index: 1001;
-        overflow-y: auto;
-        align-items: flex-start; 
-        gap: 0; 
-        /* Оставляем flex, чтобы transform работал */
-        display: flex; 
-    }
-    
-    .nav ul.main-nav.open, .nav ul.main-nav.active {
-        /* Эти стили теперь ГАРАНТИРОВАНО ПЕРЕОПРЕДЕЛЯТ закрытое состояние */
-        transform: translateX(0);
-        opacity: 1; 
-        visibility: visible; 
-        /* display: flex; - уже есть в базовом селекторе, но оставляем */
-        display: flex;
-    }
-
     .nav ul.main-nav li {
         width: 100%;
         text-align: left;
         margin-bottom: 0; 
-        border-bottom: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+        border-bottom: 1px solid var(--color-bg-light); 
     }
 
     .nav ul.main-nav li a {
@@ -2230,7 +2278,7 @@ hr {
     }
     
     .nav ul.main-nav li a:hover {
-        background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+        background-color: var(--color-bg-card); 
         color: var(--primary-color);
     }
 
@@ -2238,33 +2286,6 @@ hr {
     /* Убираем подчеркивание */
     .nav ul.main-nav li a::after {
         display: none;
-    }
-
-    /* 💡 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 1: Z-INDEX ГАМБУРГЕРА */
-    .menu-toggle {
-        display: block;
-        position: relative; 
-        z-index: 1004; /* Увеличили Z-INDEX */
-        transform: none;
-    }
-    
-    /* 💡 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 2: ВИДИМОСТЬ КРЕСТИКА */
-    .close-menu-button {
-        display: none; /* Скрываем по умолчанию */
-        position: absolute; 
-        top: 10px;
-        right: 15px;
-    }
-
-    /* Показываем крестик только, когда меню открыто */
-    .nav ul.main-nav.open .close-menu-button,
-    .nav ul.main-nav.active .close-menu-button {
-        display: block;
-        z-index: 1005; /* Гарантируем, что он выше меню */
-    }
-    
-    .close-menu-button:hover {
-        color: var(--primary-color);
     }
 
     /* Корректировка героической секции */
