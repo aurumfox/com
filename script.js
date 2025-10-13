@@ -194,57 +194,36 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-// --- HAMBURGER MENU LOGIC ---
-function setupHamburgerMenu() {
-    const menuToggle = document.getElementById('menuToggle');
-    const mainNav = document.getElementById('mainNav');
-    const closeCross = document.getElementById('closeMainMenuCross');
-    
-    // Если элементы не найдены, прекращаем работу
-    if (!menuToggle || !mainNav || !closeCross) {
-        console.error("Menu elements not found (menuToggle, mainNav, or closeMainMenuCross).");
-        return;
-    }
-    
-    /** Функция переключения состояния меню */
-    function toggleMenu() {
-        // Переключаем класс 'open' на главном списке навигации
-        const isOpen = mainNav.classList.toggle('open');
-        
-        // Обновляем атрибуты доступности (ARIA)
-        menuToggle.setAttribute('aria-expanded', isOpen);
-        mainNav.setAttribute('aria-hidden', !isOpen);
-        
-        // 💡 ОЧЕНЬ ВАЖНО: Добавляем/удаляем класс на <body>
-        // Это позволяет CSS легко скрыть скролл и стилизовать оверлей.
-        document.body.classList.toggle('menu-open', isOpen);
-        
-        // 💡 ОПЦИОНАЛЬНО: Скрыть гамбургер, когда меню открыто, и показать крестик
-        // Это можно сделать через CSS, но в JS тоже можно:
-        // menuToggle.style.display = isOpen ? 'none' : 'block';
-    }
+// Получаем элементы
+const menuToggle = document.querySelector('.menu-toggle');
+const mainNav = document.querySelector('.main-nav');
+const closeButton = document.querySelector('.close-menu-button');
+const body = document.body;
 
-    // Привязываем функцию ко всем элементам: гамбургеру, крестику, и ссылкам (чтобы закрывалось по клику на ссылку)
-    menuToggle.addEventListener('click', toggleMenu);
-    closeCross.addEventListener('click', toggleMenu);
-    
-    // Закрытие меню при клике на любую ссылку внутри меню
-    mainNav.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-            if (mainNav.classList.contains('open')) {
-                toggleMenu(); // Закрываем меню
-            }
-        });
-    });
-    
-    // Закрытие по клавише ESC
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && mainNav.classList.contains('open')) {
-            toggleMenu();
+// 1. Обработчик для открытия меню (Гамбургер)
+menuToggle.addEventListener('click', function() {
+    mainNav.classList.add('open');
+    body.classList.add('modal-open'); // Добавляем класс для блокировки прокрутки
+});
+
+// 2. Обработчик для ЗАКРЫТИЯ меню (Крестик)
+closeButton.addEventListener('click', function() {
+    mainNav.classList.remove('open');
+    body.classList.remove('modal-open'); // Убираем класс, чтобы вернуть прокрутку
+});
+
+// 3. (Опционально) Закрытие меню при клике на ссылку
+const navLinks = document.querySelectorAll('.main-nav li a');
+
+navLinks.forEach(link => {
+    link.addEventListener('click', function() {
+        if (window.innerWidth <= 768) { // Закрываем только на мобильных
+            mainNav.classList.remove('open');
+            body.classList.remove('modal-open');
         }
     });
-}
-// --- /HAMBURGER MENU LOGIC ---
+});
+
 
 
 // --------------------------------------------------------
