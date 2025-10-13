@@ -2063,15 +2063,8 @@ function initEventListeners() {
         });
     });
 
-    // Menu Toggle
-    if (uiElements.menuToggle) {
-        uiElements.menuToggle.addEventListener('click', () => {
-            uiElements.mainNav.classList.toggle('active');
-            uiElements.menuToggle.classList.toggle('active');
-        });
-    }
-    if (uiElements.closeMainMenuCross) uiElements.closeMainMenuCross.addEventListener('click', closeAllPopups);
-    uiElements.navLinks.forEach(link => link.addEventListener('click', closeAllPopups));
+    /
+    
 
 
     // NFT Marketplace (Delegation)
