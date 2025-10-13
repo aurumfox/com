@@ -197,84 +197,86 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-/**
- // --- HAMBURGER MENU LOGIC (ИСПРАВЛЕНО) ---
-function setupHamburgerMenu() {
+// --- 1. ИСПРАВЛЕНО: Глобальная функция для управления состоянием меню ---
+function toggleMenuState(forceClose = false) {
     const menuToggle = document.getElementById('menuToggle');
     const navOverlay = document.querySelector('.nav-mobile-overlay');
-    const closeMenuCross = document.getElementById('closeMainMenuCross');
-    // Добавлена эта строка, чтобы захватить ВСЕ ссылки для закрытия.
-    const mainNavLinks = document.querySelectorAll('.main-nav a'); // <-- КРИТИЧЕСКИ ВАЖНАЯ ПЕРЕМЕННАЯ
+    const mainNav = document.getElementById('mainNav');
 
-    if (!menuToggle || !navOverlay || !closeMenuCross) {
+    if (!menuToggle || !navOverlay || !mainNav) {
         return;
     }
 
-    const toggleMenu = () => {
-        const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-        
-        // Toggle the 'active' class on the menu overlay for visibility (CSS handles the transition)
-        navOverlay.classList.toggle('active');
-        
-        // Toggle the 'open' class on the toggle button for animation/icon change (CSS handles the animation)
-        menuToggle.classList.toggle('open'); 
-        
-        // Update ARIA attributes for accessibility
-        menuToggle.setAttribute('aria-expanded', String(!isExpanded));
-        document.getElementById('mainNav').setAttribute('aria-hidden', String(isExpanded));
-        
-        // Prevent scrolling on the body when the menu is open (Crucial for mobile experience)
-        document.body.classList.toggle('menu-open');
+    // Определяем текущее состояние или принудительно устанавливаем его
+    const isCurrentlyOpen = menuToggle.classList.contains('open');
+    const newState = forceClose ? false : !isCurrentlyOpen;
+
+    // 1. Toggle 'active' class on the overlay
+    navOverlay.classList.toggle('active', newState);
+    // 2. Toggle 'open' class on the toggle button
+    menuToggle.classList.toggle('open', newState); 
+    // 3. Toggle 'is-open' on the <nav> element for general visibility/styling
+    mainNav.classList.toggle('is-open', newState);
+    
+    // 4. Update ARIA attributes
+    menuToggle.setAttribute('aria-expanded', String(newState));
+    mainNav.setAttribute('aria-hidden', String(!newState));
+    
+    // 5. Block/Unblock scroll on the body (КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ)
+    document.body.classList.toggle('menu-open', newState);
+}
+
+// --- 2. ИСПРАВЛЕНО: Логика гамбургер-меню ---
+function setupHamburgerMenu() {
+    const menuToggle = document.getElementById('menuToggle');
+    const closeMenuCross = document.getElementById('closeMainMenuCross');
+    // КРИТИЧЕСКИ ВАЖНАЯ ПЕРЕМЕННАЯ: захват всех ссылок
+    const mainNavLinks = document.querySelectorAll('.main-nav a'); 
+
+    if (!menuToggle || !closeMenuCross) {
+        return;
+    }
+
+    // Обработчик для открытия/закрытия
+    const handleToggle = (e) => {
+        // Проверяем, существует ли e, и если да, предотвращаем действие по умолчанию 
+        // только для кнопок, не для клика по ссылке
+        if (e && e.preventDefault && e.target.tagName !== 'A') {
+            e.preventDefault();
+        }
+        toggleMenuState();
     };
 
-    // 1. Listen for click on the hamburger icon
-    menuToggle.addEventListener('click', toggleMenu);
+    // 1. Listen for click/keydown on the hamburger icon
+    menuToggle.addEventListener('click', handleToggle);
     menuToggle.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggleMenu();
+            handleToggle(e);
         }
     });
 
-    // 2. Listen for click on the close button (X)
-    closeMenuCross.addEventListener('click', toggleMenu);
+    // 2. Listen for click/keydown on the close button (X)
+    closeMenuCross.addEventListener('click', handleToggle);
     closeMenuCross.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggleMenu();
+            handleToggle(e);
         }
     });
 
-    // 3. Close the menu when a link is clicked (ИСПРАВЛЕНИЕ ДЛЯ ЗАКРЫТИЯ МЕНЮ!)
+    // 3. Close the menu when a link is clicked
     mainNavLinks.forEach(link => {
         link.addEventListener('click', () => {
-            // Проверяем, открыто ли меню (если нет, клик по ссылке ничего не делает)
-            if (navOverlay.classList.contains('active')) {
-                toggleMenu();
-            }
+            // При клике на ссылку просто вызываем принудительное закрытие
+            toggleMenuState(true);
         });
     });
 }
 // --- /HAMBURGER MENU LOGIC ---
 
 
-// ... ВАША ДРУГАЯ ЛОГИКА ...
-
-// --- STARTUP AFTER DOM LOAD ---
-document.addEventListener('DOMContentLoaded', () => {
-    // ...
-    // ПРОВЕРЬТЕ, ЧТО ЭТОТ ВЫЗОВ ЗДЕСЬ ПРИСУТСТВУЕТ:
-    setupHamburgerMenu(); // <-- КРИТИЧЕСКИ ВАЖНОЕ МЕСТО!
-});
-
-// =========================================================
-
-
 // --------------------------------------------------------
-// Добавлена функция для блокировки/разблокировки прокрутки
+// Добавлена функция для блокировки/разблокировки прокрутки (использует menu-open)
 function toggleScrollLock(lock) {
-    // Используем CSS-класс, который вы должны определить в стилях:
-    // .menu-open { overflow: hidden; }
     document.body.classList.toggle('menu-open', lock);
 }
 // --------------------------------------------------------
@@ -445,7 +447,9 @@ function parseAmountToBigInt(amountStr, decimals) {
  */
 function closeAllPopups() {
     const modals = [
-        uiElements.nftDetailsModal, uiElements.nftModal, uiElements.mintNftModal, uiElements.createProposalModal
+        uiElements.nftDetailsModal, uiElements.nftModal, uiElements.mintNftModal, uiElements.createProposalModal, 
+        // Также проверяем модальное окно List NFT, если оно существует
+        document.getElementById('sell-nft-modal') 
     ].filter(Boolean);
 
     let wasModalOpen = false;
@@ -458,12 +462,10 @@ function closeAllPopups() {
         }
     });
     
-    // Также закрываем гамбургер-меню, если оно открыто
-    const mainNav = document.getElementById('mainNav'); // Использование прямого ID для надежности
-    
-    if (mainNav && mainNav.classList.contains('is-open')) {
-        // Вызываем функцию меню для корректного закрытия
-        setupHamburgerMenu().toggleMenu(true); 
+    // ИСПРАВЛЕНО: Закрываем гамбургер-меню, если оно открыто, используя центральную функцию
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle && menuToggle.classList.contains('open')) {
+        toggleMenuState(true); // Принудительное закрытие
         wasModalOpen = true; 
     }
 
@@ -593,7 +595,7 @@ function handlePublicKeyChange(newPublicKey) {
         // MOCK: Handle initial state for MOCK DB and Balances
         if (!MOCK_DB.staking[address]) {
              // 💡 ДОБАВЛЕНО: lockupEndTime в MOCK data
-             MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Date.now() / 1000, stakeHistory: [] };
+             MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), stakeHistory: [] };
              // Initialize MOCK balances on first connection
              // 💡 ИСПРАВЛЕНО: Не сбрасываем, если уже есть, только если нет данных в MOCK_DB
              if (appState.userBalances.AFOX === BigInt(0)) {
@@ -799,7 +801,7 @@ async function fetchUserStakingData() {
             const userKey = sender.toBase58();
             // 💡 ИСПРАВЛЕНО: Инициализация MOCK, если отсутствует
             if (!MOCK_DB.staking[userKey]) {
-                MOCK_DB.staking[userKey] = { stakedAmount: '0', rewards: '0', lockupEndTime: Date.now() / 1000 };
+                MOCK_DB.staking[userKey] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000) };
             }
 
             const mockData = MOCK_DB.staking[userKey];
@@ -1487,6 +1489,7 @@ function handleListNftSubmit(event) {
 
             showNotification(`${nft.name} successfully listed for ${price} SOL!`, 'success');
             form.reset();
+            closeAllPopups(); // Закрываем форму после листинга
             loadUserNFTs();
             loadMarketplaceNFTs();
             setLoadingState(false);
@@ -2111,6 +2114,10 @@ function initEventListeners() {
                     const sellModal = document.getElementById('sell-nft-modal'); 
                     if (sellModal) {
                         closeAllPopups();
+                        // Убедимся, что выбран нужный NFT в форме
+                        if (uiElements.nftToSellSelect) {
+                            uiElements.nftToSellSelect.value = appState.currentOpenNft.mint;
+                        }
                         sellModal.style.display = 'flex';
                         toggleScrollLock(true);
                     } else {
@@ -2229,7 +2236,7 @@ function initializeJupiterTerminal() {
  */
 async function init() {
     // 💡 ИСПРАВЛЕНО: Добавлен таймаут для загрузки больших библиотек
-    if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined') {
+    if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined' || typeof window.SolanaWalletAdapterPhantom === 'undefined') {
         setTimeout(init, 100); 
         return;
     }
