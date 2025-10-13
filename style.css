@@ -1201,49 +1201,61 @@ hr {
    Web3 Portal Sections
 ========================================================================== */
 
-/* 🚀 УЛУЧШЕННЫЙ СТИЛЬ ДЛЯ КНОПКИ CONNECT WALLET */
+/* 🚀 УЛУЧШЕННЫЙ СТИЛЬ ДЛЯ КНОПКИ CONNECT WALLET (ЗОЛОТОЕ СВЕЧЕНИЕ) */
 .web3-button {
     /* Базовый стиль для кнопки Connect */
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 25px;
-    border-radius: var(--border-radius-base);
+    padding: 14px 30px; /* Немного увеличенный паддинг для премиального вида */
+    border-radius: 30px; /* Эффект "пилюли" */
     font-weight: 700;
-    font-size: 1em;
+    font-size: 1.1em; /* Чуть крупнее шрифт */
     cursor: pointer;
     text-align: center;
     text-decoration: none;
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Более плавная анимация */
+    transition: all 0.3s ease-in-out; 
+    border: none; /* Убрана стандартная рамка */
     
-    /* ПРЕМИАЛЬНЫЙ ЗОЛОТОЙ ВИД (ИСПРАВЛЕНИЕ) */
-    background-color: var(--primary-color); /* Золотой фон */
+    /* ПРЕМИАЛЬНЫЙ ЗОЛОТОЙ ВИД */
+    /* Используем градиент для более насыщенного золотого */
+    background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%); 
     color: var(--color-bg-dark); /* Темный текст для контраста */
-    border: 2px solid var(--primary-color); 
-    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4); /* Мягкая золотая тень */
+    
+    /* Эффект свечения */
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.7), /* Мягкое золотое свечение */
+                0 4px 15px rgba(0, 0, 0, 0.4); /* Общая тень для объема */
 }
 
 .web3-button:hover {
-    background-color: var(--link-hover-color);
+    /* Более интенсивное свечение при наведении */
+    background: linear-gradient(90deg, #FFCC00 0%, #FF9900 100%);
     color: var(--color-bg-dark);
-    border-color: var(--link-hover-color);
-    transform: translateY(-3px) scale(1.02); /* Более заметный эффект */
-    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.6); /* Усиленная тень */
+    transform: translateY(-3px); /* Легкое поднятие */
+    box-shadow: 0 0 25px rgba(255, 215, 0, 1), /* Усиленное свечение */
+                0 8px 25px rgba(0, 0, 0, 0.6); /* Усиленная тень */
+}
+.web3-button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 
+                0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* 🟢 СОСТОЯНИЕ: ПОДКЛЮЧЕНО (УЛУЧШЕННЫЙ ИНДИКАТОР СТАТУСА) */
 .web3-button.connected {
-    background-color: var(--color-bg-card); /* Темный фон */
+    background: var(--color-bg-card); /* Темный фон карточки */
     color: var(--color-wallet-address); /* Светло-зеленый текст для статуса */
     border: 2px solid var(--success-color); /* Четкая зеленая рамка */
-    cursor: pointer; /* Оставляем кликабельность для управления кошельком */
+    cursor: pointer; 
     box-shadow: 0 0 10px rgba(40, 167, 69, 0.8); /* Зеленая тень */
     transition: all 0.3s ease;
     transform: none;
+    padding: 12px 25px; /* Немного меньший паддинг для подключенного состояния */
+    font-size: 1em; /* Немного меньший шрифт */
 }
 .web3-button.connected:hover {
     /* При наведении делаем акцент, чтобы показать, что это кликабельно */
-    background-color: color-mix(in srgb, var(--color-bg-card) 95%, var(--success-color));
+    background-color: var(--color-bg-input); /* Чуть светлее фон */
     box-shadow: 0 0 15px rgba(40, 167, 69, 1);
     transform: translateY(-2px); 
 }
@@ -2548,18 +2560,3 @@ hr {
 /* ==========================================================================
    CUSTOM STYLES (ОСТАВЛЕН ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ)
 ========================================================================== */
-/* ЭТОТ БЛОК ТЕПЕРЬ НЕАКТУАЛЕН, Т.К. ЕГО ЛОГИКА ПЕРЕМЕЩЕНА В .web3-button.connected */
-/* .web3-button.connected {
-    background-color: var(--success-color); 
-    color: var(--text-color-white);
-    border: 1px solid var(--success-color); 
-    cursor: default; 
-    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4); 
-    transition: none; 
-    transform: none;
-}
-.web3-button.connected:hover {
-    background-color: var(--success-color); 
-    color: var(--text-color-white);
-    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
-} */
