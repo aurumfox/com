@@ -1727,9 +1727,14 @@
                 });
             }
             
-            // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
-            setupHamburgerMenu(); // <-- ЭТОТ ВЫЗОВ СДЕЛАЕТ МЕНЮ РАБОЧИМ
-        });
+            // --- STARTUP AFTER DOM LOAD ---
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (весь код, который был здесь) ...
+
+    // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
+    setupHamburgerMenu(); // <--- ЭТОТ ВЫЗОВ СДЕЛАЕТ МЕНЮ РАБОЧИМ
+});
+
         
     </script>
 </body>
