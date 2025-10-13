@@ -290,10 +290,6 @@
         
         <div class="header-controls-group">
             
-            <button id="connectWalletBtn" class="wallet-connect-btn">
-                Connect Wallet
-            </button>
-            
             <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
                 <div class="hamburger"></div>
             </div>
@@ -608,8 +604,14 @@
         <section id="web3-site-home" class="section web3-section-alt">
             <div class="container">
                 <h2 class="web3-heading">🎮 My Web3 Portal</h2>
-                <p class="web3-intro">Explore decentralized games, manage your NFTs, and discover Web3 advertising opportunities. <strong style="color: #f39c12;">Connect your wallet in the header to activate Web3 functions.</strong></p>
-                <p class="web3-wallet-display">Your Wallet Address: <strong id="walletAddressDisplay">Not Connected</strong></p>
+                <p class="web3-intro">Explore decentralized games, manage your NFTs, and discover Web3 advertising opportunities. <strong style="color: #f39c12;">Connect your wallet below to activate Web3 functions.</strong></p>
+                
+                <div class="wallet-control-box" style="margin: 20px 0; display: flex; flex-direction: column; align-items: flex-start;">
+                    <button id="connectWalletBtn" class="wallet-connect-btn" style="margin-left: 0;">
+                        Connect Wallet
+                    </button>
+                    <p class="web3-wallet-display">Your Wallet Address: <strong id="walletAddressDisplay">Not Connected</strong></p>
+                </div>
                 <div class="web3-features-grid">
                     <div class="feature-card">
                         <h3>🎮 Games</h3>
