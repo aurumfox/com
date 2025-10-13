@@ -194,37 +194,57 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-// Получаем элементы
-const menuToggle = document.querySelector('.menu-toggle');
-const mainNav = document.querySelector('.main-nav');
-const closeButton = document.querySelector('.close-menu-button');
-const body = document.body;
+        // --- ГАМБУРГЕР-МЕНЮ ЛОГИКА (ДОБАВИТЬ ЭТОТ КОД) ---
+        function setupHamburgerMenu() {
+            const menuToggle = document.getElementById('menuToggle');
+            const mainNav = document.getElementById('mainNav');
+            const closeMenuButton = document.getElementById('closeMainMenuCross');
+            const mobileNavOverlay = document.querySelector('.nav-mobile-overlay');
 
-// 1. Обработчик для открытия меню (Гамбургер)
-menuToggle.addEventListener('click', function() {
-    mainNav.classList.add('open');
-    body.classList.add('modal-open'); // Добавляем класс для блокировки прокрутки
-});
+            if (!menuToggle || !mainNav || !closeMenuButton || !mobileNavOverlay) {
+                console.error("One or more menu elements not found. Skipping hamburger setup.");
+                return;
+            }
 
-// 2. Обработчик для ЗАКРЫТИЯ меню (Крестик)
-closeButton.addEventListener('click', function() {
-    mainNav.classList.remove('open');
-    body.classList.remove('modal-open'); // Убираем класс, чтобы вернуть прокрутку
-});
+            // Функция для открытия меню
+            const openMenu = () => {
+                mobileNavOverlay.classList.add('is-open'); // Используем overlay для темного фона
+                mainNav.classList.add('is-open'); 
+                menuToggle.setAttribute('aria-expanded', 'true');
+                mainNav.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden'; // Блокировка прокрутки фона
+            };
 
-// 3. (Опционально) Закрытие меню при клике на ссылку
-const navLinks = document.querySelectorAll('.main-nav li a');
-
-navLinks.forEach(link => {
-    link.addEventListener('click', function() {
-        if (window.innerWidth <= 768) { // Закрываем только на мобильных
-            mainNav.classList.remove('open');
-            body.classList.remove('modal-open');
+            // Функция для закрытия меню
+            const closeMenu = () => {
+                mobileNavOverlay.classList.remove('is-open');
+                mainNav.classList.remove('is-open');
+                menuToggle.setAttribute('aria-expanded', 'false');
+                mainNav.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = 'auto'; // Разблокировка прокрутки фона
+            };
+            
+            // Нажатие на иконку Гамбургера
+            menuToggle.addEventListener('click', openMenu);
+            
+            // Нажатие на Крестик
+            closeMenuButton.addEventListener('click', closeMenu);
+            
+            // Закрытие при клике на ссылку внутри меню
+            const navLinks = mainNav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', closeMenu);
+            });
+            
+            // Закрытие при клике по затемненному оверлею (mobileNavOverlay)
+            mobileNavOverlay.addEventListener('click', (event) => {
+                // Если клик был именно по оверлею, а не по его дочерним элементам
+                if (event.target === mobileNavOverlay) {
+                    closeMenu();
+                }
+            });
         }
-    });
-});
-
-
+        // --- /ГАМБУРГЕР-МЕНЮ ЛОГИКА ---
 
 // --------------------------------------------------------
 
