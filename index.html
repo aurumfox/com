@@ -1463,40 +1463,63 @@
 
         // ====================================================================
 
-        <header class="header">
-        <div class="container">
-            <div class="logo">
-                <img src="./assets/foxcoin-hero.png" alt="Aurum Fox Logo" class="logo-img">
-                <span class="logo-text">Aurum Fox Portal</span>
-            </div>
-            <nav class="nav">
-                <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0">
-                    <div class="hamburger"></div>
-                </div>
-                <ul id="mainNav" class="main-nav" role="navigation" aria-hidden="true">
-                    <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
+        // --- HAMBURGER MENU LOGIC (ИСПРАВЛЕНО) ---
+        function setupHamburgerMenu() {
+            const menuToggle = document.getElementById('menuToggle');
+            const navOverlay = document.querySelector('.nav-mobile-overlay');
+            const closeMenuCross = document.getElementById('closeMainMenuCross');
+            const mainNavLinks = document.querySelectorAll('.main-nav a');
 
-                    <li><a href="#aurum-fox-home">Aurum Fox</a></li>
-                    <li><a href="#about-afox">About AFOX</a></li>
-                    <li><a href="#tokenomics">Tokenomics</a></li>
-                    <li><a href="#how-to-buy">Acquire AFOX</a></li>
-                    <li><a href="#aurum-nfts">Aurum NFTs</a></li>
-                    <li><a href="#aurum-nfc">Aurum NFC</a></li>
-                    <li><a href="#aurum-roadmap">Roadmap</a></li>
-                    <li><a href="#aurum-news">News</a></li>
-                    <li><a href="#aurum-announcements">Announcements</a></li>
-                    <li><a href="#aurum-community">Community</a></li>
-                    <li><a href="#contact-us">Contact Us</a></li>
-                    <li><a href="#web3-site-home">Web3 Portal</a></li>
-                    <li><a href="#games-section">Games</a></li>
-                    <li><a href="#nft-section">NFT Portal</a></li>
-                    <li><a href="#ads-section">Advertising</a></li>
-                    <li><a href="#dao-section">DAO</a></li>
-                    <li><a href="#staking-section">Staking</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+            if (!menuToggle || !navOverlay || !closeMenuCross) {
+                // Это нормально, если эти элементы не найдены на десктопе, но мы должны их найти
+                return;
+            }
+
+            const toggleMenu = () => {
+                const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+                
+                // Toggle the 'active' class on the menu overlay for visibility (CSS handles the transition)
+                navOverlay.classList.toggle('active');
+                
+                // Toggle the 'open' class on the toggle button for animation/icon change (CSS handles the animation)
+                menuToggle.classList.toggle('open'); 
+                
+                // Update ARIA attributes for accessibility
+                menuToggle.setAttribute('aria-expanded', String(!isExpanded));
+                document.getElementById('mainNav').setAttribute('aria-hidden', String(isExpanded));
+                
+                // Prevent scrolling on the body when the menu is open (Crucial for mobile experience)
+                document.body.classList.toggle('menu-open');
+            };
+
+            // 1. Listen for click on the hamburger icon
+            menuToggle.addEventListener('click', toggleMenu);
+            menuToggle.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleMenu();
+                }
+            });
+
+            // 2. Listen for click on the close button (X)
+            closeMenuCross.addEventListener('click', toggleMenu);
+            closeMenuCross.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleMenu();
+                }
+            });
+
+            // 3. Close the menu when a link is clicked
+            mainNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (navOverlay.classList.contains('active')) {
+                        toggleMenu();
+                    }
+                });
+            });
+        }
+        // --- /HAMBURGER MENU LOGIC ---
 
 
         // --- FIREBASE CONTENT LOADING (С ИСПРАВЛЕННЫМ САНИТАЙЗИНГОМ) ---
