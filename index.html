@@ -289,7 +289,7 @@
         
         <div class="header-controls-group">
             
-            <div id="menuToggle" class="menu-toggle" aria-controls="mainNavContainer" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
+            <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
                 <div class="hamburger"></div>
             </div>
             
@@ -298,14 +298,32 @@
             </button>
         </div>
         
-        <button id="menuButton" class="toggle-btn">Меню</button>
-<nav id="myMenu" class="menu-panel">
-    <ul>
-        <li>Пункт 1</li>
-        <li>Пункт 2</li>
-    </ul>
-</nav>
-
+        <nav class="nav-mobile-overlay"> 
+            <ul id="mainNav" class="main-nav" role="navigation" aria-hidden="true">
+                
+                <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
+                
+                <li><a href="#aurum-fox-home">Aurum Fox</a></li>
+                <li><a href="#about-afox">About AFOX</a></li>
+                <li><a href="#tokenomics">Tokenomics</a></li>
+                <li><a href="#how-to-buy">Acquire AFOX</a></li>
+                <li><a href="#aurum-nfts">Aurum NFTs</a></li>
+                <li><a href="#aurum-nfc">Aurum NFC</a></li>
+                <li><a href="#aurum-roadmap">Roadmap</a></li>
+                <li><a href="#aurum-news">News</a></li>
+                <li><a href="#aurum-community">Community</a></li>
+                
+                <li class="nav-separator">--- Web3 Portal ---</li> 
+                <li><a href="#web3-site-home">Web3 Overview</a></li>
+                <li><a href="#games-section">Games</a></li>
+                <li><a href="#nft-section">NFT Portal</a></li>
+                <li><a href="#dao-section">DAO</a></li>
+                <li><a href="#staking-section">Staking</a></li>
+                <li><a href="#lending-section">Lending</a></li> 
+                <li><a href="#swap-section">Swap</a></li>
+                
+                </ul>
+        </nav>
         
     </div>
 </header>
@@ -1447,14 +1465,13 @@
 
         // --- HAMBURGER MENU LOGIC (ИСПРАВЛЕНО) ---
         function setupHamburgerMenu() {
-            // ИСПРАВЛЕНО: СЕЛЕКТОРЫ СООТВЕТСТВУЮТ ИСПРАВЛЕННОМУ HTML
             const menuToggle = document.getElementById('menuToggle');
-            const navOverlay = document.getElementById('navOverlay'); 
-            const closeMenuCross = document.getElementById('closeMenuButton'); 
-            const mainNavLinks = document.querySelectorAll('#mainNav a');
+            const navOverlay = document.querySelector('.nav-mobile-overlay');
+            const closeMenuCross = document.getElementById('closeMainMenuCross');
+            const mainNavLinks = document.querySelectorAll('.main-nav a');
 
             if (!menuToggle || !navOverlay || !closeMenuCross) {
-                // Если элементы не найдены, выходим, чтобы не вызвать ошибку
+                // Это нормально, если эти элементы не найдены на десктопе, но мы должны их найти
                 return;
             }
 
@@ -1500,14 +1517,6 @@
                         toggleMenu();
                     }
                 });
-            });
-            
-            // 4. Close the menu when clicking on the overlay background itself (navOverlay)
-            navOverlay.addEventListener('click', (e) => {
-                // Проверяем, что клик был именно по оверлею, а не по его содержимому (ul#mainNav или кнопке)
-                if (e.target.id === 'navOverlay') {
-                    toggleMenu();
-                }
             });
         }
         // --- /HAMBURGER MENU LOGIC ---
@@ -1703,4 +1712,19 @@
                 newProposalForm.addEventListener('submit', preventSubmission);
             }
             
-            //
+            // Привязка к кнопке Upload Game
+            const uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
+            if (uploadGameBtnWeb3) {
+                uploadGameBtnWeb3.addEventListener('click', (e) => {
+                    e.preventDefault(); 
+                    showNotification("Security Alert: Game upload is temporarily blocked. Please configure Firebase Security Rules and Admin authentication.", 'warning', 7000);
+                });
+            }
+            
+            // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
+            setupHamburgerMenu(); // <-- ЭТОТ ВЫЗОВ СДЕЛАЕТ МЕНЮ РАБОЧИМ
+        });
+        
+    </script>
+</body>
+                                                                           </html>
