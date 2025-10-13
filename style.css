@@ -1214,36 +1214,41 @@ hr {
     cursor: pointer;
     text-align: center;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Более плавная анимация */
     
-    background-color: var(--accent-color); /* Синий акцент */
-    color: var(--text-color-white);
-    border: 2px solid transparent; 
-    box-shadow: var(--box-shadow-medium);
+    /* ПРЕМИАЛЬНЫЙ ЗОЛОТОЙ ВИД (ИСПРАВЛЕНИЕ) */
+    background-color: var(--primary-color); /* Золотой фон */
+    color: var(--color-bg-dark); /* Темный текст для контраста */
+    border: 2px solid var(--primary-color); 
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4); /* Мягкая золотая тень */
 }
 
 .web3-button:hover {
-    background-color: color-mix(in srgb, var(--accent-color) 80%, black);
-    border-color: var(--primary-color); /* Золотой бордер при наведении */
-    transform: translateY(-2px);
-    box-shadow: var(--box-shadow-hover);
+    background-color: var(--link-hover-color);
+    color: var(--color-bg-dark);
+    border-color: var(--link-hover-color);
+    transform: translateY(-3px) scale(1.02); /* Более заметный эффект */
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.6); /* Усиленная тень */
 }
 
-/* 🟢 СОСТОЯНИЕ: ПОДКЛЮЧЕНО (УЛУЧШЕННЫЙ СТИЛЬ) */
+/* 🟢 СОСТОЯНИЕ: ПОДКЛЮЧЕНО (УЛУЧШЕННЫЙ ИНДИКАТОР СТАТУСА) */
 .web3-button.connected {
-    background-color: var(--success-color); 
-    color: var(--primary-color); /* Золотой текст для премиального Connected */
-    border: 2px solid var(--primary-color); 
-    cursor: default; 
-    box-shadow: 0 4px 15px rgba(56, 170, 60, 0.7); /* Более заметная зеленая тень */
-    transition: none; 
+    background-color: var(--color-bg-card); /* Темный фон */
+    color: var(--color-wallet-address); /* Светло-зеленый текст для статуса */
+    border: 2px solid var(--success-color); /* Четкая зеленая рамка */
+    cursor: pointer; /* Оставляем кликабельность для управления кошельком */
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.8); /* Зеленая тень */
+    transition: all 0.3s ease;
     transform: none;
 }
 .web3-button.connected:hover {
-    background-color: var(--success-color); 
-    box-shadow: 0 4px 15px rgba(56, 170, 60, 0.9);
-    transform: none;
+    /* При наведении делаем акцент, чтобы показать, что это кликабельно */
+    background-color: color-mix(in srgb, var(--color-bg-card) 95%, var(--success-color));
+    box-shadow: 0 0 15px rgba(40, 167, 69, 1);
+    transform: translateY(-2px); 
 }
+/* -------------------------------------------------------------------------- */
+
 
 /* 💻 ОТОБРАЖЕНИЕ АДРЕСА: УЛУЧШЕНИЕ ВИДИМОСТИ */
 .web3-wallet-display {
@@ -2269,15 +2274,20 @@ hr {
         position: fixed; 
         top: 20px;
         right: 20px;
+        cursor: pointer;
         color: var(--text-color-light); 
         z-index: 1005; 
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.3s ease;
+        background: none;
+        border: none;
+        padding: 0;
+        line-height: 1; 
     }
 
     /* 💡 5. ПОКАЗ КРЕСТИКА */
-    .nav ul.main-nav.active + .close-menu-button, /* Если крестик идет сразу за меню */
+    .nav ul.main-nav.active ~ .close-menu-button, /* Если крестик идет сразу за меню */
     .nav ul.main-nav.active .close-menu-button { /* Если крестик внутри меню */
         opacity: 1;
         visibility: visible;
