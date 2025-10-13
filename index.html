@@ -66,6 +66,133 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
     
     <style>
+        /* ================================================= */
+        /* !!! ВАЖНО: ДОБАВЛЕНЫ БАЗОВЫЕ СТИЛИ ДЛЯ РАБОТЫ МЕНЮ !!! */
+        /* ================================================= */
+        
+        .menu-toggle {
+            display: none; /* Скрыть на десктопе */
+            cursor: pointer;
+            z-index: 10001;
+            padding: 10px;
+        }
+
+        .hamburger {
+            width: 30px;
+            height: 3px;
+            background-color: #FF8C00;
+            position: relative;
+            transition: background-color 0s 0.15s;
+        }
+
+        .hamburger::before,
+        .hamburger::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background-color: #FF8C00;
+            transition: transform 0.15s;
+        }
+
+        .hamburger::before {
+            top: -10px;
+        }
+
+        .hamburger::after {
+            top: 10px;
+        }
+
+        /* Анимация при открытии */
+        .menu-toggle.open .hamburger {
+            background-color: transparent;
+        }
+
+        .menu-toggle.open .hamburger::before {
+            transform: translateY(10px) rotate(45deg);
+        }
+
+        .menu-toggle.open .hamburger::after {
+            transform: translateY(-10px) rotate(-45deg);
+        }
+        
+        .nav-mobile-overlay {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95); /* Темный фон */
+            z-index: 10000;
+            transform: translateX(100%); /* Изначально скрыто справа */
+            transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
+            padding-top: 80px; /* Сдвиг вниз от хедера */
+        }
+        
+        .nav-mobile-overlay.active {
+            transform: translateX(0); /* Показать меню */
+        }
+        
+        .main-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .main-nav li a {
+            display: block;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #fff;
+            font-size: 1.2em;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s;
+        }
+        
+        .main-nav li a:hover {
+            background-color: #f39c12;
+            color: #000;
+        }
+
+        .close-menu-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 40px;
+            color: #FF8C00;
+            cursor: pointer;
+            z-index: 10001;
+        }
+        
+        .nav-separator {
+            padding: 20px 0 10px;
+            color: #f39c12;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 992px) {
+            .menu-toggle {
+                display: block; /* Показать на мобильных */
+            }
+            .header-controls-group {
+                display: flex;
+                align-items: center;
+            }
+        }
+        /* Стили для предотвращения прокрутки тела при открытом меню */
+        body.menu-open {
+            overflow: hidden;
+        }
+        
+        /* ================================================= */
+        /* КОНЕЦ БАЗОВЫХ СТИЛЕЙ ДЛЯ МЕНЮ */
+        /* ================================================= */
+
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -879,7 +1006,6 @@
         }
         // --- /XSS PROTECTION & NOTIFICATIONS ---
 
-
         // ====================================================================
         // 🛑 БЛОК 1: КОНФИГУРАЦИЯ RUST/ANCHOR (ВСТАВИТЬ СЮДА!)
         // ====================================================================
@@ -1337,6 +1463,64 @@
 
         // ====================================================================
 
+        // --- HAMBURGER MENU LOGIC (ИСПРАВЛЕНО) ---
+        function setupHamburgerMenu() {
+            const menuToggle = document.getElementById('menuToggle');
+            const navOverlay = document.querySelector('.nav-mobile-overlay');
+            const closeMenuCross = document.getElementById('closeMainMenuCross');
+            const mainNavLinks = document.querySelectorAll('.main-nav a');
+
+            if (!menuToggle || !navOverlay || !closeMenuCross) {
+                // Это нормально, если эти элементы не найдены на десктопе, но мы должны их найти
+                return;
+            }
+
+            const toggleMenu = () => {
+                const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+                
+                // Toggle the 'active' class on the menu overlay for visibility (CSS handles the transition)
+                navOverlay.classList.toggle('active');
+                
+                // Toggle the 'open' class on the toggle button for animation/icon change (CSS handles the animation)
+                menuToggle.classList.toggle('open'); 
+                
+                // Update ARIA attributes for accessibility
+                menuToggle.setAttribute('aria-expanded', String(!isExpanded));
+                document.getElementById('mainNav').setAttribute('aria-hidden', String(isExpanded));
+                
+                // Prevent scrolling on the body when the menu is open (Crucial for mobile experience)
+                document.body.classList.toggle('menu-open');
+            };
+
+            // 1. Listen for click on the hamburger icon
+            menuToggle.addEventListener('click', toggleMenu);
+            menuToggle.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleMenu();
+                }
+            });
+
+            // 2. Listen for click on the close button (X)
+            closeMenuCross.addEventListener('click', toggleMenu);
+            closeMenuCross.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleMenu();
+                }
+            });
+
+            // 3. Close the menu when a link is clicked
+            mainNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (navOverlay.classList.contains('active')) {
+                        toggleMenu();
+                    }
+                });
+            });
+        }
+        // --- /HAMBURGER MENU LOGIC ---
+
 
         // --- FIREBASE CONTENT LOADING (С ИСПРАВЛЕННЫМ САНИТАЙЗИНГОМ) ---
         function setupNewsListener() {
@@ -1536,19 +1720,9 @@
                     showNotification("Security Alert: Game upload is temporarily blocked. Please configure Firebase Security Rules and Admin authentication.", 'warning', 7000);
                 });
             }
-              // ... (ваш существующий код до этого места)
-
-        // --- STARTUP AFTER DOM LOAD ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // ... (ваш код для connectWalletBtn, setupNewsListener, fetchContentList, initializeJupiterTerminal, handleStake/Unstake/Claim)
-
-            // ... (ВАШ КОД ГАМБУРГЕР-МЕНЮ СЮДА)
-
-            // ... (ВАШ КОД ДЛЯ ПРИВЯЗКИ ФОРМ)
             
-            // ... (в самом конце document.addEventListener('DOMContentLoaded', () => { ...
             // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
-            setupHamburgerMenu(); // <-- ЭТОТ ВЫЗОВ У ВАС УЖЕ ЕСТЬ
+            setupHamburgerMenu(); // <-- ЭТОТ ВЫЗОВ СДЕЛАЕТ МЕНЮ РАБОЧИМ
         });
         
     </script>
