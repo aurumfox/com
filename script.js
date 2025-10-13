@@ -1976,12 +1976,22 @@ function initEventListeners() {
         });
     });
 
-    // Menu Toggle
-    if (uiElements.menuToggle) {
-        uiElements.menuToggle.addEventListener('click', () => {
-            uiElements.mainNav.classList.toggle('active');
-            uiElements.menuToggle.classList.toggle('active');
-        });
+    // Menu /**
+ * Main initialization function.
+ */
+async function init() {
+    cacheUIElements();
+    
+    // ... ваш остальной код инициализации
+    
+    initEventListeners();
+    initializeJupiterTerminal();
+
+    // Initial data load
+    loadAnnouncements();
+    // ... и т.д.
+}
+
     }
     if (uiElements.closeMainMenuCross) uiElements.closeMainMenuCross.addEventListener('click', closeAllPopups);
     uiElements.navLinks.forEach(link => link.addEventListener('click', closeAllPopups));
