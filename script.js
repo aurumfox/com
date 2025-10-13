@@ -233,8 +233,13 @@ function setupHamburgerMenu() {
     // КРИТИЧЕСКИ ВАЖНАЯ ПЕРЕМЕННАЯ: захват всех ссылок
     const mainNavLinks = document.querySelectorAll('.main-nav a'); 
 
-    if (!menuToggle || !closeMenuCross) {
+    if (!menuToggle) {
+        console.warn('Hamburger Menu button (menuToggle) not found. Check HTML ID.');
         return;
+    }
+    
+    if (!closeMenuCross) {
+        console.warn('Close Menu button (closeMainMenuCross) not found. Menu can only be closed via the toggle button or link click.');
     }
 
     // Обработчик для открытия/закрытия
@@ -256,12 +261,14 @@ function setupHamburgerMenu() {
     });
 
     // 2. Listen for click/keydown on the close button (X)
-    closeMenuCross.addEventListener('click', handleToggle);
-    closeMenuCross.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            handleToggle(e);
-        }
-    });
+    if (closeMenuCross) {
+        closeMenuCross.addEventListener('click', handleToggle);
+        closeMenuCross.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                handleToggle(e);
+            }
+        });
+    }
 
     // 3. Close the menu when a link is clicked
     mainNavLinks.forEach(link => {
@@ -2017,8 +2024,8 @@ function cacheUIElements() {
     // Menu Elements (ID должны соответствовать HTML)
     uiElements.mainNav = document.getElementById('mainNav'); // ID вашего тега <nav>
     uiElements.menuToggle = document.getElementById('menuToggle'); 
-    uiElements.closeMenuButton = document.getElementById('closeMenuButton'); 
-    uiElements.navOverlay = document.getElementById('navOverlay'); 
+    uiElements.closeMenuButton = document.getElementById('closeMainMenuCross'); // Используем ID крестика
+    uiElements.navOverlay = document.querySelector('.nav-mobile-overlay'); // Используем класс оверлея
 
     // NFT Section
     uiElements.userNftList = document.getElementById('user-nft-list');
