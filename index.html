@@ -279,8 +279,9 @@
     </style>
 </head>
 <body>
-   <header class="header">
-    <div class="container">
+
+    <header class="header">
+    <div class="container main-header-container">
         
         <div class="logo">
             <img src="./assets/foxcoin-hero.png.jpg" alt="Aurum Fox Logo" class="logo-img">
@@ -289,20 +290,24 @@
         
         <div class="header-controls-group">
             
-            <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
-                <div class="hamburger"></div>
-            </div>
-            
             <button id="connectWalletBtn" class="wallet-connect-btn">
                 Connect Wallet
             </button>
+            
+            <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
+                <div class="hamburger"></div>
+            </div>
+
         </div>
         
-        <nav class="nav-mobile-overlay"> 
-            <ul id="mainNav" class="main-nav" role="navigation" aria-hidden="true">
-                
-                <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
-                
+    </div>
+    
+    <div class="nav-mobile-overlay"> 
+        <nav id="mainNav" class="main-nav-mobile" role="navigation" aria-hidden="true">
+            
+            <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
+            
+            <ul class="nav-list">
                 <li><a href="#aurum-fox-home">Aurum Fox</a></li>
                 <li><a href="#about-afox">About AFOX</a></li>
                 <li><a href="#tokenomics">Tokenomics</a></li>
@@ -321,12 +326,11 @@
                 <li><a href="#staking-section">Staking</a></li>
                 <li><a href="#lending-section">Lending</a></li> 
                 <li><a href="#swap-section">Swap</a></li>
-                
-                </ul>
+            </ul>
         </nav>
-        
     </div>
 </header>
+
 
     <main>
         <section id="aurum-fox-home" class="hero-section aurum-fox-section">
