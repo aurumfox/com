@@ -194,25 +194,98 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-/**// Close buttons for modals - Explicitly get by unique ID for the cross button
-// Ensure these IDs match the IDs you put in your HTML for the close span.
-const closeNftDetailsModalCross = document.getElementById('closeNftDetailsModalCross');
-const closeNftModalCross = document.getElementById('closeNftModalCross');
-const closeMintNftModalCross = document.getElementById('closeMintNftModalCross');
-const closeProposalModalCross = document.getElementById('closeProposalModalCross');
+// ... (остальной код до функции setupHamburgerMenu) ...
 
-// NEW: Close button for Main Menu
-const closeMainMenuCross = document.getElementById('closeMainMenuCross');
+// =========================================================
+// 💡 ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ГАМБУРГЕР-МЕНЮ
+// Примечание: Для надежности мы перенесем ВСЕ поиски элементов 
+// меню в функцию cacheUIElements, чтобы избежать дублирования.
+// =========================================================
+
+/**
+ * 💡 ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ГАМБУРГЕР-МЕНЮ (Должна быть вызвана после DOMContentLoaded)
+ */
+function setupHamburgerMenu() {
+    // Используем кэшированные элементы из uiElements
+    const { menuToggle, closeMenuButton, mainNav, navOverlay, body } = uiElements;
+
+    // !!! ДИАГНОСТИКА: ПРОВЕРКА ЭЛЕМЕНТОВ (САМЫЙ ВАЖНЫЙ ТЕСТ) !!!
+    if (!menuToggle || !mainNav || !navOverlay || !closeMenuButton) {
+        // Если вы видите это в консоли, проблема в HTML (проверьте ID: #menuToggle, #mainNav, #closeMenuButton, #navOverlay)
+        console.error("КРИТИЧЕСКАЯ ОШИБКА МЕНЮ: Проверьте ID в HTML! Один или более элементов не найдены.");
+        return; 
+    }
+    // console.log("МЕНЮ: Все элементы найдены. Проблема должна быть в CSS."); 
+    // !!! КОНЕЦ ДИАГНОСТИКИ !!!
+
+    function openMenu() {
+        mainNav.classList.add('is-open'); 
+        navOverlay.classList.add('is-open'); 
+        menuToggle.classList.add('is-active'); 
+        body.classList.add('menu-open'); // Блокировка скролла через CSS
+        menuToggle.setAttribute('aria-expanded', 'true');
+        toggleScrollLock(true);
+    }
+
+    function closeMenu() {
+        mainNav.classList.remove('is-open');
+        navOverlay.classList.remove('is-open');
+        menuToggle.classList.remove('is-active');
+        body.classList.remove('menu-open'); // Разблокировка скролла через CSS
+        menuToggle.setAttribute('aria-expanded', 'false');
+        toggleScrollLock(false);
+    }
+    
+    // ЕДИНАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ (используется для ссылок)
+    window.toggleMenuState = function() {
+         if (mainNav.classList.contains('is-open')) {
+             closeMenu();
+         } else {
+             openMenu();
+         }
+    }
 
 
-// Menu Elements (for navigation)
-// mainNav is your <ul> list inside <nav class="nav"> or the element with ID 'mainNav'
-const mainNav = document.querySelector('.nav ul') || document.getElementById('mainNav'); // Assuming .nav ul is your menu, or directly by ID
-// menuToggle is the supposed hamburger button.
-const menuToggle = document.getElementById('menuToggle');
-// navLinks - All <a> links within the navigation to close the menu after clicking a link
-const navLinks = mainNav ? mainNav.querySelectorAll('a') : [];
- * 
+    // 1. ПЕРЕКЛЮЧЕНИЕ: Главный обработчик гамбургера
+    menuToggle.addEventListener('click', toggleMenuState);
+
+    // 2. ОБРАБОТЧИКИ ЗАКРЫТИЯ (используют ту же логику)
+    closeMenuButton.addEventListener('click', toggleMenuState);
+    navOverlay.addEventListener('click', toggleMenuState);
+    
+    // 3. ФУНКЦИЯ ДЛЯ ЗАКРЫТИЯ ПО ССЫЛКЕ (Вызывает toggleMenuState)
+    // Эта функция должна быть привязана к каждой ссылке меню в HTML: 
+    // <a href="#section" onclick="window.closeMenuOnLinkClick()">...</a>
+    window.closeMenuOnLinkClick = function() {
+        // Мы используем .is-open как флаг, чтобы не закрывать меню на десктопе, если оно там всегда видимо
+        if (mainNav.classList.contains('is-open')) {
+            toggleMenuState(); // Закрывает меню
+        }
+    };
+}
+// =========================================================
+
+// ... (остальной код до функции cacheUIElements) ...
+
+// --- 3. КЭШИРОВАНИЕ ЭЛЕМЕНТОВ UI (ИСПРАВЛЕНО И ДОБАВЛЕНО BODY) ---
+/**
+ * Caches all necessary UI elements.
+ */
+function cacheUIElements() {
+    // ... (другие элементы) ...
+    
+    // Menu Elements (ID должны соответствовать HTML)
+    uiElements.mainNav = document.getElementById('mainNav'); 
+    uiElements.menuToggle = document.getElementById('menuToggle'); 
+    uiElements.closeMenuButton = document.getElementById('closeMenuButton'); 
+    uiElements.navOverlay = document.getElementById('navOverlay'); 
+    uiElements.body = document.body; // 🚩 ДОБАВЛЕНО для блокировки скролла
+
+    // ... (остальные элементы) ...
+}
+
+// ... (остальной код) ...
+
 // =========================================================
 
 
