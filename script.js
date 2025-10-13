@@ -2061,11 +2061,7 @@ function initEventListeners() {
         btn.addEventListener('click', () => { 
              simulateConnectButtonUpdate(btn);
         });
-    });
-
-    /
     
-
 
     // NFT Marketplace (Delegation)
     if (uiElements.userNftList) {
