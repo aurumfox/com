@@ -291,11 +291,11 @@ li {
 
 /* Кнопка закрытия меню (скрыта по умолчанию) */
 .close-menu-button {
-    display: none;
+    display: none; /* Скрыто на десктопе */
     font-size: 2.5em;
     position: absolute;
-    top: var(--spacing-md);
-    right: var(--spacing-md);
+    top: 10px; /* ИСПРАВЛЕНО: Уменьшен отступ */
+    right: 15px; /* ИСПРАВЛЕНО: Уменьшен отступ */
     cursor: pointer;
     color: var(--text-color-light);
     z-index: 1002;
@@ -2255,14 +2255,28 @@ hr {
         display: block; /* ПОКАЗЫВАЕМ гамбургер */
         position: static;
         transform: none;
+        z-index: 1003; /* ИСПРАВЛЕНО: Устанавливаем z-index выше меню, чтобы был кликабельным */
     }
 
+    /* *** ИСПРАВЛЕНИЕ: Кнопка закрытия внутри меню *** */
     .close-menu-button {
-        display: block; /* ПОКАЗЫВАЕМ кнопку закрытия внутри меню */
+        /* ИСПРАВЛЕНО: Кнопка скрыта по умолчанию, но будет отображаться внутри открытого меню */
+        display: none; 
         position: absolute;
         top: 10px;
         right: 15px;
+        z-index: 1002;
     }
+    
+    /* !!! ВАЖНОЕ ИСПРАВЛЕНИЕ !!!: Отображаем крестик только при открытом меню */
+    .nav ul.main-nav.is-open + .close-menu-button { 
+        display: block; 
+    }
+    /* Если кнопка крестика находится внутри main-nav */
+    .nav ul.main-nav.is-open > .close-menu-button {
+        display: block;
+    }
+
     .close-menu-button:hover {
         color: var(--primary-color);
     }
