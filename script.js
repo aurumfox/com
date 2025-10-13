@@ -203,66 +203,14 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // =========================================================
 
 /**
- * 💡 ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ГАМБУРГЕР-МЕНЮ (Должна быть вызвана после DOMContentLoaded)
- */
-function setupHamburgerMenu() {
-    // Используем кэшированные элементы из uiElements
-    const { menuToggle, closeMenuButton, mainNav, navOverlay, body } = uiElements;
+ * const button = document.getElementById('menuButton');
+const menu = document.getElementById('myMenu');
 
-    // !!! ДИАГНОСТИКА: ПРОВЕРКА ЭЛЕМЕНТОВ (САМЫЙ ВАЖНЫЙ ТЕСТ) !!!
-    if (!menuToggle || !mainNav || !navOverlay || !closeMenuButton) {
-        // Если вы видите это в консоли, проблема в HTML (проверьте ID: #menuToggle, #mainNav, #closeMenuButton, #navOverlay)
-        console.error("КРИТИЧЕСКАЯ ОШИБКА МЕНЮ: Проверьте ID в HTML! Один или более элементов не найдены.");
-        return; 
-    }
-    // console.log("МЕНЮ: Все элементы найдены. Проблема должна быть в CSS."); 
-    // !!! КОНЕЦ ДИАГНОСТИКИ !!!
+// Добавляем слушатель клика, используем метод .toggle()
+button.addEventListener('click', () => {
+    menu.classList.toggle('active');
+});
 
-    function openMenu() {
-        mainNav.classList.add('is-open'); 
-        navOverlay.classList.add('is-open'); 
-        menuToggle.classList.add('is-active'); 
-        body.classList.add('menu-open'); // Блокировка скролла через CSS
-        menuToggle.setAttribute('aria-expanded', 'true');
-        toggleScrollLock(true);
-    }
-
-    function closeMenu() {
-        mainNav.classList.remove('is-open');
-        navOverlay.classList.remove('is-open');
-        menuToggle.classList.remove('is-active');
-        body.classList.remove('menu-open'); // Разблокировка скролла через CSS
-        menuToggle.setAttribute('aria-expanded', 'false');
-        toggleScrollLock(false);
-    }
-    
-    // ЕДИНАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ (используется для ссылок)
-    window.toggleMenuState = function() {
-         if (mainNav.classList.contains('is-open')) {
-             closeMenu();
-         } else {
-             openMenu();
-         }
-    }
-
-
-    // 1. ПЕРЕКЛЮЧЕНИЕ: Главный обработчик гамбургера
-    menuToggle.addEventListener('click', toggleMenuState);
-
-    // 2. ОБРАБОТЧИКИ ЗАКРЫТИЯ (используют ту же логику)
-    closeMenuButton.addEventListener('click', toggleMenuState);
-    navOverlay.addEventListener('click', toggleMenuState);
-    
-    // 3. ФУНКЦИЯ ДЛЯ ЗАКРЫТИЯ ПО ССЫЛКЕ (Вызывает toggleMenuState)
-    // Эта функция должна быть привязана к каждой ссылке меню в HTML: 
-    // <a href="#section" onclick="window.closeMenuOnLinkClick()">...</a>
-    window.closeMenuOnLinkClick = function() {
-        // Мы используем .is-open как флаг, чтобы не закрывать меню на десктопе, если оно там всегда видимо
-        if (mainNav.classList.contains('is-open')) {
-            toggleMenuState(); // Закрывает меню
-        }
-    };
-}
 // =========================================================
 
 // ... (остальной код до функции cacheUIElements) ...
