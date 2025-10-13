@@ -77,8 +77,7 @@
 }
 
 /* ==========================================================================
-   Base Styles (ИСПОЛЬЗУЙТЕ body.menu-open ДЛЯ БЛОКИРОВКИ ПРОКРУТКИ МЕНЮ)
-   Общие стили для всего сайта (сброс, типографика, обертки)
+   Base Styles (СБРОС, ТИПОГРАФИКА, ДОСТУПНОСТЬ)
 ========================================================================== */
 * {
     box-sizing: border-box;
@@ -98,16 +97,24 @@ body {
     overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
 }
 
-/* 🛑 ИСПРАВЛЕНИЕ: Блокировка прокрутки основного контента при открытии модального окна или меню */
+/* 🛑 УЛУЧШЕНИЕ: Блокировка прокрутки основного контента при открытии модального окна или меню */
 body.modal-open,
-body.menu-open { /* Добавлен класс .menu-open, если ваш JS его использует */
-    overflow: hidden !important; 
-    position: fixed; /* Для корректной блокировки на мобильных/iOS */
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
+body.menu-open { 
+    overflow: hidden; /* Блокировка прокрутки */
+    /* Убрано position: fixed; width: 100%; height: 100%; для предотвращения скачков */
 }
+
+/* A11Y: Focus States (Улучшенная доступность для клавиатуры) */
+a:focus-visible, 
+button:focus-visible, 
+.btn:focus-visible, 
+input:focus-visible, 
+textarea:focus-visible {
+    outline: 3px solid var(--accent-color); /* Используем яркий акцентный цвет */
+    outline-offset: 3px;
+    border-radius: var(--border-radius-small);
+}
+
 
 .container {
     max-width: 1200px;
@@ -160,7 +167,7 @@ li {
 }
 
 /* ==========================================================================
-   Header and Navigation (ИСПРАВЛЕНИЯ Z-INDEX И КНОПКИ ЗАКРЫТИЯ)
+   Header and Navigation (ИСПОЛЬЗУЕМ УЛУЧШЕННЫЕ Z-INDEX)
 ========================================================================== */
 .header {
     background-color: rgba(18, 18, 30, 0.9); /* Темный фон хедера с небольшой прозрачностью */
@@ -245,7 +252,7 @@ li {
 .menu-toggle {
     display: none;
     cursor: pointer;
-    z-index: 1001; /* Над другими элементами */
+    z-index: 1004; /* УВЕЛИЧЕННЫЙ Z-INDEX */
     padding: var(--spacing-sm); /* Для удобства нажатия */
 }
 
@@ -277,20 +284,20 @@ li {
     transform: translateY(10px);
 }
 
-/* Кнопка закрытия меню (Скрыта по умолчанию в мобильном режиме в медиа-запросе) */
+/* Кнопка закрытия меню */
 .close-menu-button {
-    display: none; /* УБРАНО display: none, НО ДОБАВЛЕНО В МЕДИА-ЗАПРОС*/
-    font-size: 2.5em; /* Немного больше для удобства */
+    display: none; 
+    font-size: 2.5em; 
     position: absolute;
-    top: var(--spacing-md);
-    right: var(--spacing-md);
+    top: 10px; /* Скорректировано для мобильного меню */
+    right: 15px; /* Скорректировано для мобильного меню */
     cursor: pointer;
-    color: var(--text-color-light); /* Цвет для кнопки закрытия в мобильном меню */
-    z-index: 1002;
+    color: var(--text-color-light); 
+    z-index: 1005; /* УВЕЛИЧЕННЫЙ Z-INDEX */
     background: none;
     border: none;
     padding: 0;
-    line-height: 1; /* Убрать дополнительный интервал */
+    line-height: 1; 
 }
 .close-menu-button:hover,
 .close-menu-button:focus {
@@ -301,7 +308,7 @@ li {
    Sections and Layout
 ========================================================================== */
 .section, .aurum-fox-section {
-    padding: var(--spacing-xl) 0; /* Большой вертикальный отступ для секций */
+    padding: var(--spacing-xl) 0; 
     text-align: center;
     background-color: var(--color-bg-light);
     color: var(--text-color-light);
@@ -321,7 +328,7 @@ li {
     color: var(--text-color-white);
     padding: var(--spacing-xl) 0;
     text-align: center;
-    min-height: 80vh; /* Минимальная высота для героической секции */
+    min-height: 80vh; 
     display: flex;
     align-items: center;
     justify-content: center;
@@ -333,7 +340,7 @@ li {
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-lg);
-    flex-wrap: wrap; /* Для адаптивности */
+    flex-wrap: wrap; 
 }
 
 .hero-content {
@@ -345,17 +352,17 @@ li {
 .hero-image {
     flex: 1;
     min-width: 250px;
-    display: flex; /* Для центрирования изображения */
+    display: flex; 
     justify-content: center;
     align-items: center;
 }
 
 .hero-image img {
-    max-width: 100%; /* Изображение не занимает всю ширину */
+    max-width: 100%; 
     height: auto;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    animation: pulse 2s infinite alternate; /* Простая анимация */
+    animation: pulse 2s infinite alternate; 
     transition: transform 0.3s ease-in-out;
 }
 .hero-image img:hover {
@@ -391,13 +398,13 @@ li {
 
 /* Чередующиеся фоны секций для визуального разделения */
 .aurum-fox-section {
-    background-color: var(--background-color-light); /* Светлый фон */
-    color: var(--text-color-dark); /* Темный текст */
+    background-color: var(--background-color-light); 
+    color: var(--text-color-dark); 
 }
 
 .aurum-fox-section-alt {
-    background-color: var(--section-bg-light); /* Светлый оттенок серого */
-    color: var(--text-color-dark); /* Темный текст */
+    background-color: var(--section-bg-light); 
+    color: var(--text-color-dark); 
 }
 
 .web3-section {
@@ -690,21 +697,21 @@ li {
 
 .tokenomics-item th,
 .tokenomics-item td {
-    border: 1px solid #4a4a7e;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: 12px 15px;
     text-align: left;
 }
 
 .tokenomics-item th {
-    background-color: #4a4a7e;
+    background-color: var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     color: var(--primary-color);
     font-weight: 600;
 }
 .tokenomics-item tr:nth-child(even) {
-    background-color: var(--color-bg-card);
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 .tokenomics-item tr:hover {
-    background-color: #4a4a7e;
+    background-color: var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .tokenomics-item .small-text {
@@ -716,7 +723,7 @@ li {
 .contract-address {
     text-align: center;
     margin-top: var(--spacing-lg);
-    background-color: var(--color-bg-input); /* Изменено на dark-theme compatible */
+    background-color: var(--color-bg-input); 
     padding: var(--spacing-md);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
@@ -737,13 +744,13 @@ li {
 }
 
 .contract-address .highlight-text {
-    color: var(--primary-color); /* Золотой для контракта */
-    word-break: break-all; /* Разрыв слова для длинных слов */
+    color: var(--primary-color); 
+    word-break: break-all; 
 }
 
 /* How to Buy */
 .buy-steps, .how-to-list {
-    list-style: none; /* Убрать маркеры по умолчанию */
+    list-style: none; 
     padding: 0;
     max-width: 900px;
     margin: 0 auto;
@@ -756,7 +763,7 @@ li {
     border-radius: var(--border-radius-base);
     box-shadow: var(--box-shadow-medium);
     position: relative;
-    padding-left: 60px; /* Отступ для номера */
+    padding-left: 60px; 
     border-left: 5px solid var(--primary-color);
     color: var(--text-color-light);
 }
@@ -784,7 +791,7 @@ li {
     margin-top: 0;
 }
 
-.buy-steps ul, .how-to-list ul { /* Стили для вложенного списка */
+.buy-steps ul, .how-to-list ul { 
     list-style: disc;
     margin-top: var(--spacing-sm);
     padding-left: var(--spacing-md);
@@ -813,13 +820,13 @@ li {
 }
 
 .nft-card {
-    background-color: var(--color-bg-card); /* Изменено на dark-theme compatible */
+    background-color: var(--color-bg-card); 
     padding: var(--spacing-md);
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow-item); /* Изменено на dark-theme compatible */
+    box-shadow: var(--box-shadow-item); 
     text-align: center;
     transition: transform 0.3s ease;
-    color: var(--text-color-light); /* Обеспечить светлый текст на темной карточке */
+    color: var(--text-color-light); 
 }
 
 .nft-card:hover {
@@ -832,7 +839,7 @@ li {
     height: auto;
     border-radius: var(--border-radius);
     margin-bottom: var(--spacing-sm);
-    border: 1px solid #4a4a5c; /* Добавлен легкий бордер */
+    border: 1px solid var(--color-bg-light); /* Используем переменную */
 }
 
 .nft-card h4 {
@@ -967,7 +974,7 @@ li {
     padding: var(--spacing-md);
     border-radius: var(--border-radius-base);
     box-shadow: var(--box-shadow-item);
-    border: 1px solid #4a4a7e;
+    border: 1px solid var(--color-bg-light); /* Используем переменную */
     font-size: 1em;
     line-height: 1.5;
     color: var(--text-color-light);
@@ -1004,19 +1011,19 @@ li {
 .admin-announcement-section h3 {
     text-align: center;
     margin-bottom: var(--spacing-md);
-    color: var(--primary-color); /* Изменено на primary-color для темной темы */
+    color: var(--primary-color); 
 }
 
 .admin-announcement-section textarea, textarea#announcementInput {
     width: 100%;
     padding: var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
-    border: 1px solid #4a4a7e;
+    border: 1px solid var(--color-bg-light); /* Используем переменную */
     border-radius: var(--border-radius-base);
     min-height: 120px;
     font-family: inherit;
     font-size: 1em;
-    background-color: var(--color-bg-dark);
+    background-color: var(--color-bg-input); /* Используем переменную */
     color: var(--text-color-light);
     box-shadow: var(--box-shadow-inset);
     resize: vertical;
@@ -1048,7 +1055,7 @@ li {
 
 hr {
     border: none;
-    border-top: 1px solid #4a4a7e;
+    border-top: 1px solid var(--color-bg-light); /* Используем переменную */
     margin: var(--spacing-lg) 0;
 }
 
@@ -1072,7 +1079,7 @@ hr {
     font-weight: 600;
     transition: background-color 0.3s ease, transform 0.2s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    background-color: #3a3a4c;
+    background-color: var(--color-bg-card); /* Используем переменную */
     border: 1px solid var(--text-color-light);
 }
 
@@ -1100,10 +1107,10 @@ hr {
 .twitter-btn { background-color: #1DA1F2; color: var(--text-color-white); border: none;}
 .twitter-btn:hover { background-color: color-mix(in srgb, #1DA1F2 90%, black); }
 
-.solscan-btn { background-color: #8C52FF; color: var(--text-color-white); border: none;} /* Пример цвета для Solscan */
+.solscan-btn { background-color: #8C52FF; color: var(--text-color-white); border: none;} 
 .solscan-btn:hover { background-color: color-mix(in srgb, #8C52FF 90%, black); }
 
-.news-btn { background-color: #f7b731; color: var(--color-bg-dark); border: none;} /* Произвольный цвет для "Announcements" */
+.news-btn { background-color: #f7b731; color: var(--color-bg-dark); border: none;} 
 .news-btn:hover { background-color: color-mix(in srgb, #f7b731 90%, black); }
 
 
@@ -1111,7 +1118,7 @@ hr {
 .contact-section {
     background-color: var(--section-bg-dark);
     color: var(--text-color-light);
-    padding-bottom: var(--spacing-xl); /* Дополнительный отступ, чтобы не сливалось с футером */
+    padding-bottom: var(--spacing-xl); 
 }
 
 .contact-info {
@@ -1133,7 +1140,7 @@ hr {
 .contact-form {
     max-width: 600px;
     margin: 0 auto;
-    background-color: var(--background-color-dark); /* Темнее, чем секция */
+    background-color: var(--background-color-dark); 
     padding: var(--spacing-lg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-lg);
@@ -1152,9 +1159,9 @@ hr {
     width: 100%;
     padding: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
-    border: 1px solid #555;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     border-radius: 5px;
-    background-color: #444;
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     color: var(--text-color-light);
     font-family: inherit;
     font-size: 1em;
@@ -1163,7 +1170,7 @@ hr {
 .contact-form input[type="text"]::placeholder,
 .contact-form input[type="email"]::placeholder,
 .contact-form textarea::placeholder {
-    color: #bbb;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .contact-form button[type="submit"] {
@@ -1199,8 +1206,8 @@ hr {
     text-align: center;
     margin-top: var(--spacing-md);
     font-size: 1.1em;
-    color: var(--text-color-light);
-    background-color: #3a3a4c;
+    color: var(--text-color-light); /* УЛУЧШЕНО */
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: 15px;
     border-radius: var(--border-radius-base);
     display: inline-block;
@@ -1237,7 +1244,7 @@ hr {
     box-shadow: var(--box-shadow-medium);
     text-align: center;
     color: var(--text-color-light);
-    border: 1px solid #3a3a3a; /* Добавить легкий бордер */
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1272,7 +1279,7 @@ hr {
     padding: 15px;
     border-radius: var(--border-radius-small);
     margin-top: var(--spacing-md);
-    border: 1px dashed #ccc;
+    border: 1px dashed var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -1281,11 +1288,11 @@ hr {
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
 }
 .web3-placeholder {
-    background-color: #4a4a5c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: 10px 15px;
     border-radius: var(--border-radius-small);
     font-style: italic;
-    color: #ccc;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 
@@ -1301,7 +1308,7 @@ hr {
 }
 
 .nft-item {
-    background-color: #3a3a4c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: 15px;
     border-radius: 10px;
     box-shadow: var(--box-shadow-item);
@@ -1311,7 +1318,7 @@ hr {
     text-align: center;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid #4a4a5c;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     color: var(--text-color-light);
 }
 
@@ -1325,7 +1332,7 @@ hr {
     height: auto;
     border-radius: var(--border-radius-base);
     margin-bottom: 10px;
-    border: 1px solid #555;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .nft-item h4 {
@@ -1337,7 +1344,7 @@ hr {
 
 .nft-item p {
     font-size: 0.9em;
-    color: #ccc;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     margin: 2px 0;
     word-break: break-word;
 }
@@ -1352,7 +1359,7 @@ hr {
     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
     color: var(--text-color-light);
     text-align: left;
-    border: 1px solid #3a3a4c;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .web3-form label {
@@ -1369,7 +1376,7 @@ hr {
     width: 100%;
     padding: 12px;
     margin-bottom: var(--spacing-md);
-    border: 1px solid #555;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     border-radius: 6px;
     background-color: var(--color-bg-input);
     color: var(--text-color-light);
@@ -1390,7 +1397,7 @@ hr {
 .web3-form input[type="text"]::placeholder,
 .web3-form input[type="number"]::placeholder,
 .web3-form textarea::placeholder {
-    color: #bbb;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .web3-form .form-help-text {
@@ -1404,7 +1411,7 @@ hr {
 .nft-detail-view {
     text-align: left;
     padding: var(--spacing-md);
-    color: var(--text-color-light); /* Изменено для темной темы */
+    color: var(--text-color-light); 
 }
 
 .nft-detail-image {
@@ -1413,7 +1420,7 @@ hr {
     display: block;
     margin: 0 auto var(--spacing-md);
     border-radius: var(--border-radius-base);
-    border: 1px solid #ddd;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .nft-detail-view h3 {
@@ -1425,7 +1432,7 @@ hr {
 
 .nft-detail-view p {
     font-size: 1.1em;
-    color: #ccc;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     margin-bottom: 8px;
 }
 .nft-detail-view p strong {
@@ -1436,7 +1443,7 @@ hr {
 .nft-detail-view #nftDetailOwner {
     font-size: 0.95em;
     word-break: break-all;
-    background-color: #3a3a4c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: 5px 10px;
     border-radius: var(--border-radius-small);
     display: inline-block;
@@ -1457,7 +1464,7 @@ hr {
     display: flex;
     justify-content: space-between;
     font-size: 0.95em;
-    border: 1px solid #4a4a5c;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     color: var(--text-color-light);
 }
 
@@ -1476,11 +1483,11 @@ hr {
 }
 .placeholder-item.ad {
     padding: 15px;
-    background-color: #4a4a5c;
-    border: 1px solid #ddd;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     border-radius: var(--border-radius-small);
     text-align: center;
-    color: #ccc;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     font-style: italic;
     margin-bottom: 10px;
 }
@@ -1520,12 +1527,12 @@ hr {
 }
 
 .dao-proposal-item {
-    background-color: #3a3a4c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: var(--spacing-md);
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     color: var(--text-color-light);
-    border: 1px solid #3a3a3a;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -1545,12 +1552,12 @@ hr {
 .dao-proposal-item p {
     font-size: 0.95em;
     margin-bottom: var(--spacing-sm);
-    color: #ccc;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     line-height: 1.5;
 }
 
 .dao-proposal-item .dao-creator {
-    font-family: monospace; /* Моноширинный шрифт для адреса */
+    font-family: monospace; 
     color: var(--color-wallet-address);
     font-weight: 600;
     word-break: break-all;
@@ -1615,13 +1622,13 @@ hr {
 }
 
 .info-card {
-    background-color: #3a3a4c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: 25px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     text-align: center;
     color: var(--text-color-light);
-    border: 1px solid #3a3a3a;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     transition: transform 0.2s ease-in-out;
 }
 .info-card:hover {
@@ -1642,7 +1649,7 @@ hr {
 }
 
 .staking-actions {
-    background-color: #3a3a4c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -1662,14 +1669,14 @@ hr {
     justify-content: center;
     gap: 15px;
     margin-bottom: 25px;
-    flex-wrap: wrap; /* Для мобильных */
+    flex-wrap: wrap; 
 }
 
 .staking-actions input[type="number"] {
     flex-grow: 1;
     max-width: 300px;
     padding: 12px 15px;
-    border: 1px solid #555;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     border-radius: 5px;
     background-color: var(--color-bg-input);
     color: var(--text-color-light);
@@ -1690,7 +1697,7 @@ hr {
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     color: var(--text-color-light);
-    border: 1px solid #3a3a3a;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 .staking-details .web3-subheading {
     color: var(--primary-color);
@@ -1703,7 +1710,7 @@ hr {
     list-style: none;
     padding: 0;
     margin-top: var(--spacing-md);
-    color: #ccc;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     line-height: 1.8;
 }
 
@@ -1719,7 +1726,7 @@ hr {
 .staking-details .web3-note {
     font-style: italic;
     font-size: 0.9em;
-    color: #aaa;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     text-align: center;
     margin-top: var(--spacing-md);
 }
@@ -1729,9 +1736,9 @@ hr {
    Multimedia Hub Sections
 ========================================================================== */
 .multimedia-portal-container {
-    text-align: center; /* Центрировать заголовки и вступительный текст */
-    color: var(--text-color-light); /* Изменено на light для темной темы */
-    background: var(--color-bg-dark); /* Изменено на dark для темной темы */
+    text-align: center; 
+    color: var(--text-color-light); 
+    background: var(--color-bg-dark); 
     padding: var(--spacing-md);
     border-radius: var(--border-radius-base);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -1743,7 +1750,7 @@ hr {
 .multimedia-section-alt .multimedia-subheading,
 .multimedia-section-alt .item,
 .multimedia-section-alt .placeholder-item {
-    color: var(--text-color-light); /* Для светлого текста на темном фоне */
+    color: var(--text-color-light); 
 }
 
 .multimedia-features-grid {
@@ -1755,13 +1762,13 @@ hr {
 
 /* Стили карточек функций переиспользуются, просто убедитесь, что цвета соответствуют разделу */
 .multimedia-features-grid .feature-card {
-    background-color: var(--color-bg-card); /* Изменено на dark-theme compatible */
+    background-color: var(--color-bg-card); 
     color: var(--text-color-light);
-    border: 1px solid #3a3a4c; /* Темный бордер */
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .multimedia-features-grid .feature-card h3 {
-    color: var(--primary-color); /* Отлично сочетается с темной темой */
+    color: var(--primary-color); 
 }
 
 .multimedia-features-grid .feature-card .multimedia-link {
@@ -1778,19 +1785,19 @@ hr {
 .upload-form {
     max-width: 700px;
     margin: var(--spacing-lg) auto;
-    background-color: var(--color-bg-input); /* Изменено на dark-theme compatible */
+    background-color: var(--color-bg-input); 
     padding: var(--spacing-lg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
-    text-align: left; /* Текст формы выровнен по левому краю */
-    color: var(--text-color-light); /* Текст формы светлый */
+    text-align: left; 
+    color: var(--text-color-light); 
 }
 
 .upload-form label {
     display: block;
     margin-bottom: var(--spacing-xs);
     font-weight: 600;
-    color: var(--primary-color); /* Золотой для лейблов */
+    color: var(--primary-color); 
 }
 
 .upload-form input[type="text"],
@@ -1799,22 +1806,22 @@ hr {
     width: 100%;
     padding: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
-    border: 1px solid #4a4a7e; /* Темный бордер */
+    border: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     border-radius: 5px;
-    background-color: #2a2a3a; /* Темный фон */
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     color: var(--text-color-light);
     font-family: inherit;
     font-size: 1em;
 }
 
 .upload-form input[type="file"] {
-    background-color: #3a3a4c; /* Темнее для инпута файла */
-    border: 1px solid #555;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .upload-form input[type="text"]::placeholder,
 .upload-form textarea::placeholder {
-    color: #bbb;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .upload-form button[type="submit"] {
@@ -1832,13 +1839,13 @@ hr {
 }
 
 .multimedia-item {
-    background-color: #3a3a4c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: var(--spacing-md);
     border-radius: var(--border-radius-small);
     box-shadow: var(--box-shadow-item);
     text-align: center;
     transition: transform 0.2s ease;
-    border: 1px solid #4a4a5c;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     color: var(--text-color-light);
 }
 
@@ -1848,7 +1855,7 @@ hr {
 
 .multimedia-item img {
     max-width: 100%;
-    height: 150px; /* Фиксированная высота для единообразного размера изображений */
+    height: 150px; 
     object-fit: cover;
     border-radius: 4px;
     margin-bottom: var(--spacing-sm);
@@ -1866,7 +1873,7 @@ hr {
 
 .multimedia-item p {
     font-size: 0.9em;
-    color: #ccc;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .multimedia-item small {
@@ -1881,18 +1888,18 @@ hr {
 }
 
 .game-content input[type="number"] {
-    width: calc(100% - 100px); /* Чтобы уместить кнопку */
+    width: calc(100% - 100px); 
     padding: var(--spacing-sm);
-    border: 1px solid #ccc;
+    border: 1px solid var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     border-radius: 5px;
     margin-right: var(--spacing-sm);
     text-align: center;
-    background-color: var(--color-bg-input); /* Изменено для темной темы */
+    background-color: var(--color-bg-input); 
     color: var(--text-color-light);
 }
 
 .game-content button {
-    margin-top: var(--spacing-sm); /* Отступ для кнопок */
+    margin-top: var(--spacing-sm); 
 }
 
 .multimedia-link {
@@ -1916,7 +1923,7 @@ hr {
 .placeholder-item.post {
     text-align: left;
     height: auto;
-    background-color: #4a4a5c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     padding: 25px;
     border-radius: var(--border-radius-base);
     color: var(--text-color-light);
@@ -1931,7 +1938,7 @@ hr {
 .placeholder-item.post small {
     display: block;
     margin-top: var(--spacing-sm);
-    color: #aaa;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .portal-games-grid, .games-grid {
@@ -1941,7 +1948,7 @@ hr {
 }
 
 .placeholder-item.portal-game, .placeholder-item.game {
-    background-color: #4a4a5c;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     text-align: left;
     height: auto;
     padding: 25px;
@@ -1972,7 +1979,7 @@ hr {
     color: var(--text-color-dimmed);
     text-align: center;
     padding: 30px 0;
-    border-top: 1px solid #3a3a3a;
+    border-top: 1px solid var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     font-size: 0.9em;
 }
 
@@ -1982,7 +1989,7 @@ hr {
 }
 
 .footer .copy-btn {
-    background-color: var(--secondary-color); /* Другой цвет, чем у хедера */
+    background-color: var(--secondary-color); 
 }
 
 .footer .copy-btn:hover {
@@ -1997,25 +2004,24 @@ hr {
    Modals
 ========================================================================== */
 .modal {
-    display: none; /* Скрыто по умолчанию */
-    position: fixed; /* Позиция поверх всего */
-    z-index: 2000; /* Высокий z-index */
+    display: none; 
+    position: fixed; 
+    z-index: 2000; 
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    /* overflow: auto; удалено, прокрутка теперь управляется классом .is-open */
-    background-color: var(--color-modal-overlay); /* Полупрозрачный черный фон */
-    padding-top: 0; /* Убрано, центрирование через flex */
+    background-color: var(--color-modal-overlay); 
+    padding-top: 0; 
 }
 
 /* Класс, который ваш JS должен добавлять для отображения модального окна */
 .modal.is-open {
-    display: flex; /* Используем flex для центрирования */
+    display: flex; 
     align-items: center;
     justify-content: center;
-    overflow-y: auto; /* Позволяет прокручивать оверлей, если контент не помещается */
-    padding: var(--spacing-md) 0; /* Небольшой вертикальный отступ */
+    overflow-y: auto; 
+    padding: var(--spacing-md) 0; 
 }
 
 .modal-content {
@@ -2026,12 +2032,12 @@ hr {
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     position: relative;
     max-width: 700px;
-    width: 90%; /* Адаптивная ширина */
-    animation: fadeInScale 0.3s ease-out; /* Анимация появления */
-    color: var(--text-color-light); /* Цвет текста для модального окна */
+    width: 90%; 
+    animation: fadeInScale 0.3s ease-out; 
+    color: var(--text-color-light); 
     max-height: 90vh;
-    overflow-y: auto; /* <--- Прокрутка внутри модального окна */
-    border: 1px solid #888;
+    overflow-y: auto; 
+    border: 1px solid var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
 .modal-content h3 {
@@ -2055,7 +2061,7 @@ hr {
 }
 
 .close-button {
-    color: #aaa;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     position: absolute;
     top: 10px;
     right: 20px;
@@ -2091,15 +2097,15 @@ hr {
     position: fixed;
     top: var(--spacing-md);
     right: var(--spacing-md);
-    z-index: 10000; /* Высокий z-index, чтобы быть поверх всего */
+    z-index: 10000; 
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
-    pointer-events: none; /* Позволяет кликать сквозь контейнер, если он пуст */
+    pointer-events: none; 
 }
 
 .notification {
-    background-color: #444;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     color: var(--text-color-light);
     padding: 15px 20px;
     border-radius: var(--border-radius-base);
@@ -2107,9 +2113,9 @@ hr {
     opacity: 0;
     transform: translateX(100%);
     transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    min-width: 280px; /* Минимальная ширина для уведомлений */
+    min-width: 280px; 
     text-align: center;
-    pointer-events: all; /* Включить pointer-events для самого уведомления */
+    pointer-events: all; 
     display: flex;
     align-items: center;
     gap: 10px;
@@ -2156,21 +2162,20 @@ hr {
 @media (max-width: 768px) {
     /* Стили для мобильного меню уже определены выше */
     .header .container {
-        /* Убрал 'flex-direction: column' чтобы оставить логотип и гамбургер в одной строке */
         flex-wrap: wrap;
-        justify-content: space-between; /* Лого слева, гамбургер справа */
+        justify-content: space-between; 
         text-align: left;
-        gap: 0; /* Убираем лишний gap */
+        gap: 0; 
     }
 
     .logo {
-        margin-bottom: 0; /* Убираем лишний отступ */
+        margin-bottom: 0; 
         width: auto;
         justify-content: flex-start;
     }
     
     .nav {
-        width: auto; /* Навигация только для гамбургера */
+        width: auto; 
         display: block;
         justify-content: flex-end;
     }
@@ -2180,42 +2185,42 @@ hr {
         flex-direction: column;
         position: fixed;
         top: 0;
-        right: 0; /* Начинается справа */
-        width: 70%; /* Ширина мобильного меню */
+        right: 0; 
+        width: 70%; 
         max-width: 300px;
         height: 100%;
         background-color: var(--color-bg-dark);
         padding: 60px var(--spacing-md) var(--spacing-md);
         box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
-        transform: translateX(100%); /* Скрыто справа */
-        z-index: 1000;
+        transform: translateX(100%); 
+        z-index: 1001; /* Понижен, чтобы крестик был выше */
         overflow-y: auto;
-        align-items: flex-start; /* Элементы по левому краю */
-        gap: 0; /* Убираем лишний gap */
-        display: none; /* Скрываем по умолчанию, управляется JS */
+        align-items: flex-start; 
+        gap: 0; 
+        display: none; 
     }
     
     .nav ul.main-nav.open, .nav ul.main-nav.active {
         transform: translateX(0);
-        display: flex; /* Показываем при открытии */
+        display: flex; 
     }
 
     .nav ul.main-nav li {
         width: 100%;
         text-align: left;
-        margin-bottom: 0; /* Убираем старый отступ */
-        border-bottom: 1px solid #333; /* Добавляем разделитель */
+        margin-bottom: 0; 
+        border-bottom: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     }
 
     .nav ul.main-nav li a {
         font-size: 1.2em;
         display: block;
-        padding: 15px 10px; /* Увеличиваем область клика */
+        padding: 15px 10px; 
         color: var(--text-color-light);
     }
     
     .nav ul.main-nav li a:hover {
-        background-color: #3a3a4c;
+        background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
         color: var(--primary-color);
     }
 
@@ -2228,15 +2233,15 @@ hr {
     /* 💡 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 1: Z-INDEX ГАМБУРГЕРА */
     .menu-toggle {
         display: block;
-        position: relative; /* Возвращаем в поток документа */
-        z-index: 1004; /* Увеличили Z-INDEX, чтобы быть выше меню и крестика */
+        position: relative; 
+        z-index: 1004; /* Увеличили Z-INDEX */
         transform: none;
     }
     
     /* 💡 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 2: ВИДИМОСТЬ КРЕСТИКА */
     .close-menu-button {
         display: none; /* Скрываем по умолчанию */
-        position: absolute; /* Кнопка закрытия внутри меню */
+        position: absolute; 
         top: 10px;
         right: 15px;
     }
@@ -2245,7 +2250,7 @@ hr {
     .nav ul.main-nav.open .close-menu-button,
     .nav ul.main-nav.active .close-menu-button {
         display: block;
-        z-index: 1002; /* Гарантируем, что он выше меню */
+        z-index: 1005; /* Гарантируем, что он выше меню */
     }
     
     .close-menu-button:hover {
@@ -2260,23 +2265,23 @@ hr {
 
     .hero-content {
         text-align: center;
-        order: 2; /* Контент под изображением */
+        order: 2; 
     }
     .hero-content h1, .hero-content .tagline {
-        text-align: center; /* Центрируем текст внутри мобильного контента */
+        text-align: center; 
     }
 
 
     .hero-image {
-        order: 1; /* Изображение над контентом */
+        order: 1; 
         margin-bottom: var(--spacing-lg);
     }
 
     .call-to-action, .hero-buttons {
-        justify-content: center; /* Центрировать кнопки на мобильных устройствах */
+        justify-content: center; 
     }
     .hero-buttons .btn, .hero-buttons .primary-btn {
-        width: 100%; /* Кнопки на всю ширину */
+        width: 100%; 
     }
 
     h1 { font-size: 2.8em; }
@@ -2312,7 +2317,7 @@ hr {
     
     /* Дополнительная адаптация roadmap для читабельности */
     .roadmap-grid {
-        border-left: none; /* Убираем вертикальную линию, если она была */
+        border-left: none; 
     }
     
     .roadmap-item {
@@ -2346,13 +2351,13 @@ hr {
     }
 
     .staking-actions .input-group {
-        flex-direction: column; /* Элементы группы ввода в столбец */
+        flex-direction: column; 
         align-items: center;
         gap: 10px;
     }
 
     .staking-actions input[type="number"] {
-        max-width: 100%; /* Занимает всю ширину */
+        max-width: 100%; 
         margin-right: 0;
         margin-bottom: var(--spacing-sm);
     }
@@ -2390,23 +2395,23 @@ hr {
     .gallery,
     .posts,
     .games {
-        grid-template-columns: 1fr; /* Один стовпчик */
+        grid-template-columns: 1fr; 
         gap: 25px; 
     }
     
     .nft-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Залишимо 2 колонки, якщо карточки маленькі */
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
     }
 
     /* Адаптація таблиці токеноміки (Horizontal Scrolling або Card View) */
     .tokenomics-item table {
         width: 100%;
         display: block;
-        overflow-x: auto; /* Дозволяє горизонтальну прокрутку таблиці */
+        overflow-x: auto; 
     }
     
     .dao-vote-btn {
-        width: calc(50% - 7.5px); /* Две кнопки в ряд */
+        width: calc(50% - 7.5px); 
         margin: 5px 0;
     }
     .dao-actions {
@@ -2429,14 +2434,14 @@ hr {
         font-size: 0.9em;
     }
     .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn {
-        width: 100%; /* Кнопки на всю ширину */
+        width: 100%; 
         justify-content: center;
         padding: 12px 20px;
         margin: 5px 0;
     }
     
     .container {
-        padding: 0 var(--spacing-sm); /* 10px по бокам */
+        padding: 0 var(--spacing-sm); 
     }
     .section {
         padding: var(--spacing-lg) var(--spacing-sm);
@@ -2446,11 +2451,11 @@ hr {
     }
     
     .dao-vote-btn {
-        width: 100%; /* Кнопки голосования на всю ширину */
+        width: 100%; 
     }
     
     .tokenomics-item .highlight {
-        font-size: 1.4em; /* Зменшення розміру шрифту для ключових значень */
+        font-size: 1.4em; 
     }
 }
 
@@ -2459,16 +2464,16 @@ hr {
    CUSTOM STYLES
 ========================================================================== */
 .web3-button.connected {
-    background-color: #4CAF50; /* Зеленый цвет для подключенного состояния */
-    color: white;
-    border: 1px solid #4CAF50;
-    cursor: default; /* Изменяем курсор, чтобы показать, что кнопка некликабельна в этом состоянии */
-    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4); /* Добавляем тень для лучшего вида */
-    transition: none; /* Убираем hover-эффект при подключении */
+    background-color: var(--success-color); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-white);
+    border: 1px solid var(--success-color); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    cursor: default; 
+    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4); 
+    transition: none; 
     transform: none;
 }
 .web3-button.connected:hover {
-    background-color: #4CAF50; /* Отключаем hover-эффект */
-    color: white;
+    background-color: var(--success-color); /* Отключаем hover-эффект */
+    color: var(--text-color-white);
     box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
-   }
+}
