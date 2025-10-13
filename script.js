@@ -194,6 +194,38 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
+// --- LOGIC FOR HAMBURGER MENU (ВСТАВИТЬ ЭТО) ---
+function setupHamburgerMenu() {
+    const menuToggle = document.getElementById('menuToggle');
+    const mainNav = document.getElementById('mainNav');
+    const closeButton = document.getElementById('closeMainMenuCross');
+
+    if (menuToggle && mainNav && closeButton) {
+        
+        function toggleMenu() {
+            const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+            const newState = !isExpanded;
+            
+            menuToggle.setAttribute('aria-expanded', newState);
+            mainNav.setAttribute('aria-hidden', !newState);
+            mainNav.classList.toggle('active', newState); 
+            document.body.classList.toggle('menu-open', newState); 
+        }
+
+        menuToggle.addEventListener('click', toggleMenu);
+        closeButton.addEventListener('click', toggleMenu);
+        
+        // Закрытие при клике на ссылку 
+        mainNav.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (mainNav.classList.contains('active')) {
+                    toggleMenu(); 
+                }
+            });
+        });
+    }
+}
+// --- КОНЕЦ ЛОГИКИ ГАМБУРГЕР-МЕНЮ ---
 // --- 1. НОВАЯ ФУНКЦИЯ: toggleScrollLock (ВСТАВИТЬ) ---
 /**
  * Toggles the scroll lock class on the <body> element.
