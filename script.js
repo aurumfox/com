@@ -194,57 +194,65 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-        // --- ГАМБУРГЕР-МЕНЮ ЛОГИКА (ДОБАВИТЬ ЭТОТ КОД) ---
-        function setupHamburgerMenu() {
-            const menuToggle = document.getElementById('menuToggle');
-            const mainNav = document.getElementById('mainNav');
-            const closeMenuButton = document.getElementById('closeMainMenuCross');
-            const mobileNavOverlay = document.querySelector('.nav-mobile-overlay');
+        // ======================= setupHamburgerMenu() =======================
+function setupHamburgerMenu() {
+    // 1. АБСОЛЮТНО КРИТИЧНО: ID должны совпадать с HTML
+    const menuToggle = document.getElementById('menuToggle');
+    const closeMenuButton = document.getElementById('closeMenuButton'); 
+    const mainNav = document.getElementById('mainNav');
+    const navOverlay = document.getElementById('navOverlay'); 
+    const body = document.body;
 
-            if (!menuToggle || !mainNav || !closeMenuButton || !mobileNavOverlay) {
-                console.error("One or more menu elements not found. Skipping hamburger setup.");
-                return;
-            }
+    // Проверка, что элементы найдены (если нет, вы увидите ошибку в консоли)
+    if (!menuToggle || !mainNav || !navOverlay || !closeMenuButton) {
+        console.error("КРИТИЧЕСКАЯ ОШИБКА МЕНЮ: Проверьте ID в HTML! Один или несколько элементов не найдены.");
+        return; 
+    }
 
-            // Функция для открытия меню
-            const openMenu = () => {
-                mobileNavOverlay.classList.add('is-open'); // Используем overlay для темного фона
-                mainNav.classList.add('is-open'); 
-                menuToggle.setAttribute('aria-expanded', 'true');
-                mainNav.setAttribute('aria-hidden', 'false');
-                document.body.style.overflow = 'hidden'; // Блокировка прокрутки фона
-            };
+    function openMenu() {
+        mainNav.classList.add('is-open'); 
+        navOverlay.classList.add('is-open'); 
+        menuToggle.classList.add('is-active'); 
+        body.classList.add('menu-open'); // Блокировка скролла
+        menuToggle.setAttribute('aria-expanded', 'true');
+    }
 
-            // Функция для закрытия меню
-            const closeMenu = () => {
-                mobileNavOverlay.classList.remove('is-open');
-                mainNav.classList.remove('is-open');
-                menuToggle.setAttribute('aria-expanded', 'false');
-                mainNav.setAttribute('aria-hidden', 'true');
-                document.body.style.overflow = 'auto'; // Разблокировка прокрутки фона
-            };
-            
-            // Нажатие на иконку Гамбургера
-            menuToggle.addEventListener('click', openMenu);
-            
-            // Нажатие на Крестик
-            closeMenuButton.addEventListener('click', closeMenu);
-            
-            // Закрытие при клике на ссылку внутри меню
-            const navLinks = mainNav.querySelectorAll('a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', closeMenu);
-            });
-            
-            // Закрытие при клике по затемненному оверлею (mobileNavOverlay)
-            mobileNavOverlay.addEventListener('click', (event) => {
-                // Если клик был именно по оверлею, а не по его дочерним элементам
-                if (event.target === mobileNavOverlay) {
-                    closeMenu();
-                }
-            });
+    function closeMenu() {
+        mainNav.classList.remove('is-open');
+        navOverlay.classList.remove('is-open');
+        menuToggle.classList.remove('is-active');
+        body.classList.remove('menu-open'); // Разблокировка скролла
+        menuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    // 1. ПЕРЕКЛЮЧЕНИЕ: Главный обработчик гамбургера
+    menuToggle.addEventListener('click', () => {
+        if (mainNav.classList.contains('is-open')) {
+            closeMenu();
+        } else {
+            openMenu();
         }
-        // --- /ГАМБУРГЕР-МЕНЮ ЛОГИКА ---
+    });
+
+    // 2. ОБРАБОТЧИКИ ЗАКРЫТИЯ
+    closeMenuButton.addEventListener('click', closeMenu);
+    navOverlay.addEventListener('click', closeMenu);
+    
+    // 3. ФУНКЦИЯ ДЛЯ ЗАКРЫТИЯ ПО ССЫЛКЕ (вызывается из HTML)
+    window.closeMenuOnLinkClick = function() {
+        if (window.innerWidth <= 768) {
+            closeMenu();
+        }
+    };
+}
+
+// 4. ВЫЗОВ НАСТРОЙКИ МЕНЮ (ТОЛЬКО ПОСЛЕ ЗАГРУЗКИ DOM)
+document.addEventListener('DOMContentLoaded', () => {
+    setupHamburgerMenu(); // <-- Добавьте этот вызов
+    // ... ваш остальной код JS ...
+});
+// =========================================================
+
 
 // --------------------------------------------------------
 
