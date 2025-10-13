@@ -194,11 +194,12 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-// --- LOGIC FOR HAMBURGER MENU (ВСТАВИТЬ ЭТО) ---
+// --- LOGIC FOR HAMBURGER MENU (ИСПРАВЛЕНА: ИСПОЛЬЗУЕТ uiElements и toggleScrollLock) ---
 function setupHamburgerMenu() {
-    const menuToggle = document.getElementById('menuToggle');
-    const mainNav = document.getElementById('mainNav');
-    const closeButton = document.getElementById('closeMainMenuCross');
+    // 💡 ИСПРАВЛЕНИЕ: ИСПОЛЬЗУЕМ КЕШИРОВАННЫЕ ЭЛЕМЕНТЫ
+    const menuToggle = uiElements.menuToggle;
+    const mainNav = uiElements.mainNav;
+    const closeButton = uiElements.closeMainMenuCross;
 
     if (menuToggle && mainNav && closeButton) {
         
@@ -210,6 +211,9 @@ function setupHamburgerMenu() {
             mainNav.setAttribute('aria-hidden', !newState);
             mainNav.classList.toggle('active', newState); 
             document.body.classList.toggle('menu-open', newState); 
+            
+            // 💡 ИСПРАВЛЕНИЕ ДЛЯ ГАМБУРГЕР-МЕНЮ: Добавлена блокировка прокрутки
+            toggleScrollLock(newState);
         }
 
         menuToggle.addEventListener('click', toggleMenu);
@@ -218,6 +222,7 @@ function setupHamburgerMenu() {
         // Закрытие при клике на ссылку 
         mainNav.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
+                // Закрывать меню только если оно открыто (класс active)
                 if (mainNav.classList.contains('active')) {
                     toggleMenu(); 
                 }
@@ -226,7 +231,6 @@ function setupHamburgerMenu() {
     }
 }
 // --- КОНЕЦ ЛОГИКИ ГАМБУРГЕР-МЕНЮ ---
-
 
 // --------------------------------------------------------
 
@@ -389,7 +393,13 @@ function parseAmountToBigInt(amountStr, decimals) {
     return BigInt(integerPart + paddedFractionalPart);
 }
 
-// --- 2. ИСПРАВЛЕННАЯ ФУНКЦИЯ: closeAllPopups (ЗАМЕНИТЬ) ---
+// --------------------------------------------------------
+// Добавлена функция для блокировки/разблокировки прокрутки (нужна для setupHamburgerMenu)
+function toggleScrollLock(lock) {
+    document.body.style.overflow = lock ? 'hidden' : '';
+}
+// --------------------------------------------------------
+
 /**
  * Closes all open modals and the main navigation menu.
  * ИСПРАВЛЕНО: Добавлена логика разблокировки прокрутки.
@@ -408,13 +418,19 @@ function closeAllPopups() {
             wasModalOpen = true;
         }
     });
-
+    
+    // Также закрываем гамбургер-меню
     if (uiElements.mainNav && uiElements.mainNav.classList.contains('active')) {
         uiElements.mainNav.classList.remove('active');
-        if (uiElements.menuToggle) uiElements.menuToggle.classList.remove('active');
+        if (uiElements.menuToggle) {
+             uiElements.menuToggle.classList.remove('active'); // CSS class for state
+             uiElements.menuToggle.setAttribute('aria-expanded', 'false'); // Accessibility
+        }
+        document.body.classList.remove('menu-open');
+        wasModalOpen = true; // Считаем, что закрыли что-то, что блокировало прокрутку
     }
 
-    // Разблокировать прокрутку, только если было закрыто модальное окно.
+    // Разблокировать прокрутку, если что-то было закрыто.
     if (wasModalOpen) {
         toggleScrollLock(false); 
     }
@@ -1841,54 +1857,6 @@ function cacheUIElements() {
     uiElements.nftModal = document.getElementById('nft-modal');
     uiElements.mintNftModal = document.getElementById('mint-nft-modal');
     uiElements.createProposalModal = document.getElementById('create-proposal-modal');
-    // ↓↓↓ ИСПРАВЛЕНИЕ: Добавлена кнопка открытия DAO ↓↓↓
-    uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
-
-    Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
-        btn.addEventListener('click', closeAllPopups);
-    });
-
-    // Menu Elements
-    uiElements.mainNav = document.querySelector('nav');
-    uiElements.menuToggle = document.getElementById('menu-toggle');
-    uiElements.closeMainMenuCross = document.querySelector('.close-menu');
-    uiElements.navLinks = Array.from(document.querySelectorAll('nav a'));
-
-    // NFT Section
-    uiElements.userNftList = document.getElementById('user-nft-list');
-    uiElements.marketplaceNftList = document.getElementById('marketplace-nft-list');
-    uiElements.nftToSellSelect = document.getElementById('nft-to-sell');
-    uiElements.listNftForm = document.getElementById('list-nft-form');
-    uiElements.mintNftForm = document.getElementById('mint-nft-form');
-
-    // NFT Details Modal elements
-    uiElements.nftDetailImage = document.getElementById('nft-detail-image');
-    uiElements.nftDetailName = document.getElementById('nft-detail-name');
-    uiElements.nftDetailDescription = document.getElementById('nft-detail-description');
-    uiElements.nftDetailOwner = document.getElementById('nft-detail-owner');
-    uiElements.nftDetailMint = document.getElementById('nft-detail-mint');
-    uiElements.attributesList = document.getElementById('attributes-list');
-    uiElements.nftDetailBuyBtn = document.getElementById('nft-detail-buy-btn');
-    uiElements.nftDetailSellBtn = document.getElementById('nft-detail-sell-btn');
-    uiElements.nftDetailTransferBtn = document.getElementById('nft-detail-transfer-btn');
-    uiElements.nftDetailHistory = document.getElementById('nft-detail-history');
-
-    // Announcements & Games
-    uiElements.announcementsList = document.getElementById('announcements-list');
-// --- 3. ИСПРАВЛЕННАЯ ФУНКЦИЯ: cacheUIElements (ЗАМЕНИТЬ) ---
-/**
- * Caches all necessary UI elements.
- */
-function cacheUIElements() {
-    // General Wallet & Display
-    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
-    uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display'));
-
-    // Modals and Close Buttons
-    uiElements.nftDetailsModal = document.getElementById('nft-details-modal');
-    uiElements.nftModal = document.getElementById('nft-modal');
-    uiElements.mintNftModal = document.getElementById('mint-nft-modal');
-    uiElements.createProposalModal = document.getElementById('create-proposal-modal');
     
     // ↓↓↓ ДОБАВЛЕННЫЙ ЭЛЕМЕНТ ДЛЯ ФОРМЫ DAO ↓↓↓
     uiElements.createProposalForm = document.getElementById('create-proposal-form');
@@ -1902,8 +1870,9 @@ function cacheUIElements() {
 
     // Menu Elements
     uiElements.mainNav = document.querySelector('nav');
-    uiElements.menuToggle = document.getElementById('menu-toggle');
-    uiElements.closeMainMenuCross = document.querySelector('.close-menu');
+    // 💡 ИСПРАВЛЕНИЕ: Использование menuToggle как селектора по ID, который должен быть на кнопке меню
+    uiElements.menuToggle = document.getElementById('menu-toggle') || document.getElementById('menuToggle'); 
+    uiElements.closeMainMenuCross = document.querySelector('.close-menu') || document.getElementById('closeMainMenuCross');
     uiElements.navLinks = Array.from(document.querySelectorAll('nav a'));
 
     // NFT Section
@@ -1963,7 +1932,7 @@ function cacheUIElements() {
 // --------------------------------------------------------
 
 
-// --- 4. ИСПРАВЛЕННАЯ ФУНКЦИЯ: initEventListeners (ЗАМЕНИТЬ) ---
+// --- 4. ИСПРАВЛЕННАЯ ФУНКЦИЯ: initEventListeners (С УДАЛЕННОЙ КОНФЛИКТУЮЩЕЙ ЛОГИКОЙ МЕНЮ) ---
 /**
  * Initializes all event listeners.
  */
@@ -1976,27 +1945,9 @@ function initEventListeners() {
         });
     });
 
-    // Menu /**
- * Main initialization function.
- */
-async function init() {
-    cacheUIElements();
+    // ❌ КОНФЛИКТУЮЩАЯ ЛОГИКА МЕНЮ УДАЛЕНА.
+    // ВСЯ ЛОГИКА МЕНЮ ТЕПЕРЬ НАХОДИТСЯ В setupHamburgerMenu()
     
-    // ... ваш остальной код инициализации
-    
-    initEventListeners();
-    initializeJupiterTerminal();
-
-    // Initial data load
-    loadAnnouncements();
-    // ... и т.д.
-}
-
-    }
-    if (uiElements.closeMainMenuCross) uiElements.closeMainMenuCross.addEventListener('click', closeAllPopups);
-    uiElements.navLinks.forEach(link => link.addEventListener('click', closeAllPopups));
-
-
     // NFT Marketplace (Delegation)
     if (uiElements.userNftList) {
         uiElements.userNftList.addEventListener('click', (e) => handleNftItemClick(e, true));
@@ -2024,85 +1975,7 @@ async function init() {
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
     if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
     
-    // ↓↓↓ ИСПРАВЛЕНИЕ: Обработчик для открытия DAO модального окна и блокировки прокрутки ↓↓↓
-    if (uiElements.createProposalBtn) {
-        uiElements.createProposalBtn.addEventListener('click', () => {
-            if (uiElements.createProposalModal) {
-                closeAllPopups(); // Закрываем все другие модальные окна
-                uiElements.createProposalModal.style.display = 'flex';
-                uiElements.createProposalModal.classList.add('is-open');
-                toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
-            }
-        });
-    }
-    // ↑↑↑ КОНЕЦ ИСПРАВЛЕНИЯ ↑↑↑
-
-    // SWAP Actions
-    const debouncedGetQuote = debounce(getQuote, 500);
-
-    if (uiElements.swapFromTokenSelect) {
-        uiElements.swapFromTokenSelect.addEventListener('change', () => {
-            updateSwapBalances();
-            clearSwapQuote();
-        });
-    }
-    if (uiElements.swapToTokenSelect) {
-        uiElements.swapToTokenSelect.addEventListener('change', () => {
-            clearSwapQuote();
-            if (uiElements.swapFromAmountInput.value.trim() !== '') debouncedGetQuote();
-        });
-    }
-    if (uiElements.swapFromAmountInput) {
-        uiElements.swapFromAmountInput.addEventListener('input', () => {
-             clearSwapQuote();
-             debouncedGetQuote();
-        });
-    }
-    if (uiElements.getQuoteBtn) uiElements.getQuoteBtn.addEventListener('click', getQuote);
-    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.addEventListener('click', executeSwap);
-    uiElements.maxAmountBtns.forEach(btn => {
-
-// --- 4. ИСПРАВЛЕННАЯ ФУНКЦИЯ: initEventListeners (ЗАМЕНИТЬ) ---
-/**
- * Initializes all event listeners.
- */
-function initEventListeners() {
-    // Wallet Connection
-    uiElements.connectWalletButtons.forEach(btn => {
-        // 🔴 CHANGE HERE: use the new wrapper function to simulate the button behavior you provided.
-        btn.addEventListener('click', () => { 
-             simulateConnectButtonUpdate(btn);
-        });
-    
-
-    // NFT Marketplace (Delegation)
-    if (uiElements.userNftList) {
-        uiElements.userNftList.addEventListener('click', (e) => handleNftItemClick(e, true));
-    }
-    if (uiElements.marketplaceNftList) {
-        uiElements.marketplaceNftList.addEventListener('click', (e) => handleNftItemClick(e, false));
-    }
-
-    // NFT Forms and Actions
-    if (uiElements.mintNftForm) uiElements.mintNftForm.addEventListener('submit', handleMintNftSubmit);
-    if (uiElements.listNftForm) uiElements.listNftForm.addEventListener('submit', handleListNftSubmit);
-    if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.addEventListener('click', handleBuyNft);
-    if (uiElements.nftDetailSellBtn) {
-        uiElements.nftDetailSellBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (appState.currentOpenNft && appState.currentOpenNft.isListed) {
-                handleUnlistNft();
-            }
-        });
-    }
-    if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.addEventListener('click', handleTransferNft);
-
-    // Staking Actions
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
-    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
-    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
-    
-    // ↓↓↓ ДОБАВЛЕННЫЙ БЛОК ДЛЯ DAO ACTIONS (КНОПКА) ↓↓↓
+    // ↓↓↓ DAO ACTIONS (КНОПКА) ↓↓↓
     if (uiElements.createProposalBtn) {
         uiElements.createProposalBtn.addEventListener('click', () => {
             if (uiElements.createProposalModal) {
@@ -2115,7 +1988,7 @@ function initEventListeners() {
     }
     // ↑↑↑
 
-    // ↓↓↓ ДОБАВЛЕННЫЙ БЛОК ДЛЯ DAO ACTIONS (ФОРМА SUBMIT) ↓↓↓
+    // ↓↓↓ DAO ACTIONS (ФОРМА SUBMIT) ↓↓↓
     if (uiElements.createProposalForm) {
         // Здесь мы используем простую MOCK-заглушку.
         // В реальном коде вам нужно будет вызвать handleCreateProposal(e)
@@ -2203,11 +2076,16 @@ function initializeJupiterTerminal() {
     }
 }
 
+// --- ИСПРАВЛЕННАЯ ГЛАВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ ---
 /**
  * Main initialization function.
  */
 async function init() {
     cacheUIElements();
+    
+    // 🟢 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Вызов функции для активации гамбургер-меню
+    setupHamburgerMenu(); 
+    
     initEventListeners();
     initializeJupiterTerminal();
 
@@ -2227,6 +2105,7 @@ async function init() {
         showNotification("Warning: Failed to connect to Solana RPC on startup.", 'warning', 7000);
     }
 }
+// --------------------------------------------------------
 
 // Ensure the script runs after the entire document is loaded
 document.addEventListener('DOMContentLoaded', init);
