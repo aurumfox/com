@@ -1,7 +1,6 @@
 /* ==========================================================================
    CSS Variables (Design Tokens) - Объединены и очищены
-   Используйте эти переменные для согласованности дизайна
-========================================================================== */
+   ========================================================================== */
 :root {
     /* Brand Colors */
     --primary-color: #ffd700; /* Gold */
@@ -2180,7 +2179,7 @@ hr {
         justify-content: flex-end;
     }
 
-    /* Стили для мобильной навигации */
+    /* Стили для мобильной навигации (ИСПРАВЛЕНО) */
     .nav ul.main-nav {
         flex-direction: column;
         position: fixed;
@@ -2192,17 +2191,28 @@ hr {
         background-color: var(--color-bg-dark);
         padding: 60px var(--spacing-md) var(--spacing-md);
         box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
+        
+        /* 🛑 ИСПРАВЛЕНИЕ: МЕНЯЕМ display: none НА OPACITY И VISIBILITY */
         transform: translateX(100%); 
-        z-index: 1001; /* Понижен, чтобы крестик был выше */
+        opacity: 0; 
+        visibility: hidden; 
+        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0.3s;
+        
+        z-index: 1001;
         overflow-y: auto;
         align-items: flex-start; 
         gap: 0; 
-        display: none; 
+        /* Оставляем flex, чтобы transform работал */
+        display: flex; 
     }
     
     .nav ul.main-nav.open, .nav ul.main-nav.active {
+        /* Эти стили теперь ГАРАНТИРОВАНО ПЕРЕОПРЕДЕЛЯТ закрытое состояние */
         transform: translateX(0);
-        display: flex; 
+        opacity: 1; 
+        visibility: visible; 
+        /* display: flex; - уже есть в базовом селекторе, но оставляем */
+        display: flex;
     }
 
     .nav ul.main-nav li {
