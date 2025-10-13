@@ -100,7 +100,10 @@ body {
 body.modal-open,
 body.menu-open { 
     overflow: hidden; /* Блокировка прокрутки */
-    /* position: fixed; width: 100%; height: 100%; - добавляется в медиа-запросе для мобильных */
+    /* Добавляем фиксированную позицию для предотвращения скачков на iOS */
+    position: fixed; 
+    width: 100%; 
+    height: 100%; 
 }
 
 /* A11Y: Focus States (Улучшенная доступность для клавиатуры) */
@@ -205,8 +208,7 @@ li {
     color: var(--primary-color);
 }
 
-/* 🛑 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Скрываем мобильный оверлей по умолчанию на десктопе, 
-   если он объявлен как отдельный элемент. Если это просто .main-nav, это не повлияет. */
+/* Скрываем мобильный оверлей по умолчанию на десктопе */
 .nav-mobile-overlay {
     display: none; 
 }
@@ -292,9 +294,9 @@ li {
 
 /* Кнопка закрытия меню (Крестик) */
 .close-menu-button {
-    display: none; /* 🛑 ИСПРАВЛЕНИЕ: Скрыт по умолчанию */
+    display: none; /* Скрыт по умолчанию */
     font-size: 2.5em; 
-    position: absolute; /* Позиционирование будет скорректировано в медиа-запросе */
+    position: absolute; 
     top: 10px; 
     right: 15px; 
     cursor: pointer;
@@ -328,7 +330,6 @@ li {
 .section:last-of-type {
     border-bottom: none;
 }
-/* ... (Остальные стили секций) ... */
 .hero-section {
     background: linear-gradient(135deg, var(--color-bg-dark) 0%, #3a0052 100%);
     color: var(--text-color-white);
@@ -1199,6 +1200,73 @@ hr {
 /* ==========================================================================
    Web3 Portal Sections
 ========================================================================== */
+
+/* 🚀 УЛУЧШЕННЫЙ СТИЛЬ ДЛЯ КНОПКИ CONNECT WALLET */
+.web3-button {
+    /* Базовый стиль для кнопки Connect */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 25px;
+    border-radius: var(--border-radius-base);
+    font-weight: 700;
+    font-size: 1em;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    
+    background-color: var(--accent-color); /* Синий акцент */
+    color: var(--text-color-white);
+    border: 2px solid transparent; 
+    box-shadow: var(--box-shadow-medium);
+}
+
+.web3-button:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 80%, black);
+    border-color: var(--primary-color); /* Золотой бордер при наведении */
+    transform: translateY(-2px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+/* 🟢 СОСТОЯНИЕ: ПОДКЛЮЧЕНО (УЛУЧШЕННЫЙ СТИЛЬ) */
+.web3-button.connected {
+    background-color: var(--success-color); 
+    color: var(--primary-color); /* Золотой текст для премиального Connected */
+    border: 2px solid var(--primary-color); 
+    cursor: default; 
+    box-shadow: 0 4px 15px rgba(56, 170, 60, 0.7); /* Более заметная зеленая тень */
+    transition: none; 
+    transform: none;
+}
+.web3-button.connected:hover {
+    background-color: var(--success-color); 
+    box-shadow: 0 4px 15px rgba(56, 170, 60, 0.9);
+    transform: none;
+}
+
+/* 💻 ОТОБРАЖЕНИЕ АДРЕСА: УЛУЧШЕНИЕ ВИДИМОСТИ */
+.web3-wallet-display {
+    text-align: center;
+    margin-top: var(--spacing-md);
+    font-size: 1.1em;
+    color: var(--text-color-light); 
+    background-color: var(--color-bg-input); /* Чуть светлее, чем карточка */
+    padding: 15px;
+    border-radius: var(--border-radius-base);
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+    border: 1px solid var(--color-blue-web3); /* Акцент Web3 */
+    box-shadow: var(--box-shadow-inset);
+}
+.web3-wallet-display span {
+    font-weight: bold;
+    color: var(--color-wallet-address);
+}
+/* -------------------------------------------------------------------------- */
+
+
 .web3-intro {
     text-align: center;
     margin-bottom: var(--spacing-lg);
@@ -1208,23 +1276,6 @@ hr {
     margin: 0 auto var(--spacing-lg) auto;
 }
 
-.web3-wallet-display {
-    text-align: center;
-    margin-top: var(--spacing-md);
-    font-size: 1.1em;
-    color: var(--text-color-light); /* УЛУЧШЕНО */
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: 15px;
-    border-radius: var(--border-radius-base);
-    display: inline-block;
-    font-family: 'Courier New', monospace;
-    word-break: break-all;
-}
-
-.web3-wallet-display span {
-    font-weight: bold;
-    color: var(--color-wallet-address);
-}
 
 .web3-features-grid,
 .games-grid,
@@ -2172,7 +2223,6 @@ hr {
     
     /* 💡 1. КОНТЕЙНЕР МЕНЮ: Скрыт по умолчанию сдвигом вправо */
     .nav ul.main-nav { 
-        /* Эти стили активируются только на мобильных (до 768px) */
         display: flex; 
         flex-direction: column;
         position: fixed;
@@ -2214,7 +2264,7 @@ hr {
     
     /* 💡 4. КРЕСТИК (close-menu-button) */
     .close-menu-button {
-        /* Делаем его фиксированным и невидимым по умолчанию */
+        /* Делаем его видимым только когда меню открыто, но отображаем на мобильном */
         display: block; 
         position: fixed; 
         top: 20px;
@@ -2233,15 +2283,10 @@ hr {
         visibility: visible;
     }
     
-    /* 🛑 6. БЛОКИРОВКА BODY SCROLL: Чтобы предотвратить скачки при открытии меню */
-    body.menu-open { 
-        position: fixed; 
-        width: 100%;
-        height: 100%;
-    }
+    /* 🛑 6. БЛОКИРОВКА BODY SCROLL: Чтобы предотвратить скачки при открытии меню (стиль в body.menu-open) */
     
     /* ----------------------------------------------------- */
-    /* ВАШИ ОСТАЛЬНЫЕ СТИЛИ ДЛЯ 768PX (Без изменений) */
+    /* ВАШИ ОСТАЛЬНЫЕ СТИЛИ ДЛЯ 768PX */
     /* ----------------------------------------------------- */
 
     .header .container {
@@ -2281,7 +2326,6 @@ hr {
         background-color: var(--color-bg-card); 
         color: var(--primary-color);
     }
-
 
     /* Убираем подчеркивание */
     .nav ul.main-nav li a::after {
@@ -2326,7 +2370,7 @@ hr {
         padding: 60px 0;
     }
 
-    /* Одиночная колонка для всех Grid-элементов (Уже было, оставляем) */
+    /* Одиночная колонка для всех Grid-элементов */
     .tokenomics-grid,
     .nft-showcase,
     .nfc-grid,
@@ -2460,11 +2504,11 @@ hr {
     .hero-content h1 { font-size: 2.4em; }
     .hero-content .tagline { font-size: 1.1em; }
     
-    .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn {
+    .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .web3-button {
         padding: var(--spacing-sm);
         font-size: 0.9em;
     }
-    .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn {
+    .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .web3-button {
         width: 100%; 
         justify-content: center;
         padding: 12px 20px;
@@ -2492,19 +2536,20 @@ hr {
 
 
 /* ==========================================================================
-   CUSTOM STYLES
+   CUSTOM STYLES (ОСТАВЛЕН ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ)
 ========================================================================== */
-.web3-button.connected {
-    background-color: var(--success-color); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+/* ЭТОТ БЛОК ТЕПЕРЬ НЕАКТУАЛЕН, Т.К. ЕГО ЛОГИКА ПЕРЕМЕЩЕНА В .web3-button.connected */
+/* .web3-button.connected {
+    background-color: var(--success-color); 
     color: var(--text-color-white);
-    border: 1px solid var(--success-color); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border: 1px solid var(--success-color); 
     cursor: default; 
     box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4); 
     transition: none; 
     transform: none;
 }
 .web3-button.connected:hover {
-    background-color: var(--success-color); /* Отключаем hover-эффект */
+    background-color: var(--success-color); 
     color: var(--text-color-white);
     box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
-}
+} */
