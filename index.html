@@ -607,7 +607,7 @@
                 <p class="web3-intro">Explore decentralized games, manage your NFTs, and discover Web3 advertising opportunities. <strong style="color: #f39c12;">Connect your wallet below to activate Web3 functions.</strong></p>
                 
                 <div class="wallet-control-box" style="margin: 20px 0; display: flex; flex-direction: column; align-items: flex-start;">
-                    <button id="connectWalletBtn" class="wallet-connect-btn" style="margin-left: 0;">
+                    <button id="connectWalletBtn" class="wallet-connect-btn" style="margin-left: 0;"> 
                         Connect Wallet
                     </button>
                     <p class="web3-wallet-display">Your Wallet Address: <strong id="walletAddressDisplay">Not Connected</strong></p>
@@ -1474,10 +1474,9 @@
             const menuToggle = document.getElementById('menuToggle');
             const navOverlay = document.querySelector('.nav-mobile-overlay');
             const closeMenuCross = document.getElementById('closeMainMenuCross');
-            const mainNavLinks = document.querySelectorAll('.main-nav a');
+            const mainNavLinks = document.querySelectorAll('.nav-list a'); // Исправлено на nav-list
 
             if (!menuToggle || !navOverlay || !closeMenuCross) {
-                // Это нормально, если эти элементы не найдены на десктопе, но мы должны их найти
                 return;
             }
 
@@ -1727,15 +1726,11 @@
                 });
             }
             
-            // --- STARTUP AFTER DOM LOAD ---
-document.addEventListener('DOMContentLoaded', () => {
-    // ... (весь код, который был здесь) ...
-
-    // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
-    setupHamburgerMenu(); // <--- ЭТОТ ВЫЗОВ СДЕЛАЕТ МЕНЮ РАБОЧИМ
-});
+            // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
+            setupHamburgerMenu(); 
+        });
 
         
     </script>
 </body>
-                                                                           </html>
+</html>
