@@ -194,16 +194,19 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-        // ======================= setupHamburgerMenu() =======================
+/**
+ * 💡 ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ГАМБУРГЕР-МЕНЮ (Должна быть вызвана после DOMContentLoaded)
+ */
 function setupHamburgerMenu() {
     // 1. АБСОЛЮТНО КРИТИЧНО: ID должны совпадать с HTML
+    // ИСПОЛЬЗУЕМ menuToggle (как более вероятно в разметке) и closeMenuButton
     const menuToggle = document.getElementById('menuToggle');
     const closeMenuButton = document.getElementById('closeMenuButton'); 
-    const mainNav = document.getElementById('mainNav');
+    const mainNav = document.getElementById('mainNav'); // ID вашего тега <nav>
     const navOverlay = document.getElementById('navOverlay'); 
     const body = document.body;
 
-    // Проверка, что элементы найдены (если нет, вы увидите ошибку в консоли)
+    // Проверка, что элементы найдены 
     if (!menuToggle || !mainNav || !navOverlay || !closeMenuButton) {
         console.error("КРИТИЧЕСКАЯ ОШИБКА МЕНЮ: Проверьте ID в HTML! Один или несколько элементов не найдены.");
         return; 
@@ -213,16 +216,20 @@ function setupHamburgerMenu() {
         mainNav.classList.add('is-open'); 
         navOverlay.classList.add('is-open'); 
         menuToggle.classList.add('is-active'); 
-        body.classList.add('menu-open'); // Блокировка скролла
+        body.classList.add('menu-open'); // Блокировка скролла через CSS
         menuToggle.setAttribute('aria-expanded', 'true');
+        // Дополнительная логика блокировки скролла (если CSS не сработает)
+        toggleScrollLock(true);
     }
 
     function closeMenu() {
         mainNav.classList.remove('is-open');
         navOverlay.classList.remove('is-open');
         menuToggle.classList.remove('is-active');
-        body.classList.remove('menu-open'); // Разблокировка скролла
+        body.classList.remove('menu-open'); // Разблокировка скролла через CSS
         menuToggle.setAttribute('aria-expanded', 'false');
+        // Дополнительная логика разблокировки скролла
+        toggleScrollLock(false);
     }
 
     // 1. ПЕРЕКЛЮЧЕНИЕ: Главный обработчик гамбургера
@@ -238,22 +245,23 @@ function setupHamburgerMenu() {
     closeMenuButton.addEventListener('click', closeMenu);
     navOverlay.addEventListener('click', closeMenu);
     
-    // 3. ФУНКЦИЯ ДЛЯ ЗАКРЫТИЯ ПО ССЫЛКЕ (вызывается из HTML)
+    // 3. ФУНКЦИЯ ДЛЯ ЗАКРЫТИЯ ПО ССЫЛКЕ
     window.closeMenuOnLinkClick = function() {
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 992) { // Используем более общее значение для мобильных устройств
             closeMenu();
         }
     };
 }
-
-// 4. ВЫЗОВ НАСТРОЙКИ МЕНЮ (ТОЛЬКО ПОСЛЕ ЗАГРУЗКИ DOM)
-document.addEventListener('DOMContentLoaded', () => {
-    setupHamburgerMenu(); // <-- Добавьте этот вызов
-    // ... ваш остальной код JS ...
-});
 // =========================================================
 
 
+// --------------------------------------------------------
+// Добавлена функция для блокировки/разблокировки прокрутки
+function toggleScrollLock(lock) {
+    // Используем CSS-класс, который вы должны определить в стилях:
+    // .menu-open { overflow: hidden; }
+    document.body.classList.toggle('menu-open', lock);
+}
 // --------------------------------------------------------
 
 /**
@@ -329,9 +337,6 @@ function debounce(func, delay) {
 
 /**
  * Universal function to display notifications.
- *
- * ✅ SECURITY FIX: Uses .textContent by default to prevent XSS.
- * Allows limited HTML (e.g., <a>) only if explicit tags are present.
  */
 function showNotification(message, type = 'info', duration = null) {
     if (!uiElements.notificationContainer) {
@@ -344,12 +349,9 @@ function showNotification(message, type = 'info', duration = null) {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
 
-    // ✅ SECURITY: Use .textContent to exclude script execution
-    // As an exception, allow HTML insertion only if the message contains <a> tags (e.g., for a wallet installation link).
     if (message.includes('<a') && message.includes('</a>')) {
         notification.innerHTML = message;
     } else {
-        // Standard, safe way for all other messages
         notification.textContent = message;
     }
 
@@ -415,16 +417,8 @@ function parseAmountToBigInt(amountStr, decimals) {
     return BigInt(integerPart + paddedFractionalPart);
 }
 
-// --------------------------------------------------------
-// Добавлена функция для блокировки/разблокировки прокрутки (нужна для setupHamburgerMenu)
-function toggleScrollLock(lock) {
-    document.body.style.overflow = lock ? 'hidden' : '';
-}
-// --------------------------------------------------------
-
 /**
  * Closes all open modals and the main navigation menu.
- * ИСПРАВЛЕНО: Добавлена логика разблокировки прокрутки.
  */
 function closeAllPopups() {
     const modals = [
@@ -441,15 +435,19 @@ function closeAllPopups() {
         }
     });
     
-    // Также закрываем гамбургер-меню
-    if (uiElements.mainNav && uiElements.mainNav.classList.contains('active')) {
-        uiElements.mainNav.classList.remove('active');
-        if (uiElements.menuToggle) {
-             uiElements.menuToggle.classList.remove('active'); // CSS class for state
-             uiElements.menuToggle.setAttribute('aria-expanded', 'false'); // Accessibility
+    // Также закрываем гамбургер-меню, если оно открыто
+    const mainNav = document.getElementById('mainNav'); // Использование прямого ID для надежности
+    const navOverlay = document.getElementById('navOverlay'); 
+    const menuToggle = document.getElementById('menuToggle');
+
+    if (mainNav && mainNav.classList.contains('is-open')) {
+        mainNav.classList.remove('is-open');
+        navOverlay.classList.remove('is-open');
+        if (menuToggle) {
+             menuToggle.classList.remove('is-active');
+             menuToggle.setAttribute('aria-expanded', 'false');
         }
-        document.body.classList.remove('menu-open');
-        wasModalOpen = true; // Считаем, что закрыли что-то, что блокировало прокрутку
+        wasModalOpen = true; 
     }
 
     // Разблокировать прокрутку, если что-то было закрыто.
@@ -613,12 +611,9 @@ function registerProviderListeners() {
  * Connects the wallet using the provided adapter.
  */
 async function connectWallet(adapter) {
-    // NOTE: setLoadingState(true) is now called by the simulateConnectButtonUpdate wrapper
-    // if the button ID is passed, otherwise it's called here for direct use.
-
     let shouldSetLoading = true;
     if (uiElements.connectWalletButtons && uiElements.connectWalletButtons.find(btn => btn.textContent === 'Подключение...')) {
-         shouldSetLoading = false; // The wrapper is already managing the text/loading state
+         shouldSetLoading = false; 
     }
     if (shouldSetLoading) setLoadingState(true);
 
@@ -724,7 +719,7 @@ async function updateStakingUI() {
 }
 
 /**
- * ✅ Implemented: Reading staking data from the blockchain (MOCK ANCHOR). (ИСПРАВЛЕНО PDA)
+ * ✅ Implemented: Reading staking data from the blockchain (MOCK ANCHOR).
  */
 async function fetchUserStakingData() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -774,7 +769,7 @@ async function fetchUserStakingData() {
 
 
 /**
- * ✅ Implemented: Sending AFOX staking transaction (ANCHOR TEMPLATE + MOCK). (ИСПРАВЛЕНО CONTEXT)
+ * ✅ Implemented: Sending AFOX staking transaction (ANCHOR TEMPLATE + MOCK).
  */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -808,7 +803,7 @@ async function handleStakeAfox() {
             STAKING_PROGRAM_ID
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) 
         const tx = await program.methods.stake(new Anchor.BN(stakeAmountBigInt.toString()))
             .accounts({
                 staker: sender,
@@ -859,7 +854,7 @@ async function handleStakeAfox() {
 }
 
 /**
- * ✅ Implemented: Sending claim rewards transaction (ANCHOR TEMPLATE + MOCK). (ИСПРАВЛЕНО CONTEXT)
+ * ✅ Implemented: Sending claim rewards transaction (ANCHOR TEMPLATE + MOCK).
  */
 async function handleClaimRewards() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -890,7 +885,7 @@ async function handleClaimRewards() {
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) 
          const tx = await program.methods.claimRewards()
             .accounts({
                 staker: sender,
@@ -932,7 +927,7 @@ async function handleClaimRewards() {
 }
 
 /**
- * ✅ Implemented: Sending unstaking transaction (ANCHOR TEMPLATE + MOCK). (ИСПРАВЛЕНО CONTEXT)
+ * ✅ Implemented: Sending unstaking transaction (ANCHOR TEMPLATE + MOCK).
  */
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -963,7 +958,7 @@ async function handleUnstakeAfox() {
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) (ИСПРАВЛЕНО CONTEXT)
+        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) 
          const tx = await program.methods.unstake()
             .accounts({
                 staker: sender,
@@ -1450,7 +1445,6 @@ async function handleTransferNft() {
         const recipientPublicKey = new SolanaWeb3.PublicKey(recipientAddress);
         const newOwner = recipientPublicKey.toBase58();
 
-        // 🔴 SECURITY FIX: Removed redundant and potentially misleading Program ID check.
         // Check for sending to self is kept.
         if (newOwner === appState.walletPublicKey.toBase58()) {
              throw new Error('Cannot transfer to your own address.');
@@ -1738,7 +1732,7 @@ async function handleMaxAmount(event) {
 
 
 // =========================================================================================
-// --- NEW WRAPPER FOR BUTTON (as requested) ---
+// --- NEW WRAPPER FOR BUTTON 
 // =========================================================================================
 
 /**
@@ -1772,14 +1766,11 @@ async function simulateConnectButtonUpdate(btn) {
 
     } catch (error) {
         // Errors that weren't caught in the main function (or are UI-specific)
-        // Original text was 'Ошибка подключения', translated to 'Connection Error'
         let errorMessage = 'Connection Error';
 
         if (error.message.includes('Phantom wallet not found')) {
-            // Original text was 'Пожалуйста, установите Phantom Wallet.', translated to 'Please install Phantom Wallet.'
             errorMessage = 'Please install Phantom Wallet.';
         } else if (error.message.includes('Connection denied by user')) {
-            // Original text was 'Подключение отклонено пользователем.', translated to 'Connection denied by user.'
             errorMessage = 'Connection denied by user.';
         }
         
@@ -1865,7 +1856,7 @@ function handleNftItemClick(event, isUserNft) {
     }
 }
 
-// --- 3. ИСПРАВЛЕННАЯ ФУНКЦИЯ: cacheUIElements (ЗАМЕНИТЬ) ---
+// --- 3. КЭШИРОВАНИЕ ЭЛЕМЕНТОВ UI ---
 /**
  * Caches all necessary UI elements.
  */
@@ -1880,22 +1871,21 @@ function cacheUIElements() {
     uiElements.mintNftModal = document.getElementById('mint-nft-modal');
     uiElements.createProposalModal = document.getElementById('create-proposal-modal');
     
-    // ↓↓↓ ДОБАВЛЕННЫЙ ЭЛЕМЕНТ ДЛЯ ФОРМЫ DAO ↓↓↓
+    // ↓↓↓ DAO ЭЛЕМЕНТЫ ↓↓↓
     uiElements.createProposalForm = document.getElementById('create-proposal-form');
+    uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
     // ↑↑↑
     
-    uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
-
     Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
         btn.addEventListener('click', closeAllPopups);
     });
 
-    // Menu Elements
-    uiElements.mainNav = document.querySelector('nav');
-    // 💡 ИСПРАВЛЕНИЕ: Использование menuToggle как селектора по ID, который должен быть на кнопке меню
-    uiElements.menuToggle = document.getElementById('menu-toggle') || document.getElementById('menuToggle'); 
-    uiElements.closeMainMenuCross = document.querySelector('.close-menu') || document.getElementById('closeMainMenuCross');
-    uiElements.navLinks = Array.from(document.querySelectorAll('nav a'));
+    // Menu Elements (ID должны соответствовать HTML)
+    uiElements.mainNav = document.getElementById('mainNav'); // ID вашего тега <nav>
+    // 💡 Используем ID из функции setupHamburgerMenu()
+    uiElements.menuToggle = document.getElementById('menuToggle'); 
+    uiElements.closeMenuButton = document.getElementById('closeMenuButton'); // ID кнопки закрытия
+    uiElements.navOverlay = document.getElementById('navOverlay'); 
 
     // NFT Section
     uiElements.userNftList = document.getElementById('user-nft-list');
@@ -1954,22 +1944,18 @@ function cacheUIElements() {
 // --------------------------------------------------------
 
 
-// --- 4. ИСПРАВЛЕННАЯ ФУНКЦИЯ: initEventListeners (С УДАЛЕННОЙ КОНФЛИКТУЮЩЕЙ ЛОГИКОЙ МЕНЮ) ---
+// --- 4. ИНИЦИАЛИЗАЦИЯ ОБРАБОТЧИКОВ СОБЫТИЙ ---
 /**
  * Initializes all event listeners.
  */
 function initEventListeners() {
     // Wallet Connection
     uiElements.connectWalletButtons.forEach(btn => {
-        // 🔴 CHANGE HERE: use the new wrapper function to simulate the button behavior you provided.
         btn.addEventListener('click', () => { 
              simulateConnectButtonUpdate(btn);
         });
     });
 
-    // ❌ КОНФЛИКТУЮЩАЯ ЛОГИКА МЕНЮ УДАЛЕНА.
-    // ВСЯ ЛОГИКА МЕНЮ ТЕПЕРЬ НАХОДИТСЯ В setupHamburgerMenu()
-    
     // NFT Marketplace (Delegation)
     if (uiElements.userNftList) {
         uiElements.userNftList.addEventListener('click', (e) => handleNftItemClick(e, true));
@@ -1997,7 +1983,7 @@ function initEventListeners() {
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
     if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
     
-    // ↓↓↓ DAO ACTIONS (КНОПКА) ↓↓↓
+    // ↓↓↓ DAO ACTIONS (КНОПКА & ФОРМА SUBMIT) ↓↓↓
     if (uiElements.createProposalBtn) {
         uiElements.createProposalBtn.addEventListener('click', () => {
             if (uiElements.createProposalModal) {
@@ -2008,15 +1994,10 @@ function initEventListeners() {
             }
         });
     }
-    // ↑↑↑
 
-    // ↓↓↓ DAO ACTIONS (ФОРМА SUBMIT) ↓↓↓
     if (uiElements.createProposalForm) {
-        // Здесь мы используем простую MOCK-заглушку.
-        // В реальном коде вам нужно будет вызвать handleCreateProposal(e)
         uiElements.createProposalForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            // TODO: Замените этот MOCK-код на вызов реальной функции handleCreateProposal(e)
             console.log("DAO Proposal Form submitted (MOCK)"); 
             showNotification('Proposal creation simulated!', 'success', 3000);
             e.target.reset();
@@ -2098,14 +2079,14 @@ function initializeJupiterTerminal() {
     }
 }
 
-// --- ИСПРАВЛЕННАЯ ГЛАВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ ---
+// --- ГЛАВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ ---
 /**
  * Main initialization function.
  */
 async function init() {
     cacheUIElements();
     
-    // 🟢 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Вызов функции для активации гамбургер-меню
+    // 🟢 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (КЛЮЧЕВОЙ МОМЕНТ)
     setupHamburgerMenu(); 
     
     initEventListeners();
