@@ -21,8 +21,8 @@
     
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' https://terminal.jup.ag https://api.mainnet-beta.solana.com;
-        script-src 'self' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag https://unpkg.com https://cdn.jsdelivr.net; 
-        connect-src 'self' https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com https://unpkg.com https://cdn.jsdelivr.net; 
+        script-src 'self' 'unsafe-eval' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag https://unpkg.com https://cdn.jsdelivr.net; 
+        connect-src 'self' wss://api.mainnet-beta.solana.com https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com https://unpkg.com https://cdn.jsdelivr.net; 
         style-src 'self' https://fonts.googleapis.com; 
         font-src 'self' https://fonts.gstatic.com; 
         img-src 'self' https://via.placeholder.com data: https:; 
@@ -41,8 +41,7 @@
     <script src="https://unpkg.com/@solana/spl-token@0.4.7/lib/index.iife.js" onload="window.splToken = splToken;"></script>
     <script src="https://unpkg.com/bn.js@5.2.1/lib/bn.js" onload="window.BN = BN;"></script>
     <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js"></script>
-    
-    <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
     <script>
         Sentry.init({
             dsn: "https://SENTRY_DSN_PLACEHOLDER@o4505059231873024.ingest.sentry.io/4505059233642496", 
@@ -319,6 +318,43 @@
         .notification-error { background-color: #e74c3c; }
         .notification-info { background-color: #3498db; }
         .notification-warning { background-color: #f39c12; }
+        
+        /* Стили для отображения подключенного кошелька в шапке */
+        .wallet-display {
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+            border: 2px solid #4CAF50;
+            background-color: #1a1a1a;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+            margin-left: 15px; /* Сохраняем отступ от меню */
+        }
+        .wallet-display:hover {
+            background-color: #e74c3c; /* Для отключения */
+            border-color: #e74c3c;
+        }
+        .wallet-display .fox-icon {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+        .wallet-display .wallet-address-text {
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .wallet-display .copy-btn {
+            background: none;
+            border: none;
+            color: #FF8C00;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .wallet-display .copy-btn:hover {
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -333,6 +369,17 @@
         
         <div class="header-controls-group">
             
+            <button id="connectWalletBtn" class="wallet-connect-btn">
+                Connect Wallet
+            </button>
+            
+            <div id="walletDisplay" class="wallet-display" style="display: none;" role="button" aria-label="Connected wallet. Click to disconnect.">
+                <span class="fox-icon connected-icon">🦊</span> 
+                <span id="walletAddress" class="wallet-address-text">0x...abcd</span>
+                <button class="copy-btn" id="copyWalletBtn" aria-label="Copy wallet address"><i class="fas fa-copy"></i></button>
+            </div>
+
+
             <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
                 <div class="hamburger"></div>
             </div>
@@ -650,9 +697,6 @@
                 <p class="web3-intro">Explore decentralized games, manage your NFTs, and discover Web3 advertising opportunities. <strong style="color: #f39c12;">Connect your wallet below to activate Web3 functions.</strong></p>
                 
                 <div class="wallet-control-box" style="margin: 20px 0; display: flex; flex-direction: column; align-items: flex-start;">
-                    <button id="connectWalletBtn" class="wallet-connect-btn" style="margin-left: 0;"> 
-                        Connect Wallet
-                    </button>
                     <p class="web3-wallet-display">Your Wallet Address: <strong id="walletAddressDisplay">Not Connected</strong></p>
                 </div>
                 <div class="web3-features-grid">
@@ -1298,37 +1342,57 @@
 
         // --- SOLANA WALLET ADAPTER LOGIC ---
         const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+        const walletDisplay = document.getElementById('walletDisplay');
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const walletAddressSpan = document.getElementById('walletAddress');
+        const copyWalletBtn = document.getElementById('copyWalletBtn');
 
         function updateWalletUI(adapter) {
-            const btn = document.getElementById('connectWalletBtn');
-            const display = document.getElementById('walletAddressDisplay');
             
             if (adapter && adapter.connected && adapter.publicKey) {
                 const publicKey = adapter.publicKey.toString();
                 
-                btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
-                btn.classList.add('connected');
+                // Обновление шапки
+                connectWalletBtn.style.display = 'none';
+                walletDisplay.style.display = 'flex';
+                walletAddressSpan.textContent = `${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
+
+                // Обновление основного блока Web3
+                document.getElementById('walletAddressDisplay').textContent = publicKey;
                 
-                display.innerHTML = '';
-                const strong = document.createElement('strong');
-                strong.textContent = `***${publicKey.substring(0, 8)}...${publicKey.slice(-8)}***`;
-                display.appendChild(strong);
+                // Установка обработчика отключения (на сам блок walletDisplay)
+                walletDisplay.removeEventListener('click', connectWallet);
+                walletDisplay.addEventListener('click', disconnectWallet);
                 
-                // Установка обработчика отключения
-                btn.removeEventListener('click', connectWallet);
-                btn.addEventListener('click', disconnectWallet);
+                // Настройка кнопки копирования
+                if (copyWalletBtn) {
+                    copyWalletBtn.onclick = (e) => {
+                        e.stopPropagation(); // Предотвращаем отключение кошелька при копировании
+                        navigator.clipboard.writeText(publicKey)
+                            .then(() => showNotification('Address copied!', 'info', 2000))
+                            .catch(err => console.error('Could not copy text: ', err));
+                    };
+                }
+
 
                 // 💡 ВАЖНО: Вызов функции обновления стейкинга после подключения
                 fetchStakingState(); 
 
             } else {
-                btn.textContent = 'Connect Wallet';
-                btn.classList.remove('connected');
-                display.textContent = 'Not Connected';
+                // Обновление шапки
+                connectWalletBtn.style.display = 'block';
+                walletDisplay.style.display = 'none';
+                
+                // Обновление основного блока Web3
+                document.getElementById('walletAddressDisplay').textContent = 'Not Connected';
                 
                 // Установка обработчика подключения
-                btn.removeEventListener('click', disconnectWallet);
-                btn.addEventListener('click', connectWallet);
+                connectWalletBtn.removeEventListener('click', disconnectWallet);
+                connectWalletBtn.addEventListener('click', connectWallet);
+                
+                // Удаление обработчика отключения с walletDisplay
+                walletDisplay.removeEventListener('click', disconnectWallet);
+
 
                 // Очистка UI стейкинга при отключении
                 document.getElementById('userAfoxBalance').textContent = '0 AFOX';
@@ -1338,27 +1402,27 @@
         }
 
         async function connectWallet() {
-            const btn = document.getElementById('connectWalletBtn');
-            btn.disabled = true;
-            btn.textContent = 'Connecting...';
+            connectWalletBtn.disabled = true;
+            connectWalletBtn.textContent = 'Connecting...';
 
             try {
-                const adapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
+                // Инициализация фантома, если его еще нет
+                if (!solanaWalletAdapter) {
+                    const adapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
+                    solanaWalletAdapter = adapter;
+
+                    adapter.on('connect', () => {
+                        updateWalletUI(adapter);
+                        showNotification('Wallet successfully connected!', 'success');
+                    });
+                    adapter.on('disconnect', () => {
+                        solanaWalletAdapter = null;
+                        updateWalletUI(null);
+                        showNotification('Wallet disconnected.', 'info');
+                    });
+                }
                 
-                // Используем адаптер как синглтон
-                solanaWalletAdapter = adapter;
-
-                adapter.on('connect', () => {
-                    updateWalletUI(adapter);
-                    showNotification('Wallet successfully connected!', 'success');
-                });
-                adapter.on('disconnect', () => {
-                    solanaWalletAdapter = null;
-                    updateWalletUI(null);
-                    showNotification('Wallet disconnected.', 'info');
-                });
-
-                await adapter.connect();
+                await solanaWalletAdapter.connect();
 
             } catch (error) {
                 console.error('Wallet connection error:', error);
@@ -1374,7 +1438,8 @@
                 updateWalletUI(null);
 
             } finally {
-                btn.disabled = false;
+                connectWalletBtn.disabled = false;
+                connectWalletBtn.textContent = 'Connect Wallet';
             }
         }
         
@@ -1555,25 +1620,58 @@
                 const bnAmount = new window.BN(amountLamports);
 
                 // Получение PDA и ATA
-                const { userStakingAccount } = getStakingPDAs(pubkey, POOL_STATE_ID);
+                const { userStakingAccount, poolAuthorityPda } = getStakingPDAs(pubkey, POOL_STATE_ID);
                 const userAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, pubkey);
-                const poolAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, getStakingPDAs(pubkey, POOL_STATE_ID).poolAuthorityPda); // ATA PoolAuthority
+                const poolAfoxAta = await getAssociatedTokenAccountAddress(AFOX_MINT, poolAuthorityPda); // ATA PoolAuthority
+                
+                // Проверка: Существует ли ATA кошелька, и есть ли на нем баланс
+                try {
+                    await window.splToken.getAccount(connection, userAfoxAta);
+                } catch (e) {
+                    showNotification("Token Account (ATA) for AFOX not found in your wallet. Please create it first by receiving some AFOX.", 'error', 7000);
+                    return;
+                }
+                
+                // Проверка: Инициализирован ли UserStakingAccount?
+                let isUserStakingAccountInitialized = false;
+                try {
+                    await program.account.userStakingAccount.fetch(userStakingAccount);
+                    isUserStakingAccountInitialized = true;
+                } catch (e) {
+                    // Account not found, will create it in the instruction
+                }
 
-                const tx = await program.methods
-                    .stake(bnAmount)
-                    .accounts({
-                        staker: pubkey,
-                        poolState: POOL_STATE_ID,
-                        userStakingAccount: userStakingAccount,
-                        stakerAfoxAta: userAfoxAta,
-                        poolAfoxAta: poolAfoxAta,
-                        afoxMint: new window.solanaWeb3.PublicKey(AFOX_MINT),
-                        tokenProgram: window.splToken.TOKEN_PROGRAM_ID,
-                        systemProgram: window.solanaWeb3.SystemProgram.programId,
-                        rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
-                        associatedTokenProgram: window.splToken.ASSOCIATED_TOKEN_PROGRAM_ID,
-                    })
-                    .rpc();
+                // Создаем список инструкций, чтобы добавить 'initialize', если аккаунт не существует
+                const instructionName = isUserStakingAccountInitialized ? 'stake' : 'initializeAndStake';
+                
+                // Если вызывается initializeAndStake, нужно добавить больше аргументов
+                const stakeAccounts = {
+                    staker: pubkey,
+                    poolState: POOL_STATE_ID,
+                    userStakingAccount: userStakingAccount,
+                    stakerAfoxAta: userAfoxAta,
+                    poolAfoxAta: poolAfoxAta,
+                    afoxMint: new window.solanaWeb3.PublicKey(AFOX_MINT),
+                    tokenProgram: window.splToken.TOKEN_PROGRAM_ID,
+                    systemProgram: window.solanaWeb3.SystemProgram.programId,
+                    rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
+                    associatedTokenProgram: window.splToken.ASSOCIATED_TOKEN_PROGRAM_ID,
+                    poolAuthority: poolAuthorityPda, // Нужен, даже если не используется в stake()
+                };
+                
+                let txBuilder;
+                if (instructionName === 'stake') {
+                    txBuilder = program.methods
+                        .stake(bnAmount)
+                        .accounts(stakeAccounts);
+                } else {
+                    txBuilder = program.methods
+                        .initializeAndStake(bnAmount)
+                        .accounts(stakeAccounts);
+                }
+
+
+                const tx = await txBuilder.rpc();
 
                 showNotification(`Stake successful! Transaction: ${tx.substring(0, 10)}...`, 'success', 5000);
                 amountInput.value = '';
@@ -1886,8 +1984,10 @@
                     swapSwitchboard: true, 
                     strictTokenList: false, 
 
+                    // Jupiter's custom wallet connection function
                     onConnectWallet: (callback) => { 
                         if (solanaWalletAdapter && solanaWalletAdapter.connected) {
+                            // Если наш кошелек уже подключен, передаем его
                             callback({
                                 publicKey: solanaWalletAdapter.publicKey.toString(),
                                 signTransaction: solanaWalletAdapter.signTransaction.bind(solanaWalletAdapter),
@@ -1896,6 +1996,7 @@
                         } else {
                             // Если кошелек не подключен, вызываем нашу функцию подключения
                             connectWallet();
+                            // Возвращаем null или не вызываем callback, чтобы Jupiter ждал
                             callback(null); 
                         }
                     },
