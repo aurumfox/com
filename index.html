@@ -381,11 +381,11 @@
         
         <div class="header-controls-group">
             
-            <button id="connectWalletBtn" class="wallet-connect-btn">
+            <button id="connectWalletBtn" class="wallet-connect-btn desktop-web3-btn">
                 Connect Wallet
             </button>
             
-            <div id="walletDisplay" class="wallet-display" style="display: none;" role="button" aria-label="Connected wallet. Click to disconnect.">
+            <div id="walletDisplay" class="wallet-display desktop-web3-btn" style="display: none;" role="button" aria-label="Connected wallet. Click to disconnect.">
                 <span class="fox-icon connected-icon">🦊</span> 
                 <span id="walletAddress" class="wallet-address-text">0x...abcd</span>
                 <button class="copy-btn" id="copyWalletBtn" aria-label="Copy wallet address"><i class="fas fa-copy"></i></button>
@@ -405,29 +405,25 @@
             
             <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
             
+            <div class="mobile-menu-web3-area">
+                 <button data-wallet-control="connectWalletBtn" class="wallet-connect-btn mobile-web3-btn">
+                    Connect Wallet
+                </button>
+                
+                <div data-wallet-control="walletDisplay" class="wallet-display mobile-web3-btn" style="display: none;" role="button" aria-label="Connected wallet. Click to disconnect.">
+                    <span class="fox-icon connected-icon">🦊</span> 
+                    <span data-wallet-control="walletAddress" class="wallet-address-text">0x...abcd</span>
+                    <button class="copy-btn" data-wallet-control="copyWalletBtn" aria-label="Copy wallet address"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
             <ul class="nav-list">
                 <li><a href="#aurum-fox-home">Aurum Fox</a></li>
-                <li><a href="#about-afox">About AFOX</a></li>
-                <li><a href="#tokenomics">Tokenomics</a></li>
-                <li><a href="#how-to-buy">Acquire AFOX</a></li>
-                <li><a href="#aurum-nfts">Aurum NFTs</a></li>
-                <li><a href="#aurum-nfc">Aurum NFC</a></li>
-                <li><a href="#aurum-roadmap">Roadmap</a></li>
-                <li><a href="#aurum-news">News</a></li>
-                <li><a href="#aurum-community">Community</a></li>
-                
-                <li class="nav-separator">--- Web3 Portal ---</li> 
-                <li><a href="#web3-site-home">Web3 Overview</a></li>
-                <li><a href="#games-section">Games</a></li>
-                <li><a href="#nft-section">NFT Portal</a></li>
-                <li><a href="#dao-section">DAO</a></li>
-                <li><a href="#staking-section">Staking</a></li>
-                <li><a href="#lending-section">Lending</a></li> 
                 <li><a href="#swap-section">Swap</a></li>
             </ul>
         </nav>
     </div>
 </header>
+
 
 
     <main>
