@@ -381,22 +381,33 @@
         
         <div class="header-controls-group">
             
-            <button id="connectWalletBtn" class="wallet-connect-btn desktop-web3-btn">
-                Connect Wallet
-            </button>
-            
-            <div id="walletDisplay" class="wallet-display desktop-web3-btn" style="display: none;" role="button" aria-label="Connected wallet. Click to disconnect.">
-                <span class="fox-icon connected-icon">🦊</span> 
-                <span id="walletAddress" class="wallet-address-text">0x...abcd</span>
-                <button class="copy-btn" id="copyWalletBtn" aria-label="Copy wallet address"><i class="fas fa-copy"></i></button>
-            </div>
-
-
+            <div id="walletButtonContainer" class="desktop-web3-btn">
+                </div>
             <div id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false" role="button" tabindex="0" aria-label="Toggle navigation menu">
                 <div class="hamburger"></div>
             </div>
 
         </div>
+        
+    </div>
+    
+    <div class="nav-mobile-overlay"> 
+        <nav id="mainNav" class="main-nav-mobile" role="navigation" aria-hidden="true">
+            
+            <span class="close-menu-button" id="closeMainMenuCross" role="button" tabindex="0" aria-label="Close menu">&times;</span>
+            
+            <div class="mobile-menu-web3-area">
+                <div id="walletButtonContainerMobile" class="mobile-web3-btn">
+                     </div>
+                </div>
+            <ul class="nav-list">
+                <li><a href="#aurum-fox-home">Aurum Fox</a></li>
+                <li><a href="#swap-section">Swap</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
         
     </div>
     
