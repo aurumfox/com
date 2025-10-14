@@ -615,34 +615,98 @@ async function getRobustConnection() {
     throw new Error('Both primary and backup RPC endpoints failed to connect or are unhealthy.');
 }
 
+// 🟢 ИСПРАВЛЕННАЯ и УПРОЩЕННАЯ ФУНКЦИЯ, ЗАМЕНЯЮЩАЯ updateWalletUI(adapter)
 /**
- * Updates the UI with the connected wallet address.
+ * Updates the UI with the connected wallet address, handling display logic 
+ * and setting up disconnect handlers.
+ * 💡 ЗАМЕНА: Исходная функция updateWalletUI(adapter) заменена этой.
  */
-function updateWalletUI(address) {
-    const shortAddress = address ? `${address.substring(0, 4)}...${address.substring(address.length - 4)}` : 'Connect Wallet';
+function updateWalletDisplay(address) {
+    // 1. Получаем все элементы управления кошельком (десктоп + мобильный)
+    const connectBtns = document.querySelectorAll('[id="connectWalletBtn"], [data-wallet-control="connectWalletBtn"]');
+    const walletDisplays = document.querySelectorAll('[id="walletDisplay"], [data-wallet-control="walletDisplay"]');
+    const walletAddresses = document.querySelectorAll('[id="walletAddress"], [data-wallet-control="walletAddress"]');
+    const copyBtns = document.querySelectorAll('[id="copyWalletBtn"], [data-wallet-control="copyWalletBtn"]');
+    
+    // Обновление основного блока Web3
+    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
 
-    uiElements.walletAddressDisplays.forEach(el => {
-        el.textContent = shortAddress;
-        el.classList.toggle('connected', !!address);
-    });
+
+    if (address) {
+        const shortAddress = `${address.substring(0, 4)}...${address.slice(-4)}`;
+        
+        // 2. СОСТОЯНИЕ: ПОДКЛЮЧЕН
+        connectBtns.forEach(btn => {
+             btn.style.display = 'none';
+             btn.classList.add('connected'); // Используется для стилизации
+        });
+        walletDisplays.forEach(display => {
+            display.style.display = 'flex';
+            // Установка обработчика отключения (на сам блок walletDisplay)
+            display.removeEventListener('click', disconnectWallet);
+            display.addEventListener('click', disconnectWallet);
+        });
+        walletAddresses.forEach(span => span.textContent = shortAddress);
+
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = address;
+            fullAddressDisplay.classList.add('connected');
+        }
+        
+        // Настройка кнопки копирования
+        copyBtns.forEach(copyBtn => {
+             // 💡 ИСПРАВЛЕНО: Теперь кнопка копирования использует data-copy-target, 
+             // а обработчик клика находится в initEventListeners
+             copyBtn.dataset.copyTarget = address; 
+             copyBtn.style.display = 'block';
+        });
+
+    } else {
+        // 3. СОСТОЯНИЕ: ОТКЛЮЧЕН
+        
+        connectBtns.forEach(btn => {
+             btn.style.display = 'block';
+             btn.classList.remove('connected');
+        });
+        walletDisplays.forEach(display => {
+            display.style.display = 'none';
+            display.removeEventListener('click', disconnectWallet);
+        });
+        
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = 'Not Connected';
+            fullAddressDisplay.classList.remove('connected');
+        }
+
+        // Удаление data-copy-target
+        copyBtns.forEach(copyBtn => {
+            delete copyBtn.dataset.copyTarget;
+            copyBtn.style.display = 'none';
+        });
+
+        // 💡 ВАЖНО: Обработчик подключения устанавливается в initEventListeners 
+        // на все кнопки .connect-wallet-btn, что лучше.
+    }
 }
+
 
 /**
  * Handles changes to the wallet public key (connect/disconnect).
+ * 💡 ИСПРАВЛЕНИЕ: Интегрирована логика обновления стейкинга при отключении/подключении.
  */
 function handlePublicKeyChange(newPublicKey) {
     appState.walletPublicKey = newPublicKey;
+    const address = newPublicKey ? newPublicKey.toBase58() : null;
+
+    // 1. Обновление визуальных элементов
+    updateWalletDisplay(address);
 
     if (newPublicKey) {
-        const address = newPublicKey.toBase58();
-        updateWalletUI(address);
-
         // MOCK: Handle initial state for MOCK DB and Balances
         if (!MOCK_DB.staking[address]) {
              // 💡 ДОБАВЛЕНО: lockupEndTime, poolIndex, lending в MOCK data
              MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0', stakeHistory: [] };
              // Initialize MOCK balances on first connection
-             // 💡 ИСПРАВЛЕНО: Не сбрасываем, если уже есть, только если нет данных в MOCK_DB
              if (appState.userBalances.AFOX === BigInt(0) && appState.userBalances.SOL === BigInt(0)) {
                  appState.userBalances.AFOX = parseAmountToBigInt('1000.0', AFOX_DECIMALS);
                  appState.userBalances.SOL = parseAmountToBigInt('1.0', SOL_DECIMALS);
@@ -655,14 +719,25 @@ function handlePublicKeyChange(newPublicKey) {
 
         loadUserNFTs();
         updateStakingAndBalanceUI();
+        
+        // 💡 ВАЖНОЕ ДОБАВЛЕНИЕ: Вызов функции обновления стейкинга после подключения (аналог fetchStakingState в исходной логике)
+        fetchUserStakingData(); 
+
     } else {
-        updateWalletUI(null);
         loadUserNFTs();
         appState.userBalances.SOL = BigInt(0);
         appState.userBalances.AFOX = BigInt(0);
         updateStakingAndBalanceUI();
         appState.currentOpenNft = null;
         showNotification('Wallet disconnected.', 'info');
+        
+        // 🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Очистка UI стейкинга при отключении
+        // Эта логика была в старой updateWalletUI(adapter), теперь она здесь.
+        if (document.getElementById('userAfoxBalance')) document.getElementById('userAfoxBalance').textContent = '0 AFOX';
+        if (document.getElementById('userStakedAmount')) document.getElementById('userStakedAmount').textContent = '0 AFOX';
+        if (document.getElementById('userRewardsAmount')) document.getElementById('userRewardsAmount').textContent = '0 AFOX';
+        if (document.getElementById('staking-apr')) document.getElementById('staking-apr').textContent = '—';
+        if (document.getElementById('lockup-period')) document.getElementById('lockup-period').textContent = '—';
     }
 }
 
@@ -722,7 +797,7 @@ async function connectWallet(adapter) {
         appState.provider = null;
         appState.connection = null;
         appState.walletPublicKey = null;
-        updateWalletUI(null);
+        updateWalletDisplay(null); // 💡 ИСПРАВЛЕНО: Вызов новой функции
         const message = error.message.includes('Both primary and backup') ? error.message : `Connection failed: ${error.message.substring(0, 70)}...`;
         showNotification(message, 'error');
         throw error; // Re-throw error for the wrapper to handle button text cleanup
@@ -2037,7 +2112,8 @@ async function simulateConnectButtonUpdate(btn) {
         // After successful connection (handled by the main script)
         if (appState.walletPublicKey) {
             const publicKey = appState.walletPublicKey.toBase58();
-            btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
+            // 💡 Улучшение: Не меняем текст кнопки, так как он будет обновлен в updateWalletDisplay
+            // btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
             btn.classList.add('connected');
             showNotification('Wallet successfully connected! 🦊', 'success'); // Показываем сообщение здесь
         } else {
@@ -2066,6 +2142,22 @@ async function simulateConnectButtonUpdate(btn) {
         btn.disabled = false;
         setLoadingState(false); 
     }
+}
+
+// 💡 ДОБАВЛЕНА ФУНКЦИЯ ДЛЯ DISCONNECT (для удобства использования с walletDisplay)
+async function disconnectWallet() {
+     if (appState.provider) {
+        try {
+            await appState.provider.disconnect();
+            // handlePublicKeyChange(null) будет вызван через слушатель 'disconnect'
+        } catch (error) {
+             console.error("Error during manual disconnect:", error);
+             // Если слушатель не сработал (редко), вызываем вручную
+             handlePublicKeyChange(null);
+        }
+     } else {
+        handlePublicKeyChange(null);
+     }
 }
 
 
@@ -2150,7 +2242,9 @@ function handleNftItemClick(event, isUserNft) {
 function cacheUIElements() {
     // General Wallet & Display
     uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
-    uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display'));
+    // 💡 ИСПРАВЛЕНО: Кэшируем также .wallet-address-display
+    uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display, #walletAddress, [data-wallet-control="walletAddress"]'));
+
 
     // Modals and Close Buttons
     uiElements.nftDetailsModal = document.getElementById('nft-details-modal');
@@ -2435,7 +2529,7 @@ async function init() {
     }
     
     updateStakingUI(); // Зависит от appState.connection
-    updateWalletUI(null);
+    updateWalletDisplay(null); // 💡 ИСПРАВЛЕНО: Использование новой функции
 
 }
 // --------------------------------------------------------
