@@ -373,50 +373,17 @@
 
     <header class="header">
     <div class="container">
-
         <div class="logo">
-            <img src="path/to/your/logo.png" alt="Aurum Fox Logo" class="logo-img">
-            <span class="logo-text">AURUM FOX</span>
-        </div>
-
-        <button 
-            class="menu-toggle" 
-            id="menuToggle" 
-            aria-controls="main-nav-list" 
-            aria-expanded="false"
-        >
-            <div class="hamburger-lines">
-                <span class="line line1"></span>
-                <span class="line line2"></span>
-                <span class="line line3"></span>
             </div>
-        </button>
-
 
         <nav class="nav">
-            <ul class="main-nav" id="main-nav-list">
-                <li><a href="#hero" class="active">Главная</a></li>
-                <li><a href="#about-afox">О AFOX</a></li>
-                <li><a href="#web3-portal">Web3 Портал</a></li>
-                <li><a href="#multimedia-hub">Мультимедиа</a></li>
-                <li><a href="#tokenomics">Токеномика</a></li>
-                <li><a href="#community">Сообщество</a></li>
-                <li class="wallet-control-mobile">
-                    <button 
-                        id="connectWalletBtnMobile" 
-                        class="web3-button connect-fox-btn"
-                        aria-label="Подключить криптовалютный кошелек"
-                    >
-                        <i class="fox-icon">🦊</i> 
-                        ПОДКЛЮЧИТЬ КОШЕЛЕК
-                    </button>
-                </li>
-            </ul>
+            <ul class="main-nav">
+                </ul>
         </nav>
-        
-        <div class="wallet-controls wallet-controls-desktop">
+
+        <div class="wallet-controls">
             <button 
-                id="connectWalletBtnDesktop" 
+                id="connectWalletBtn" 
                 class="web3-button connect-fox-btn"
                 aria-label="Подключить криптовалютный кошелек"
             >
@@ -424,11 +391,17 @@
                 ПОДКЛЮЧИТЬ КОШЕЛЕК
             </button>
         </div>
-
+        
+        <button class="menu-toggle" aria-controls="main-nav" aria-expanded="false">
+            <div class="hamburger-lines">
+                <span class="line line1"></span>
+                <span class="line line2"></span>
+                <span class="line line3"></span>
+            </div>
+        </button>
 
     </div>
 </header>
-
 
     <main>
         <section id="aurum-fox-home" class="hero-section aurum-fox-section">
@@ -2120,4 +2093,4 @@
         
     </script>
 </body>
-</html>
+    </html>
