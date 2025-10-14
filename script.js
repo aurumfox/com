@@ -895,7 +895,8 @@ async function handleStakeAfox() {
         const rewardsOldBigInt = BigInt(MOCK_DB.staking[userKey].rewards || '0');
 
         const stakedAmountNewBigInt = stakedAmountOldBigInt + stakeAmountBigInt;
-        const mockRewardIncreaseBigInt = (stakedAmountNewBigInt * BigInt(1)) / BigInt(1000); // 0.1% increase for MOCK
+        // The MOCK reward calculation uses 0.1% increase
+        const mockRewardIncreaseBigInt = (stakedAmountNewBigInt * BigInt(1)) / BigInt(1000); 
         const rewardsNewBigInt = rewardsOldBigInt + mockRewardIncreaseBigInt;
         
         // 💡 ДОБАВЛЕНО: Установка lockupEndTime для MOCK (например, 7 дней)
@@ -2275,10 +2276,4 @@ async function init() {
 // --------------------------------------------------------
 
 // --- STARTUP AFTER DOM LOAD ---
-document.addEventListener('DOMContentLoaded', () => {
-    // ... (весь код, который был здесь) ...
-
-    // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (ДОБАВЛЕНО ГАМБУРГЕР-МЕНЮ)
-    setupHamburgerMenu(); // <--- ЭТОТ ВЫЗОВ СДЕЛАЕТ МЕНЮ РАБОЧИМ
-});
-
+document.addEventListener('DOMContentLoaded', init); // Call init directly to start the application
