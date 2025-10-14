@@ -373,35 +373,28 @@
 
     <header class="header">
     <div class="container">
-        <div class="logo">
-            </div>
-
-        <nav class="nav">
-            <ul class="main-nav">
-                </ul>
-        </nav>
-
-        <div class="wallet-controls">
-            <button 
-                id="connectWalletBtn" 
-                class="web3-button connect-fox-btn"
-                aria-label="Подключить криптовалютный кошелек"
-            >
-                <i class="fox-icon">🦊</i> 
-                ПОДКЛЮЧИТЬ КОШЕЛЕК
-            </button>
-        </div>
-        
-        <button class="menu-toggle" aria-controls="main-nav" aria-expanded="false">
-            <div class="hamburger-lines">
-                <span class="line line1"></span>
-                <span class="line line2"></span>
-                <span class="line line3"></span>
-            </div>
+        <button id="menuToggle" class="menu-toggle" aria-controls="mainNav" aria-expanded="false">
+            <div class="hamburger"></div> 
         </button>
 
+        <div id="mainNav" class="nav-mobile-overlay"> 
+            
+            <span id="closeMainMenuCross" class="close-menu-button" role="button" tabindex="0" aria-label="Закрыть меню">&times;</span>
+
+            <ul class="main-nav nav-list">
+                <li><a href="#aurum-fox-home">Home</a></li>
+                <li><a href="#about-afox">About AFOX</a></li>
+                <li><a href="#tokenomics">Tokenomics</a></li>
+                <li><a href="#how-to-buy">How to Buy</a></li>
+                <div class="nav-separator">WEB3 PORTAL</div>
+                <li><a href="#games-section">Games</a></li>
+                <li><a href="#staking-section">Staking</a></li>
+                <li><a href="#swap-section">Swap</a></li>
+                </ul>
+        </div>
     </div>
 </header>
+
 
     <main>
         <section id="aurum-fox-home" class="hero-section aurum-fox-section">
