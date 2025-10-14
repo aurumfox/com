@@ -17,12 +17,15 @@ const STAKING_IDL = {
                 { name: "staker", isMut: true, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "tokenFrom", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false }, // NEW
-                { name: "poolVault", isMut: true, isSigner: false },   // NEW
+                { name: "poolState", isMut: false, isSigner: false }, 
+                { name: "poolVault", isMut: true, isSigner: false },   
                 { name: "tokenProgram", isMut: false, isSigner: false },
                 { name: "systemProgram", isMut: false, isSigner: false },
             ],
-            args: [{ name: "amount", type: "u64" }],
+            args: [
+                { name: "amount", type: "u64" },
+                { name: "poolIndex", type: "u8" } // 🚨 ДОБАВЛЕНО: ПЕРЕДАЧА ИНДЕКСА ПУЛА
+            ],
         },
         {
             name: "claimRewards",
@@ -30,8 +33,8 @@ const STAKING_IDL = {
                 { name: "staker", isMut: false, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "userRewardTokenAccount", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false }, // NEW
-                { name: "rewardsVault", isMut: true, isSigner: false }, // NEW
+                { name: "poolState", isMut: false, isSigner: false }, 
+                { name: "rewardsVault", isMut: true, isSigner: false }, 
                 { name: "tokenProgram", isMut: false, isSigner: false },
             ],
             args: [],
@@ -42,9 +45,9 @@ const STAKING_IDL = {
                 { name: "staker", isMut: false, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "tokenTo", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false }, // NEW
-                { name: "poolVault", isMut: true, isSigner: false },   // NEW
-                { name: "daoTreasuryVault", isMut: true, isSigner: false }, // NEW
+                { name: "poolState", isMut: false, isSigner: false }, 
+                { name: "poolVault", isMut: true, isSigner: false },   
+                { name: "daoTreasuryVault", isMut: true, isSigner: false }, 
                 { name: "tokenProgram", isMut: false, isSigner: false },
             ],
             args: [],
@@ -57,12 +60,13 @@ const STAKING_IDL = {
                 kind: "struct",
                 fields: [
                     { name: "staker", type: "publicKey" },
-                    { name: "poolId", type: "publicKey" }, // NEW
+                    { name: "poolId", type: "publicKey" }, 
                     { name: "stakedAmount", type: "u64" },
                     { name: "rewardsAmount", type: "u64" },
                     { name: "lastStakeTime", type: "i64" },
-                    { name: "lockupEndTime", type: "i64" }, // 💡 ДОБАВЛЕНО: для полной совместимости
-                    // ⚠️ ADD lending field here if needed
+                    { name: "lockupEndTime", type: "i64" }, 
+                    { name: "poolIndex", type: "u8" }, // 🚨 КРИТИЧЕСКОЕ ДОБАВЛЕНИЕ
+                    { name: "lending", type: "u64" },   // 🚨 КРИТИЧЕСКОЕ ДОБАВЛЕНИЕ: Заблокированные под заем токены
                 ],
             },
         },
@@ -96,6 +100,16 @@ const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const TXN_FEE_RESERVE_SOL = 0.005;
+const SECONDS_PER_DAY = 86400; // 💡 ДОБАВЛЕНО: для логики Staking UI
+
+// Конфигурации пулов (ДОЛЖНЫ СОВПАДАТЬ С RUST) - Используется для MOCK
+const POOLS_CONFIG = [
+    { name: '7 Дней', duration_days: 7, apr_rate: 100, vote_multiplier: 1 },  // Index 0
+    { name: '30 Дней', duration_days: 30, apr_rate: 200, vote_multiplier: 2 }, // Index 1
+    { name: '60 Дней', duration_days: 60, apr_rate: 350, vote_multiplier: 3 }, // Index 2
+    { name: '90 Дней', duration_days: 90, apr_rate: 500, vote_multiplier: 4 }, // Index 3
+    { name: 'Гибкий', duration_days: 0, apr_rate: 100, vote_multiplier: 1 }, // Index 4 (или специальный индекс)
+]; 
 
 // 💡 ИСПРАВЛЕНО: Использование window.SolanaWeb3 для универсальности
 const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
@@ -122,7 +136,13 @@ const appState = {
     currentOpenNft: null,
     areProviderListenersAttached: false,
     userBalances: { SOL: BigInt(0), AFOX: BigInt(0) },
-    userStakingData: { stakedAmount: BigInt(0), rewards: BigInt(0), lockupEndTime: 0 }, // 💡 ДОБАВЛЕНО: lockupEndTime
+    userStakingData: { 
+        stakedAmount: BigInt(0), 
+        rewards: BigInt(0), 
+        lockupEndTime: 0,
+        poolIndex: 4,     // 🚨 ДОБАВЛЕНО: Индекс пула
+        lending: BigInt(0) // 🚨 ДОБАВЛЕНО: Заблокированные под заем токены
+    }, 
     userNFTs: [],
     marketplaceNFTs: []
 };
@@ -148,8 +168,8 @@ const MOCK_DB = {
         'NFT1_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 86400000).toISOString(), to: 'INITIAL_OWNER' }],
         'NFT2_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 7200000).toISOString(), to: 'INITIAL_OWNER' }]
     },
-    // 💡 ДОБАВЛЕНО: lockupEndTime в MOCK data
-    staking: {} // { address: { stakedAmount: 'BigIntStr', rewards: 'BigIntStr', lockupEndTime: unix_timestamp } }
+    // 💡 ДОБАВЛЕНО: lockupEndTime, poolIndex, lending в MOCK data
+    staking: {} // { address: { stakedAmount: 'BigIntStr', rewards: 'BigIntStr', lockupEndTime: unix_timestamp, poolIndex: 4, lending: 'BigIntStr' } }
 };
 
 /**
@@ -601,8 +621,8 @@ function handlePublicKeyChange(newPublicKey) {
 
         // MOCK: Handle initial state for MOCK DB and Balances
         if (!MOCK_DB.staking[address]) {
-             // 💡 ДОБАВЛЕНО: lockupEndTime в MOCK data
-             MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), stakeHistory: [] };
+             // 💡 ДОБАВЛЕНО: lockupEndTime, poolIndex, lending в MOCK data
+             MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0', stakeHistory: [] };
              // Initialize MOCK balances on first connection
              // 💡 ИСПРАВЛЕНО: Не сбрасываем, если уже есть, только если нет данных в MOCK_DB
              if (appState.userBalances.AFOX === BigInt(0)) {
@@ -743,36 +763,72 @@ async function updateStakingUI() {
     // 1. **MOCK** FETCH
     await fetchUserStakingData();
 
+    const data = appState.userStakingData;
     const afoxBalanceBigInt = appState.userBalances.AFOX;
-    const stakedAmountBigInt = appState.userStakingData.stakedAmount;
-    const rewardsAmountBigInt = appState.userStakingData.rewards;
-    const lockupEndTime = appState.userStakingData.lockupEndTime; // Unix timestamp in seconds
+    const stakedAmountBigInt = data.stakedAmount;
+    const rewardsAmountBigInt = data.rewards;
+    const lockupEndTime = data.lockupEndTime; // Unix timestamp in seconds
+    const poolIndex = data.poolIndex; 
+    const lendingAmountBigInt = data.lending; // 🚨 КРИТИЧЕСКОЕ ПОЛЕ
 
     if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = `${formatBigInt(afoxBalanceBigInt, AFOX_DECIMALS)} AFOX`;
     if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = `${formatBigInt(stakedAmountBigInt, AFOX_DECIMALS)} AFOX`;
     if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = `${formatBigInt(rewardsAmountBigInt, AFOX_DECIMALS)} AFOX`;
-    if (uiElements.stakingApr) uiElements.stakingApr.textContent = '12% APR (MOCK)';
     
-    // 💡 ДОБАВЛЕНО: Логика блокировки
+    // APR display (based on current pool, if set)
+    const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
+    if (uiElements.stakingApr) uiElements.stakingApr.textContent = `${currentPool.apr_rate / 100}% APR (${currentPool.name})`;
+    
+    // 2. Логические проверки
     const now = Date.now() / 1000;
-    const isLocked = lockupEndTime > now;
+    const isLockedByTime = lockupEndTime > now;
+    const hasStakedAmount = stakedAmountBigInt > BigInt(0);
+    const hasRewards = rewardsAmountBigInt > BigInt(0);
+    const isLockedByLoan = lendingAmountBigInt > BigInt(0); // 🚨 КРИТИЧЕСКАЯ ПРОВЕРКА
+
+    // 3. Управление кнопками
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = !hasRewards;
+
+    if (uiElements.unstakeAfoxBtn) {
+        uiElements.unstakeAfoxBtn.disabled = true; // Сначала блокируем
+        uiElements.unstakeAfoxBtn.textContent = 'Unstake';
+        
+        if (!hasStakedAmount) {
+            uiElements.unstakeAfoxBtn.textContent = 'Нет стейка';
+        } else if (isLockedByLoan) {
+             // 🚨 ПРИОРИТЕТНАЯ БЛОКИРОВКА ИЗ-ЗА ЗАЙМА
+             uiElements.unstakeAfoxBtn.disabled = true;
+             uiElements.unstakeAfoxBtn.textContent = `❌ Заблокировано займом (${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
+        } else if (isLockedByTime) {
+            const remainingSeconds = lockupEndTime - now;
+            const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
+            uiElements.unstakeAfoxBtn.disabled = false; // Разрешаем вывод со штрафом
+            uiElements.unstakeAfoxBtn.textContent = `Анстейк (${remainingDays} дн., со штрафом)`;
+        } else {
+            // Анстейк доступен
+            uiElements.unstakeAfoxBtn.disabled = false;
+            uiElements.unstakeAfoxBtn.textContent = 'Анстейк (Без штрафа)';
+        }
+    }
+    
+    // 4. Обновление периода блокировки
     const lockupDisplay = uiElements.lockupPeriod;
 
     if (lockupDisplay) {
-        if (isLocked) {
+        let loanInfo = '';
+        if (isLockedByLoan) {
+             loanInfo = ` (Залог: ${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
+        }
+        
+        if (isLockedByTime) {
             const remainingSeconds = lockupEndTime - now;
-            const remainingDays = (remainingSeconds / (60 * 60 * 24)).toFixed(1);
-            lockupDisplay.textContent = `${remainingDays} days remaining`;
+            const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
+            lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
         } else {
-            lockupDisplay.textContent = '0 days (Flexible)';
+            lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
         }
     }
-
-
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
-    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = rewardsAmountBigInt === BigInt(0);
-    // 💡 ИСПРАВЛЕНО: Кнопка Unstake блокируется, если токены заблокированы ИЛИ ничего не застейкано
-    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.disabled = isLocked || stakedAmountBigInt === BigInt(0);
 }
 
 /**
@@ -783,6 +839,8 @@ async function fetchUserStakingData() {
         appState.userStakingData.stakedAmount = BigInt(0);
         appState.userStakingData.rewards = BigInt(0);
         appState.userStakingData.lockupEndTime = 0;
+        appState.userStakingData.poolIndex = 4;
+        appState.userStakingData.lending = BigInt(0);
         return;
     }
 
@@ -808,7 +866,7 @@ async function fetchUserStakingData() {
             const userKey = sender.toBase58();
             // 💡 ИСПРАВЛЕНО: Инициализация MOCK, если отсутствует
             if (!MOCK_DB.staking[userKey]) {
-                MOCK_DB.staking[userKey] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000) };
+                MOCK_DB.staking[userKey] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0' };
             }
 
             const mockData = MOCK_DB.staking[userKey];
@@ -816,13 +874,17 @@ async function fetchUserStakingData() {
             // ⚠️ CHANGE: FIELD NAMES MUST MATCH YOUR IDL!
             appState.userStakingData.stakedAmount = BigInt(mockData.stakedAmount.toString());
             appState.userStakingData.rewards = BigInt(mockData.rewards.toString());
-            appState.userStakingData.lockupEndTime = mockData.lockupEndTime || 0; // 💡 Чтение lockupEndTime
+            appState.userStakingData.lockupEndTime = mockData.lockupEndTime || 0; 
+            appState.userStakingData.poolIndex = mockData.poolIndex || 4; // 🚨 Чтение poolIndex
+            appState.userStakingData.lending = BigInt(mockData.lending || '0'); // 🚨 Чтение lending
 
         } catch (e) {
             // Account not found (or MOCK not initialized)
             appState.userStakingData.stakedAmount = BigInt(0);
             appState.userStakingData.rewards = BigInt(0);
             appState.userStakingData.lockupEndTime = 0;
+            appState.userStakingData.poolIndex = 4;
+            appState.userStakingData.lending = BigInt(0);
         }
 
     } catch (e) {
@@ -830,6 +892,8 @@ async function fetchUserStakingData() {
         appState.userStakingData.stakedAmount = BigInt(0);
         appState.userStakingData.rewards = BigInt(0);
         appState.userStakingData.lockupEndTime = 0;
+        appState.userStakingData.poolIndex = 4;
+        appState.userStakingData.lending = BigInt(0);
     }
 }
 
@@ -843,12 +907,20 @@ async function handleStakeAfox() {
         return;
     }
     const amountStr = uiElements.stakeAmountInput.value;
+    const poolIndexStr = uiElements.poolSelector.value; // 🚨 ДОБАВЛЕНО: Чтение индекса пула
+    
     setLoadingState(true, uiElements.stakeAfoxBtn);
 
     try {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
+        const poolIndex = parseInt(poolIndexStr); // 🚨 ПАРСИНГ ИНДЕКСА
+
         if (stakeAmountBigInt === BigInt(0)) throw new Error('Enter a valid amount for staking.');
         if (appState.userBalances.AFOX < stakeAmountBigInt) throw new Error('Insufficient AFOX for staking.');
+        // 🚨 КРИТИЧЕСКАЯ ПРОВЕРКА ИНДЕКСА ПУЛА
+        if (isNaN(poolIndex) || poolIndex < 0 || poolIndex >= POOLS_CONFIG.length) {
+            throw new Error('Invalid staking pool selected.');
+        }
 
         showNotification(`Preparing transaction to stake ${formatBigInt(stakeAmountBigInt, AFOX_DECIMALS)} AFOX... (Simulation)`, 'info', 5000);
 
@@ -872,8 +944,8 @@ async function handleStakeAfox() {
         );
 
         // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) 
-        // 💡 ИСПРАВЛЕНО: Использование window.Anchor.BN
-        const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()))
+        // 💡 ИСПРАВЛЕНО: Добавление poolIndex в .stake()
+        const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
@@ -899,13 +971,15 @@ async function handleStakeAfox() {
         const mockRewardIncreaseBigInt = (stakedAmountNewBigInt * BigInt(1)) / BigInt(1000); 
         const rewardsNewBigInt = rewardsOldBigInt + mockRewardIncreaseBigInt;
         
-        // 💡 ДОБАВЛЕНО: Установка lockupEndTime для MOCK (например, 7 дней)
-        const lockupDuration = 7 * 24 * 60 * 60; // 7 дней в секундах
+        // 💡 ДОБАВЛЕНО: Установка lockupEndTime на основе выбранного пула
+        const currentConfig = POOLS_CONFIG[poolIndex];
+        const lockupDuration = currentConfig.duration_days * SECONDS_PER_DAY;
         const lockupEndTime = Math.floor(Date.now() / 1000) + lockupDuration;
 
         MOCK_DB.staking[userKey].stakedAmount = stakedAmountNewBigInt.toString();
         MOCK_DB.staking[userKey].rewards = rewardsNewBigInt.toString();
-        MOCK_DB.staking[userKey].lockupEndTime = lockupEndTime; // 💡 Установка lockup
+        MOCK_DB.staking[userKey].lockupEndTime = lockupEndTime; 
+        MOCK_DB.staking[userKey].poolIndex = poolIndex; // 🚨 Установка poolIndex
         
         appState.userBalances.AFOX = appState.userBalances.AFOX - stakeAmountBigInt;
         persistMockData();
@@ -1012,12 +1086,17 @@ async function handleUnstakeAfox() {
     try {
         if (appState.userStakingData.stakedAmount === BigInt(0)) { showNotification('No AFOX staked.', 'warning', 3000); return; }
         
+        // 🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: ПРОВЕРКА НА БЛОКИРОВКУ ЗАЙМОМ
+        if (appState.userStakingData.lending > BigInt(0)) {
+            showNotification(`Cannot unstake: ${formatBigInt(appState.userStakingData.lending, AFOX_DECIMALS)} AFOX are locked as collateral for a loan. Repay your loan first.`, 'error', 10000);
+            return;
+        }
+
         // 💡 ИСПРАВЛЕНО: Двойная проверка блокировки
         const now = Date.now() / 1000;
         if (appState.userStakingData.lockupEndTime > now) {
-            const remaining = (appState.userStakingData.lockupEndTime - now) / (60 * 60 * 24);
-            showNotification(`Cannot unstake: Tokens are locked for ${remaining.toFixed(1)} more days!`, 'error', 7000);
-            return;
+            const remaining = (appState.userStakingData.lockupEndTime - now) / SECONDS_PER_DAY;
+            showNotification(`Unstaking before lockup ends! ${remaining.toFixed(1)} days remaining. Penalty will be applied (MOCK ignores penalty).`, 'warning', 7000);
         }
 
 
@@ -1066,6 +1145,7 @@ async function handleUnstakeAfox() {
         MOCK_DB.staking[userKey].stakedAmount = '0';
         MOCK_DB.staking[userKey].rewards = '0';
         MOCK_DB.staking[userKey].lockupEndTime = Math.floor(Date.now() / 1000);
+        MOCK_DB.staking[userKey].poolIndex = 4; // Возвращаем в гибкий пул
         
         appState.userBalances.AFOX = appState.userBalances.AFOX + stakedAmountBigInt;
         persistMockData();
@@ -2061,6 +2141,8 @@ function cacheUIElements() {
     uiElements.claimRewardsBtn = document.getElementById('claim-rewards-btn');
     uiElements.unstakeAfoxBtn = document.getElementById('unstake-afox-btn');
     uiElements.lockupPeriod = document.getElementById('lockup-period'); // 💡 КЭШИРОВАНИЕ НОВОГО ЭЛЕМЕНТА
+    // 🚨 ДОБАВЛЕНО: КЭШИРОВАНИЕ СЕЛЕКТОРА ПУЛА
+    uiElements.poolSelector = document.getElementById('pool-selector'); 
 
     // SWAP Section
     uiElements.swapFromAmountInput = document.getElementById('swap-from-amount');
@@ -2238,6 +2320,15 @@ function initializeJupiterTerminal() {
     }
 }
 
+// 🚨 ДОБАВЛЕНО: Заполнение селектора пулов
+function populatePoolSelector() {
+    if (uiElements.poolSelector) {
+        uiElements.poolSelector.innerHTML = POOLS_CONFIG.map((p, i) => 
+            `<option value="${i}">${p.name} (${p.duration_days} дн., APR: ${p.apr_rate/100}%)</option>`
+        ).join('');
+    }
+}
+
 // --- ГЛАВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ ---
 /**
  * Main initialization function.
@@ -2250,6 +2341,7 @@ async function init() {
     }
 
     cacheUIElements();
+    populatePoolSelector(); // 🚨 ДОБАВЛЕНО: Вызов для заполнения селектора
     
     // 🟢 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (КЛЮЧЕВОЙ МОМЕНТ)
     setupHamburgerMenu(); 
