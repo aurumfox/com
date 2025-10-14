@@ -623,10 +623,12 @@ async function getRobustConnection() {
  */
 function updateWalletDisplay(address) {
     // 1. Получаем все элементы управления кошельком (десктоп + мобильный)
-    const connectBtns = document.querySelectorAll('[id="connectWalletBtn"], [data-wallet-control="connectWalletBtn"]');
-    const walletDisplays = document.querySelectorAll('[id="walletDisplay"], [data-wallet-control="walletDisplay"]');
-    const walletAddresses = document.querySelectorAll('[id="walletAddress"], [data-wallet-control="walletAddress"]');
-    const copyBtns = document.querySelectorAll('[id="copyWalletBtn"], [data-wallet-control="copyWalletBtn"]');
+    // 💡 ИСПРАВЛЕНО: Теперь используем uiElements, который кэшируется в cacheUIElements()
+    const connectBtns = uiElements.connectWalletButtons;
+    // Используем data-attributes для универсальности, если ID не уникальны
+    const walletDisplays = Array.from(document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]'));
+    const walletAddresses = uiElements.walletAddressDisplays;
+    const copyBtns = uiElements.copyButtons; 
     
     // Обновление основного блока Web3
     const fullAddressDisplay = document.getElementById('walletAddressDisplay');
@@ -733,9 +735,9 @@ function handlePublicKeyChange(newPublicKey) {
         
         // 🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Очистка UI стейкинга при отключении
         // Эта логика была в старой updateWalletUI(adapter), теперь она здесь.
-        if (document.getElementById('userAfoxBalance')) document.getElementById('userAfoxBalance').textContent = '0 AFOX';
-        if (document.getElementById('userStakedAmount')) document.getElementById('userStakedAmount').textContent = '0 AFOX';
-        if (document.getElementById('userRewardsAmount')) document.getElementById('userRewardsAmount').textContent = '0 AFOX';
+        if (document.getElementById('user-afox-balance')) document.getElementById('user-afox-balance').textContent = '0 AFOX';
+        if (document.getElementById('user-staked-amount')) document.getElementById('user-staked-amount').textContent = '0 AFOX';
+        if (document.getElementById('user-rewards-amount')) document.getElementById('user-rewards-amount').textContent = '0 AFOX';
         if (document.getElementById('staking-apr')) document.getElementById('staking-apr').textContent = '—';
         if (document.getElementById('lockup-period')) document.getElementById('lockup-period').textContent = '—';
     }
@@ -921,6 +923,7 @@ async function updateStakingUI() {
         }
         
         if (isLockedByTime) {
+            const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
             const remainingSeconds = lockupEndTime - now;
             const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
             lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
