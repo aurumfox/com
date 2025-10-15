@@ -371,31 +371,37 @@
 </head>
 <body>
 
-    <header class="main-header">
-    <div class="header-content">
-        <div id="walletDisplay" class="wallet-info">
-            <span class="wallet-status">Подключен</span>
-        </div>
+    <header class="header">
+    <div class="container">
+        <div class="logo">
+            </div>
 
-        <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="Открыть меню">
-            <span></span>
-            <span></span>
-            <span></span>
+        <nav class="nav">
+            <ul class="main-nav">
+                </ul>
+        </nav>
+
+        <div class="wallet-controls">
+            <button 
+                id="connectWalletBtn" 
+                class="web3-button connect-fox-btn"
+                aria-label="Подключить криптовалютный кошелек"
+            >
+                <i class="fox-icon">🦊</i> 
+                ПОДКЛЮЧИТЬ КОШЕЛЕК
+            </button>
+        </div>
+        
+        <button class="menu-toggle" aria-controls="main-nav" aria-expanded="false">
+            <div class="hamburger-lines">
+                <span class="line line1"></span>
+                <span class="line line2"></span>
+                <span class="line line3"></span>
+            </div>
         </button>
 
-        <nav class="main-nav">
-            <ul>
-                <li><a href="#">Главная</a></li>
-                <li><a href="#">Маркет</a></li>
-                <li><a href="#">Профиль</a></li>
-            </ul>
-        </nav>
     </div>
-
-    <nav id="mobileMenu" class="mobile-nav" aria-hidden="true">
-    </nav>
 </header>
-
 
     <main>
         <section id="aurum-fox-home" class="hero-section aurum-fox-section">
@@ -2087,4 +2093,4 @@
         
     </script>
 </body>
-    </html>
+                                </html>
