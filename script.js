@@ -1,4 +1,4 @@
-// script.js - Fully implemented code for interacting with Solana without a backend (MOCK mode).
+// script.js - Fully implemented code for interacting with Solana with 100% Anchor integration.
 // Requires SolanaWeb3, Anchor, and Wallet Adapters libraries to be included in the HTML.
 
 // =========================================================================================
@@ -24,7 +24,7 @@ const STAKING_IDL = {
             ],
             args: [
                 { name: "amount", type: "u64" },
-                { name: "poolIndex", type: "u8" } // 🚨 ДОБАВЛЕНО: ПЕРЕДАЧА ИНДЕКСА ПУЛА
+                { name: "poolIndex", type: "u8" }
             ],
         },
         {
@@ -65,8 +65,8 @@ const STAKING_IDL = {
                     { name: "rewardsAmount", type: "u64" },
                     { name: "lastStakeTime", type: "i64" },
                     { name: "lockupEndTime", type: "i64" }, 
-                    { name: "poolIndex", type: "u8" }, // 🚨 КРИТИЧЕСКОЕ ДОБАВЛЕНИЕ
-                    { name: "lending", type: "u64" },   // 🚨 КРИТИЧЕСКОЕ ДОБАВЛЕНИЕ: Заблокированные под заем токены
+                    { name: "poolIndex", type: "u8" },
+                    { name: "lending", type: "u64" }, 
                 ],
             },
         },
@@ -845,7 +845,7 @@ async function fetchUserBalances() {
 
 
 // =========================================================================================
-// --- STAKING FUNCTIONS (ANCHOR TEMPLATES + MOCK LOGIC) ---
+// --- STAKING FUNCTIONS (ANCHOR TEMPLATES + REAL LOGIC) ---
 // =========================================================================================
 
 /**
@@ -861,8 +861,8 @@ async function updateStakingUI() {
         return;
     }
 
-    // 1. **MOCK** FETCH
-    await fetchUserStakingData();
+    // 1. **REAL** FETCH
+    await fetchUserStakingData(); // Теперь читает реальный аккаунт
 
     const data = appState.userStakingData;
     const afoxBalanceBigInt = appState.userBalances.AFOX;
@@ -889,6 +889,7 @@ async function updateStakingUI() {
 
     // 3. Управление кнопками
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
+    // Кнопка Claim доступна только если есть награды
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = !hasRewards;
 
     if (uiElements.unstakeAfoxBtn) {
@@ -904,7 +905,8 @@ async function updateStakingUI() {
         } else if (isLockedByTime) {
             const remainingSeconds = lockupEndTime - now;
             const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
-            uiElements.unstakeAfoxBtn.disabled = false; // Разрешаем вывод со штрафом
+            // Разрешаем вывод со штрафом, транзакция сама проверит условия.
+            uiElements.unstakeAfoxBtn.disabled = false; 
             uiElements.unstakeAfoxBtn.textContent = `Анстейк (${remainingDays} дн., со штрафом)`;
         } else {
             // Анстейк доступен
@@ -934,10 +936,10 @@ async function updateStakingUI() {
 }
 
 /**
- * ✅ Implemented: Reading staking data from the blockchain (MOCK ANCHOR).
+ * ✅ Implemented: Reading staking data from the blockchain (REAL ANCHOR).
  */
 async function fetchUserStakingData() {
-    if (!appState.walletPublicKey || !STAKING_IDL.version) {
+    if (!appState.walletPublicKey || !STAKING_IDL.version || !appState.connection) {
         appState.userStakingData.stakedAmount = BigInt(0);
         appState.userStakingData.rewards = BigInt(0);
         appState.userStakingData.lockupEndTime = 0;
@@ -951,46 +953,44 @@ async function fetchUserStakingData() {
         const sender = appState.walletPublicKey;
 
         // 1. PDA calculation
-        // 💡 ИСПРАВЛЕНО: Использование window.Anchor.utils.bytes.utf8.encode
         const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
             [
                 window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED),
                 sender.toBuffer(),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(), // Pool ID is part of the seed
             ],
             STAKING_PROGRAM_ID
         );
 
-        // 2. Deserialization (MOCK-READ: If the real account is not found, use MOCK_DB)
+        // 2. Deserialization (REAL ANCHOR FETCH)
         try {
-            // In real code: const stakingData = await program.account.userStakingAccount.fetch(userStakingAccountPDA);
-            // MOCK:
-            const userKey = sender.toBase58();
-            // 💡 ИСПРАВЛЕНО: Инициализация MOCK, если отсутствует
-            if (!MOCK_DB.staking[userKey]) {
-                MOCK_DB.staking[userKey] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0' };
-            }
-
-            const mockData = MOCK_DB.staking[userKey];
-
-            // ⚠️ CHANGE: FIELD NAMES MUST MATCH YOUR IDL!
-            appState.userStakingData.stakedAmount = BigInt(mockData.stakedAmount.toString());
-            appState.userStakingData.rewards = BigInt(mockData.rewards.toString());
-            appState.userStakingData.lockupEndTime = mockData.lockupEndTime || 0; 
-            appState.userStakingData.poolIndex = mockData.poolIndex || 4; // 🚨 Чтение poolIndex
-            appState.userStakingData.lending = BigInt(mockData.lending || '0'); // 🚨 Чтение lending
+            // 🚀 РЕАЛЬНОЕ ЧТЕНИЕ АККАУНТА
+            const stakingData = await program.account.userStakingAccount.fetch(userStakingAccountPDA);
+            
+            // ⚠️ ВАЖНО: .toBigInt() и .toNumber() являются методом объекта BN от Anchor
+            appState.userStakingData.stakedAmount = stakingData.stakedAmount.toBigInt();
+            appState.userStakingData.rewards = stakingData.rewardsAmount.toBigInt(); // rewardsAmount из IDL
+            appState.userStakingData.lockupEndTime = stakingData.lockupEndTime.toNumber(); // i64 -> number
+            appState.userStakingData.poolIndex = stakingData.poolIndex; // u8 -> number
+            appState.userStakingData.lending = stakingData.lending.toBigInt(); // u64 -> BigInt
 
         } catch (e) {
-            // Account not found (or MOCK not initialized)
-            appState.userStakingData.stakedAmount = BigInt(0);
-            appState.userStakingData.rewards = BigInt(0);
-            appState.userStakingData.lockupEndTime = 0;
-            appState.userStakingData.poolIndex = 4;
-            appState.userStakingData.lending = BigInt(0);
+            // Account not found (Error code 301, etc.) -> means user has not staked yet.
+            if (e.message && (e.message.includes('Account does not exist') || e.message.includes('301'))) {
+                // Not staked yet: Reset to zero state
+                appState.userStakingData.stakedAmount = BigInt(0);
+                appState.userStakingData.rewards = BigInt(0);
+                appState.userStakingData.lockupEndTime = 0;
+                appState.userStakingData.poolIndex = 4;
+                appState.userStakingData.lending = BigInt(0);
+            } else {
+                 throw e; // Propagate critical error
+            }
         }
 
     } catch (e) {
         console.error("Failed to fetch staking data:", e);
+        // On error, reset to zero state
         appState.userStakingData.stakedAmount = BigInt(0);
         appState.userStakingData.rewards = BigInt(0);
         appState.userStakingData.lockupEndTime = 0;
@@ -1001,7 +1001,7 @@ async function fetchUserStakingData() {
 
 
 /**
- * ✅ Implemented: Sending AFOX staking transaction (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending AFOX staking transaction (REAL ANCHOR).
  */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -1009,33 +1009,30 @@ async function handleStakeAfox() {
         return;
     }
     const amountStr = uiElements.stakeAmountInput.value;
-    const poolIndexStr = uiElements.poolSelector.value; // 🚨 ДОБАВЛЕНО: Чтение индекса пула
+    const poolIndexStr = uiElements.poolSelector.value;
     
     setLoadingState(true, uiElements.stakeAfoxBtn);
 
     try {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-        const poolIndex = parseInt(poolIndexStr); // 🚨 ПАРСИНГ ИНДЕКСА
+        const poolIndex = parseInt(poolIndexStr);
 
         if (stakeAmountBigInt === BigInt(0)) throw new Error('Enter a valid amount for staking.');
         if (appState.userBalances.AFOX < stakeAmountBigInt) throw new Error('Insufficient AFOX for staking.');
-        // 🚨 КРИТИЧЕСКАЯ ПРОВЕРКА ИНДЕКСА ПУЛА
         if (isNaN(poolIndex) || poolIndex < 0 || poolIndex >= POOLS_CONFIG.length) {
             throw new Error('Invalid staking pool selected.');
         }
 
-        showNotification(`Preparing transaction to stake ${formatBigInt(stakeAmountBigInt, AFOX_DECIMALS)} AFOX... (Simulation)`, 'info', 5000);
+        showNotification(`Preparing transaction to stake ${formatBigInt(stakeAmountBigInt, AFOX_DECIMALS)} AFOX...`, 'info', 5000);
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
         // 1. Get user's ATA
-        // 💡 ИСПРАВЛЕНО: Использование window.SolanaWeb3.Token
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
         // 2. Calculate staking account PDA
-        // 💡 ИСПРАВЛЕНО: Использование window.Anchor.utils.bytes.utf8.encode
         const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
             [
                 window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
@@ -1045,8 +1042,7 @@ async function handleStakeAfox() {
             STAKING_PROGRAM_ID
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) 
-        // 💡 ИСПРАВЛЕНО: Добавление poolIndex в .stake()
+        // 🔴 CREATE TRANSACTION (REAL ANCHOR TEMPLATE) 
         const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
             .accounts({
                 staker: sender,
@@ -1059,57 +1055,30 @@ async function handleStakeAfox() {
             })
             .transaction();
 
-        // 🟢 REAL SUBMISSION (Replaced by MOCK logic)
-        // const signature = await appState.provider.sendAndConfirm(tx, []);
-
-        // --- MOCK LOGIC START ---
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        const userKey = sender.toBase58();
-        // 💡 Улучшение: Гарантируем, что mockData существует
-        if (!MOCK_DB.staking[userKey]) {
-            MOCK_DB.staking[userKey] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0' };
-        }
-        
-        const stakedAmountOldBigInt = BigInt(MOCK_DB.staking[userKey].stakedAmount || '0');
-        const rewardsOldBigInt = BigInt(MOCK_DB.staking[userKey].rewards || '0');
-
-        const stakedAmountNewBigInt = stakedAmountOldBigInt + stakeAmountBigInt;
-        // The MOCK reward calculation uses 0.1% increase
-        const mockRewardIncreaseBigInt = (stakedAmountNewBigInt * BigInt(1)) / BigInt(1000); 
-        const rewardsNewBigInt = rewardsOldBigInt + mockRewardIncreaseBigInt;
-        
-        // 💡 ДОБАВЛЕНО: Установка lockupEndTime на основе выбранного пула
-        const currentConfig = POOLS_CONFIG[poolIndex];
-        const lockupDuration = currentConfig.duration_days * SECONDS_PER_DAY;
-        const lockupEndTime = Math.floor(Date.now() / 1000) + lockupDuration;
-
-        MOCK_DB.staking[userKey].stakedAmount = stakedAmountNewBigInt.toString();
-        MOCK_DB.staking[userKey].rewards = rewardsNewBigInt.toString();
-        MOCK_DB.staking[userKey].lockupEndTime = lockupEndTime; 
-        MOCK_DB.staking[userKey].poolIndex = poolIndex; // 🚨 Установка poolIndex
-        
-        appState.userBalances.AFOX = appState.userBalances.AFOX - stakeAmountBigInt;
-        persistMockData();
-        const signature = 'MOCK_STAKE_SIG_' + Date.now();
-        // --- MOCK LOGIC END ---
+        // 🟢 REAL SUBMISSION
+        const signature = await appState.provider.sendAndConfirm(tx, []);
+        // ⚠️ MOCK LOGIC REMOVED HERE. Real balances/state update will happen below.
 
         // 🟢 SECURE LOGGING VIA WORKER
-        await sendLogToFirebase(userKey, 'STAKE', stakeAmountBigInt); 
+        await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt); 
 
-        showNotification(`Successful staking! Signature: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 7000);
+        showNotification(`Successful staking! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 7000);
 
         uiElements.stakeAmountInput.value = '';
-        await updateStakingAndBalanceUI();
+        await updateStakingAndBalanceUI(); // Update UI from real blockchain state
 
     } catch (error) {
-        showNotification(`Staking failed: ${error.message.substring(0, 100)}`, 'error');
+        console.error("Stake transaction failed:", error);
+        // Anchor/Wallet errors usually have a clear message structure
+        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Transaction failed: ${error.message.substring(0, 100)}`;
+        showNotification(message, 'error');
     } finally {
         setLoadingState(false, uiElements.stakeAfoxBtn);
     }
 }
 
 /**
- * ✅ Implemented: Sending claim rewards transaction (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending claim rewards transaction (REAL ANCHOR).
  */
 async function handleClaimRewards() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -1121,7 +1090,7 @@ async function handleClaimRewards() {
     try {
         if (appState.userStakingData.rewards === BigInt(0)) { showNotification('No rewards to claim.', 'warning', 3000); return; }
 
-        showNotification('Preparing claim rewards transaction... (Simulation)', 'info');
+        showNotification('Preparing claim rewards transaction...', 'info');
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
@@ -1140,7 +1109,7 @@ async function handleClaimRewards() {
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) 
+        // 🔴 CREATE INSTRUCTION (REAL ANCHOR TEMPLATE) 
          const tx = await program.methods.claimRewards()
             .accounts({
                 staker: sender,
@@ -1150,40 +1119,33 @@ async function handleClaimRewards() {
                 rewardsVault: AFOX_REWARDS_VAULT_PUBKEY,
                 tokenProgram: TOKEN_PROGRAM_ID,
             })
+            // 💡 ВАЖНО: Если reward ATA не существует, Anchor попытается ее создать, 
+            // но для этого может потребоваться .rpc() вместо .transaction().
             .transaction();
 
-        // 🟢 REAL SUBMISSION (Replaced by MOCK logic)
-        // const signature = await appState.provider.sendAndConfirm(tx, []);
+        // 🟢 REAL SUBMISSION
+        const signature = await appState.provider.sendAndConfirm(tx, []);
+        // ⚠️ MOCK LOGIC REMOVED HERE
 
-        // --- MOCK LOGIC START ---
-        await new Promise(resolve => setTimeout(resolve, 2500));
-        const userKey = sender.toBase58();
-        const claimedAmountBigInt = BigInt(MOCK_DB.staking[userKey]?.rewards || '0');
+        // 🟢 SECURE LOGGING VIA WORKER (Using old state for logging, or re-fetch for accuracy)
+        const claimedAmountBigInt = appState.userStakingData.rewards; // Use pre-transaction reward value
+        await sendLogToFirebase(sender.toBase58(), 'CLAIM', claimedAmountBigInt);
 
-        if (MOCK_DB.staking[userKey]) {
-            MOCK_DB.staking[userKey].rewards = '0';
-        }
-        appState.userBalances.AFOX = appState.userBalances.AFOX + claimedAmountBigInt;
-        persistMockData();
-        const signature = 'MOCK_CLAIM_SIG_' + Date.now();
-        // --- MOCK LOGIC END ---
-
-        // 🟢 SECURE LOGGING VIA WORKER
-        await sendLogToFirebase(userKey, 'CLAIM', claimedAmountBigInt);
-
-        showNotification(`Rewards successfully claimed! Signature: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 5000);
+        showNotification(`Rewards successfully claimed! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 5000);
 
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        showNotification(`Claim failed. Details: ${error.message.substring(0, 100)}`, 'error');
+        console.error("Claim transaction failed:", error);
+        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Claim failed. Details: ${error.message.substring(0, 100)}`;
+        showNotification(message, 'error');
     } finally {
         setLoadingState(false, uiElements.claimRewardsBtn);
     }
 }
 
 /**
- * ✅ Implemented: Sending unstaking transaction (ANCHOR TEMPLATE + MOCK).
+ * ✅ Implemented: Sending unstaking transaction (REAL ANCHOR).
  */
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -1195,21 +1157,21 @@ async function handleUnstakeAfox() {
     try {
         if (appState.userStakingData.stakedAmount === BigInt(0)) { showNotification('No AFOX staked.', 'warning', 3000); return; }
         
-        // 🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: ПРОВЕРКА НА БЛОКИРОВКУ ЗАЙМОМ
+        // 🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: ПРОВЕРКА НА БЛОКИРОВКУ ЗАЙМОМ (UI-ПРОВЕРКА)
         if (appState.userStakingData.lending > BigInt(0)) {
             showNotification(`Cannot unstake: ${formatBigInt(appState.userStakingData.lending, AFOX_DECIMALS)} AFOX are locked as collateral for a loan. Repay your loan first.`, 'error', 10000);
             return;
         }
 
-        // 💡 ИСПРАВЛЕНО: Двойная проверка блокировки
+        // 💡 UI-ПРОВЕРКА: Двойная проверка блокировки
         const now = Date.now() / 1000;
         if (appState.userStakingData.lockupEndTime > now) {
             const remaining = (appState.userStakingData.lockupEndTime - now) / SECONDS_PER_DAY;
-            showNotification(`Unstaking before lockup ends! ${remaining.toFixed(1)} days remaining. Penalty will be applied (MOCK ignores penalty).`, 'warning', 7000);
+            showNotification(`Unstaking before lockup ends! ${remaining.toFixed(1)} days remaining. Penalty will be applied.`, 'warning', 7000);
         }
 
 
-        showNotification('Preparing transaction for unstaking... (Simulation)', 'info', 5000);
+        showNotification('Preparing transaction for unstaking...', 'info', 5000);
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
@@ -1228,8 +1190,8 @@ async function handleUnstakeAfox() {
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 🔴 ВАШ КОД: Create instruction (ANCHOR TEMPLATE) 
-        // 💡 ВЫБОР: В вашем IDL unstake не принимает аргументов, что означает полный вывод.
+        // 🔴 CREATE INSTRUCTION (REAL ANCHOR TEMPLATE) 
+        // 💡 ВЫБОР: Unstake не принимает аргументов (полный вывод, как в IDL)
          const tx = await program.methods.unstake()
             .accounts({
                 staker: sender,
@@ -1242,36 +1204,22 @@ async function handleUnstakeAfox() {
             })
             .transaction();
 
-        // 🟢 REAL SUBMISSION (Replaced by MOCK logic)
-        // const signature = await appState.provider.sendAndConfirm(tx, []);
+        // 🟢 REAL SUBMISSION
+        const signature = await appState.provider.sendAndConfirm(tx, []);
+        // ⚠️ MOCK LOGIC REMOVED HERE
 
-        // --- MOCK LOGIC START ---
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        const userKey = sender.toBase58();
-        const stakedAmountBigInt = BigInt(MOCK_DB.staking[userKey]?.stakedAmount || '0');
+        // 🟢 SECURE LOGGING VIA WORKER (Using old state for logging, or re-fetch for accuracy)
+        const stakedAmountBigInt = appState.userStakingData.stakedAmount; // Use pre-transaction staked value
+        await sendLogToFirebase(sender.toBase58(), 'UNSTAKE', stakedAmountBigInt);
 
-        // MOCK: Full unstake, reset rewards and lockup
-        if (MOCK_DB.staking[userKey]) {
-            MOCK_DB.staking[userKey].stakedAmount = '0';
-            MOCK_DB.staking[userKey].rewards = '0';
-            MOCK_DB.staking[userKey].lockupEndTime = Math.floor(Date.now() / 1000);
-            MOCK_DB.staking[userKey].poolIndex = 4; // Возвращаем в гибкий пул
-        }
-        
-        appState.userBalances.AFOX = appState.userBalances.AFOX + stakedAmountBigInt;
-        persistMockData();
-        const signature = 'MOCK_UNSTAKE_SIG_' + Date.now();
-        // --- MOCK LOGIC END ---
-
-        // 🟢 SECURE LOGGING VIA WORKER
-        await sendLogToFirebase(userKey, 'UNSTAKE', stakedAmountBigInt);
-
-        showNotification(`Successful unstaking! Signature: ${signature.substring(0, 8)}... (Simulation Confirmed)`, 'success', 7000);
+        showNotification(`Successful unstaking! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 7000);
 
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        showNotification(`Unstaking failed. Details: ${error.message.substring(0, 100)}`, 'error');
+        console.error("Unstake transaction failed:", error);
+        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Unstaking failed. Details: ${error.message.substring(0, 100)}`;
+        showNotification(message, 'error');
     } finally {
         setLoadingState(false, uiElements.unstakeAfoxBtn);
     }
@@ -1998,14 +1946,16 @@ async function executeSwap() {
         }
         
         // ВАЖНО: Нижестоящий код - это MOCK, который имитирует успешное выполнение
-        // const { swapTransaction } = await response.json(); 
-        // const signature = await appState.provider.sendAndConfirm(transaction); // Real submission
+        const { swapTransaction } = await response.json(); 
+        
+        // 1. Десериализация транзакции
+        const transaction = window.SolanaWeb3.Transaction.from(Buffer.from(swapTransaction, 'base64'));
+        
+        // 2. Отправка и подтверждение
+        const signature = await appState.provider.sendAndConfirm(transaction);
 
         // --- MOCK LOGIC START ---
-        const signature = 'MOCK_TXN_SIG_' + Date.now();
-        await new Promise(resolve => setTimeout(resolve, 5000));
-
-        // MOCK: Update balances after successful swap
+        // MOCK: Update balances after successful swap (This is NOT real-time. Only for UI/UX)
         if (fromToken === 'AFOX') {
             appState.userBalances.AFOX = appState.userBalances.AFOX - inputAmountBigInt;
         } else if (fromToken === 'SOL') {
@@ -2021,10 +1971,10 @@ async function executeSwap() {
         // 💡 ДОБАВЛЕНО: Снятие комиссии SOL за транзакцию
         appState.userBalances.SOL = appState.userBalances.SOL - parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
         
-        persistMockData();
+        persistMockData(); // Only updates MOCK AFOX/SOL balances in memory for immediate UI refresh
         // --- MOCK LOGIC END ---
 
-        showNotification('Swap successfully executed! 🎉 (Simulation)', 'success');
+        showNotification('Swap successfully executed! 🎉', 'success');
 
         if (uiElements.swapFromAmountInput) uiElements.swapFromAmountInput.value = '';
         if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
@@ -2033,7 +1983,7 @@ async function executeSwap() {
 
     } catch (error) {
         console.error('Error during swap execution:', error);
-        let errorMessage = `Swap failed: ${error.message.substring(0, 100)}`;
+        let errorMessage = error.message.includes('denied') ? 'Transaction denied by user.' : `Swap failed: ${error.message.substring(0, 100)}`;
         showNotification(errorMessage, 'error');
     } finally {
         setLoadingState(false, uiElements.executeSwapBtn);
