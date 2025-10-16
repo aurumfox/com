@@ -382,23 +382,22 @@
         </nav>
 
         <div class="wallet-controls">
-            <button 
-                id="connectWalletBtn" 
-                class="web3-button connect-fox-btn"
-                aria-label="Подключить криптовалютный кошелек"
-            >
-                <i class="fox-icon">🦊</i> 
-                ПОДКЛЮЧИТЬ КОШЕЛЕК
-            </button>
-        </div>
-        
-        <button class="menu-toggle" aria-controls="main-nav" aria-expanded="false">
-            <div class="hamburger-lines">
-                <span class="line line1"></span>
-                <span class="line line2"></span>
-                <span class="line line3"></span>
-            </div>
-        </button>
+    <button 
+        id="connectWalletBtn" 
+        class="web3-button connect-fox-btn"
+        aria-label="Подключить криптовалютный кошелек"
+    >
+        <i class="fox-icon">🦊</i> 
+        ПОДКЛЮЧИТЬ КОШЕЛЕК
+    </button>
+    
+    <div id="walletDisplay" class="wallet-display" style="display:none;">
+        <i class="fox-icon">🦊</i> 
+        <span id="walletAddressSpan" class="wallet-address-text"></span>
+        <button id="copyWalletBtn" class="copy-btn" aria-label="Копировать адрес кошелька"><i class="fas fa-copy"></i></button>
+    </div>
+</div>
+
 
     </div>
 </header>
