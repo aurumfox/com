@@ -113,7 +113,8 @@ const POOLS_CONFIG = [
 
 // 💡 ИСПРАВЛЕНО: Использование window.SolanaWeb3 для универсальности
 const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
-const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('3GcDUxoH4yhFeM3aBkaUfjNu7xGTat8ojXLPHttz2o9f');
+// 🔑 ИНТЕГРИРОВАННЫЙ PROGRAM ID: FJ4uiPLTdzjMoERxzCAWpagxp23MFrTE8DGCzj2A5qzjK
+const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('FJ4uiPLTdzjMoERxzCAWpagxp23MFrTE8DGCzj2A5qzjK'); 
 const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
 const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbnPUb4A5L5EyrgFP1G8AtiT');
