@@ -1,0 +1,37 @@
+
+
+name: Solana Program Build
+
+on:
+  push:
+    branches:
+      - master # Запускать при отправке в ветку master
+
+jobs:
+  build-program:
+    runs-on: ubuntu-latest # Используем чистую среду, где нет ошибок
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Установит Rust 1.76.0 и таргет BPF
+      - name: Install Rust and BPF target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.76.0
+          targets: bpfel-unknown-unknown 
+
+      # Установит cargo-build-sbf
+      - name: Install cargo-build-sbf
+        run: cargo install cargo-build-sbf
+
+      # Компиляция программы
+      - name: Build Program
+        run: cargo build-sbf --release
+
+      # Сохранение скомпилированного файла (.so)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: solana-program
+          path: target/deploy/*.so
+
+
