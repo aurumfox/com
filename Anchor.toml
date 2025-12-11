@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 use std::convert::TryInto;
 
-declare_id!("FJ4uiPLTdzjMoERxzCAWpagxp23MFrTE8DGCzj2A5qzjK");
+// --- ИСПРАВЛЕНО: Новый Program ID ---
+declare_id!("ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH");
 
 const BPS_DENOMINATOR: u128 = 10000;
 const RPS_MULTIPLIER: u128 = 100_000_000; 
@@ -13,8 +14,9 @@ const EARLY_EXIT_FEE_BPS: u16 = 4000;
 const DAO_CAP_RESET_SECONDS: i64 = 24 * 60 * 60;
 const MIN_INITIAL_STAKE: u64 = 10_000_000_000; 
 
+// --- ИСПРАВЛЕНО: Замена дефиса на подчеркивание ---
 #[program]
-pub mod my-new-afox-project { 
+pub mod my_new_afox_project { 
     use super::*;
 
     pub fn initialize_pool(
@@ -1089,4 +1091,3 @@ pub enum ErrorCode {
     #[msg("Token account has an invalid owner.")]
     InvalidAccountOwner,
 }
-
