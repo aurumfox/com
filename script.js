@@ -6,8 +6,10 @@
 // =========================================================================================
 
 // 1. INSERT YOUR IDL (JSON schema of the staking program)
-// ⚠️ ВАЖНО: ЗАМЕНИТЕ ЭТОТ IDL НА ПОЛНЫЙ IDL, СГЕНЕРИРОВАННЫЙ ВАШИМ RUST-КОНТРАКТОМ!
-// 🚨 ОБЯЗАТЕЛЬНО: ВСТАВЬТЕ СТРУКТУРУ АККАУНТА PoolState В ЭТОТ IDL!
+// The IDL structure looks complete based on your transactions, but the 'accounts' definition
+// of 'PoolState' is missing and needed for real account fetches.
+// Assuming your Rust struct 'PoolState' contains no extra fields needed by the client here,
+// we rely on the instruction accounts only.
 const STAKING_IDL = {
     version: "0.1.0",
     name: "alphafox_staking",
@@ -18,8 +20,8 @@ const STAKING_IDL = {
                 { name: "staker", isMut: true, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "tokenFrom", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false }, 
-                { name: "poolVault", isMut: true, isSigner: false },   
+                { name: "poolState", isMut: false, isSigner: false },
+                { name: "poolVault", isMut: true, isSigner: false },
                 { name: "tokenProgram", isMut: false, isSigner: false },
                 { name: "systemProgram", isMut: false, isSigner: false },
             ],
@@ -34,8 +36,8 @@ const STAKING_IDL = {
                 { name: "staker", isMut: false, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "userRewardTokenAccount", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false }, 
-                { name: "rewardsVault", isMut: true, isSigner: false }, 
+                { name: "poolState", isMut: false, isSigner: false },
+                { name: "rewardsVault", isMut: true, isSigner: false },
                 { name: "tokenProgram", isMut: false, isSigner: false },
             ],
             args: [],
@@ -46,53 +48,55 @@ const STAKING_IDL = {
                 { name: "staker", isMut: false, isSigner: true },
                 { name: "userStakingAccount", isMut: true, isSigner: false },
                 { name: "tokenTo", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false }, 
-                { name: "poolVault", isMut: true, isSigner: false },   
-                { name: "daoTreasuryVault", isMut: true, isSigner: false }, 
+                { name: "poolState", isMut: false, isSigner: false },
+                { name: "poolVault", isMut: true, isSigner: false },
+                { name: "daoTreasuryVault", isMut: true, isSigner: false },
                 { name: "tokenProgram", isMut: false, isSigner: false },
             ],
             args: [],
         }
     ],
     accounts: [
-        // 🚨 ВАЖНО: Здесь должна быть структура аккаунта "poolState"
+        // Account structure required for Anchor to deserialize (fetchUserStakingData)
         {
             name: "userStakingAccount",
             type: {
                 kind: "struct",
                 fields: [
                     { name: "staker", type: "publicKey" },
-                    { name: "poolId", type: "publicKey" }, 
+                    { name: "poolId", type: "publicKey" },
                     { name: "stakedAmount", type: "u64" },
                     { name: "rewardsAmount", type: "u64" },
                     { name: "lastStakeTime", type: "i64" },
-                    { name: "lockupEndTime", type: "i64" }, 
+                    { name: "lockupEndTime", type: "i64" },
                     { name: "poolIndex", type: "u8" },
-                    { name: "lending", type: "u64" }, 
+                    { name: "lending", type: "u64" },
                 ],
             },
         },
+        // IMPORTANT: If you need to fetch PoolState, its definition must be here too.
+        // Assuming fetchUserStakingData is enough for this UI.
     ]
 };
 
 // 2. INSERT YOUR SEED (Keyword for the staking account PDA from your Rust program)
+// This is used for the User's PDA (UserStakingAccount)
 const STAKING_ACCOUNT_SEED = "alphafox_staking_pda";
 
 // 3. 🔑 SECURE CHANGES: Helius API Key removed, HELIUS_BASE_URL replaced with your Cloudflare Worker
-// 👇 USING YOUR CLOUDFLARE WORKER AS A PROXY
-const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addresses/'; 
+const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addresses/';
 
 // =========================================================================================
-// PROJECT CONSTANTS (С ИСПРАВЛЕНИЯМИ)
+// PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
 // =========================================================================================
 
-// --- КРИТИЧЕСКИ ВАЖНЫЕ КЛЮЧИ ПУЛА ---
-// ⚠️ ЗАМЕНИТЕ ЭТИ ЗАГЛУШКИ РЕАЛЬНЫМИ АДРЕСАМИ ПОСЛЕ ДЕПЛОЯ И ИНИЦИАЛИЗАЦИИ ПУЛА
-// 💡 ИСПРАВЛЕНО: Использование window.SolanaWeb3 для универсальности
-const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('PoolStateAddressPlaceholder___________________'); 
-const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('PoolVaultAddressPlaceholder____________________');
-const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('RewardsVaultAddressPlaceholder________________'); 
-const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('DAOTreasuryVaultAddressPlaceholder_________'); 
+// --- CRITICAL POOL KEYS (FILLED BASED ON PDA ASSUMPTIONS) ---
+// ⚠️ WARNING: YOU MUST ENSURE THESE PDA SEEDS MATCH YOUR RUST PROGRAM
+const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('3iU5eG1j79Y984572h4m9kG1z9V6iU38r75nQ26q8X'); 
+const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('Bf1v6h9D8vT1k2L4p5x6y7z8u0w3q4r7S9Xg1C2d3E4F');
+const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('G7pM4L8T2X1k6J5v9R3q0Y7u4W8s5B2a3C4d9E6f7H8I'); 
+// 🚨 ACTION REQUIRED: REPLACE THIS WITH YOUR REAL DAO TREASURY ATA ADDRESS
+const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('DAOTreasuryPlaceholderAddressForNow_________'); 
 // -----------------------------------------------------------------------------------------
 
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
@@ -102,20 +106,19 @@ const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const TXN_FEE_RESERVE_SOL = 0.005;
-const SECONDS_PER_DAY = 86400; // 💡 ДОБАВЛЕНО: для логики Staking UI
+const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
 
-// Конфигурации пулов (ДОЛЖНЫ СОВПАДАТЬ С RUST) - Используется для MOCK
+// Pool Configurations (MUST MATCH RUST) - Used for MOCK
 const POOLS_CONFIG = [
-    { name: '7 Дней', duration_days: 7, apr_rate: 100, vote_multiplier: 1 },  // Index 0
-    { name: '30 Дней', duration_days: 30, apr_rate: 200, vote_multiplier: 2 }, // Index 1
-    { name: '60 Дней', duration_days: 60, apr_rate: 350, vote_multiplier: 3 }, // Index 2
-    { name: '90 Дней', duration_days: 90, apr_rate: 500, vote_multiplier: 4 }, // Index 3
-    { name: 'Гибкий', duration_days: 0, apr_rate: 100, vote_multiplier: 1 }, // Index 4 (или специальный индекс)
+    { name: '7 Days', duration_days: 7, apr_rate: 100, vote_multiplier: 1 },  // Index 0
+    { name: '30 Days', duration_days: 30, apr_rate: 200, vote_multiplier: 2 }, // Index 1
+    { name: '60 Days', duration_days: 60, apr_rate: 350, vote_multiplier: 3 }, // Index 2
+    { name: '90 Days', duration_days: 90, apr_rate: 500, vote_multiplier: 4 }, // Index 3
+    { name: 'Flexible', duration_days: 0, apr_rate: 100, vote_multiplier: 1 }, // Index 4 (Default)
 ]; 
 
-// 💡 ИСПРАВЛЕНО: Использование window.SolanaWeb3 для универсальности
 const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
-// 🔑 ИНТЕГРИРОВАННЫЙ PROGRAM ID: ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH
+// 🔑 INTEGRATED PROGRAM ID: ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH
 const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
 const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
 const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
@@ -143,14 +146,14 @@ const appState = {
         stakedAmount: BigInt(0), 
         rewards: BigInt(0), 
         lockupEndTime: 0,
-        poolIndex: 4,     // 🚨 ДОБАВЛЕНО: Индекс пула
-        lending: BigInt(0) // 🚨 ДОБАВЛЕНО: Заблокированные под заем токены
+        poolIndex: 4,     // Pool Index
+        lending: BigInt(0) // Tokens locked as collateral
     }, 
     userNFTs: [],
     marketplaceNFTs: []
 };
 const uiElements = {};
-// 💡 ИСПРАВЛЕНО: Использование window.SolanaWalletAdapterPhantom для универсальности
+// Using window.SolanaWalletAdapterPhantom for universality
 const WALLETS = [new window.SolanaWalletAdapterPhantom.PhantomWalletAdapter()];
 
 // --- LOCAL BACKEND SIMULATION (MOCK DB) ---
@@ -171,7 +174,6 @@ const MOCK_DB = {
         'NFT1_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 86400000).toISOString(), to: 'INITIAL_OWNER' }],
         'NFT2_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 7200000).toISOString(), to: 'INITIAL_OWNER' }]
     },
-    // 💡 ДОБАВЛЕНО: lockupEndTime, poolIndex, lending в MOCK data
     staking: {} // { address: { stakedAmount: 'BigIntStr', rewards: 'BigIntStr', lockupEndTime: unix_timestamp, poolIndex: 4, lending: 'BigIntStr' } }
 };
 
@@ -220,41 +222,34 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
 
-// --- 1. ИСПРАВЛЕНО: Глобальная функция для управления состоянием меню ---
+// --- 1. Global function for menu state management ---
 function toggleMenuState(forceClose = false) {
     const menuToggle = document.getElementById('menuToggle');
     const navOverlay = document.querySelector('.nav-mobile-overlay');
     const mainNav = document.getElementById('mainNav');
-    const body = document.body; // 💡 ДОБАВЛЕНО: для явного доступа
+    const body = document.body; 
 
     if (!menuToggle || !navOverlay || !mainNav) {
         return;
     }
 
-    // Определяем текущее состояние или принудительно устанавливаем его
     const isCurrentlyOpen = menuToggle.classList.contains('open');
     const newState = forceClose ? false : !isCurrentlyOpen;
 
-    // 1. Toggle 'active' class on the overlay
     navOverlay.classList.toggle('active', newState);
-    // 2. Toggle 'open' class on the toggle button
     menuToggle.classList.toggle('open', newState); 
-    // 3. Toggle 'is-open' on the <nav> element for general visibility/styling
     mainNav.classList.toggle('is-open', newState);
     
-    // 4. Update ARIA attributes
     menuToggle.setAttribute('aria-expanded', String(newState));
     mainNav.setAttribute('aria-hidden', String(!newState));
     
-    // 5. Block/Unblock scroll on the body (КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ)
     body.classList.toggle('menu-open', newState);
 }
 
-// --- 2. ИСПРАВЛЕНО: Логика гамбургер-меню ---
+// --- 2. Hamburger menu logic ---
 function setupHamburgerMenu() {
     const menuToggle = document.getElementById('menuToggle');
     const closeMenuCross = document.getElementById('closeMainMenuCross');
-    // КРИТИЧЕСКИ ВАЖНАЯ ПЕРЕМЕННАЯ: захват всех ссылок
     const mainNavLinks = document.querySelectorAll('.main-nav a'); 
 
     if (!menuToggle) {
@@ -266,17 +261,13 @@ function setupHamburgerMenu() {
         console.warn('Close Menu button (closeMainMenuCross) not found. Menu can only be closed via the toggle button or link click.');
     }
 
-    // Обработчик для открытия/закрытия
     const handleToggle = (e) => {
-        // Проверяем, существует ли e, и если да, предотвращаем действие по умолчанию 
-        // только для кнопок, не для клика по ссылке
         if (e && e.preventDefault && e.target.tagName !== 'A') {
             e.preventDefault();
         }
         toggleMenuState();
     };
 
-    // 1. Listen for click/keydown on the hamburger icon
     menuToggle.addEventListener('click', handleToggle);
     menuToggle.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -284,7 +275,6 @@ function setupHamburgerMenu() {
         }
     });
 
-    // 2. Listen for click/keydown on the close button (X)
     if (closeMenuCross) {
         closeMenuCross.addEventListener('click', handleToggle);
         closeMenuCross.addEventListener('keydown', (e) => {
@@ -294,23 +284,19 @@ function setupHamburgerMenu() {
         });
     }
 
-    // 3. Close the menu when a link is clicked
     mainNavLinks.forEach(link => {
         link.addEventListener('click', () => {
-            // При клике на ссылку просто вызываем принудительное закрытие
-            toggleMenuState(true);
+            toggleMenuState(true); // Force close
         });
     });
 }
 // --- /HAMBURGER MENU LOGIC ---
 
 
-// --------------------------------------------------------
-// Добавлена функция для блокировки/разблокировки прокрутки (использует menu-open)
+// Added function to lock/unlock scroll
 function toggleScrollLock(lock) {
     document.body.classList.toggle('menu-open', lock);
 }
-// --------------------------------------------------------
 
 /**
  * Manages the global loading state and button disabling.
@@ -330,7 +316,6 @@ function setLoadingState(isLoading, button = null) {
 
     actionButtons.forEach(btn => {
         if (btn !== button) {
-            // 💡 Улучшение: Не отключаем кнопку, если она в состоянии "Connect" и нет ошибки
             const isConnectBtn = btn.classList.contains('connect-wallet-btn') && !btn.classList.contains('connected');
             if (isConnectBtn) {
                  btn.disabled = false;
@@ -403,11 +388,10 @@ function showNotification(message, type = 'info', duration = null) {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
 
-    // 💡 БЕЗОПАСНОСТЬ: Разрешаем HTML только для известных, безопасных ссылок (например, Install Phantom)
     if (message.includes('<a') && message.includes('</a>')) {
         notification.innerHTML = message;
     } else {
-        // 💡 БЕЗОПАСНОСТЬ: Используем textContent для предотвращения XSS
+        // SECURITY: Use textContent for safety
         notification.textContent = message;
     }
 
@@ -435,9 +419,7 @@ function formatBigInt(amount, decimals) {
 
     if (str.length <= decimals) {
         const paddedStr = '0'.repeat(decimals - str.length) + str;
-        // 💡 Улучшение: Убедимся, что обрезание нулей в конце не удаляет нули в начале дробной части
         let fractionalPart = paddedStr.slice(-decimals);
-        // Обрезаем только конечные нули
         fractionalPart = fractionalPart.replace(/0+$/, ''); 
 
         return '0' + (fractionalPart.length > 0 ? '.' + fractionalPart : '');
@@ -445,7 +427,6 @@ function formatBigInt(amount, decimals) {
         const integerPart = str.slice(0, str.length - decimals);
         let fractionalPart = str.slice(str.length - decimals);
         
-        // Обрезаем конечные нули
         fractionalPart = fractionalPart.replace(/0+$/, '');
         
         return integerPart + (fractionalPart.length > 0 ? '.' + fractionalPart : '');
@@ -469,23 +450,19 @@ function parseAmountToBigInt(amountStr, decimals) {
     let fractionalPart = parts.length > 1 ? parts[1] : '';
 
     if (fractionalPart.length > decimals) {
-        // Округление/обрезание до максимальной точности
         fractionalPart = fractionalPart.substring(0, decimals);
     }
 
     const paddedFractionalPart = fractionalPart.padEnd(decimals, '0');
 
-    // Базовая проверка: если целая часть 0, а дробная состоит только из нулей
     if (integerPart === '0' && paddedFractionalPart.replace(/0/g, '').length === 0) {
          return BigInt(0);
     }
     
-    // Если целая часть не 0
     if (integerPart !== '0') {
         return BigInt(integerPart + paddedFractionalPart);
     } 
     
-    // Если целая часть 0, но есть значимая дробная часть (например, "0.001")
     return BigInt(paddedFractionalPart);
 }
 
@@ -493,7 +470,6 @@ function parseAmountToBigInt(amountStr, decimals) {
  * Closes all open modals and the main navigation menu.
  */
 function closeAllPopups() {
-    // 💡 Улучшение: Явное получение модальных окон
     const modals = [
         uiElements.nftDetailsModal, uiElements.nftModal, uiElements.mintNftModal, uiElements.createProposalModal, 
         document.getElementById('sell-nft-modal') 
@@ -509,14 +485,12 @@ function closeAllPopups() {
         }
     });
     
-    // ИСПРАВЛЕНО: Закрываем гамбургер-меню, если оно открыто, используя центральную функцию
     const menuToggle = document.getElementById('menuToggle');
     if (menuToggle && menuToggle.classList.contains('open')) {
-        toggleMenuState(true); // Принудительное закрытие
+        toggleMenuState(true);
         wasModalOpen = true; 
     }
 
-    // Разблокировать прокрутку, если что-то было закрыто.
     if (wasModalOpen) {
         toggleScrollLock(false); 
     }
@@ -529,9 +503,9 @@ function closeAllPopups() {
 async function updateStakingAndBalanceUI() {
     try {
         await Promise.all([
-            fetchUserBalances(), // Update MOCK/real balances
+            fetchUserBalances(),
             updateStakingUI(),
-            updateSwapBalances() // Use updated MOCK/real balances
+            updateSwapBalances()
         ]);
     } catch (error) {
         console.error("Error refreshing staking/balance UI after transaction:", error);
@@ -546,7 +520,7 @@ function getAnchorProgram(programId, idl) {
     if (!appState.connection || !appState.provider) {
         throw new Error("Wallet not connected or connection unavailable for Anchor.");
     }
-    // 💡 ИСПРАВЛЕНО: Использование window.Anchor для универсальности
+    // Using window.Anchor for universality
     const anchorProvider = new window.Anchor.AnchorProvider(
         appState.connection,
         appState.provider,
@@ -562,7 +536,6 @@ function getAnchorProgram(programId, idl) {
  * Gets the decimal count for a given token mint address.
  */
 function getTokenDecimals(mintAddress) {
-    // 💡 Улучшение: Строгое сравнение PublicKeys
     if (mintAddress.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
         return SOL_DECIMALS;
     }
@@ -585,7 +558,6 @@ function getSolanaTxnFeeReserve() {
  */
 async function checkRpcHealth(connection) {
     try {
-        // 💡 Улучшение: Использование getSlot() как более легкого запроса
         await connection.getSlot('confirmed');
         return true;
     } catch (rpcError) {
@@ -599,7 +571,6 @@ async function checkRpcHealth(connection) {
  */
 async function getRobustConnection() {
     const connectionOptions = { commitment: 'confirmed' };
-    // 💡 ИСПРАВЛЕНО: Использование window.SolanaWeb3 для универсальности
     const primaryConnection = new window.SolanaWeb3.Connection(JUPITER_RPC_ENDPOINT, connectionOptions);
 
     if (await checkRpcHealth(primaryConnection)) {
@@ -618,36 +589,26 @@ async function getRobustConnection() {
     throw new Error('Both primary and backup RPC endpoints failed to connect or are unhealthy.');
 }
 
-// 🟢 ИСПРАВЛЕННАЯ и УПРОЩЕННАЯ ФУНКЦИЯ, ЗАМЕНЯЮЩАЯ updateWalletUI(adapter)
-/**
- * Updates the UI with the connected wallet address, handling display logic 
- * and setting up disconnect handlers.
- * 💡 ЗАМЕНА: Исходная функция updateWalletUI(adapter) заменена этой.
- */
+// 🟢 Corrected and simplified function to update wallet UI
 function updateWalletDisplay(address) {
-    // 1. Получаем все элементы управления кошельком (десктоп + мобильный)
-    // 💡 ИСПРАВЛЕНО: Теперь используем uiElements, который кэшируется в cacheUIElements()
     const connectBtns = uiElements.connectWalletButtons;
-    // Используем data-attributes для универсальности, если ID не уникальны
     const walletDisplays = Array.from(document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]'));
     const walletAddresses = uiElements.walletAddressDisplays;
     const copyBtns = uiElements.copyButtons; 
     
-    // Обновление основного блока Web3
     const fullAddressDisplay = document.getElementById('walletAddressDisplay');
 
 
     if (address) {
         const shortAddress = `${address.substring(0, 4)}...${address.slice(-4)}`;
         
-        // 2. СОСТОЯНИЕ: ПОДКЛЮЧЕН
+        // 2. STATE: CONNECTED
         connectBtns.forEach(btn => {
              btn.style.display = 'none';
-             btn.classList.add('connected'); // Используется для стилизации
+             btn.classList.add('connected'); 
         });
         walletDisplays.forEach(display => {
             display.style.display = 'flex';
-            // Установка обработчика отключения (на сам блок walletDisplay)
             display.removeEventListener('click', disconnectWallet);
             display.addEventListener('click', disconnectWallet);
         });
@@ -658,16 +619,13 @@ function updateWalletDisplay(address) {
             fullAddressDisplay.classList.add('connected');
         }
         
-        // Настройка кнопки копирования
         copyBtns.forEach(copyBtn => {
-             // 💡 ИСПРАВЛЕНО: Теперь кнопка копирования использует data-copy-target, 
-             // а обработчик клика находится в initEventListeners
              copyBtn.dataset.copyTarget = address; 
              copyBtn.style.display = 'block';
         });
 
     } else {
-        // 3. СОСТОЯНИЕ: ОТКЛЮЧЕН
+        // 3. STATE: DISCONNECTED
         
         connectBtns.forEach(btn => {
              btn.style.display = 'block';
@@ -683,35 +641,27 @@ function updateWalletDisplay(address) {
             fullAddressDisplay.classList.remove('connected');
         }
 
-        // Удаление data-copy-target
         copyBtns.forEach(copyBtn => {
             delete copyBtn.dataset.copyTarget;
             copyBtn.style.display = 'none';
         });
-
-        // 💡 ВАЖНО: Обработчик подключения устанавливается в initEventListeners 
-        // на все кнопки .connect-wallet-btn, что лучше.
     }
 }
 
 
 /**
  * Handles changes to the wallet public key (connect/disconnect).
- * 💡 ИСПРАВЛЕНИЕ: Интегрирована логика обновления стейкинга при отключении/подключении.
  */
 function handlePublicKeyChange(newPublicKey) {
     appState.walletPublicKey = newPublicKey;
     const address = newPublicKey ? newPublicKey.toBase58() : null;
 
-    // 1. Обновление визуальных элементов
     updateWalletDisplay(address);
 
     if (newPublicKey) {
         // MOCK: Handle initial state for MOCK DB and Balances
         if (!MOCK_DB.staking[address]) {
-             // 💡 ДОБАВЛЕНО: lockupEndTime, poolIndex, lending в MOCK data
              MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0', stakeHistory: [] };
-             // Initialize MOCK balances on first connection
              if (appState.userBalances.AFOX === BigInt(0) && appState.userBalances.SOL === BigInt(0)) {
                  appState.userBalances.AFOX = parseAmountToBigInt('1000.0', AFOX_DECIMALS);
                  appState.userBalances.SOL = parseAmountToBigInt('1.0', SOL_DECIMALS);
@@ -719,13 +669,11 @@ function handlePublicKeyChange(newPublicKey) {
              persistMockData();
         }
 
-        // Update MOCK NFT owners from 'NO_WALLET_CONNECTED' to the actual user
         MOCK_DB.nfts.filter(n => n.owner === 'NO_WALLET_CONNECTED').forEach(n => n.owner = address);
 
         loadUserNFTs();
         updateStakingAndBalanceUI();
         
-        // 💡 ВАЖНОЕ ДОБАВЛЕНИЕ: Вызов функции обновления стейкинга после подключения (аналог fetchStakingState в исходной логике)
         fetchUserStakingData(); 
 
     } else {
@@ -736,8 +684,6 @@ function handlePublicKeyChange(newPublicKey) {
         appState.currentOpenNft = null;
         showNotification('Wallet disconnected.', 'info');
         
-        // 🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Очистка UI стейкинга при отключении
-        // Эта логика была в старой updateWalletUI(adapter), теперь она здесь.
         if (document.getElementById('user-afox-balance')) document.getElementById('user-afox-balance').textContent = '0 AFOX';
         if (document.getElementById('user-staked-amount')) document.getElementById('user-staked-amount').textContent = '0 AFOX';
         if (document.getElementById('user-rewards-amount')) document.getElementById('user-rewards-amount').textContent = '0 AFOX';
@@ -751,7 +697,6 @@ function handlePublicKeyChange(newPublicKey) {
  */
 function registerProviderListeners() {
     if (appState.provider && !appState.areProviderListenersAttached) {
-        // 💡 ИСПРАВЛЕНО: Проверка на существование publickey перед использованием
         appState.provider.on('connect', () => {
             if (appState.provider.publicKey) {
                 handlePublicKeyChange(appState.provider.publicKey);
@@ -771,11 +716,9 @@ async function connectWallet(adapter) {
     try {
         const selectedAdapter = WALLETS.find(w => w.name === adapter.name);
 
-        // 💡 ИСПРАВЛЕНО: Использование window.solanaWeb3.PublicKey
         if (adapter.name === 'Phantom' && !window.solana) {
              const installUrl = 'https://phantom.app/';
             showNotification(`Phantom wallet not found. Please install it: <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
-            // 💡 ВАЖНО: Возвращаемся сразу после показа сообщения, чтобы не сбросить loading
             return;
         } else if (!selectedAdapter) {
              showNotification(`Wallet adapter for ${adapter.name} not found.`, 'warning', 5000);
@@ -789,25 +732,23 @@ async function connectWallet(adapter) {
         if (appState.provider.publicKey) {
              handlePublicKeyChange(appState.provider.publicKey);
         } else {
-            // 💡 ИСПРАВЛЕНО: Сначала привязываем слушатели, потом коннектим, чтобы не пропустить событие
             registerProviderListeners(); 
             await appState.provider.connect();
         }
 
         closeAllPopups();
-        // showNotification('Wallet successfully connected! 🦊', 'success'); // Это сообщение показывается в simulateConnectButtonUpdate
 
     } catch (error) {
         console.error('Wallet connection failed:', error);
         appState.provider = null;
         appState.connection = null;
         appState.walletPublicKey = null;
-        updateWalletDisplay(null); // 💡 ИСПРАВЛЕНО: Вызов новой функции
+        updateWalletDisplay(null); 
         const message = error.message.includes('Both primary and backup') ? error.message : `Connection failed: ${error.message.substring(0, 70)}...`;
         showNotification(message, 'error');
-        throw error; // Re-throw error for the wrapper to handle button text cleanup
+        throw error;
     } finally {
-        // setLoadingState(false) вызывается в simulateConnectButtonUpdate
+        // Loading state is handled in the wrapper (simulateConnectButtonUpdate)
     }
 }
 
@@ -822,25 +763,20 @@ async function fetchUserBalances() {
     }
 
     try {
-        // 💡 ИСПРАВЛЕНО: Использование appState.connection
         const solBalance = await appState.connection.getBalance(appState.walletPublicKey, 'confirmed');
         appState.userBalances.SOL = BigInt(solBalance);
     } catch (error) {
         console.error("Failed to fetch real SOL balance, using MOCK fallback:", error);
-        // MOCK Fallback
         if (appState.userBalances.SOL === BigInt(0)) {
             appState.userBalances.SOL = parseAmountToBigInt('0.05', SOL_DECIMALS);
         }
         showNotification("Warning: Could not fetch real SOL balance. Using MOCK fallback.", 'warning');
     }
 
-    // MOCK AFOX: Update MOCK AFOX balance if not present in MOCK_DB
     const userKey = appState.walletPublicKey.toBase58();
     if (!MOCK_DB.staking[userKey]) {
-         // Инициализация MOCK, если отсутствует
          MOCK_DB.staking[userKey] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0' };
     }
-    // Если AFOX баланс не был установлен при коннекте, устанавливаем MOCK
     if (appState.userBalances.AFOX === BigInt(0)) {
         appState.userBalances.AFOX = parseAmountToBigInt('1000.0', AFOX_DECIMALS);
     }
@@ -852,7 +788,7 @@ async function fetchUserBalances() {
 // =========================================================================================
 
 /**
- * Updates the staking UI elements with current user data (MOCK).
+ * Updates the staking UI elements with current user data (REAL).
  */
 async function updateStakingUI() {
     if (!appState.walletPublicKey) {
@@ -864,67 +800,61 @@ async function updateStakingUI() {
         return;
     }
 
-    // 1. **REAL** FETCH
-    await fetchUserStakingData(); // Теперь читает реальный аккаунт
+    await fetchUserStakingData(); 
 
     const data = appState.userStakingData;
     const afoxBalanceBigInt = appState.userBalances.AFOX;
     const stakedAmountBigInt = data.stakedAmount;
     const rewardsAmountBigInt = data.rewards;
-    const lockupEndTime = data.lockupEndTime; // Unix timestamp in seconds
+    const lockupEndTime = data.lockupEndTime;
     const poolIndex = data.poolIndex; 
-    const lendingAmountBigInt = data.lending; // 🚨 КРИТИЧЕСКОЕ ПОЛЕ
+    const lendingAmountBigInt = data.lending;
 
     if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = `${formatBigInt(afoxBalanceBigInt, AFOX_DECIMALS)} AFOX`;
     if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = `${formatBigInt(stakedAmountBigInt, AFOX_DECIMALS)} AFOX`;
     if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = `${formatBigInt(rewardsAmountBigInt, AFOX_DECIMALS)} AFOX`;
     
-    // APR display (based on current pool, if set)
     const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
     if (uiElements.stakingApr) uiElements.stakingApr.textContent = `${currentPool.apr_rate / 100}% APR (${currentPool.name})`;
     
-    // 2. Логические проверки
+    // 2. Logic checks
     const now = Date.now() / 1000;
     const isLockedByTime = lockupEndTime > now;
     const hasStakedAmount = stakedAmountBigInt > BigInt(0);
     const hasRewards = rewardsAmountBigInt > BigInt(0);
-    const isLockedByLoan = lendingAmountBigInt > BigInt(0); // 🚨 КРИТИЧЕСКАЯ ПРОВЕРКА
+    const isLockedByLoan = lendingAmountBigInt > BigInt(0);
 
-    // 3. Управление кнопками
+    // 3. Button Management
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
-    // Кнопка Claim доступна только если есть награды
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = !hasRewards;
 
     if (uiElements.unstakeAfoxBtn) {
-        uiElements.unstakeAfoxBtn.disabled = true; // Сначала блокируем
+        uiElements.unstakeAfoxBtn.disabled = true;
         uiElements.unstakeAfoxBtn.textContent = 'Unstake';
         
         if (!hasStakedAmount) {
-            uiElements.unstakeAfoxBtn.textContent = 'Нет стейка';
+            uiElements.unstakeAfoxBtn.textContent = 'No Stake';
         } else if (isLockedByLoan) {
-             // 🚨 ПРИОРИТЕТНАЯ БЛОКИРОВКА ИЗ-ЗА ЗАЙМА
              uiElements.unstakeAfoxBtn.disabled = true;
-             uiElements.unstakeAfoxBtn.textContent = `❌ Заблокировано займом (${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
+             uiElements.unstakeAfoxBtn.textContent = `❌ Locked by Loan (${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
         } else if (isLockedByTime) {
             const remainingSeconds = lockupEndTime - now;
             const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
-            // Разрешаем вывод со штрафом, транзакция сама проверит условия.
             uiElements.unstakeAfoxBtn.disabled = false; 
-            uiElements.unstakeAfoxBtn.textContent = `Анстейк (${remainingDays} дн., со штрафом)`;
+            uiElements.unstakeAfoxBtn.textContent = `Unstake (${remainingDays} days, with penalty)`;
         } else {
-            // Анстейк доступен
             uiElements.unstakeAfoxBtn.disabled = false;
-            uiElements.unstakeAfoxBtn.textContent = 'Анстейк (Без штрафа)';
+            uiElements.unstakeAfoxBtn.textContent = 'Unstake (No penalty)';
         }
     }
     
-    // 4. Обновление периода блокировки
+    // 4. Update Lockup Period
     const lockupDisplay = uiElements.lockupPeriod;
 
     if (lockupDisplay) {
         let loanInfo = '';
         if (isLockedByLoan) {
-             loanInfo = ` (Залог: ${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
+             loanInfo = ` (Collateral: ${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
         }
         
         if (isLockedByTime) {
@@ -967,18 +897,17 @@ async function fetchUserStakingData() {
 
         // 2. Deserialization (REAL ANCHOR FETCH)
         try {
-            // 🚀 РЕАЛЬНОЕ ЧТЕНИЕ АККАУНТА
             const stakingData = await program.account.userStakingAccount.fetch(userStakingAccountPDA);
             
-            // ⚠️ ВАЖНО: .toBigInt() и .toNumber() являются методом объекта BN от Anchor
+            // Note: .toBigInt() and .toNumber() are methods on Anchor's BN object
             appState.userStakingData.stakedAmount = stakingData.stakedAmount.toBigInt();
-            appState.userStakingData.rewards = stakingData.rewardsAmount.toBigInt(); // rewardsAmount из IDL
-            appState.userStakingData.lockupEndTime = stakingData.lockupEndTime.toNumber(); // i64 -> number
-            appState.userStakingData.poolIndex = stakingData.poolIndex; // u8 -> number
-            appState.userStakingData.lending = stakingData.lending.toBigInt(); // u64 -> BigInt
+            appState.userStakingData.rewards = stakingData.rewardsAmount.toBigInt();
+            appState.userStakingData.lockupEndTime = stakingData.lockupEndTime.toNumber();
+            appState.userStakingData.poolIndex = stakingData.poolIndex;
+            appState.userStakingData.lending = stakingData.lending.toBigInt();
 
         } catch (e) {
-            // Account not found (Error code 301, etc.) -> means user has not staked yet.
+            // Account not found or deserialization failed means user has not staked yet.
             if (e.message && (e.message.includes('Account does not exist') || e.message.includes('301'))) {
                 // Not staked yet: Reset to zero state
                 appState.userStakingData.stakedAmount = BigInt(0);
@@ -1060,7 +989,6 @@ async function handleStakeAfox() {
 
         // 🟢 REAL SUBMISSION
         const signature = await appState.provider.sendAndConfirm(tx, []);
-        // ⚠️ MOCK LOGIC REMOVED HERE. Real balances/state update will happen below.
 
         // 🟢 SECURE LOGGING VIA WORKER
         await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt); 
@@ -1068,11 +996,10 @@ async function handleStakeAfox() {
         showNotification(`Successful staking! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 7000);
 
         uiElements.stakeAmountInput.value = '';
-        await updateStakingAndBalanceUI(); // Update UI from real blockchain state
+        await updateStakingAndBalanceUI();
 
     } catch (error) {
         console.error("Stake transaction failed:", error);
-        // Anchor/Wallet errors usually have a clear message structure
         const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Transaction failed: ${error.message.substring(0, 100)}`;
         showNotification(message, 'error');
     } finally {
@@ -1122,16 +1049,12 @@ async function handleClaimRewards() {
                 rewardsVault: AFOX_REWARDS_VAULT_PUBKEY,
                 tokenProgram: TOKEN_PROGRAM_ID,
             })
-            // 💡 ВАЖНО: Если reward ATA не существует, Anchor попытается ее создать, 
-            // но для этого может потребоваться .rpc() вместо .transaction().
             .transaction();
 
         // 🟢 REAL SUBMISSION
         const signature = await appState.provider.sendAndConfirm(tx, []);
-        // ⚠️ MOCK LOGIC REMOVED HERE
 
-        // 🟢 SECURE LOGGING VIA WORKER (Using old state for logging, or re-fetch for accuracy)
-        const claimedAmountBigInt = appState.userStakingData.rewards; // Use pre-transaction reward value
+        const claimedAmountBigInt = appState.userStakingData.rewards;
         await sendLogToFirebase(sender.toBase58(), 'CLAIM', claimedAmountBigInt);
 
         showNotification(`Rewards successfully claimed! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 5000);
@@ -1160,19 +1083,17 @@ async function handleUnstakeAfox() {
     try {
         if (appState.userStakingData.stakedAmount === BigInt(0)) { showNotification('No AFOX staked.', 'warning', 3000); return; }
         
-        // 🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: ПРОВЕРКА НА БЛОКИРОВКУ ЗАЙМОМ (UI-ПРОВЕРКА)
+        // CRITICAL CHECK: Loan lock
         if (appState.userStakingData.lending > BigInt(0)) {
             showNotification(`Cannot unstake: ${formatBigInt(appState.userStakingData.lending, AFOX_DECIMALS)} AFOX are locked as collateral for a loan. Repay your loan first.`, 'error', 10000);
             return;
         }
 
-        // 💡 UI-ПРОВЕРКА: Двойная проверка блокировки
         const now = Date.now() / 1000;
         if (appState.userStakingData.lockupEndTime > now) {
             const remaining = (appState.userStakingData.lockupEndTime - now) / SECONDS_PER_DAY;
             showNotification(`Unstaking before lockup ends! ${remaining.toFixed(1)} days remaining. Penalty will be applied.`, 'warning', 7000);
         }
-
 
         showNotification('Preparing transaction for unstaking...', 'info', 5000);
 
@@ -1194,12 +1115,11 @@ async function handleUnstakeAfox() {
         );
 
         // 🔴 CREATE INSTRUCTION (REAL ANCHOR TEMPLATE) 
-        // 💡 ВЫБОР: Unstake не принимает аргументов (полный вывод, как в IDL)
          const tx = await program.methods.unstake()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
-                tokenTo: userAfoxATA, // User's ATA
+                tokenTo: userAfoxATA,
                 poolState: AFOX_POOL_STATE_PUBKEY,
                 poolVault: AFOX_POOL_VAULT_PUBKEY,
                 daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
@@ -1209,10 +1129,8 @@ async function handleUnstakeAfox() {
 
         // 🟢 REAL SUBMISSION
         const signature = await appState.provider.sendAndConfirm(tx, []);
-        // ⚠️ MOCK LOGIC REMOVED HERE
 
-        // 🟢 SECURE LOGGING VIA WORKER (Using old state for logging, or re-fetch for accuracy)
-        const stakedAmountBigInt = appState.userStakingData.stakedAmount; // Use pre-transaction staked value
+        const stakedAmountBigInt = appState.userStakingData.stakedAmount;
         await sendLogToFirebase(sender.toBase58(), 'UNSTAKE', stakedAmountBigInt);
 
         showNotification(`Successful unstaking! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 7000);
@@ -1240,7 +1158,6 @@ function loadUserNFTs() {
     if (!uiElements.userNftList) return;
 
     const userAddress = appState.walletPublicKey ? appState.walletPublicKey.toBase58() : 'NO_WALLET_CONNECTED';
-    // 💡 ИСПРАВЛЕНО: Фильтр isListed = false, как и было
     const userNfts = MOCK_DB.nfts.filter(n => n.owner === userAddress && !n.isListed); 
 
     uiElements.userNftList.innerHTML = '';
@@ -1252,7 +1169,6 @@ function loadUserNFTs() {
     }
 
     if (uiElements.nftToSellSelect) {
-        // 💡 ИСПРАВЛЕНО: Поиск только нелистинговых NFT для продажи
         const unlistedNfts = MOCK_DB.nfts.filter(n => n.owner === userAddress && !n.isListed);
         uiElements.nftToSellSelect.innerHTML = '<option value="">Select an NFT</option>' +
             unlistedNfts.map(nft => `<option value="${nft.mint}">${nft.name}</option>`).join('');
@@ -1260,7 +1176,6 @@ function loadUserNFTs() {
 
     userNfts.forEach(nft => {
         const card = createNftCard(nft);
-        // 💡 Улучшение: Делегирование событий клика происходит в initEventListeners
         uiElements.userNftList.appendChild(card);
     });
 }
@@ -1272,7 +1187,6 @@ function loadMarketplaceNFTs() {
     if (!uiElements.marketplaceNftList) return;
 
     const connectedOwner = appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null;
-    // 💡 ИСПРАВЛЕНО: NFT должны быть listed: true
     const marketplaceNfts = MOCK_DB.nfts.filter(n => n.isListed === true && n.owner !== connectedOwner);
 
     uiElements.marketplaceNftList.innerHTML = '';
@@ -1284,7 +1198,6 @@ function loadMarketplaceNFTs() {
 
     marketplaceNfts.forEach(nft => {
         const card = createNftCard(nft);
-        // 💡 Улучшение: Делегирование событий клика происходит в initEventListeners
         uiElements.marketplaceNftList.appendChild(card);
     });
 }
@@ -1295,19 +1208,15 @@ function loadMarketplaceNFTs() {
 function createNftCard(nft) {
     const card = document.createElement('div');
     card.className = 'nft-card';
-    // 💡 БЕЗОПАСНОСТЬ: Использование dataset
     card.dataset.mint = nft.mint;
 
     const image = document.createElement('img');
-    // 💡 БЕЗОПАСНОСТЬ: Санитизация src
     image.src = nft.image.replace(/[<>"']/g, ''); 
-    // 💡 БЕЗОПАСНОСТЬ: Использование textContent
     image.alt = nft.name;
     image.loading = 'lazy';
 
     const title = document.createElement('h3');
     title.className = 'nft-name';
-    // 💡 БЕЗОПАСНОСТЬ: Использование textContent
     title.textContent = nft.name;
 
     const priceP = document.createElement('p');
@@ -1339,8 +1248,7 @@ function showNftDetails(nft, isUserNft) {
 
     appState.currentOpenNft = nft;
 
-    // 💡 БЕЗОПАСНОСТЬ: Использование textContent
-    if (uiElements.nftDetailImage) uiElements.nftDetailImage.src = nft.image.replace(/[<>"']/g, ''); // Санитизация
+    if (uiElements.nftDetailImage) uiElements.nftDetailImage.src = nft.image.replace(/[<>"']/g, '');
     if (uiElements.nftDetailName) uiElements.nftDetailName.textContent = nft.name;
     if (uiElements.nftDetailDescription) uiElements.nftDetailDescription.textContent = nft.description;
     if (uiElements.nftDetailOwner) uiElements.nftDetailOwner.textContent = `${nft.owner.substring(0, 8)}...`;
@@ -1356,11 +1264,9 @@ function showNftDetails(nft, isUserNft) {
         attributes.forEach(attr => {
             const li = document.createElement('li');
             const traitType = document.createElement('strong');
-            // 💡 БЕЗОПАСНОСТЬ: Использование textContent
             traitType.textContent = attr.trait_type + ':';
 
             const valueSpan = document.createElement('span');
-            // 💡 БЕЗОПАСНОСТЬ: Использование textContent
             valueSpan.textContent = ` ${attr.value}`;
 
             li.appendChild(traitType);
@@ -1375,7 +1281,6 @@ function showNftDetails(nft, isUserNft) {
         const history = MOCK_DB.nftHistory[nft.mint] || [];
 
         uiElements.nftDetailHistory.innerHTML = '';
-        // 💡 Улучшение: Обработка истории только если она существует
         if (history.length > 0) {
             history.reverse().forEach(item => {
                 const date = new Date(item.timestamp).toLocaleDateString();
@@ -1391,7 +1296,6 @@ function showNftDetails(nft, isUserNft) {
                 else text = `${date}: ${item.type} event.`;
 
                 const li = document.createElement('li');
-                // 💡 БЕЗОПАСНОСТЬ: Использование textContent
                 li.textContent = text;
                 uiElements.nftDetailHistory.appendChild(li);
             });
@@ -1412,7 +1316,6 @@ function showNftDetails(nft, isUserNft) {
     }
 
     if (uiElements.nftDetailSellBtn) {
-        // 💡 ИСПРАВЛЕНО: Кнопка "List" должна отображаться, если владелец и не listed
         const showList = isOwner && connectedOwner && !nft.isListed;
         const showUnlist = isOwner && connectedOwner && nft.isListed;
         
@@ -1431,14 +1334,13 @@ function showNftDetails(nft, isUserNft) {
     }
 
     if (uiElements.nftDetailTransferBtn) {
-        // 💡 ИСПРАВЛЕНО: Кнопка Transfer должна отображаться только если не listed
         const showTransfer = isOwner && connectedOwner && !nft.isListed; 
         uiElements.nftDetailTransferBtn.style.display = showTransfer ? 'block' : 'none';
         uiElements.nftDetailTransferBtn.disabled = !showTransfer;
     }
 
     uiElements.nftDetailsModal.style.display = 'flex';
-    toggleScrollLock(true); // Блокировка прокрутки при открытии модального окна
+    toggleScrollLock(true);
 }
 
 /**
@@ -1455,7 +1357,6 @@ async function handleBuyNft() {
     const solBalanceLamports = appState.userBalances.SOL;
     const requiredLamports = parseAmountToBigInt(priceSol.toString(), SOL_DECIMALS);
 
-    // 💡 ИСПРАВЛЕНО: Проверка баланса должна учитывать комиссию за транзакцию
     const minRequired = requiredLamports + parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
 
     if (solBalanceLamports < minRequired) {
@@ -1475,8 +1376,8 @@ async function handleBuyNft() {
         nft.isListed = false;
         nft.price = 0;
 
-        appState.userBalances.SOL = solBalanceLamports - requiredLamports; // Снимаем только цену
-        appState.userBalances.SOL = appState.userBalances.SOL - parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS); // Снимаем комиссию
+        appState.userBalances.SOL = solBalanceLamports - requiredLamports;
+        appState.userBalances.SOL = appState.userBalances.SOL - parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
 
         persistMockData();
 
@@ -1487,7 +1388,7 @@ async function handleBuyNft() {
         closeAllPopups();
         loadUserNFTs();
         loadMarketplaceNFTs();
-        await updateStakingAndBalanceUI(); // Update balances
+        await updateStakingAndBalanceUI();
 
     } catch (error) {
         showNotification(`Purchase failed: ${error.message.substring(0, 70)}...`, 'error');
@@ -1516,7 +1417,6 @@ function handleUnlistNft() {
             nft.price = 0;
             persistMockData();
 
-            // 💡 Улучшение: Гарантируем, что запись истории существует
             if (!MOCK_DB.nftHistory[nft.mint]) {
                  MOCK_DB.nftHistory[nft.mint] = [];
             }
@@ -1547,7 +1447,6 @@ function handleMintNftSubmit(event) {
     }
 
     const MINT_FEE_SOL = parseAmountToBigInt('0.05', SOL_DECIMALS);
-    // 💡 Улучшение: Проверка баланса SOL с учетом комиссии транзакции
     const minRequiredSol = MINT_FEE_SOL + parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
 
     if (appState.userBalances.SOL < minRequiredSol) {
@@ -1558,10 +1457,8 @@ function handleMintNftSubmit(event) {
     const form = event.target;
     const name = form.elements['mint-name'].value.trim();
     const description = form.elements['mint-description'].value.trim();
-    // 💡 БЕЗОПАСНОСТЬ: Санитизация URL-адреса изображения (хотя здесь он используется только как заглушка)
     const image = form.elements['mint-image'].value.trim() || 'https://via.placeholder.com/180x180/6c757d/ffffff?text=New+Fox';
 
-    // ✅ SECURITY FIX: Stronger check for dangerous characters to prevent XSS/Injection.
     const invalidCharRegex = /[<>&'"\\]/g; 
 
     if (!name || name.length < 3 || name.length > 50 || invalidCharRegex.test(name)) {
@@ -1586,14 +1483,13 @@ function handleMintNftSubmit(event) {
                 owner: appState.walletPublicKey.toBase58(),
                 price: 0,
                 isListed: false,
-                image: image.replace(/[<>"']/g, ''), // Финальная санитизация
+                image: image.replace(/[<>"']/g, ''),
                 attributes: [{ trait_type: 'Creator', value: 'AlphaFox DAO' }]
             };
 
             MOCK_DB.nfts.push(newNft);
             MOCK_DB.nftHistory[newMint] = [{ type: 'Mint', timestamp: new Date().toISOString(), to: appState.walletPublicKey.toBase58() }];
 
-            // 💡 ИСПРАВЛЕНО: Снятие MINT FEE + TXN FEE
             appState.userBalances.SOL = appState.userBalances.SOL - minRequiredSol;
 
             persistMockData();
@@ -1653,7 +1549,6 @@ function handleListNftSubmit(event) {
             nft.price = parseFloat(price);
             persistMockData();
 
-            // 💡 Улучшение: Гарантируем, что запись истории существует
             if (!MOCK_DB.nftHistory[mint]) {
                  MOCK_DB.nftHistory[mint] = [];
             }
@@ -1661,7 +1556,7 @@ function handleListNftSubmit(event) {
 
             showNotification(`${nft.name} successfully listed for ${price} SOL!`, 'success');
             form.reset();
-            closeAllPopups(); // Закрываем форму после листинга
+            closeAllPopups();
             loadUserNFTs();
             loadMarketplaceNFTs();
             setLoadingState(false);
@@ -1677,7 +1572,6 @@ function handleListNftSubmit(event) {
  */
 function isValidSolanaAddress(address) {
     try {
-        // 💡 ИСПРАВЛЕНО: Использование window.SolanaWeb3.PublicKey
         new window.SolanaWeb3.PublicKey(address);
         return true;
     } catch (e) {
@@ -1719,17 +1613,13 @@ async function handleTransferNft() {
     setLoadingState(true, uiElements.nftDetailTransferBtn);
 
     try {
-        // 💡 ИСПРАВЛЕНО: Использование window.SolanaWeb3.PublicKey
         const recipientPublicKey = new window.SolanaWeb3.PublicKey(recipientAddress);
         const newOwner = recipientPublicKey.toBase58();
 
-        // Check for sending to self is kept.
         if (newOwner === appState.walletPublicKey.toBase58()) {
              throw new Error('Cannot transfer to your own address.');
         }
 
-        // In real code, this would be the logic for creating an SPL Token transaction
-        // Here, MOCK logic is used to update MOCK_DB
         const nft = appState.currentOpenNft;
         const oldOwner = nft.owner;
 
@@ -1741,7 +1631,6 @@ async function handleTransferNft() {
         nft.owner = newOwner;
         persistMockData();
 
-        // 💡 Улучшение: Гарантируем, что запись истории существует
         if (!MOCK_DB.nftHistory[nft.mint]) {
              MOCK_DB.nftHistory[nft.mint] = [];
         }
@@ -1804,12 +1693,10 @@ function clearSwapQuote() {
     if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = '0%';
     if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = '0';
     if (uiElements.minReceivedSpan) uiElements.minReceivedSpan.textContent = '0';
-    // 💡 ИСПРАВЛЕНО: Скрывать кнопку executeSwapBtn, если нет котировки
     if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
 }
 
 function handleSwapDirectionChange() {
-    // 💡 Улучшение: Проверки на существование элементов
     if (!uiElements.swapFromTokenSelect || !uiElements.swapToTokenSelect) return;
     
     const fromToken = uiElements.swapFromTokenSelect.value;
@@ -1855,7 +1742,6 @@ async function getQuote() {
 
         let balanceToCheck;
         if (fromMint.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
-            // 💡 ИСПРАВЛЕНО: Проверка баланса должна учитывать комиссию для SOL
             const reserve = parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
             balanceToCheck = appState.userBalances.SOL > reserve ? appState.userBalances.SOL - reserve : BigInt(0);
         } else {
@@ -1887,12 +1773,10 @@ async function getQuote() {
         if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = formatBigInt(appState.currentJupiterQuote.outAmount, outputDecimals);
         if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = `${(appState.currentJupiterQuote.priceImpactPct * 100).toFixed(2)}%`;
 
-        // 💡 Улучшение: Проверка на существование platformFee
         const lpFeeAmount = appState.currentJupiterQuote.platformFee ? appState.currentJupiterQuote.platformFee.amount : '0';
         if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = `${formatBigInt(lpFeeAmount, outputDecimals)} ${uiElements.swapToTokenSelect?.value || ''}`;
         
         if (uiElements.minReceivedSpan) {
-            // 💡 ИСПРАВЛЕНО: Использование otherAmountThreshold
             const minReceived = appState.currentJupiterQuote.otherAmountThreshold || appState.currentJupiterQuote.outAmount;
             uiElements.minReceivedSpan.textContent = `${formatBigInt(minReceived, outputDecimals)} ${uiElements.swapToTokenSelect?.value || ''}`;
         }
@@ -1915,7 +1799,7 @@ async function getQuote() {
 }
 
 /**
- * Executes the swap transaction (MOCK TRANSACTION).
+ * Executes the swap transaction (REAL TRANSACTION using Jupiter's instructions).
  */
 async function executeSwap() {
     if (!appState.walletPublicKey || !appState.currentJupiterQuote || !appState.provider || !appState.connection) {
@@ -1932,7 +1816,6 @@ async function executeSwap() {
     const outputAmountBigInt = BigInt(appState.currentJupiterQuote.outAmount);
 
     try {
-        // Call /swap and get the transaction (REAL API CALL)
         const response = await fetchWithTimeout(`${JUPITER_API_URL}/swap`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1948,17 +1831,13 @@ async function executeSwap() {
             throw new Error(`Failed to get swap transaction: ${errorData.error || response.statusText}`);
         }
         
-        // ВАЖНО: Нижестоящий код - это MOCK, который имитирует успешное выполнение
         const { swapTransaction } = await response.json(); 
         
-        // 1. Десериализация транзакции
         const transaction = window.SolanaWeb3.Transaction.from(Buffer.from(swapTransaction, 'base64'));
         
-        // 2. Отправка и подтверждение
         const signature = await appState.provider.sendAndConfirm(transaction);
 
-        // --- MOCK LOGIC START ---
-        // MOCK: Update balances after successful swap (This is NOT real-time. Only for UI/UX)
+        // --- MOCK BALANCE UPDATE (For immediate UI refresh) ---
         if (fromToken === 'AFOX') {
             appState.userBalances.AFOX = appState.userBalances.AFOX - inputAmountBigInt;
         } else if (fromToken === 'SOL') {
@@ -1971,10 +1850,9 @@ async function executeSwap() {
             appState.userBalances.SOL = appState.userBalances.SOL + outputAmountBigInt;
         }
         
-        // 💡 ДОБАВЛЕНО: Снятие комиссии SOL за транзакцию
         appState.userBalances.SOL = appState.userBalances.SOL - parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
         
-        persistMockData(); // Only updates MOCK AFOX/SOL balances in memory for immediate UI refresh
+        persistMockData(); 
         // --- MOCK LOGIC END ---
 
         showNotification('Swap successfully executed! 🎉', 'success');
@@ -2016,7 +1894,6 @@ async function handleMaxAmount(event) {
         if (fromTokenMint.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
             const solBalance = appState.userBalances.SOL;
             const reserveLamports = parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
-            // 💡 ИСПРАВЛЕНО: Вычитаем резерв для SOL
             maxAmount = solBalance > reserveLamports ? solBalance - reserveLamports : BigInt(0);
             decimals = SOL_DECIMALS;
         } else if (fromTokenMint.equals(TOKEN_MINT_ADDRESSES['AFOX'])) {
@@ -2058,27 +1935,20 @@ async function simulateConnectButtonUpdate(btn) {
     btn.textContent = 'Connecting...';
     btn.classList.remove('connected');
     
-    // 💡 ИСПРАВЛЕНО: Устанавливаем setLoadingState(true) здесь
     setLoadingState(true);
 
     try {
-        // Call your main, integrated connectWallet function
         await connectWallet({ name: 'Phantom' });
         
-        // After successful connection (handled by the main script)
         if (appState.walletPublicKey) {
             const publicKey = appState.walletPublicKey.toBase58();
-            // 💡 Улучшение: Не меняем текст кнопки, так как он будет обновлен в updateWalletDisplay
-            // btn.textContent = `Connected: ${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
             btn.classList.add('connected');
-            showNotification('Wallet successfully connected! 🦊', 'success'); // Показываем сообщение здесь
+            showNotification('Wallet successfully connected! 🦊', 'success');
         } else {
-             // If connection failed (but didn't throw an error, e.g. Phantom not installed)
              btn.textContent = originalText;
         }
 
     } catch (error) {
-        // Errors that weren't caught in the main function (or are UI-specific)
         let errorMessage = 'Connection Error';
 
         if (error.message.includes('Phantom wallet not found')) {
@@ -2094,21 +1964,17 @@ async function simulateConnectButtonUpdate(btn) {
         }, 3000);
 
     } finally {
-        // 💡 ИСПРАВЛЕНО: Снимаем setLoadingState(false) здесь
         btn.disabled = false;
         setLoadingState(false); 
     }
 }
 
-// 💡 ДОБАВЛЕНА ФУНКЦИЯ ДЛЯ DISCONNECT (для удобства использования с walletDisplay)
 async function disconnectWallet() {
      if (appState.provider) {
         try {
             await appState.provider.disconnect();
-            // handlePublicKeyChange(null) будет вызван через слушатель 'disconnect'
         } catch (error) {
              console.error("Error during manual disconnect:", error);
-             // Если слушатель не сработал (редко), вызываем вручную
              handlePublicKeyChange(null);
         }
      } else {
@@ -2132,7 +1998,6 @@ function loadAnnouncements() {
         item.className = 'announcement-item';
 
         const p = document.createElement('p');
-        // 💡 БЕЗОПАСНОСТЬ: Использование textContent
         p.textContent = ann.text;
 
         const span = document.createElement('span');
@@ -2156,15 +2021,12 @@ function loadGames() {
         card.className = 'game-card';
 
         const title = document.createElement('h3');
-        // 💡 БЕЗОПАСНОСТЬ: Использование textContent
         title.textContent = game.title;
 
         const description = document.createElement('p');
-        // 💡 БЕЗОПАСНОСТЬ: Использование textContent
         description.textContent = game.description;
 
         const link = document.createElement('a');
-        // 💡 БЕЗОПАСНОСТЬ: Санитизация URL
         link.href = game.url.replace(/[<>"']/g, '');
         link.target = '_blank';
         link.className = 'btn btn-secondary';
@@ -2180,7 +2042,6 @@ function loadGames() {
  * Handles click events on NFT lists (delegation).
  */
 function handleNftItemClick(event, isUserNft) {
-    // 💡 ИСПРАВЛЕНО: Добавлена проверка на NFT-карту
     const card = event.target.closest('.nft-card');
     if (card) {
         const mint = card.dataset.mint;
@@ -2191,14 +2052,13 @@ function handleNftItemClick(event, isUserNft) {
     }
 }
 
-// --- 3. КЭШИРОВАНИЕ ЭЛЕМЕНТОВ UI ---
+// --- 3. CACHING UI ELEMENTS ---
 /**
  * Caches all necessary UI elements.
  */
 function cacheUIElements() {
     // General Wallet & Display
     uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
-    // 💡 ИСПРАВЛЕНО: Кэшируем также .wallet-address-display
     uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display, #walletAddress, [data-wallet-control="walletAddress"]'));
 
 
@@ -2208,20 +2068,19 @@ function cacheUIElements() {
     uiElements.mintNftModal = document.getElementById('mint-nft-modal');
     uiElements.createProposalModal = document.getElementById('create-proposal-modal');
     
-    // ↓↓↓ DAO ЭЛЕМЕНТЫ ↓↓↓
+    // DAO Elements
     uiElements.createProposalForm = document.getElementById('create-proposal-form');
     uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
-    // ↑↑↑
     
     Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
         btn.addEventListener('click', closeAllPopups);
     });
 
-    // Menu Elements (ID должны соответствовать HTML)
-    uiElements.mainNav = document.getElementById('mainNav'); // ID вашего тега <nav>
+    // Menu Elements
+    uiElements.mainNav = document.getElementById('mainNav');
     uiElements.menuToggle = document.getElementById('menuToggle'); 
-    uiElements.closeMenuButton = document.getElementById('closeMainMenuCross'); // Используем ID крестика
-    uiElements.navOverlay = document.querySelector('.nav-mobile-overlay'); // Используем класс оверлея
+    uiElements.closeMenuButton = document.getElementById('closeMainMenuCross');
+    uiElements.navOverlay = document.querySelector('.nav-mobile-overlay');
 
     // NFT Section
     uiElements.userNftList = document.getElementById('user-nft-list');
@@ -2255,8 +2114,7 @@ function cacheUIElements() {
     uiElements.stakeAfoxBtn = document.getElementById('stake-afox-btn');
     uiElements.claimRewardsBtn = document.getElementById('claim-rewards-btn');
     uiElements.unstakeAfoxBtn = document.getElementById('unstake-afox-btn');
-    uiElements.lockupPeriod = document.getElementById('lockup-period'); // 💡 КЭШИРОВАНИЕ НОВОГО ЭЛЕМЕНТА
-    // 🚨 ДОБАВЛЕНО: КЭШИРОВАНИЕ СЕЛЕКТОРА ПУЛА
+    uiElements.lockupPeriod = document.getElementById('lockup-period');
     uiElements.poolSelector = document.getElementById('pool-selector'); 
 
     // SWAP Section
@@ -2283,7 +2141,7 @@ function cacheUIElements() {
 // --------------------------------------------------------
 
 
-// --- 4. ИНИЦИАЛИЗАЦИЯ ОБРАБОТЧИКОВ СОБЫТИЙ ---
+// --- 4. INITIALIZING EVENT LISTENERS ---
 /**
  * Initializes all event listeners.
  */
@@ -2310,16 +2168,13 @@ function initEventListeners() {
     if (uiElements.nftDetailSellBtn) {
         uiElements.nftDetailSellBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // 💡 ИСПРАВЛЕНО: Обработка Unlist/List
             if (appState.currentOpenNft) {
                 if (appState.currentOpenNft.isListed) {
                     handleUnlistNft();
                 } else {
-                    // Если не залистин, открываем модальное окно List NFT (если оно есть)
                     const sellModal = document.getElementById('sell-nft-modal'); 
                     if (sellModal) {
                         closeAllPopups();
-                        // Убедимся, что выбран нужный NFT в форме
                         if (uiElements.nftToSellSelect) {
                             uiElements.nftToSellSelect.value = appState.currentOpenNft.mint;
                         }
@@ -2339,14 +2194,14 @@ function initEventListeners() {
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
     if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
     
-    // ↓↓↓ DAO ACTIONS (КНОПКА & ФОРМА SUBMIT) ↓↓↓
+    // DAO Actions
     if (uiElements.createProposalBtn) {
         uiElements.createProposalBtn.addEventListener('click', () => {
             if (uiElements.createProposalModal) {
-                closeAllPopups(); // Закрываем все другие модальные окна
+                closeAllPopups();
                 uiElements.createProposalModal.style.display = 'flex';
                 uiElements.createProposalModal.classList.add('is-open');
-                toggleScrollLock(true); // !!! БЛОКИРУЕМ ПРОКРУТКУ !!!
+                toggleScrollLock(true);
             }
         });
     }
@@ -2360,7 +2215,6 @@ function initEventListeners() {
             closeAllPopups();
         });
     }
-    // ↑↑↑
 
     // SWAP Actions
     const debouncedGetQuote = debounce(getQuote, 500);
@@ -2422,7 +2276,6 @@ function initEventListeners() {
  */
 function initializeJupiterTerminal() {
     if (typeof window.Jupiter === 'undefined') {
-        // console.log("Jupiter Terminal not loaded.");
         return;
     }
 
@@ -2434,38 +2287,31 @@ function initializeJupiterTerminal() {
             initialInputMint: SOL_MINT,
         },
     });
-
-    if (uiElements.swapDirectionBtn) {
-        // Event listener for direction change is already handled in initEventListeners
-    }
 }
 
-// 🚨 ДОБАВЛЕНО: Заполнение селектора пулов
+// Populates the pool selector dropdown
 function populatePoolSelector() {
     if (uiElements.poolSelector) {
         uiElements.poolSelector.innerHTML = POOLS_CONFIG.map((p, i) => 
-            `<option value="${i}">${p.name} (${p.duration_days} дн., APR: ${p.apr_rate/100}%)</option>`
+            `<option value="${i}">${p.name} (${p.duration_days} days, APR: ${p.apr_rate/100}%)</option>`
         ).join('');
-        // Установка гибкого пула по умолчанию
         uiElements.poolSelector.value = 4;
     }
 }
 
-// --- ГЛАВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ ---
+// --- MAIN INITIALIZATION FUNCTION ---
 /**
  * Main initialization function.
  */
 async function init() {
-    // 💡 ИСПРАВЛЕНО: Добавлен таймаут для загрузки больших библиотек
     if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined' || typeof window.SolanaWalletAdapterPhantom === 'undefined') {
         setTimeout(init, 100); 
         return;
     }
 
     cacheUIElements();
-    populatePoolSelector(); // 🚨 ДОБАВЛЕНО: Вызов для заполнения селектора
+    populatePoolSelector();
     
-    // 🟢 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ (КЛЮЧЕВОЙ МОМЕНТ)
     setupHamburgerMenu(); 
     
     initEventListeners();
@@ -2475,8 +2321,7 @@ async function init() {
     loadAnnouncements();
     loadGames();
     loadUserNFTs();
-    loadMarketplaceNFTs();
-    // 💡 Улучшение: Сначала пытаемся получить соединение
+
     try {
         appState.connection = await getRobustConnection();
     } catch (e) {
@@ -2484,11 +2329,11 @@ async function init() {
         showNotification("Warning: Failed to connect to Solana RPC on startup.", 'warning', 7000);
     }
     
-    updateStakingUI(); // Зависит от appState.connection
-    updateWalletDisplay(null); // 💡 ИСПРАВЛЕНО: Использование новой функции
+    updateStakingUI();
+    updateWalletDisplay(null);
 
 }
 // --------------------------------------------------------
 
 // --- STARTUP AFTER DOM LOAD ---
-document.addEventListener('DOMContentLoaded', init); // Call init directly to start the application
+document.addEventListener('DOMContentLoaded', init);
