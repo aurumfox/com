@@ -21,7 +21,7 @@
     
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' https://terminal.jup.ag https://api.mainnet-beta.solana.com;
-        script-src 'self' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag; 
+        script-src 'self' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag https://unpkg.com; 
         connect-src 'self' wss://api.mainnet-beta.solana.com https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com; 
         style-src 'self' https://fonts.googleapis.com; 
         font-src 'self' https://fonts.gstatic.com; 
@@ -37,12 +37,7 @@
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> 
     <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
     <script>
-        // MOCK: Удаляем устаревшие глобальные объекты для работы без unpkg.
-        // Вместо этого, функция connectWallet будет выводить ошибку, пока не будут
-        // подключены реальные библиотеки Solana Web3 и Anchor.
-        
         Sentry.init({
-            // ИСПРАВЛЕНО: Убран placeholder SENTRY_DSN_PLACEHOLDER@
             dsn: "https://93b9760a7026c9acedf1f14b044146c6@o4505059231873024.ingest.sentry.io/4505059233642496", 
             integrations: [ new Sentry.BrowserTracing() ],
             tracesSampleRate: 1.0, 
@@ -57,6 +52,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
+    <script src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js" crossorigin="anonymous"></script> 
+
+    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/index.js" crossorigin="anonymous"></script>
+    
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
+
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
+    
+    <script src="https://unpkg.com/@solana/wallet-adapter-react-ui@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
+
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
@@ -522,13 +527,11 @@
         <div class="wallet-controls">
     <button 
         id="connectWalletBtn" 
-        class="web3-button connect-fox-btn"
+        class="web3-button connect-fox-btn wallet-connect-btn"
         aria-label="Подключить криптовалютный кошелек"
     >
         <i class="fox-icon">🦊</i> 
         Connect Wallet
-
-
     </button>
     
     <div id="walletDisplay" class="wallet-display" style="display:none;">
@@ -1207,7 +1210,6 @@
         
         // 2. YOUR CONFIGURATION WITH KEYS (Public keys for client access)
         const firebaseConfig = {
-            // ИСПРАВЛЕНО: ЗАМЕНА НЕКОРРЕКТНОГО КЛЮЧА НА ПЛЕЙСХОЛДЕР
             apiKey: "ВАШ_РЕАЛЬНЫЙ_FIREBASE_API_KEY_СЮДА", 
             authDomain: "aurum-fox.firebaseapp.com",
             projectId: "aurum-fox",
@@ -1231,14 +1233,15 @@
         const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
         const SOL_MINT = 'So11111111111111111111111111111111111111112';
         
+        // Переменная для хранения реального адаптера кошелька
         let solanaWalletAdapter = null;
-        
+        const connection = new window.SolanaWeb3.Connection(window.SolanaWeb3.clusterApiUrl('mainnet-beta'));
+
         // --- XSS PROTECTION & NOTIFICATIONS ---
         function sanitizeText(text) {
             if (!text) return '';
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '/': '&#x2F;' };
             const reg = /[&<>"'\/]/ig;
-            // Используем String.prototype.replace с функцией замены для корректного экранирования
             return (text.toString()).replace(reg, (match)=>(map[match]));
         }
 
@@ -1247,7 +1250,6 @@
             if (!container) return;
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
-            // БЕЗОПАСНО: Используем textContent для предотвращения XSS
             notification.textContent = message; 
             notification.style.cssText = `
                 margin-bottom: 10px; padding: 10px 15px; border-radius: 8px; color: #fff; font-size: 0.9em; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -1263,7 +1265,7 @@
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.style.display = 'block';
-                document.body.classList.add('menu-open'); // Используем тот же класс для блокировки прокрутки
+                document.body.classList.add('menu-open'); 
             }
         }
 
@@ -1298,15 +1300,14 @@
             document.getElementById('marketplace-nft-list')?.addEventListener('click', (e) => {
                 const nftCard = e.target.closest('.nft-card');
                 if (nftCard) {
-                    // MOCK-логика для демонстрации открытия
                     showNftDetailsMock({
                         name: nftCard.querySelector('h4').textContent,
                         mint: 'MockMintAddress123...',
                         owner: 'MockOwnerAddress456...',
-                        isListed: true, // Имитируем листинг
+                        isListed: true, 
                         price: 0.5,
                         description: 'This is a mock description for the selected NFT. Connect your wallet to see real details.',
-                        isUserOwned: false // Имитируем, что это NFT с маркетплейса
+                        isUserOwned: false 
                     });
                 }
             });
@@ -1325,7 +1326,6 @@
                 }
             });
             
-            // MOCK-функция, которая имитирует заполнение модального окна деталями NFT
             function showNftDetailsMock(nft) {
                 document.getElementById('nftDetailName').textContent = nft.name;
                 document.getElementById('nftDetailOwner').textContent = nft.owner;
@@ -1352,7 +1352,6 @@
                     if (!nft.isUserOwned) {
                         buyBtn.style.display = 'block';
                     } else {
-                        // Если владелец, но оно в листинге, он может его снять
                         sellBtn.textContent = 'Unlist NFT';
                         sellBtn.style.display = 'block';
                     }
@@ -1366,10 +1365,8 @@
                     }
                 }
                 
-                // Привязка действий к кнопкам (MOCK)
                 sellBtn.onclick = () => {
                     if (sellBtn.textContent === 'List for Sale') {
-                        // Открыть модальное окно листинга
                         document.getElementById('listingNftName').textContent = nft.name;
                         document.getElementById('listingNftMintAddress').value = nft.mint;
                         openModal('listNftModal');
@@ -1381,18 +1378,14 @@
                 buyBtn.onclick = () => showNotification(`MOCK: Attempting to buy NFT ${nft.name} for ${nft.price} SOL...`, 'info');
                 transferBtn.onclick = () => showNotification(`MOCK: Opening transfer dialog for ${nft.name}...`, 'info');
 
-                // И, наконец, показать модальное окно
                 openModal('nftDetailsModal');
             }
 
-            // Дополнительно: Привязка Mint NFT кнопки к секции
             document.getElementById('mintNftBtn')?.addEventListener('click', (e) => {
                 e.preventDefault();
-                // Используем ScrollIntoView для скролла к секции Minting
                 document.getElementById('mint-nft-section').scrollIntoView({ behavior: 'smooth' });
             });
             
-            // MOCK: Для отображения NFT в списках
             function loadMockNftContent() {
                 const mockCard = (name, status) => `
                     <div class="nft-card web3-placeholder" data-status="${status}">
@@ -1402,19 +1395,16 @@
                     </div>
                 `;
                 
-                // Рыночные NFT
                 const marketplaceList = document.getElementById('marketplace-nft-list');
                 if (marketplaceList) {
                     marketplaceList.innerHTML = mockCard('Fox Market NFT #1', 'Listed') + mockCard('Fox Market NFT #2', 'Listed');
                 }
 
-                // Пользовательские NFT
                 const userNftList = document.getElementById('user-nft-list');
                 if (userNftList) {
                     userNftList.innerHTML = mockCard('My Alpha NFT #A', 'Unlisted') + mockCard('My Rare NFT #B', 'Unlisted');
                 }
                 
-                // Заполнение списка NFT для продажи
                 const nftToSellSelect = document.getElementById('nftToSell');
                 if (nftToSellSelect) {
                     nftToSellSelect.innerHTML = `
@@ -1424,90 +1414,64 @@
                     `;
                 }
             }
-            loadMockNftContent(); // Вызываем MOCK-загрузку при старте
+            loadMockNftContent(); 
         }
         // --- /MODAL WINDOW LOGIC ---
 
         // ====================================================================
-        // 🛑 БЛОК 1: КОНФИГУРАЦИЯ RUST/ANCHOR (Очищено от устаревших MOCK)
+        // 🛑 БЛОК 1: КОНФИГУРАЦИЯ RUST/ANCHOR 
         // ====================================================================
         
-        // ⚠️ ЗАМЕНИТЕ ЭТИ АДРЕСА И IDL НА РЕАЛЬНЫЕ ИЗ ВАШЕГО ПРОЕКТА!
         const STAKING_PROGRAM_ID = "СТАВЬ_АДРЕС_ПРОГРАММЫ_RUST_СЮДА"; 
         const POOL_STATE_ID = "СТАВЬ_АДРЕС_POOL_STATE_PDA_СЮДА"; 
-        // Семена (сиды), которые использовались в lib.rs:
-        const STAKING_POOL_SEED = "alphafox_pool_pda"; // Для PoolState
-        const USER_STAKING_SEED = "alphafox_staking_pda"; // Для UserStakingAccount
-        const AFOX_DECIMALS = 6; // Количество десятичных знаков вашего AFOX-токена (обычно 6 или 9)
+        const STAKING_POOL_SEED = "alphafox_pool_pda"; 
+        const USER_STAKING_SEED = "alphafox_staking_pda"; 
+        const AFOX_DECIMALS = 6; 
 
-        // ⚠️ ВСТАВЬТЕ СЮДА ВАШ ПОЛНЫЙ IDL JSON!
         const IDL = { /* ВАШ IDL СЮДА */ }; 
         
         // ====================================================================
 
 
-        // --- SOLANA WALLET ADAPTER LOGIC (Упрощено и сделано более безопасным) ---
-        // Поскольку у нас нет реальных библиотек, мы не можем создать Connection или Adapter
-        
-        // MOCK-объект для эмуляции подключения
-        let mockWalletAdapter = {
-            connected: true,
-            publicKey: { toString: () => "AFOX_MockWalletAddress_1234567890" },
-            // В реальном коде здесь должны быть signTransaction, signAllTransactions и т.д.
-        };
+        // --- SOLANA WALLET ADAPTER LOGIC (ИСПРАВЛЕНО НА РЕАЛЬНУЮ ЛОГИКУ) ---
 
         const walletDisplay = document.getElementById('walletDisplay');
         const connectWalletBtn = document.getElementById('connectWalletBtn');
-        const walletAddressSpan = document.getElementById('walletAddressSpan'); // Исправлено ID
+        const walletAddressSpan = document.getElementById('walletAddressSpan'); 
         const copyWalletBtn = document.getElementById('copyWalletBtn');
+        const network = 'mainnet-beta';
 
         function updateWalletUI(adapter) {
             
             if (adapter && adapter.connected && adapter.publicKey) {
                 const publicKey = adapter.publicKey.toString();
                 
-                // Обновление шапки
                 connectWalletBtn.style.display = 'none';
                 walletDisplay.style.display = 'flex';
-                // БЕЗОПАСНО: Используем textContent для предотвращения XSS
                 walletAddressSpan.textContent = `${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
 
-                // Обновление основного блока Web3
                 document.getElementById('walletAddressDisplay').textContent = publicKey;
                 
-                // Установка обработчика отключения (на сам блок walletDisplay)
-                walletDisplay.removeEventListener('click', connectWallet);
-                walletDisplay.addEventListener('click', disconnectWallet);
+                walletDisplay.onclick = disconnectWallet; // Нажатие на Display отключает
                 
-                // Настройка кнопки копирования
                 if (copyWalletBtn) {
                     copyWalletBtn.onclick = (e) => {
-                        e.stopPropagation(); // Предотвращаем отключение кошелька при копировании
+                        e.stopPropagation(); 
                         navigator.clipboard.writeText(publicKey)
                             .then(() => showNotification('Address copied!', 'info', 2000))
                             .catch(err => console.error('Could not copy text: ', err));
                     };
                 }
 
-                // 💡 ВАЖНО: Вызов функции обновления стейкинга после подключения
+                // Активировать загрузку данных
                 fetchStakingState(); 
 
             } else {
-                // Обновление шапки
                 connectWalletBtn.style.display = 'block';
                 walletDisplay.style.display = 'none';
                 
-                // Обновление основного блока Web3
                 document.getElementById('walletAddressDisplay').textContent = 'Not Connected';
                 
-                // Установка обработчика подключения
-                connectWalletBtn.removeEventListener('click', disconnectWallet);
-                connectWalletBtn.addEventListener('click', connectWallet);
-                
-                // Удаление обработчика отключения с walletDisplay
-                walletDisplay.removeEventListener('click', disconnectWallet);
-
-
                 // Очистка UI стейкинга при отключении
                 document.getElementById('userAfoxBalance').textContent = '0 AFOX';
                 document.getElementById('userStakedAmount').textContent = '0 AFOX';
@@ -1516,31 +1480,70 @@
         }
 
         async function connectWallet() {
+            if (solanaWalletAdapter && solanaWalletAdapter.connected) {
+                // Уже подключен, ничего не делаем
+                return;
+            }
+
             connectWalletBtn.disabled = true;
             connectWalletBtn.textContent = 'Connecting...';
 
-            // ИСПРАВЛЕНИЕ: Выводим ошибку, пока нет реальных библиотек
-            showNotification('CRITICAL: Solana Web3 libraries not loaded. Cannot connect wallet.', 'error', 5000);
+            if (typeof window.SolanaWalletAdapterPhantom === 'undefined') {
+                showNotification('Phantom Wallet extension or libraries not installed.', 'error', 5000);
+                connectWalletBtn.disabled = false;
+                connectWalletBtn.textContent = 'Connect Wallet';
+                return;
+            }
             
-            // MOCK для демонстрации UI
-            solanaWalletAdapter = mockWalletAdapter;
-            updateWalletUI(solanaWalletAdapter); 
-            showNotification('Wallet successfully connected! (MOCK - requires real libraries)', 'success', 4000);
+            try {
+                // Использование реального адаптера
+                const adapter = new window.SolanaWalletAdapterPhantom.PhantomWalletAdapter();
+                
+                // Назначение обработчиков ДО подключения
+                adapter.on('connect', () => {
+                    solanaWalletAdapter = adapter;
+                    updateWalletUI(adapter);
+                    showNotification('Wallet successfully connected!', 'success', 4000);
+                });
+                adapter.on('disconnect', () => {
+                    solanaWalletAdapter = null;
+                    updateWalletUI(null);
+                    showNotification('Wallet disconnected.', 'info');
+                });
+                adapter.on('error', (error) => {
+                    console.error('Wallet error:', error);
+                    showNotification(`Wallet error: ${error.message}`, 'error', 5000);
+                });
 
-            connectWalletBtn.disabled = false;
-            connectWalletBtn.textContent = 'Connect Wallet';
+                // Запуск подключения
+                await adapter.connect();
+
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+                // Отмена пользователем или другие ошибки
+                showNotification(`Connection failed: ${error.message}`, 'error', 5000);
+            } finally {
+                connectWalletBtn.disabled = false;
+                connectWalletBtn.textContent = 'Connect Wallet';
+            }
         }
         
         async function disconnectWallet() {
-            solanaWalletAdapter = null;
-            updateWalletUI(null);
-            showNotification('Wallet disconnected.', 'info');
+            if (solanaWalletAdapter) {
+                try {
+                    await solanaWalletAdapter.disconnect();
+                } catch (error) {
+                    console.error('Disconnection error (ignoring):', error);
+                }
+                solanaWalletAdapter = null;
+                updateWalletUI(null);
+            }
         }
         // --- /SOLANA WALLET ADAPTER LOGIC ---
 
 
         // ====================================================================
-        // 💡 БЛОК 2: ОСНОВНАЯ ЛОГИКА ANCHOR/WEB3 (ЗАМЕНЕНО НА БЕЗОПАСНЫЕ ЗАГЛУШКИ)
+        // 💡 БЛОК 2: ОСНОВНАЯ ЛОГИКА ANCHOR/WEB3 (Заглушки оставлены)
         // ====================================================================
 
         /** Заглушка: Читает состояние и обновляет UI. */
@@ -1548,7 +1551,6 @@
             const pubkey = solanaWalletAdapter?.publicKey;
             if (!pubkey) return;
             
-            // Безопасная заглушка
             showNotification("MOCK: Fetching staking state... (requires real Web3 setup)", 'info');
                 
             // MOCK data (эмулируем данные)
@@ -1556,7 +1558,6 @@
             const stakedAmount = 500;
             const rewardsAmount = 10.5;
             const apr = 5.5; 
-            const isLocked = false; 
 
             document.getElementById('stakingApr').textContent = `${apr.toFixed(2)}%`;
             document.getElementById('userAfoxBalance').textContent = `${afoxBalance.toFixed(2)} AFOX`;
@@ -1576,6 +1577,10 @@
 
         /** Обрабатывает транзакцию Staking (Заглушка). */
         async function handleStake() {
+            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
+                 showNotification("Please connect your wallet first.", 'error');
+                 return;
+            }
             showNotification("SECURITY WARNING: Staking logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
             const btn = document.getElementById('stakeAfoxBtn');
             btn.disabled = true;
@@ -1589,6 +1594,10 @@
 
         /** Обрабатывает Unstaking (Заглушка). */
         async function handleUnstake() {
+            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
+                 showNotification("Please connect your wallet first.", 'error');
+                 return;
+            }
             showNotification("SECURITY WARNING: Unstake logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
             const btn = document.getElementById('unstakeAfoxBtn');
             btn.disabled = true;
@@ -1602,6 +1611,10 @@
 
         /** Обрабатывает Claiming Rewards (Заглушка). */
         async function handleClaim() {
+            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
+                 showNotification("Please connect your wallet first.", 'error');
+                 return;
+            }
             showNotification("SECURITY WARNING: Claim logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
             const btn = document.getElementById('claimRewardsBtn');
             btn.disabled = true;
@@ -1614,14 +1627,14 @@
 
         // ====================================================================
 
-        // --- HAMBURGER MENU LOGIC (ИСПРАВЛЕНО) ---
+        // --- HAMBURGER MENU LOGIC (Оставлен для полноты) ---
         function setupHamburgerMenu() {
-            // КОД ДЛЯ ГАМБУРГЕР-МЕНЮ ОСТАВЛЕН БЕЗ ИЗМЕНЕНИЙ
+             // ... ваш код гамбургер-меню ...
         }
         // --- /HAMBURGER MENU LOGIC ---
 
 
-        // --- FIREBASE CONTENT LOADING (С ИСПРАВЛЕННЫМ САНИТАЙЗИНГОМ) ---
+        // --- FIREBASE CONTENT LOADING ---
         function setupNewsListener() {
             const newsListElement = document.querySelector('.news-list');
             if (!newsListElement) return;
@@ -1735,14 +1748,13 @@
                             // Если наш кошелек уже подключен, передаем его
                             callback({
                                 publicKey: solanaWalletAdapter.publicKey.toString(),
-                                // ВНИМАНИЕ: ЗДЕСЬ НУЖНЫ РЕАЛЬНЫЕ ФУНКЦИИ КОШЕЛЬКА!
-                                signTransaction: () => { showNotification('Wallet adapter not fully initialized. Cannot sign.', 'error'); return null; },
-                                signAllTransactions: () => { showNotification('Wallet adapter not fully initialized. Cannot sign.', 'error'); return null; },
+                                signTransaction: solanaWalletAdapter.signTransaction.bind(solanaWalletAdapter),
+                                signAllTransactions: solanaWalletAdapter.signAllTransactions.bind(solanaWalletAdapter),
                             });
                         } else {
                             // Если кошелек не подключен, вызываем нашу функцию подключения
                             connectWallet();
-                            // Возвращаем null или не вызываем callback, чтобы Jupiter ждал
+                            // Временное решение: возвращаем null, пока не сработает адаптер
                             callback(null); 
                         }
                     },
@@ -1776,18 +1788,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             const connectWalletBtn = document.getElementById('connectWalletBtn');
             if (connectWalletBtn) {
+                // Привязываем connectWallet к кнопке
                 connectWalletBtn.addEventListener('click', connectWallet);
             }
             
             setupNewsListener();
             fetchContentList(COLLECTIONS.GAMES, 'game-list');
-            setupModalListeners(); // Инициализация обработчиков модальных окон
+            setupModalListeners(); 
 
             initializeJupiterTerminal();
             
             // ====================================================================
-            // 🔗 БЛОК 3: ПРИВЯЗКА КНОПОК STAKING (ВНУТРИ DOMContentLoaded!)
-            // Теперь они вызывают безопасные заглушки.
+            // 🔗 БЛОК 3: ПРИВЯЗКА КНОПОК STAKING 
             // ====================================================================
             const stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
             if (stakeAfoxBtn) {
@@ -1806,7 +1818,6 @@
             
             // ====================================================================
             // 🛑 ПРИВЯЗКА ФУНКЦИЙ-ЗАГЛУШЕК ДЛЯ ЗАПИСИ ДАННЫХ
-            // ЭТО ПРАВИЛЬНО И ДОЛЖНО ОСТАТЬСЯ, ПОКА ВЫ НЕ НАСТРОИТЕ БЭКЕНД!
             // ====================================================================
 
             const mintNftFormSection = document.getElementById('mintNftFormSection');
@@ -1829,7 +1840,6 @@
                 listingForm.addEventListener('submit', preventSubmission);
             }
             
-            // Привязка к кнопке Upload Game
             const uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
             if (uploadGameBtnWeb3) {
                 uploadGameBtnWeb3.addEventListener('click', (e) => {
@@ -1838,7 +1848,6 @@
                 });
             }
             
-            // Привязка к кнопкам Lending (просто заглушка-уведомление)
             document.getElementById('lendAfoxBtn')?.addEventListener('click', (e) => {
                 e.preventDefault();
                 showNotification("MOCK: Lending functionality is disabled. Please implement DeFi logic.", 'warning');
@@ -1849,7 +1858,6 @@
             });
 
 
-            // 💡 ВЫЗОВ ФУНКЦИИ ГАМБУРГЕР-МЕНЮ
             setupHamburgerMenu(); 
         });
 
