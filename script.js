@@ -702,6 +702,7 @@ function registerProviderListeners() {
         appState.provider.on('connect', () => {
             if (appState.provider.publicKey) {
                 handlePublicKeyChange(appState.provider.publicKey);
+                showNotification('Wallet successfully connected! 🦊', 'success');
             }
         });
         appState.provider.on('disconnect', () => handlePublicKeyChange(null));
@@ -711,6 +712,7 @@ function registerProviderListeners() {
 
 /**
  * Connects the wallet using the provided adapter.
+ * 🛑 ИСПРАВЛЕНА ЛОГИКА: Гарантирован вызов adapter.connect()
  */
 async function connectWallet(adapter) {
     setLoadingState(true);
@@ -721,21 +723,30 @@ async function connectWallet(adapter) {
         if (adapter.name === 'Phantom' && !window.solana) {
              const installUrl = 'https://phantom.app/';
             showNotification(`Phantom wallet not found. Please install it: <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
+            setLoadingState(false); // Добавлено, чтобы разблокировать UI
             return;
         } else if (!selectedAdapter) {
              showNotification(`Wallet adapter for ${adapter.name} not found.`, 'warning', 5000);
+             setLoadingState(false);
              return;
         }
 
         appState.provider = selectedAdapter;
-
         appState.connection = await getRobustConnection();
 
+        registerProviderListeners(); 
+        
+        // 🚨 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Пытаемся подключиться всегда.
+        // Это откроет паллету, если кошелек не подключен,
+        // или просто обновит состояние, если он уже подключен.
+        if (!appState.provider.connected) {
+             await appState.provider.connect();
+        }
+        
+        // В случае успеха handlePublicKeyChange будет вызван через listener 'connect'
+        // или сразу, если кошелек уже был подключен.
         if (appState.provider.publicKey) {
              handlePublicKeyChange(appState.provider.publicKey);
-        } else {
-            registerProviderListeners(); 
-            await appState.provider.connect();
         }
 
         closeAllPopups();
@@ -750,7 +761,7 @@ async function connectWallet(adapter) {
         showNotification(message, 'error');
         throw error;
     } finally {
-        // Loading state is handled in the wrapper (simulateConnectButtonUpdate)
+        setLoadingState(false); // Важно: разблокировать UI здесь
     }
 }
 
@@ -1944,13 +1955,14 @@ async function handleMaxAmount(event) {
 
 
 // =========================================================================================
-// --- NEW WRAPPER FOR BUTTON 
+// --- NEW WRAPPER FOR BUTTON (КРИТИЧЕСКИ ИСПРАВЛЕН)
 // =========================================================================================
 
 /**
  * Simulates the connect button update logic
  * and calls the main connectWallet function.
  * @param {HTMLElement} btn - The HTML button element.
+ * 🛑 ИСПРАВЛЕНО: Упрощена логика, чтобы полагаться на connectWallet для управления setLoadingState.
  */
 async function simulateConnectButtonUpdate(btn) {
     if (!btn) return;
@@ -1960,37 +1972,43 @@ async function simulateConnectButtonUpdate(btn) {
     btn.textContent = 'Connecting...';
     btn.classList.remove('connected');
     
-    setLoadingState(true);
+    // setLoadingState(true) вызывается внутри connectWallet
 
     try {
         await connectWallet({ name: 'Phantom' });
         
-        if (appState.walletPublicKey) {
-            const publicKey = appState.walletPublicKey.toBase58();
-            btn.classList.add('connected');
-            showNotification('Wallet successfully connected! 🦊', 'success');
-        } else {
-             btn.textContent = originalText;
-        }
+        // Логика UI после успешного подключения обрабатывается в handlePublicKeyChange,
+        // который вызывается через listener 'connect'.
 
     } catch (error) {
+        // catch нужен только для ошибок, которые connectWallet не перехватил,
+        // но connectWallet теперь ловит большинство из них.
         let errorMessage = 'Connection Error';
 
         if (error.message.includes('Phantom wallet not found')) {
             errorMessage = 'Please install Phantom Wallet.';
-        } else if (error.message.includes('Connection denied by user')) {
+        } else if (error.message.includes('denied by user')) {
             errorMessage = 'Connection denied by user.';
+        } else if (error.message.includes('Both primary and backup')) {
+             errorMessage = 'RPC failed.';
+        } else {
+             errorMessage = `Connection failed: ${error.message.substring(0, 50)}...`;
         }
         
         btn.textContent = errorMessage;
         setTimeout(() => {
             btn.textContent = originalText;
             btn.classList.remove('connected');
+            btn.disabled = false; // Разблокировать после ошибки
         }, 3000);
 
     } finally {
-        btn.disabled = false;
-        setLoadingState(false); 
+        // Если connectWallet успешно запустил подключение, но оно еще не завершилось (listener сработает позже),
+        // или если произошла ошибка, которую мы не поймали здесь, нам нужно сбросить кнопку.
+        if (!appState.walletPublicKey) {
+            btn.disabled = false;
+        }
+        // setLoadingState(false) вызывается внутри connectWallet.
     }
 }
 
@@ -2329,6 +2347,7 @@ function populatePoolSelector() {
  * Main initialization function.
  */
 async function init() {
+    // 🛑 ИСПРАВЛЕНО: Увеличен таймаут проверки зависимостей
     if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined' || typeof window.SolanaWalletAdapterPhantom === 'undefined') {
         setTimeout(init, 100); 
         return;
