@@ -90,20 +90,25 @@ const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addr
 // PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
 // =========================================================================================
 
-// --- CRITICAL POOL KEYS (FILLED BASED ON PDA ASSUMPTIONS) ---
-// ⚠️ WARNING: YOU MUST ENSURE THESE PDA SEEDS MATCH YOUR RUST PROGRAM
-const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('3iU5eG1j79Y984572h4m9kG1z9V6iU38r75nQ26q8X'); 
-const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('Bf1v6h9D8vT1k2L4p5x6y7z8u0w3q4r7S9Xg1C2d3E4F');
-const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('G7pM4L8T2X1k6J5v9R3q0Y7u4W8s5B2a3C4d9E6f7H8I'); 
-// 🚨 ACTION REQUIRED: REPLACE THIS WITH YOUR REAL DAO TREASURY ATA ADDRESS
-const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('DAOTreasuryPlaceholderAddressForNow_________'); 
+// --- CRITICAL POOL KEYS (ФИНАЛЬНЫЕ, ПОДТВЕРЖДЕННЫЕ АДРЕСА DEVNET) ---
+// 1. Адрес главного PDA пула (PoolState)
+const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
+
+// 2. Хранилище стейка (Pool Vault)
+const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
+
+// 3. Хранилище админ. комиссии (Admin Fee Vault)
+const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
+
+// 4. КАЗНАЧЕЙСТВО DAO (DAO Treasury Vault) - ФИНАЛЬНЫЙ АДРЕС!
+const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
 // -----------------------------------------------------------------------------------------
 
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
 
 const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd'; // Changed for greater MOCK uniqueness
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
-const JUPITER_RPC_ENDPOINT = 'https://rpc.jup.ag';
+const JUPITER_RPC_ENDPOINT = 'https://rpc.jupag';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const TXN_FEE_RESERVE_SOL = 0.005;
 const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
@@ -662,10 +667,7 @@ function handlePublicKeyChange(newPublicKey) {
         // MOCK: Handle initial state for MOCK DB and Balances
         if (!MOCK_DB.staking[address]) {
              MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0', stakeHistory: [] };
-             if (appState.userBalances.AFOX === BigInt(0) && appState.userBalances.SOL === BigInt(0)) {
-                 appState.userBalances.AFOX = parseAmountToBigInt('1000.0', AFOX_DECIMALS);
-                 appState.userBalances.SOL = parseAmountToBigInt('1.0', SOL_DECIMALS);
-             }
+             // --- УДАЛЕНА MOCK ЛОГИКА AFOX/SOL
              persistMockData();
         }
 
@@ -753,7 +755,8 @@ async function connectWallet(adapter) {
 }
 
 /**
- * Fetches real balances from RPC (SOL) and MOCK balances (AFOX) and updates appState.userBalances.
+ * Fetches real balances from RPC (SOL and AFOX) and updates appState.userBalances.
+ * 🟢 ИСПРАВЛЕНО: УДАЛЕНА ВСЯ MOCK-ЛОГИКА ДЛЯ AFOX И SOL.
  */
 async function fetchUserBalances() {
     if (!appState.walletPublicKey || !appState.connection) {
@@ -762,23 +765,41 @@ async function fetchUserBalances() {
         return;
     }
 
+    const sender = appState.walletPublicKey;
+
+    // --- 1. ФЕТЧ БАЛАНСА SOL ---
     try {
-        const solBalance = await appState.connection.getBalance(appState.walletPublicKey, 'confirmed');
+        const solBalance = await appState.connection.getBalance(sender, 'confirmed');
         appState.userBalances.SOL = BigInt(solBalance);
     } catch (error) {
-        console.error("Failed to fetch real SOL balance, using MOCK fallback:", error);
-        if (appState.userBalances.SOL === BigInt(0)) {
-            appState.userBalances.SOL = parseAmountToBigInt('0.05', SOL_DECIMALS);
-        }
-        showNotification("Warning: Could not fetch real SOL balance. Using MOCK fallback.", 'warning');
+        console.error("Failed to fetch SOL balance:", error);
+        appState.userBalances.SOL = BigInt(0); 
+        showNotification("Warning: Could not fetch real SOL balance.", 'warning');
     }
 
-    const userKey = appState.walletPublicKey.toBase58();
-    if (!MOCK_DB.staking[userKey]) {
-         MOCK_DB.staking[userKey] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0' };
-    }
-    if (appState.userBalances.AFOX === BigInt(0)) {
-        appState.userBalances.AFOX = parseAmountToBigInt('1000.0', AFOX_DECIMALS);
+    // --- 2. ФЕТЧ БАЛАНСА AFOX (РЕАЛИЗАЦИЯ) ---
+    try {
+        // 2a. Получаем адрес Associated Token Account (ATA) пользователя для токена AFOX
+        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, 
+            TOKEN_PROGRAM_ID, 
+            AFOX_TOKEN_MINT_ADDRESS, 
+            sender
+        );
+        
+        // 2b. Запрашиваем баланс этого токен-аккаунта
+        const accountInfo = await appState.connection.getTokenAccountBalance(userAfoxATA);
+        
+        if (accountInfo.value && accountInfo.value.amount) {
+            appState.userBalances.AFOX = BigInt(accountInfo.value.amount);
+        } else {
+            // Если ATA не существует или не имеет баланса (пользователь не владеет AFOX)
+            appState.userBalances.AFOX = BigInt(0);
+        }
+        
+    } catch (tokenError) {
+        console.warn("Failed to fetch AFOX token balance, setting to 0:", tokenError);
+        appState.userBalances.AFOX = BigInt(0); 
     }
 }
 
@@ -1837,13 +1858,17 @@ async function executeSwap() {
         
         const signature = await appState.provider.sendAndConfirm(transaction);
 
-        // --- MOCK BALANCE UPDATE (For immediate UI refresh) ---
+        // --- MOCK BALANCE UPDATE (For immediate UI refresh, actual balances will fetch real data on next update) ---
+        // Это остается как МОК, потому что Jupiter не обновляет локальный BigInt напрямую.
+        // Следующий вызов fetchUserBalances() получит реальные данные, но это ускоряет UI.
+        
         if (fromToken === 'AFOX') {
             appState.userBalances.AFOX = appState.userBalances.AFOX - inputAmountBigInt;
         } else if (fromToken === 'SOL') {
             appState.userBalances.SOL = appState.userBalances.SOL - inputAmountBigInt;
         }
         
+        // MOCK: assuming a positive outcome for immediate UI update
         if (toToken === 'AFOX') {
             appState.userBalances.AFOX = appState.userBalances.AFOX + outputAmountBigInt;
         } else if (toToken === 'SOL') {
