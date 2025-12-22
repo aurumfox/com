@@ -2,161 +2,125 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana</title>
-    
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' https://terminal.jup.ag https://api.mainnet-beta.solana.com;
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag https://unpkg.com https://kit.fontawesome.com; 
-        connect-src 'self' wss://api.mainnet-beta.solana.com https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag; 
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-        font-src 'self' https://fonts.gstatic.com; 
-        img-src 'self' https://via.placeholder.com data: https:; 
-        frame-src https://terminal.jup.ag https://birdeye.so;
-        upgrade-insecure-requests;
-    ">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aurum Fox Portal</title>
 
-    <script src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/dist/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.23/dist/index.iife.js"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://terminal.jup.ag/main-v2.js"></script>
 
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
-    
     <style>
-        /* Базовые исправления стилей для кнопок */
-        body { font-family: 'Poppins', sans-serif; background-color: #121212; color: #fff; margin: 0; }
-        .header { background: #1a1a1a; padding: 20px; border-bottom: 2px solid #FF8C00; display: flex; justify-content: space-between; align-items: center; }
-        .wallet-connect-btn { background: #000; color: #FF8C00; border: 2px solid #FF8C00; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.3s; }
-        .wallet-connect-btn:hover { background: #FF8C00; color: #000; }
-        .wallet-display { background: #222; border: 1px solid #FF8C00; padding: 8px 15px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
-        .section { padding: 60px 20px; text-align: center; }
-        #jupiter-swap-widget { width: 100%; max-width: 420px; margin: 20px auto; }
-        .notification { position: fixed; top: 20px; right: 20px; padding: 15px; border-radius: 5px; z-index: 9999; color: #fff; }
+        :root { --main-gold: #FF8C00; --bg-dark: #0a0a0a; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg-dark); color: white; margin: 0; overflow-x: hidden; }
+        
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 20px; border-bottom: 2px solid var(--main-gold);
+            background: rgba(0,0,0,0.8); position: sticky; top: 0; z-index: 100;
+        }
+
+        .btn-connect {
+            background: transparent; border: 2px solid var(--main-gold);
+            color: var(--main-gold); padding: 8px 16px; border-radius: 12px;
+            font-weight: bold; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .btn-connect:active { transform: scale(0.95); background: var(--main-gold); color: black; }
+
+        .container { padding: 20px; text-align: center; }
+        #jupiter-terminal { width: 100%; max-width: 400px; margin: 20px auto; min-height: 500px; }
+        
+        .status-badge { 
+            font-size: 0.8em; margin-top: 10px; color: #888; 
+            padding: 5px; border-radius: 5px; background: #1a1a1a;
+        }
     </style>
 </head>
 <body>
 
 <header class="header">
-    <div class="logo"><h2 style="color:#FFD700; margin:0;">AFOX</h2></div>
-    <div class="wallet-controls">
-        <button id="connectWalletBtn" class="wallet-connect-btn">🦊 Connect Wallet</button>
-        <div id="walletDisplay" class="wallet-display" style="display:none;">
-            <span id="walletAddressSpan"></span>
-            <button id="disconnectBtn" style="background:none; border:none; color:#e74c3c; cursor:pointer;">✖</button>
-        </div>
-    </div>
+    <div style="font-weight: bold; color: var(--main-gold); font-size: 1.2rem;">AFOX</div>
+    <button id="mainConnectBtn" class="btn-connect">
+        <img src="https://phantom.app/favicon.ico" width="20" alt="">
+        <span>Connect Wallet</span>
+    </button>
 </header>
 
-<main>
-    <section class="section">
-        <h1>Aurum Fox: Web3 Ecosystem</h1>
-        <p>Wallet Address: <strong id="walletAddressDisplay">Not Connected</strong></p>
-        
-        <div id="swap-section">
-            <h3>🔄 Instant Swap</h3>
-            <div id="jupiter-swap-widget"></div>
-        </div>
-    </section>
-</main>
-
-<div id="notificationContainer"></div>
-
-<script src="https://terminal.jup.ag/main-v2.js"></script>
+<div class="container">
+    <h2 style="color: var(--main-gold);">Aurum Fox Ecosystem</h2>
+    <div id="walletAddr" class="status-badge">Wallet: Not Connected</div>
+    
+    <div id="jupiter-terminal"></div>
+</div>
 
 <script>
-    // --- НАСТРОЙКИ ---
-    const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
-    const SOL_MINT = 'So11111111111111111111111111111111111111112';
-    let solanaWalletAdapter = null;
+    let walletAddress = null;
 
-    // --- УВЕДОМЛЕНИЯ ---
-    function showNotification(msg, type = 'info') {
-        const container = document.getElementById('notificationContainer');
-        const note = document.createElement('div');
-        note.className = `notification`;
-        note.style.backgroundColor = type === 'success' ? '#2ecc71' : '#e74c3c';
-        note.textContent = msg;
-        container.appendChild(note);
-        setTimeout(() => note.remove(), 4000);
-    }
-
-    // --- ЛОГИКА КОШЕЛЬКА ---
-    function updateUI(adapter) {
-        const btn = document.getElementById('connectWalletBtn');
-        const display = document.getElementById('walletDisplay');
-        const addrText = document.getElementById('walletAddressSpan');
-        const debugAddr = document.getElementById('walletAddressDisplay');
-
-        if (adapter && adapter.connected) {
-            const pk = adapter.publicKey.toString();
-            btn.style.display = 'none';
-            display.style.display = 'flex';
-            addrText.textContent = pk.substring(0, 4) + '...' + pk.slice(-4);
-            debugAddr.textContent = pk;
+    // 1. Функция обновления интерфейса
+    function updateUI(addr) {
+        const btn = document.getElementById('mainConnectBtn');
+        const display = document.getElementById('walletAddr');
+        
+        if (addr) {
+            walletAddress = addr;
+            btn.innerHTML = `<span>${addr.slice(0,4)}...${addr.slice(-4)}</span>`;
+            display.innerText = `Connected: ${addr}`;
+            display.style.color = "#4CAF50";
         } else {
-            btn.style.display = 'block';
-            display.style.display = 'none';
-            debugAddr.textContent = 'Not Connected';
+            walletAddress = null;
+            btn.innerHTML = `<img src="https://phantom.app/favicon.ico" width="20"> <span>Connect Wallet</span>`;
+            display.innerText = "Wallet: Not Connected";
+            display.style.color = "#888";
         }
     }
 
-    async function connectWallet() {
+    // 2. Логика подключения (Исправлено для мобильных)
+    async function connect() {
         try {
-            // Проверяем наличие библиотеки
-            if (!window.solanaWalletAdapterPhantom) {
-                showNotification("Библиотеки не загружены!", "error");
+            // Проверяем наличие провайдера (Phantom/Solflare и т.д.)
+            const provider = window.solana || window.phantom?.solana;
+
+            if (!provider) {
+                alert("Пожалуйста, откройте сайт через браузер в кошельке Phantom!");
+                window.open("https://phantom.app/ul/browse/" + window.location.host);
                 return;
             }
 
-            if (!solanaWalletAdapter) {
-                solanaWalletAdapter = new window.solanaWalletAdapterPhantom.PhantomWalletAdapter();
-                
-                solanaWalletAdapter.on('connect', () => {
-                    updateUI(solanaWalletAdapter);
-                    showNotification("Кошелек подключен", "success");
-                    initJupiter(); // Перезапуск Юпитера при коннекте
-                });
+            const resp = await provider.connect();
+            updateUI(resp.publicKey.toString());
+            
+            // После успешного входа обновляем Jupiter, если он еще не подхватил
+            if (window.Jupiter) initJupiter();
 
-                solanaWalletAdapter.on('disconnect', () => {
-                    updateUI(null);
-                    showNotification("Кошелек отключен");
-                });
-            }
-
-            await solanaWalletAdapter.connect();
         } catch (err) {
-            console.error(err);
-            showNotification("Ошибка: " + err.message, "error");
+            console.error("Ошибка подключения:", err);
         }
     }
 
-    // --- JUPITER INIT ---
+    // 3. Инициализация Jupiter Terminal
     function initJupiter() {
-        if (window.Jupiter) {
-            window.Jupiter.init({
-                displayMode: 'widget',
-                widgetStyle: { 'container.id': 'jupiter-swap-widget' },
-                theme: 'dark',
-                formProps: {
-                    initialInputMint: SOL_MINT,
-                    initialOutputMint: AFOX_MINT,
-                }
-            });
-        }
+        window.Jupiter.init({
+            displayMode: "integrated",
+            integratedTargetId: "jupiter-terminal",
+            endpoint: "https://api.mainnet-beta.solana.com",
+            strictTokenList: false,
+            formProps: {
+                initialOutputMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd", // AFOX
+            },
+        });
     }
 
-    // --- ЗАПУСК ---
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('connectWalletBtn').addEventListener('click', connectWallet);
-        document.getElementById('disconnectBtn').addEventListener('click', () => solanaWalletAdapter.disconnect());
-        
-        // Ждем загрузки библиотек и инитим Юпитер
-        setTimeout(initJupiter, 1000);
+    // Слушатели событий
+    document.getElementById('mainConnectBtn').addEventListener('click', connect);
+
+    // Автоматическая проверка уже подключенного кошелька
+    window.addEventListener('load', () => {
+        if (window.solana && window.solana.isPhantom) {
+            window.solana.connect({ onlyIfTrusted: true })
+                .then(res => updateUI(res.publicKey.toString()))
+                .catch(() => console.log("Нужно ручное подключение"));
+        }
+        initJupiter();
     });
 </script>
 
