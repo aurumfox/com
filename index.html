@@ -1,70 +1,51 @@
-<script>
-    let walletAddress = null;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aurum Fox Portal</title>
 
-    // 1. Функция обновления интерфейса (кнопки и текста)
-    function updateUI(addr) {
-        const btn = document.getElementById('mainConnectBtn');
-        const display = document.getElementById('walletAddr');
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://terminal.jup.ag/main-v2.js"></script>
+
+    <style>
+        :root { --gold: #FF8C00; --dark: #0a0a0a; }
+        body { font-family: 'Poppins', sans-serif; background: var(--dark); color: white; margin: 0; }
         
-        if (addr) {
-            walletAddress = addr;
-            btn.innerHTML = `<span>${addr.slice(0,4)}...${addr.slice(-4)}</span>`;
-            display.innerText = `Connected: ${addr}`;
-            display.style.color = "#4CAF50";
-        } else {
-            walletAddress = null;
-            btn.innerHTML = `<img src="https://phantom.app/favicon.ico" width="20"> <span>Connect Wallet</span>`;
-            display.innerText = "Wallet: Not Connected";
-            display.style.color = "#888";
+        /* Стили шапки и кнопок */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 20px; border-bottom: 2px solid var(--gold);
+            background: rgba(0,0,0,0.9); position: sticky; top: 0; z-index: 1000;
         }
-    }
 
-    // 2. Логика для вашей верхней кнопки
-    async function connect() {
-        try {
-            const provider = window.solana || window.phantom?.solana;
-            if (!provider) {
-                alert("Откройте сайт внутри кошелька Phantom!");
-                return;
-            }
-            const resp = await provider.connect();
-            updateUI(resp.publicKey.toString());
-        } catch (err) {
-            console.error("Ошибка:", err);
+        .btn-connect {
+            background: #111; border: 2px solid var(--gold); color: var(--gold);
+            padding: 10px 18px; border-radius: 12px; font-weight: bold;
+            cursor: pointer; display: flex; align-items: center; gap: 10px;
+            transition: 0.2s; box-shadow: 0 0 10px rgba(255, 140, 0, 0.2);
         }
-    }
 
-    // 3. Инициализация Jupiter с автоматическим отслеживанием
-    function initJupiter() {
-        if (window.Jupiter) {
-            window.Jupiter.init({
-                displayMode: "integrated",
-                integratedTargetId: "jupiter-terminal",
-                endpoint: "https://api.mainnet-beta.solana.com",
-                formProps: {
-                    initialOutputMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd",
-                },
-            });
+        .btn-connect:active { transform: scale(0.95); background: var(--gold); color: black; }
 
-            // ГЛАВНОЕ: Слушаем кошелек через интервал, если Jupiter его подключил
-            setInterval(() => {
-                const provider = window.solana || window.phantom?.solana;
-                if (provider?.publicKey && !walletAddress) {
-                    updateUI(provider.publicKey.toString());
-                }
-            }, 1000);
-        }
-    }
+        .container { padding: 20px; text-align: center; }
+        #jupiter-terminal { width: 100%; max-width: 420px; margin: 30px auto; min-height: 520px; border-radius: 16px; overflow: hidden; }
+        
+        .status-badge { font-size: 0.85rem; color: #888; margin-top: 15px; background: #1a1a1a; padding: 8px; border-radius: 8px; display: inline-block; }
+    </style>
+</head>
+<body>
 
-    document.getElementById('mainConnectBtn').addEventListener('click', connect);
+<header class="header">
+    <div style="font-weight: bold; color: var(--gold); font-size: 1.4rem; letter-spacing: 1px;">AFOX</div>
+    <button id="mainConnectBtn" class="btn-connect">
+        <img src="https://phantom.app/favicon.ico" width="20" alt="fox">
+        <span>Connect Wallet</span>
+    </button>
+</header>
 
-    window.addEventListener('load', () => {
-        initJupiter();
-        // Проверка при загрузке (если уже залогинены)
-        setTimeout(() => {
-            if (window.solana?.publicKey) {
-                updateUI(window.solana.publicKey.toString());
-            }
-        }, 1000);
-    });
-</script>
+<div class="container">
+    <h1 style="color: var(--gold); margin-bottom: 5px;">Aurum Fox Ecosystem</h1>
+    <div id="walletAddr" class="status-badge">Wallet: Not Connected</div>
+    
+    <div id="jupiter-terminal">
