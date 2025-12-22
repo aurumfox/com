@@ -3,49 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aurum Fox Portal</title>
+    <title>Alpha Fox Ecosystem</title>
 
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/anchor.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
     <script src="https://terminal.jup.ag/main-v2.js"></script>
 
     <style>
-        :root { --gold: #FF8C00; --dark: #0a0a0a; }
-        body { font-family: 'Poppins', sans-serif; background: var(--dark); color: white; margin: 0; }
+        :root { --gold: #FF8C00; --bg: #0a0a0a; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: white; margin: 0; }
         
-        /* Стили шапки и кнопок */
+        /* Стили для верхней панели */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 15px 20px; border-bottom: 2px solid var(--gold);
             background: rgba(0,0,0,0.9); position: sticky; top: 0; z-index: 1000;
         }
 
-        .btn-connect {
-            background: #111; border: 2px solid var(--gold); color: var(--gold);
+        /* Кнопка кошелька (Класс из твоего JS: connect-wallet-btn) */
+        .connect-wallet-btn {
+            background: transparent; border: 2px solid var(--gold); color: var(--gold);
             padding: 10px 18px; border-radius: 12px; font-weight: bold;
-            cursor: pointer; display: flex; align-items: center; gap: 10px;
-            transition: 0.2s; box-shadow: 0 0 10px rgba(255, 140, 0, 0.2);
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: 0.3s;
         }
 
-        .btn-connect:active { transform: scale(0.95); background: var(--gold); color: black; }
+        /* Состояние "Подключено" (Класс из твоего JS: connected) */
+        .connect-wallet-btn.connected {
+            border-color: #4CAF50; color: #4CAF50;
+        }
+
+        /* Контейнер для адреса (Класс из твоего JS: wallet-display) */
+        .wallet-display {
+            display: none; align-items: center; gap: 10px; cursor: pointer;
+            border: 1px solid #4CAF50; padding: 8px 12px; border-radius: 10px;
+        }
 
         .container { padding: 20px; text-align: center; }
-        #jupiter-terminal { width: 100%; max-width: 420px; margin: 30px auto; min-height: 520px; border-radius: 16px; overflow: hidden; }
+        #jupiter-terminal { width: 100%; max-width: 420px; margin: 20px auto; min-height: 550px; }
         
-        .status-badge { font-size: 0.85rem; color: #888; margin-top: 15px; background: #1a1a1a; padding: 8px; border-radius: 8px; display: inline-block; }
+        .notification-container { position: fixed; top: 80px; right: 20px; z-index: 9999; }
+        .notification { background: #333; color: white; padding: 12px 20px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid var(--gold); }
+        .notification.success { border-left-color: #4CAF50; }
+        .notification.error { border-left-color: #f44336; }
     </style>
 </head>
 <body>
 
-<header class="header">
-    <div style="font-weight: bold; color: var(--gold); font-size: 1.4rem; letter-spacing: 1px;">AFOX</div>
-    <button id="mainConnectBtn" class="btn-connect">
-        <img src="https://phantom.app/favicon.ico" width="20" alt="fox">
-        <span>Connect Wallet</span>
-    </button>
-</header>
+    <div id="notification-container" class="notification-container"></div>
 
-<div class="container">
-    <h1 style="color: var(--gold); margin-bottom: 5px;">Aurum Fox Ecosystem</h1>
-    <div id="walletAddr" class="status-badge">Wallet: Not Connected</div>
-    
-    <div id="jupiter-terminal">
+    <header class="header">
+        <div style="font-size: 1.5rem; font-weight: bold; color: var(--gold);">AFOX</div>
+        
+        <div class="wallet-controls">
+            <button class="connect-wallet-btn" id="headerConnectBtn">
+                <img src="https://phantom.app/favicon.ico" width="20">
+                <span>Connect Wallet</span>
+            </button>
+
+            <div class="wallet-display" data-wallet-control="walletDisplay">
+                <span class="wallet-address-display" id="walletAddress"></span>
+                <button class="copy-btn" style="background:none; border:none; color:var(--gold); cursor:pointer;">📋</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Alpha Fox Staking</h1>
+        
+        <div style="margin-bottom: 20px; background: #1a1a1a; padding: 15px; border-radius: 15px;">
+            <div>Your Balance: <span id="user-afox-balance" style="color: var(--gold);">0 AFOX</span></div>
+            <div>Staked: <span id="user-staked-amount">0 AFOX</span></div>
+            <div style="font-size: 0.8em; color: #888;">Lockup: <span id="lockup-period">—</span></div>
+        </div>
+
+        <div id="jupiter-terminal"></div>
+
+        <div style="display: none;">
+            <input id="stake-amount" value="0">
+            <select id="pool-selector"><option value="4"></option></select>
+            <button id="stake-afox-btn"></button>
+            <button id="claim-rewards-btn"></button>
+            <button id="unstake-afox-btn"></button>
+            <div id="user-rewards-amount"></div>
+            <div id="staking-apr"></div>
+        </div>
+    </div>
+
+    <div id="page-loader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
+        <div style="color: var(--gold);">Loading...</div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
