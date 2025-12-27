@@ -373,6 +373,48 @@
                 align-items: center;
             }
         }
+        <header class="header">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="logo">
+            <img src="./assets/favicon.png.jpg" alt="AFOX Logo" style="height: 50px; border-radius: 50%;">
+        </div>
+
+        <nav class="nav" id="desktopNav">
+            <ul style="display: flex; list-style: none; gap: 20px; margin: 0; padding: 0;">
+                <li><a href="#about-afox" style="color: #fff; text-decoration: none; font-weight: 600;">About</a></li>
+                <li><a href="#tokenomics" style="color: #fff; text-decoration: none; font-weight: 600;">Tokenomics</a></li>
+                <li><a href="#web3-site-home" style="color: #fff; text-decoration: none; font-weight: 600;">Web3</a></li>
+                <li><a href="#swap-section" style="color: #fff; text-decoration: none; font-weight: 600;">Swap</a></li>
+            </ul>
+        </nav>
+
+        <div class="header-controls-group" style="display: flex; align-items: center;">
+            <div class="wallet-controls">
+                <button id="connectWalletBtn" class="wallet-connect-btn">
+                    <i class="fas fa-wallet"></i> Connect Wallet
+                </button>
+                <div id="walletDisplay" class="wallet-display" style="display:none;">
+                    <span id="walletAddressSpan"></span>
+                    <button id="copyWalletBtn" class="copy-btn"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="menu-toggle" id="menuToggle" style="margin-left: 15px;">
+                <div class="hamburger"></div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="nav-mobile-overlay" id="mobileOverlay">
+    <span class="close-button" id="closeMainMenuCross" style="position:absolute; top:20px; right:20px; font-size:40px; color:#FF8C00; cursor:pointer;">&times;</span>
+    <ul class="main-nav" style="list-style: none; padding: 0; text-align: center;">
+        <li><a href="#about-afox">About AFOX</a></li>
+        <li><a href="#tokenomics">Tokenomics</a></li>
+        <li><a href="#web3-site-home">Web3 Portal</a></li>
+        <li><a href="#swap-section">Swap</a></li>
+        <li><a href="#aurum-community">Community</a></li>
+    </ul>
+</div>
         /* Стили для предотвращения прокрутки тела при открытом меню */
         body.menu-open {
             overflow: hidden;
