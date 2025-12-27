@@ -2,176 +2,318 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alpha Fox Portal | Multi-Wallet</title>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
-    <script>window.Buffer = window.Buffer || buffer.Buffer;</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana (Fixed)</title>
+    
+    <meta name="description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub.">
+    <meta name="keywords" content="Aurum Fox, AFOX, Solana, meme coin, Web3, NFT, DAO, Staking, Crypto Games">
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-solflare@latest/lib/index.iife.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
-    <script src="https://terminal.jup.ag/main-v2.js"></script>
-
     <style>
-        :root { --gold: #FF8C00; --dark: #0a0a0a; --gray: #1a1a1a; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--dark); color: white; margin: 0; }
-        
-        /* Header */
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 20px; border-bottom: 2px solid var(--gold); background: rgba(0,0,0,0.9);
+        /* Дополнительные стили для исправлений */
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
         }
 
-        .connect-wallet-btn {
-            background: #111; border: 2px solid var(--gold); color: var(--gold);
-            padding: 10px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        .modal {
+            display: none;
+            position: fixed; 
+            z-index: 20000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.85); 
+            overflow-y: auto;
         }
-        .connect-wallet-btn:hover { background: var(--gold); color: black; }
 
-        .wallet-display { display: none; align-items: center; gap: 10px; background: var(--gray); padding: 8px 15px; border-radius: 12px; border: 1px solid #4CAF50; }
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 5% auto; 
+            padding: 30px;
+            border: 2px solid #FF8C00;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 15px;
+            position: relative;
+        }
 
-        /* Modal Wallet Picker */
-        #wallet-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 10000; display: none;
-            justify-content: center; align-items: center; backdrop-filter: blur(5px);
+        .close-button {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            color: #FF8C00;
+            font-size: 35px;
+            cursor: pointer;
         }
-        .wallet-modal {
-            background: #151515; border: 1px solid var(--gold); border-radius: 24px;
-            padding: 25px; width: 90%; max-width: 360px; text-align: center;
-        }
-        .wallet-option {
-            width: 100%; padding: 15px; margin-bottom: 12px; border-radius: 15px;
-            border: 1px solid #333; background: #222; color: white; cursor: pointer;
-            display: flex; align-items: center; justify-content: space-between; font-weight: bold;
-        }
-        .wallet-option:hover { border-color: var(--gold); background: #2a2a2a; }
-        .wallet-option img { width: 28px; height: 28px; }
 
-        /* Main Content */
-        .container { padding: 20px; max-width: 500px; margin: 0 auto; text-align: center; }
-        .stats-card { background: var(--gray); padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #222; }
-        #jupiter-terminal { width: 100%; min-height: 550px; border-radius: 16px; margin-top: 20px; }
+        /* Гамбургер */
+        .menu-toggle {
+            display: none;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 10001;
+        }
+
+        .hamburger, .hamburger::before, .hamburger::after {
+            width: 30px;
+            height: 3px;
+            background-color: #FF8C00;
+            display: block;
+            transition: 0.3s;
+            position: relative;
+        }
+        .hamburger::before { content: ''; top: -10px; position: absolute; }
+        .hamburger::after { content: ''; top: 10px; position: absolute; }
+
+        @media (max-width: 992px) {
+            .menu-toggle { display: block; }
+            .nav { display: none; } /* Скрываем обычную навигацию */
+        }
+
+        /* Оверлей мобильного меню */
+        .nav-mobile-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transform: translateX(100%);
+            transition: 0.3s;
+        }
+        .nav-mobile-overlay.active { transform: translateX(0); }
+        .nav-list { list-style: none; text-align: center; }
+        .nav-list li { margin: 20px 0; }
+        .nav-list a { color: #fff; font-size: 1.5rem; text-decoration: none; font-weight: bold; }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 99999;
+        }
     </style>
 </head>
 <body>
 
-<div id="wallet-modal-overlay">
-    <div class="wallet-modal">
-        <h3 style="color: var(--gold); margin-top: 0;">Connect Wallet</h3>
-        <button class="wallet-option" onclick="connectSpecificWallet('phantom')">
-            <span>Phantom</span>
-            <img src="https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/phantom/phantom.svg" alt="phantom">
-        </button>
-        <button class="wallet-option" onclick="connectSpecificWallet('solflare')">
-            <span>Solflare</span>
-            <img src="https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/solflare/solflare.svg" alt="solflare">
-        </button>
-        <button onclick="closeWalletModal()" style="background:none; border:none; color:#888; cursor:pointer; margin-top:10px;">Cancel</button>
-    </div>
-</div>
+    <header class="header">
+        <div class="container header-flex">
+            <div class="logo">
+                <img src="./assets/favicon.png.jpg" alt="AFOX Logo" style="height: 50px;">
+            </div>
 
-<header class="header">
-    <div style="font-weight:bold; color:var(--gold); font-size: 1.3rem;">ALPHA FOX</div>
-    <div id="wallet-area">
-        <button class="connect-wallet-btn" id="mainConnectBtn" onclick="openWalletModal()">Connect Wallet</button>
-        <div class="wallet-display" id="walletInfo">
-            <span id="addrShort">0000...0000</span>
-            <button onclick="disconnectWallet()" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:12px;">Exit</button>
+            <nav class="nav">
+                <ul class="main-nav" style="display: flex; list-style: none; gap: 20px;">
+                    <li><a href="#about-afox">About</a></li>
+                    <li><a href="#tokenomics">Tokenomics</a></li>
+                    <li><a href="#web3-site-home">Web3</a></li>
+                    <li><a href="#swap-section">Swap</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-controls-group" style="display: flex; align-items: center;">
+                <div class="wallet-controls">
+                    <button id="connectWalletBtn" class="wallet-connect-btn">
+                        <i class="fas fa-wallet"></i> Connect Wallet
+                    </button>
+                    <div id="walletDisplay" class="wallet-display" style="display:none;">
+                        <span id="walletAddressSpan" class="wallet-address-text"></span>
+                        <button id="copyWalletBtn" class="copy-btn"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <div class="menu-toggle" id="menuToggle">
+                    <div class="hamburger"></div>
+                </div>
+            </div>
         </div>
-    </div>
-</header>
 
-<main class="container">
-    <div class="stats-card">
-        <div style="color: #888;">AFOX Balance</div>
-        <div id="balance" style="font-size: 2rem; color: var(--gold); font-weight: bold; margin: 10px 0;">0.00</div>
-        <div style="font-size: 0.8rem; color: #555;">Stake your tokens to earn rewards</div>
-    </div>
+        <div class="nav-mobile-overlay" id="mobileOverlay">
+            <span class="close-button" id="closeMainMenuCross" style="top: 20px;">&times;</span>
+            <ul class="nav-list">
+                <li><a href="#about-afox">About AFOX</a></li>
+                <li><a href="#tokenomics">Tokenomics</a></li>
+                <li><a href="#how-to-buy">How to Buy</a></li>
+                <li><a href="#web3-site-home">Web3 Portal</a></li>
+                <li><a href="#aurum-community">Community</a></li>
+            </ul>
+        </div>
+    </header>
 
-    <div id="jupiter-terminal"></div>
-</main>
+    <main>
+        <section id="aurum-fox-home" class="hero-section">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>Aurum Fox: Your Golden Luck on Solana!</h1>
+                    <p class="tagline">Combining cunning, prosperity, and speed.</p>
+                    <div class="hero-buttons">
+                        <a href="#how-to-buy" class="primary-btn">Get AFOX</a>
+                        <a href="#aurum-community" class="secondary-btn">Join Us</a>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <img src="./assets/foxcoin-hero.png.jpg" alt="Aurum Fox Golden Coin">
+                </div>
+            </div>
+        </section>
 
-<script>
-    // Глобальные переменные
-    let walletProvider = null;
-    let connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com");
+        <section id="about-afox" class="section">
+            <div class="container">
+                <h2 class="aurum-heading">About AFOX Token</h2>
+                <p>Welcome to <strong>AURUM FOX!</strong> Fully decentralized meme token on Solana. Minting and Freezing rights are <strong>revoked</strong> for 100% security.</p>
+            </div>
+        </section>
 
-    const modal = document.getElementById('wallet-modal-overlay');
-    const connectBtn = document.getElementById('mainConnectBtn');
-    const walletInfo = document.getElementById('walletInfo');
-    const addrDisplay = document.getElementById('addrShort');
+        <section id="tokenomics" class="section">
+            <div class="container">
+                <h2 class="aurum-heading">Tokenomics</h2>
+                <div class="tokenomics-grid">
+                    <div class="tokenomics-item">
+                        <h3>Total Supply</h3>
+                        <p class="highlight">10,000,000 AFOX</p>
+                        <p>Contract: <code style="word-break: break-all;">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</code></p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    // Открыть/Закрыть модалку
-    function openWalletModal() { modal.style.display = 'flex'; }
-    function closeWalletModal() { modal.style.display = 'none'; }
+        <section id="web3-site-home" class="section web3-section-alt">
+            <div class="container">
+                <h2 class="web3-heading">🎮 Web3 Portal</h2>
+                <p>Wallet: <strong id="walletAddressDisplay">Not Connected</strong></p>
+                <div class="web3-features-grid">
+                    <div class="feature-card"><h3>🎮 Games</h3><a href="#games-section">Play</a></div>
+                    <div class="feature-card"><h3>🖼️ NFTs</h3><a href="#nft-section">View</a></div>
+                    <div class="feature-card"><h3>💰 Staking</h3><a href="#staking-section">Earn</a></div>
+                    <div class="feature-card"><h3>🔄 Swap</h3><a href="#swap-section">Trade</a></div>
+                </div>
+            </div>
+        </section>
 
-    // Логика подключения
-    async function connectSpecificWallet(type) {
-        try {
-            if (type === 'phantom') {
-                walletProvider = window.phantom?.solana || window.solana;
-            } else if (type === 'solflare') {
-                walletProvider = window.solflare;
-            }
+        <section id="staking-section" class="section web3-section">
+            <div class="container">
+                <h2 class="web3-heading">💰 AFOX Staking</h2>
+                <div class="staking-info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div class="info-card"><h4>Balance</h4><p id="userAfoxBalance">0 AFOX</p></div>
+                    <div class="info-card"><h4>Staked</h4><p id="userStakedAmount">0 AFOX</p></div>
+                    <div class="info-card"><h4>Rewards</h4><p id="userRewardsAmount">0 AFOX</p></div>
+                    <div class="info-card"><h4>APR</h4><p id="stakingApr">--%</p></div>
+                </div>
+                <div class="staking-actions" style="margin-top: 20px;">
+                    <input type="number" id="stakeAmountInput" placeholder="Amount to stake">
+                    <button id="stakeAfoxBtn" class="primary-btn">Stake</button>
+                    <button id="claimRewardsBtn" class="secondary-btn">Claim Rewards</button>
+                </div>
+            </div>
+        </section>
 
-            if (!walletProvider) {
-                alert("Wallet not found! Please install the extension or use the wallet's built-in browser.");
-                return;
-            }
+        <section id="swap-section" class="section">
+            <div class="container">
+                <h2 class="web3-heading">🔄 AFOX Swap</h2>
+                <div id="jupiter-swap-widget" style="margin: 0 auto; max-width: 440px; min-height: 500px;"></div>
+            </div>
+        </section>
+    </main>
 
-            const resp = await walletProvider.connect();
-            const publicKey = resp.publicKey.toString();
-            
-            // Успешное подключение
-            handleAuth(publicKey);
-            closeWalletModal();
-        } catch (err) {
-            console.error("Connection error:", err);
-            alert("Connection rejected");
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Aurum Fox Ecosystem.</p>
+            <p>Contract: GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</p>
+        </div>
+    </footer>
+
+    <div id="notificationContainer"></div>
+
+    <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
+    
+    <script>
+        // --- Initialization ---
+        const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
+        let solanaWalletAdapter = null;
+
+        // --- Notifications ---
+        function showNotification(msg, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            const note = document.createElement('div');
+            note.className = `notification notification-${type}`;
+            note.style.cssText = `background: ${type==='error'?'#e74c3c':'#2ecc71'}; color: white; padding: 15px; margin: 10px; border-radius: 8px; font-weight: bold;`;
+            note.textContent = msg;
+            container.appendChild(note);
+            setTimeout(() => note.remove(), 4000);
         }
-    }
 
-    function handleAuth(publicKey) {
-        connectBtn.style.display = 'none';
-        walletInfo.style.display = 'flex';
-        addrDisplay.innerText = publicKey.substring(0, 4) + '...' + publicKey.substring(publicKey.length - 4);
+        // --- Wallet Logic ---
+        async function connectWallet() {
+            if ("solana" in window) {
+                const provider = window.solana;
+                if (provider.isPhantom) {
+                    try {
+                        const resp = await provider.connect();
+                        solanaWalletAdapter = provider;
+                        updateUI(resp.publicKey.toString());
+                        showNotification("Wallet Connected!", "success");
+                    } catch (err) {
+                        showNotification("User rejected connection", "error");
+                    }
+                }
+            } else {
+                window.open("https://phantom.app/", "_blank");
+            }
+        }
+
+        function updateUI(pubkey) {
+            document.getElementById('connectWalletBtn').style.display = 'none';
+            document.getElementById('walletDisplay').style.display = 'flex';
+            document.getElementById('walletAddressSpan').textContent = pubkey.substring(0,4) + '...' + pubkey.slice(-4);
+            document.getElementById('walletAddressDisplay').textContent = pubkey;
+        }
+
+        // --- Menu Logic ---
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+        const closeMenu = document.getElementById('closeMainMenuCross');
+
+        menuToggle.addEventListener('click', () => mobileOverlay.classList.add('active'));
+        closeMenu.addEventListener('click', () => mobileOverlay.classList.remove('active'));
+
+        // Закрытие меню при клике на ссылку
+        document.querySelectorAll('.nav-list a').forEach(link => {
+            link.addEventListener('click', () => mobileOverlay.classList.remove('active'));
+        });
+
+        // --- Jupiter Logic ---
+        window.addEventListener('load', () => {
+            if (window.Jupiter) {
+                window.Jupiter.init({
+                    displayMode: 'widget',
+                    containerId: 'jupiter-swap-widget',
+                    endpoint: 'https://api.mainnet-beta.solana.com',
+                    formProps: {
+                        initialInputMint: 'So11111111111111111111111111111111111111112',
+                        initialOutputMint: AFOX_MINT,
+                    },
+                });
+            }
+        });
+
+        document.getElementById('connectWalletBtn').addEventListener('click', connectWallet);
         
-        // Инициализируем Юпитер после входа
-        initJupiter();
-    }
-
-    function disconnectWallet() {
-        if (walletProvider) walletProvider.disconnect();
-        walletInfo.style.display = 'none';
-        connectBtn.style.display = 'block';
-    }
-
-    function initJupiter() {
-        if (window.Jupiter) {
-            window.Jupiter.init({
-                displayMode: "integrated",
-                integratedTargetId: "jupiter-terminal",
-                endpoint: "https://api.mainnet-beta.solana.com",
-                strictTokenList: false,
-                defaultExplorer: "Solscan",
-                formProps: {
-                    fixedOutputMint: true,
-                    initialOutputMint: "ВАШ_АДРЕС_ТОКЕНА_AFOX" 
-                },
-            });
-        }
-    }
-
-    // Авто-проверка при загрузке (для мобилок)
-    window.onload = () => {
-        if (window.solana && window.solana.isConnected) {
-            handleAuth(window.solana.publicKey.toString());
-        }
-    };
-</script>
-
+        // --- Staking Mock Action ---
+        document.getElementById('stakeAfoxBtn').addEventListener('click', () => {
+            if(!solanaWalletAdapter) return showNotification("Connect Wallet first!", "error");
+            showNotification("Staking feature is initializing on Mainnet...", "info");
+        });
+    </script>
 </body>
 </html>
