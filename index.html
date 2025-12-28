@@ -3,1756 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana (Secured)</title>
-    <meta name="description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub (Photos, Posts, Mini-Games). Your gateway to the AFOX ecosystem on Solana.">
-    <meta name="keywords" content="Aurum Fox, AFOX, Solana, meme coin, Web3, NFT, DAO, Staking, Crypto Games, Decentralized Advertising, DeFi, Blockchain, SPL Token, Raydium, Orca, Phantom Wallet">
-    <meta name="author" content="Aurum Fox Community">
-    
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://aurumfox.github.io/com/"> 
-    <meta property="og:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
-    <meta property="og:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
-    <meta property="og:image" content="./assets/foxcoin-hero.png.jpg"> 
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://aurumfox.github.io/com/"> 
-    <meta property="twitter:title" content="Aurum Fox Portal: Web3 & Multimedia Ecosystem on Solana">
-    <meta property="twitter:description" content="Official portal of the Aurum Fox meme coin. Explore Web3 features (Games, NFTs, DAO, Staking, Swaps) and a multimedia hub. Your gateway to the AFOX ecosystem on Solana.">
-    <meta property="twitter:image" content="./assets/foxcoin-hero.png.jpg"> 
-    
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' https://terminal.jup.ag https://api.mainnet-beta.solana.com;
-        script-src 'self' https://js-de.sentry-cdn.com https://www.gstatic.com https://cdn.jup.ag https://terminal.jup.ag https://unpkg.com; 
-        connect-src 'self' wss://api.mainnet-beta.solana.com https://o4505059231873024.ingest.sentry.io https://firestore.googleapis.com https://auth.firebase.com https://api.jupiter.ag https://api.mainnet-beta.solana.com; 
-        style-src 'self' https://fonts.googleapis.com; 
-        font-src 'self' https://fonts.gstatic.com; 
-        img-src 'self' https://via.placeholder.com data: https:; 
-        object-src 'none'; 
-        base-uri 'self';
-        form-action 'self';
-        frame-src https://terminal.jup.ag https://birdeye.so;
-        frame-ancestors 'self';
-        upgrade-insecure-requests;
-    ">
-    
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> 
-    <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
-    <script>
-        Sentry.init({
-            dsn: "https://93b9760a7026c9acedf1f14b044146c6@o4505059231873024.ingest.sentry.io/4505059233642496", 
-            integrations: [ new Sentry.BrowserTracing() ],
-            tracesSampleRate: 1.0, 
-            release: "aurum-fox-portal@1.0.0", 
-            environment: "production",
-        });
-        Sentry.setTag("context", "Web3 Solana Interface");
-    </script>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    
-    <script src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js" crossorigin="anonymous"></script> 
-
-    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/index.js" crossorigin="anonymous"></script>
-    
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
-
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
-    
-    <script src="https://unpkg.com/@solana/wallet-adapter-react-ui@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
-
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
+    <title>AlphaFox DAO | Solana Staking & NFT</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/anchor.min.js"></script>
+    <script src="https://bundle.run/@solana/wallet-adapter-phantom@0.9.24"></script>
     
     <style>
-        /* ================================================= */
-        /* !!! БАЗОВЫЕ СТИЛИ ДЛЯ КОРРЕКТНОГО ЗАПУСКА САЙТА (Добавлено) !!! */
-        /* ================================================= */
+        :root {
+            --primary: #fb923c;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+        }
+
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
             margin: 0;
-            padding: 0;
-            background-color: #121212; /* Темный фон */
-            color: #ffffff; /* Светлый текст */
             line-height: 1.6;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        .header {
-            background-color: #1a1a1a;
-            padding: 15px 0;
-            border-bottom: 3px solid #FF8C00;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .hero-section {
-            padding: 100px 0;
-            background: linear-gradient(135deg, #121212, #2c2c2c);
-            text-align: center;
-        }
-        .hero-section .container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .hero-image img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(255, 140, 0, 0.5);
-        }
-        .section {
-            padding: 60px 0;
-            text-align: center;
-        }
-        .aurum-fox-section {
-            background-color: #1a1a1a;
-        }
-        .aurum-fox-section-alt {
-            background-color: #121212;
-        }
-        .web3-section {
-            background-color: #222;
-        }
-        .web3-section-alt {
-            background-color: #1a1a1a;
-        }
-        .aurum-heading, .web3-heading {
-            color: #FFD700; /* Золотой */
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2.5em;
-            margin-bottom: 30px;
-        }
-        .primary-btn, .secondary-btn, .web3-btn {
-            /* Базовые стили определены ниже, здесь только отступы */
-            margin: 10px;
-            display: inline-block;
-        }
-        .footer {
-            background-color: #000;
-            color: #aaa;
-            padding: 30px 0;
-            text-align: center;
-            border-top: 3px solid #FF8C00;
-        }
-        /* Сетка для токеномики и фич */
-        .tokenomics-grid, .web3-features-grid, .nft-grid, .dao-proposals-grid, .staking-info-grid, .nfc-grid {
-            display: grid;
-            gap: 30px;
-            margin-top: 40px;
-            text-align: left;
-        }
-        .tokenomics-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-        .web3-features-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-        .nfc-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-        .tokenomics-item, .feature-card, .nft-card, .nfc-item {
-            background-color: #2c2c2c;
-            padding: 25px;
-            border-radius: 10px;
-            border: 1px solid #FF8C00;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        }
-        .highlight {
-            color: #FFD700;
-            font-size: 1.5em;
-            font-weight: 700;
-        }
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-        }
-        .social-btn {
-            background-color: #FF8C00;
-            color: #000;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: opacity 0.3s;
-        }
-        .social-btn:hover {
-            opacity: 0.8;
-        }
-        .social-icon {
-            width: 1em;
-            height: 1em;
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-        /* Медиа-запросы для мобильных */
-        @media (max-width: 768px) {
-            .hero-section .container {
-                flex-direction: column-reverse;
-                text-align: center;
-            }
-            .hero-image {
-                margin-bottom: 30px;
-            }
-        }
-        /* ================================================= */
-        /* !!! КОНЕЦ БАЗОВЫХ СТИЛЕЙ !!! */
-        /* ================================================= */
 
-        /* ================================================= */
-        /* !!! ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ МОДАЛЬНЫХ ОКОН И КНОПОК !!! */
-        /* ================================================= */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* Loader */
+        #page-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.8); display: none;
+            justify-content: center; align-items: center; z-index: 9999;
+        }
+
+        /* Notifications */
+        #notification-container {
+            position: fixed; top: 20px; right: 20px; z-index: 10000;
+        }
+        .notification {
+            background: var(--card); border-left: 4px solid var(--primary);
+            padding: 15px 25px; margin-bottom: 10px; border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); animation: slideIn 0.3s ease;
+        }
+
+        /* Header & Nav */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+        .connect-wallet-btn { background: var(--primary); border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; }
+        .wallet-display { display: none; align-items: center; gap: 10px; cursor: pointer; }
+
+        /* Grid Sections */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 40px; }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; }
+
+        /* Form Elements */
+        input, select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; }
+        .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #334155; color: white; }
+
+        /* NFT Cards */
+        .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .nft-card { background: #334155; padding: 10px; border-radius: 8px; text-align: center; }
+        .nft-card img { width: 100%; border-radius: 6px; }
+
+        /* Modals */
         .modal {
-            display: none; /* Скрыть по умолчанию */
-            position: fixed; 
-            z-index: 20000; 
-            left: 0;
-            top: 0;
-            width: 100%; 
-            height: 100%; 
-            overflow: auto; 
-            background-color: rgba(0,0,0,0.7); 
-            padding-top: 60px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000;
         }
+        .modal-content { background: var(--card); padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 15px; cursor: pointer; font-size: 24px; }
 
-        .modal-content {
-            background-color: #1a1a1a;
-            margin: 5% auto; 
-            padding: 30px;
-            border: 1px solid #FF8C00;
-            width: 80%;
-            max-width: 600px;
-            border-radius: 10px;
-            position: relative;
-        }
-
-        .close-button {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close-button:hover,
-        .close-button:focus {
-            color: #FF8C00;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        
-        /* Стили для предотвращения прокрутки тела при открытом меню */
-        body.menu-open-close {
-            overflow: hidden;
-        }
-        
-        .web3-btn[disabled] {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* Остальные стили (гамбургер, кнопки, уведомления) без изменений) */
-
-        .menu-toggle {
-            display: none; /* Скрыть на десктопе */
-            cursor: pointer;
-            z-index: 10001;
-            padding: 10px;
-        }
-
-        .hamburger {
-            width: 30px;
-            height: 3px;
-            background-color: #FF8C00;
-            position: relative;
-            transition: background-color 0s 0.15s;
-        }
-
-        .hamburger::before,
-        .hamburger::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 3px;
-            background-color: #FF8C00;
-            transition: transform 0.15s;
-        }
-
-        .hamburger::before {
-            top: -10px;
-        }
-
-        .hamburger::after {
-            top: 10px;
-        }
-
-        /* Анимация при открытии */
-        .menu-toggle.open .hamburger {
-            background-color: transparent;
-        }
-
-        .menu-toggle.open .hamburger::before {
-            transform: translateY(10px) rotate(45deg);
-        }
-
-        .menu-toggle.open .hamburger::after {
-            transform: translateY(-10px) rotate(-45deg);
-        }
-        
-        .nav-mobile-overlay {
-            display: flex;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.95); /* Темный фон */
-            z-index: 10000;
-            transform: translateX(100%); /* Изначально скрыто справа */
-            transition: transform 0.3s ease-in-out;
-            overflow-y: auto;
-            padding-top: 80px; /* Сдвиг вниз от хедера */
-        }
-        
-        .nav-mobile-overlay.active {
-            transform: translateX(0); /* Показать меню */
-        }
-        
-        .main-nav {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            width: 100%;
-            text-align: center;
-        }
-        
-        .main-nav li a {
-            display: block;
-            padding: 15px 20px;
-            text-decoration: none;
-            color: #fff;
-            font-size: 1.2em;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: background-color 0.3s;
-        }
-        
-        .main-nav li a:hover {
-            background-color: #f39c12;
-            color: #000;
-        }
-
-        .close-menu-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 40px;
-            color: #FF8C00;
-            cursor: pointer;
-            z-index: 10001;
-        }
-        
-        .nav-separator {
-            padding: 20px 0 10px;
-            color: #f39c12;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-        
-        @media (max-width: 992px) {
-            .menu-toggle {
-                display: block; /* Показать на мобильных */
-            }
-            .header-controls-group {
-                display: flex;
-                align-items: center;
-            }
-        }
-        /* Стили для предотвращения прокрутки тела при открытом меню */
-        body.menu-open {
-            overflow: hidden;
-        }
-        
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            margin: -1px;
-            padding: 0;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            border: 0;
-        }
-
-        /* ================================================= */
-        /* !!! ОБНОВЛЕННЫЕ СТИЛИ КНОПКИ CONNECT WALLET !!! */
-        /* ================================================= */
-        .wallet-connect-btn {
-            display: inline-block;
-            padding: 14px 28px; /* Увеличенный размер кнопки */
-            border: 3px solid #CC8800; /* Более темный золотистый/янтарный цвет для рамки */
-            background-color: #000;
-            color: #CC8800; /* Цвет текста по умолчанию */
-            cursor: pointer;
-            border-radius: 8px; /* Немного более скругленные углы */
-            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-            font-weight: 700; /* Более жирный шрифт */
-            font-size: 1.1em; /* Увеличенный шрифт */
-            font-family: 'Montserrat', sans-serif;
-            margin-left: 15px;
-            text-transform: uppercase; /* Текст заглавными буквами */
-        }
-        .wallet-connect-btn:hover {
-            background-color: #CC8800; /* Темный золотистый фон при наведении */
-            color: #000; /* Черный текст при наведении */
-            border-color: #CC8800;
-        }
-        .wallet-connect-btn.connected {
-            /* Цвет для Connected: Более яркий золотисто-желтый */
-            background-color: #FFB347; 
-            color: #000;
-            border: 3px solid #FFB347;
-            cursor: pointer; 
-        }
-        .wallet-connect-btn.connected:hover {
-             /* Цвет для Disconnect: Красный/Темный */
-            background-color: #e74c3c;
-            border: 3px solid #e74c3c;
-            color: white;
-        }
-        /* ================================================= */
-        /* !!! КОНЕЦ ОБНОВЛЕННЫХ СТИЛЕЙ КНОПКИ !!! */
-        /* ================================================= */
-        
-        .error { color: red; }
-        .primary-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #f39c12; 
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 700;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-top: 15px;
-        }
-        
-        .primary-btn:hover {
-            background-color: #e67e22; 
-        }
-        .web3-wallet-display {
-            font-size: 0.9em;
-            color: #ccc;
-            margin-top: 10px;
-            word-break: break-all;
-        }
-        .web3-wallet-display strong {
-            color: #fff;
-        }
-        
-        @media (max-width: 600px) {
-            .ai-diagnostic-tool__controls {
-                flex-direction: column;
-            }
-            .wallet-connect-btn {
-                width: 100%;
-                margin-top: 10px;
-            }
-        }
-        /* Стили для уведомлений */
-        .notification-success { background-color: #2ecc71; }
-        .notification-error { background-color: #e74c3c; }
-        .notification-info { background-color: #3498db; }
-        .notification-warning { background-color: #f39c12; }
-        
-        /* Стили для отображения подключенного кошелька в шапке */
-        .wallet-display {
-            display: flex;
-            align-items: center;
-            padding: 10px 18px; /* Обновлено для соответствия размеру кнопки */
-            border: 2px solid #FFB347; /* Золотой цвет для рамки */
-            background-color: #1a1a1a;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s, border-color 0.3s;
-            margin-left: 15px; 
-            font-size: 1em; /* Обновлено */
-        }
-        .wallet-display:hover {
-            background-color: #e74c3c; /* Для отключения */
-            border-color: #e74c3c;
-        }
-        .wallet-display .fox-icon {
-            font-size: 1.2em;
-            margin-right: 8px;
-        }
-        .wallet-display .wallet-address-text {
-            font-size: 0.9em;
-            font-weight: 600;
-        }
-        .wallet-display .copy-btn {
-            background: none;
-            border: none;
-            color: #FFB347; /* Золотой цвет для иконки копирования */
-            margin-left: 10px;
-            cursor: pointer;
-            font-size: 1em;
-        }
-        .wallet-display .copy-btn:hover {
-            color: white;
-        }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
 
-    <header class="header">
+    <div id="page-loader"><span>Loading AlphaFox...</span></div>
+    <div id="notification-container"></div>
+
     <div class="container">
-        <div class="logo">
+        <header>
+            <div class="logo"><h1>AlphaFox DAO</h1></div>
+            <nav id="mainNav">
+                <button class="connect-wallet-btn">Connect Wallet</button>
+                <div class="wallet-display" data-wallet-control="walletDisplay">
+                    <span class="wallet-address-display">0x00...0000</span>
+                    <button class="btn-secondary" style="width: auto;">Disconnect</button>
+                </div>
+            </nav>
+            <div id="menuToggle"><span></span><span></span><span></span></div>
+        </header>
+
+        <section class="grid">
+            <div class="card">
+                <h2>Staking AFOX</h2>
+                <div class="info-row">Balance: <span id="user-afox-balance">0 AFOX</span></div>
+                <div class="info-row">Staked: <span id="user-staked-amount">0 AFOX</span></div>
+                <div class="info-row">Rewards: <span id="user-rewards-amount">0 AFOX</span></div>
+                <hr>
+                <select id="pool-selector"></select>
+                <input type="number" id="stake-amount" placeholder="Amount to stake">
+                <button id="stake-afox-btn" class="btn btn-primary">Stake Tokens</button>
+                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <button id="claim-rewards-btn" class="btn btn-secondary">Claim</button>
+                    <button id="unstake-afox-btn" class="btn btn-secondary">Unstake</button>
+                </div>
+                <p><small id="lockup-period">—</small></p>
+                <p><small id="staking-apr">—</small></p>
             </div>
 
-        <nav class="nav">
-            <ul class="main-nav">
-                </ul>
-        </nav>
+            <div class="card">
+                <h2>Jupiter Swap</h2>
+                <div style="position: relative;">
+                    <label>From: <span id="swap-from-balance" style="float:right">0</span></label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="swap-from-amount" placeholder="0.0">
+                        <select id="swap-from-token" style="width: 100px;">
+                            <option value="SOL">SOL</option>
+                            <option value="AFOX">AFOX</option>
+                        </select>
+                    </div>
+                    <button class="max-amount-btn" data-input-id="swap-from-amount" style="font-size: 10px; cursor: pointer;">MAX</button>
+                </div>
+                
+                <div style="text-align: center; margin: 10px 0;">
+                    <button id="swap-direction-btn" style="background: none; border: 1px solid #334155; color: white; border-radius: 50%; width: 30px; height: 30px; cursor: pointer;">↓</button>
+                </div>
 
-        <div class="wallet-controls">
-    <button 
-        id="connectWalletBtn" 
-        class="web3-button connect-fox-btn wallet-connect-btn"
-        aria-label="Подключить криптовалютный кошелек"
-    >
-        <i class="fox-icon">🦊</i> 
-        Connect Wallet
-    </button>
-    
-    <div id="walletDisplay" class="wallet-display" style="display:none;">
-        <span id="walletAddressSpan" class="wallet-address-text"></span>
-        <button id="copyWalletBtn" class="copy-btn" aria-label="Копировать адрес кошелька"><i class="fas fa-copy"></i></button>
+                <label>To (Estimated):</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="swap-to-amount" placeholder="0.0" readonly>
+                    <select id="swap-to-token" style="width: 100px;">
+                        <option value="AFOX">AFOX</option>
+                        <option value="SOL">SOL</option>
+                    </select>
+                </div>
+                
+                <div style="font-size: 12px; margin: 10px 0;">
+                    Price Impact: <span id="price-impact">0%</span><br>
+                    Fee: <span id="lp-fee">0</span><br>
+                    Min. Received: <span id="min-received">0</span>
+                </div>
+                
+                <button id="get-quote-btn" class="btn btn-secondary">Get Quote</button>
+                <button id="execute-swap-btn" class="btn btn-primary" style="display:none; margin-top: 5px;">Swap Now</button>
+            </div>
+        </section>
+
+        <section class="card" style="margin-top: 20px;">
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <h2>My NFTs</h2>
+                <button class="btn btn-primary" style="width: auto;" onclick="document.getElementById('mint-nft-modal').style.display='flex'">Mint NFT</button>
+            </div>
+            <div id="user-nft-list" class="nft-grid">
+                </div>
+        </section>
+
+        <section class="card" style="margin-top: 20px;">
+            <h2>Marketplace</h2>
+            <div id="marketplace-nft-list" class="nft-grid"></div>
+        </section>
     </div>
-</div>
-        
-</header>
 
-    <main>
-        <section id="aurum-fox-home" class="hero-section aurum-fox-section">
-            <div class="container">
-                <div class="hero-content">
-                    <h1>Aurum Fox: Your Golden Luck on Solana!</h1>
-                    <p class="tagline intro-text">Combining the cunning of the fox, the prosperity of gold, and the speed of Solana.</p>
-                    <div class="hero-buttons call-to-action">
-                        <a href="#how-to-buy" class="btn btn-primary primary-btn">Get AFOX</a>
-                        <a href="#aurum-community" class="btn btn-secondary secondary-btn">Join the Community</a>
-                    </div>
-                </div>
-                <div class="hero-image">
-                    <img src="./assets/foxcoin-hero.png.jpg" alt="Aurum Fox golden coin with fox image and 'Aurum Fox' text">
-                </div>
-            </div>
-        </section>
-
-        <section id="about-afox" class="section aurum-fox-section-alt">
-            <div class="container">
-                <h2 class="aurum-heading">About Our AURUM FOX (AFOX) Meme Token</h2>
-                <p>Welcome to the world of <strong>AURUM FOX!</strong> We are a new, fully decentralized meme token, created by the community and for the community. Our goal is to create a fun, dynamic, and truly community-driven meme token on the Solana blockchain.</p>
-                <p><strong>AURUM FOX</strong> is a meme token presented as a golden coin with a cute cartoon fox image and the inscription "AURUM FOX". Its name combines the Latin "Aurum" (gold), symbolizing value, and "Fox" – a popular image for creating viral brands in the meme token space.</p>
-                <p>We believe in transparency and fairness. All permissions for <strong>minting</strong> (creating new tokens) and <strong>freezing</strong> (locking existing tokens) have been **irreversibly revoked**. This ensures a fixed total supply and the inability to lock your assets. No one, not even the creators, can issue new tokens or interfere with your holdings. AURUM FOX (AFOX) is a 100% community-governed meme token.</p>
-            </div>
-        </section>
-
-        <section id="tokenomics" class="section aurum-fox-section">
-            <div class="container">
-                <h2 class="aurum-heading">Aurum Fox Tokenomics</h2>
-                <div class="tokenomics-grid tokenomics-details">
-                    <div class="tokenomics-item">
-                        <h3>Total Supply</h3>
-                        <p class="highlight">10,000,000 AFOX</p>
-                        <p>A limited and fixed supply ensures the scarcity of Aurum Fox (AFOX).</p>
-                        <p class="highlight-text-small"><strong>Minting rights revoked</strong></p>
-                        <p class="highlight-text-small"><strong>Freezing rights revoked</strong></p>
-                        <p>This demonstrates our commitment to decentralization and security for all holders.</p>
-                    </div>
-                    <div class="tokenomics-item">
-                        <h3>Vesting Schedule</h3>
-                        <p>To ensure long-term stability and prevent market manipulation, a portion of the supply will be released according to the following vesting schedule:</p>
-                        <div class="table-responsive">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Vesting Period</th>
-                                        <th>Release Percentage</th>
-                                        <th>AFOX Unlocked</th>
-                                        <th>Start Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Period 1</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 23, 2027, 12:00 PM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Period 2</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 24, 2029, 12:00 PM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Period 3</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 25, 2031, 12:00 PM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Period 4</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 26, 2033, 12:00 PM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Period 5</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 27, 2035, 12:00 PM</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="contract-address">
-                    <p><strong>AFOX Contract Address:</strong> <span id="contractAddress" class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> </p>
-                </div>
-                <p class="tokenomics-note">Our tokenomics are designed for long-term sustainability and community growth.</p>
-            </div>
-        </section>
-
-        <section id="how-to-buy" class="section aurum-fox-section-alt">
-            <div class="container">
-                <h2 class="aurum-heading">How to Acquire Aurum Fox (AFOX)</h2>
-                <p>There are several ways to become part of our community and get AURUM FOX (AFOX):</p>
-                <ol class="buy-steps how-to-list">
-                    <li>
-                        <h3>Step 1: Participate in Airdrops</h3>
-                        <p>Follow our official channels to stay informed about upcoming airdrop announcements. Participate in community events for a chance to get free tokens!</p>
-                    </li>
-                    <li>
-                        <h3>Step 2: Get a Solana Wallet</h3>
-                        <p>You'll need a wallet that supports the Solana network, such as <a href="https://phantom.app/" target="_blank" rel="noopener noreferrer">Phantom</a>, <a href="https://solflare.com/" target="_blank" rel="noopener noreferrer">Solflare</a>. Install it as a browser extension or mobile application.</p>
-                    </li>
-                    <li>
-                        <h3>Step 3: Fund Your Wallet with SOL</h3>
-                        <p>Buy SOL (Solana) on any major centralized exchange (Binance, Coinbase, Bybit, etc.) and send it to the address of your chosen Solana wallet.</p>
-                    </li> 
-                    <li>
-                        <h3>Step 4: Go to a DEX and Swap SOL for AFOX</h3>
-                        <p>Use a Solana Decentralized Exchange (DEX) such as <a href="https://raydium.io/swap/" target="_blank" rel="noopener noreferrer">Raydium</a> or <a href="https://www.orca.so/swap" target="_blank" rel="noopener noreferrer">Orca</a> to swap SOL for AFOX.</p>
-                        <p>On the swap page, paste the AFOX contract address (<span class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span>) into the field for the token you want to receive. Confirm the transaction in your wallet.</p>
-                        <p>Or use aggregators for more accurate coin information:</p>
-                        <ul>
-                            <li><a href="https://www.geckoterminal.com/solana/pools/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer">GeckoTerminal</a></li>
-                            <li><a href="https://www.dextools.io/app/solana/pair-explorer/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer">DEXTools</a></li>
-                            <li><a href="https://birdeye.so/solana/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer">Birdeye</a></li>
-                            <li><a href="https://gmgn.ai/sol/token/solscan_GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?filter=All" target="_blank" rel="noopener noreferrer">GMGN.AI</a></li>
-                             <li><a href="https://dexscreener.com/solana/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer">Dexscreener</a></li>
-                            <li><a href="https://photon-sol.tinyastro.io/en/lp/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer">Photon Solana LP</a></li>
-                        </ul>
-                    </li>
-                </ol>
-                <p class="tip">Make sure you have enough SOL to cover network fees.</p>
-                <p class="tip"><i>Liquidity pool link will be available soon!</i></p>
-                
-                <a href="#swap-section" class="web3-btn primary-btn" aria-label="Go to AFOX Swap Terminal">
-                    🔄 Go to Swap Terminal
-                </a>
-
-                <button class="web3-btn" aria-label="Trade AFOX on Raydium">Trade AFOX on Raydium</button>
-            </div>
-        </section>
-
-        <section id="aurum-nfts" class="section aurum-fox-section">
-            <div class="container">
-                <h2 class="aurum-heading">Aurum Fox NFT: Unleashing Digital Treasures</h2>
-                <p>Beyond being a meme token, Aurum Fox aims to delve into the exciting world of Non-Fungible Tokens (NFTs). Our vision includes creating exclusive Aurum Fox NFT collections that embody the spirit of luck, prosperity, and the cunning of the fox.</p>
-                <ul>
-                    <li>Exclusive access to community events or channels.</li>
-                    <li>Staking opportunities to earn additional AFOX tokens.</li>
-                    <li>Participation in governance or decision-making for future projects.</li>
-                    <li>Unique artworks celebrating the Aurum Fox brand.</li>
-                </ul>
-                <div class="nft-showcase">
-                    <div class="nft-card">
-                        <img src="https://via.placeholder.com/150/ffd700/000000?text=AFOX+NFT+1" alt="Aurum Fox Genesis NFT #001, rare first edition">
-                        <h4>Aurum Fox Genesis #001</h4>
-                        <p>Rare first edition collectible.</p>
-                    </div>
-                    <div class="nft-card">
-                        <img src="https://via.placeholder.com/150/c0c0c0/000000?text=AFOX+NFT+2" alt="Aurum Fox Guardian NFT #002, grants staking bonus">
-                        <h4>Aurum Fox Guardian #002</h4>
-                        <p>Grants staking bonus.</p>
-                    </div>
-                </div>
-                <p>A dedicated portion of our tokenomics is directed to the "NFT Fund" to support the development, marketing, and expansion of these future NFT projects. Stay tuned for announcements of our first official Aurum Fox NFT collection!</p>
-                <button class="web3-btn" aria-label="View NFT Collection on Magic Eden">View Collection on Magic Eden</button>
-            </div>
-        </section>
-
-        <section id="aurum-nfc" class="section aurum-fox-section-alt">
-            <div class="container">
-                <h2 class="aurum-heading">🦊 Aurum Fox NFC: Interactive Future</h2>
-                <p>Dive into a new level of interaction with Aurum Fox! We are exploring the possibilities of Near Field Communication (NFC) to create a seamless connection between our digital assets and the real world.</p>
-
-                <div class="nfc-grid">
-                    <div class="nfc-item">
-                        <h3>AFOX NFT Authenticity</h3>
-                        <img src="https://via.placeholder.com/150?text=NFT+NFC+Scan" alt="Smartphone scanning an NFC tag on an NFT collectible" class="nfc-icon">
-                        <p>Verify the authenticity of your physical Aurum Fox NFT collectibles using NFC. Simply tap your smartphone to an NFC-chipped item to instantly check its blockchain status and receive exclusive information.</p>
-                    </div>
-                    <div class="nfc-item">
-                        <h3>Exclusive Access and Events</h3>
-                        <img src="https://via.placeholder.com/150?text=Event+NFC" alt="Smartphone tapping an NFC tag for event access" class="nfc-icon">
-                        <p>Use NFC tags to gain access to private community meetups, airdrops, or unique content. Your physical presence unlocks digital doors!</p>
-                    </div>
-                    <div class="nfc-item">
-                        <h3>Interactive Advertising</h3>
-                        <img src="https://via.placeholder.com/150?text=Ad+NFC+Tap" alt="Person tapping phone to an ad with NFC" class="nfc-icon">
-                        <p>Advertisers can integrate NFC into their campaigns. Tap a physical NFC tag to be directed to interactive ads, special offers, or partner promotions directly on our portal.</p>
-                    </div>
-                </div>
-                <p class="nfc-note"><i>Note: NFC functionality is under development and will be implemented in future roadmap phases.</i></p>
-            </div>
-        </section>
-
-        <section id="aurum-roadmap" class="section aurum-fox-section">
-            <div class="container">
-                <h2 class="aurum-heading">Aurum Fox Roadmap</h2>
-                <div class="roadmap-grid">
-                    <div class="roadmap-item">
-                        <h3>Phase 1: Launch and Awareness (Completed)</h3>
-                        <ul>
-                            <li>Development and deployment of the AFOX token on Solana.</li>
-                            <li>Creation and launch of the liquidity pool.</li>
-                            <li>Launch of official social channels (Twitter, Telegram, Discord).</li>
-                            <li>First wave of memes and viral content.</li>
-                            <li><strong>Minting rights revoked.</strong></li>
-                            <li><strong>Freezing rights revoked.</strong></li>
-                        </ul>
-                    </div>
-                    <div class="roadmap-item">
-                        <h3>Phase 2: Community Growth and Visibility</h3>
-                        <ul>
-                            <li>Launch of the official Aurum Fox website (current stage).</li>
-                            <li>Application for listing on CoinGecko and CoinMarketCap.</li>
-                            <li>Expansion of marketing campaigns and influencer collaborations.</li>
-                            <li>Hosting meme contests and airdrops for active participants.</li>
-                        </ul>
-                    </div>
-                    <div class="roadmap-item">
-                        <h3>Phase 3: Innovation and Expansion</h3>
-                        <ul>
-                            <li><strong>Launch of unique Aurum Fox NFT collections.</strong></li>
-                            <li>Exploration of utility functions for Aurum Fox NFTs.</li>
-                            <li>Potential partnerships with other Solana projects.</li>
-                            <li>Development of gaming or additional utility features for AFOX (based on community demand).</li>
-                            <li>Preparation for potential listings on Centralized Exchanges (CEX).</li>
-                            <li>Implementation of DAO and governance.</li>
-                            <li>Development of a staking platform.</li>
-                            <li>**Development of a lending/borrowing platform (DeFi).**</li>
-                            <li>Gaming integrations.</li>
-                            <li>Multimedia portal enhancements.</li>
-                            <li>NFC utility development.</li>
-                            <li>Cross-chain research.</li>
-                        </ul>
-                    </div>
-                </div>
-                <p class="roadmap-disclaimer"><i>Note: The Aurum Fox roadmap is dynamic and may be adjusted based on market conditions and community feedback.</i></p>
-            </div>
-        </section>
-
-        <section id="aurum-news" class="section aurum-fox-section-alt">
-            <div class="container">
-                <h2 class="aurum-heading">Aurum Fox News and Updates</h2>
-                <div class="news-content news-list">
-                    <p class="web3-placeholder">Loading News...</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="aurum-community" class="section aurum-fox-section-alt">
-            <div class="container">
-                <h2 class="aurum-heading">Join the AFOX Community!</h2>
-                <p>Become part of our rapidly growing and friendly community. Together, we will build something special and share the luck of Aurum Fox!</p>
-                <div class="social-links">
-                    <a href="https://discord.gg/AR7vnJVE" target="_blank" rel="noopener noreferrer" class="social-btn discord-btn" aria-label="Join our Discord community">
-                        <svg class="social-icon" viewBox="0 0 448 512"><path fill="currentColor" d="M297.2 92.5C336.5 98.7 368 116.3 368 116.3V151.7C368 151.7 328.5 137.5 299.7 136.2C288.7 135.8 276.1 136.6 261.6 138.8C202.4 147.2 165.8 171.1 165.8 171.1L170 167.3C136.4 179.6 100.9 203.2 100.9 203.2L90.4 207.2C100.2 198.8 113.8 189.9 129.5 180.8L124.7 176.6C124.7 176.6 141.7 167 159.2 161C172.9 156.4 187.9 153.8 203.8 153.2C226.5 152.4 246.6 153.3 260.6 154.9C281.3 157.4 297.2 160 297.2 160L290.7 158.1C305.9 160.7 319.4 162.7 330.4 164.7C338.9 166.4 346.8 168.1 353.4 169.8C349.5 169.8 344.6 169.9 339.6 169.9C331.4 170.2 323 170.6 314.4 171.2C307.3 171.8 300.2 172.5 293.2 173.3C285.8 174.1 278.4 175.1 271 176.2C247.9 179.4 225.2 182.7 203.8 186.1C194.2 187.6 184.8 189.2 175.7 190.9C166.8 192.6 158.1 194.5 149.5 196.5C141.2 198.5 133.2 200.6 125.4 202.8C117.8 204.9 110.4 207.1 103.2 209.4L107.5 212.7C107.5 212.7 131.6 221 155.6 230.1C183.4 240.7 212.6 251.8 243.6 262.9C274.6 274 307.4 284.9 342.3 295.4L339.6 295.4C342.3 295.4 345 295.3 347.7 295.2L352.4 294.9C361.6 294.4 370.8 293.8 379.9 293.1C388.9 292.4 398 291.6 407 290.8C415.8 290 424.6 289.2 433.4 288.5C442.2 287.7 451 287.1 459.8 286.5L462.5 286.4C448 298.5 423.8 316.5 397.6 331.5C384.8 338.4 372.1 345.1 359.4 351.6C346.6 358.1 333.9 364.5 321.2 370.7C308.5 376.9 295.8 383.1 283.1 389.1C270.4 395.1 257.7 401.1 245 406.8C232.3 412.5 219.6 418.1 206.9 423.6C194.2 429.1 181.5 434.5 168.8 439.8C156.1 445.1 143.4 450.4 130.7 455.5L128 456C128 456 109.9 450.2 87.8 438.4C65.7 426.6 45.4 408.8 29.2 387.6L29.2 387.6L27.5 385.4C26.5 384.3 25.6 383.2 24.8 382.1C18.6 373.1 14 363.1 11.2 352.2C8.5 341.2 7.1 329.8 7.1 318C7.1 278.4 43.1 246.6 86.8 231.1C91.4 229.5 96.1 227.9 100.9 226.3C105.7 224.7 110.5 223.1 115.4 221.5C120.3 219.9 125.2 218.4 130.1 216.8C135.1 215.3 140.1 213.7 145.1 212.2C150.1 210.7 155.1 209.2 160.2 207.7C165.2 206.2 170.3 204.7 175.4 203.2C180.5 201.7 185.7 200.2 190.8 198.8C196 197.3 201.1 195.9 206.3 194.5C211.5 193.1 216.6 191.7 221.8 190.4C226.9 189 232.1 187.7 237.3 186.4C242.4 185.1 247.6 183.9 252.8 182.7C258 181.5 263.1 180.3 268.3 179.1C273.5 177.9 278.7 176.8 283.8 175.7C289 174.6 294.2 173.5 299.4 172.5C304.6 171.4 309.8 170.4 315 169.4C320.1 168.4 325.3 167.5 330.5 166.6C335.7 165.7 340.9 164.8 346.1 163.9C351.3 163.1 356.5 162.2 361.7 161.4C366.9 160.6 372.1 159.8 377.3 159.1C382.5 158.3 387.7 157.6 392.9 156.9C398.1 156.2 403.3 155.5 408.5 154.9L408.5 154.9L416.7 153.9C403.9 146.7 387.5 137 368 126.8C359.8 122.5 351.5 118.1 343.3 113.8C335.1 109.5 326.8 105.1 318.5 100.8C310.3 96.5 302 92.1 293.8 87.8L297.2 92.5ZM224 372.3C224 380.2 230.1 386.3 238 386.3C245.9 386.3 252 380.2 252 372.3C252 364.4 245.9 358.3 238 358.3C230.1 358.3 224 364.4 160 372.3Z"/></svg>
-                        Discord
-                    </a>
-                    <a href="https://t.me/+J2c790PJUSI4OWI0" target="_blank" rel="noopener noreferrer" class="social-btn telegram-btn" aria-label="Join our Telegram channel">
-                        <svg class="social-icon" viewBox="0 0 496 512"><path fill="currentColor" d="M248 8C111.03 8 0 119.03 0 256s111.03 248 248 248 248-111.03 248-248S384.97 8 248 8zm121.841 185.556l-67.453 61.248c-1.391 1.264-3.12 1.94-4.887 1.94H192.5c-3.155 0-5.748-2.593-5.748-5.748V177.16c0-3.155 2.593-5.748 5.748-5.748h22.684c3.155 0 5.748 2.593 5.748 5.748v44.204l44.383-40.354c1.391-1.264 3.12-1.94 4.887-1.94s3.496.676 4.887 1.94l13.568 12.355c3.784 3.443 3.966 9.617.408 13.24L261.2 264.408c-3.558 3.623-3.74 9.797-.408 13.24l68.212 62.062c3.784 3.443 9.957 3.26 13.568-.408l13.568-12.355c3.496-3.186 3.65-9.255.408-12.698L307.72 264.408c-3.558-3.623-3.74-9.797-.408-13.24l68.212-62.062c3.784-3.443 3.966-9.617.408-13.24l-13.568-12.355c-3.496-3.186-9.565-3.032-12.91-1.423zM157.994 286.91l-38.384 34.908c-3.784 3.443-3.966 9.617-.408 13.24l13.568 12.355c3.496 3.186 9.565 3.032 12.91-1.423l38.384-34.908c3.558-3.623 3.74-9.797-.408-13.24l-13.568-12.355c-3.496-3.186-9.565-3.032-12.91 1.423z"/></svg>
-                        Telegram
-                    </a>
-                    <a href="https://x.com/AURUMFOX_?t=9uwh4e6XYoMRHJxZTs9bsg&s=08" target="_blank" rel="noopener noreferrer" class="social-btn twitter-btn" aria-label="Follow us on Twitter (X)">
-                        <svg class="social-icon" viewBox="0 0 512 512"><path fill="currentColor" d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.2 275.5 26.8 48H172.4L272.9 183.7 389.2 48zM364.4 421.8h39.1L123.6 90.1H80.5L364.4 421.8z"/></svg>
-                        Twitter (X)
-                    </a>
-                    <a href="https://solscan.io/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer" class="social-btn solscan-btn" aria-label="View AFOX on Solscan">
-                        <svg class="social-icon" viewBox="0 0 576 512" ><path fill="currentColor" d="M573.5 241.1C559.5 245.9 544.7 248 529.7 248H528c-18.7 0-33.8 15.1-33.8 33.8v80.4c0 30.6-24.8 55.4-55.4 55.4h-35.3c-14.7 0-26.6 11.9-26.6 26.6v29.6c0 14.7 11.9 26.6 26.6 26.6H502c30.6 0 55.4-24.8 55.4-55.4v-30.8c0-10.9 9-19.9 19.9-19.9h.2c10.9 0 19.9 9 19.9 19.9v30.8c0 52.4-42.5 94.9-94.9 94.9h-35.3c-52.4 0-94.9-42.5-94.9-94.9V362.2c0-14.7-11.9-26.6-26.6-26.6h-35.3c-30.6 0-55.4-24.8-55.4-55.4V281.8c0-18.7-15.1-33.8-33.8-33.8h-1.7c-15 0-29.8-2.1-43.8-6.9-49.3-17.4-87.8-64.7-87.8-119.5C96 55.4 138.5 13 190.9 13H384c17.7 0 32 14.3 32 32s-14.3 32-32 32h-193.1c-17 0-30.8 13.8-30.8 30.8s13.8 30.8 30.8 30.8H352c17.7 0 32 14.3 32 32s-14.3 32-32 32H190.9c-52.4 0-94.9 42.5-94.9 94.9 0 32.5 16.4 61.5 41.5 78.4 2.6 1.8 5.4 3.2 8.3 4.3 12.1 4.7 24.8 7.2 37.8 7.2h1.7c18.7 0 33.8 15.1 33.8 33.8v80.4c0 30.6 24.8 55.4 55.4 55.4h35.3c14.7 0 26.6 11.9-26.6 26.6v29.6c0 14.7-11.9 26.6-26.6 26.6h-35.3c-52.4 0-94.9-42.5-94.9-94.9V409.8c0-10.9-9-19.9-19.9-19.9h-.2c-10.9 0-19.9 9-19.9 19.9v30.8c0 52.4 42.5 94.9 94.9 94.9h35.3c52.4 0 94.9-42.5 94.9-94.9V409.8c0-18.7 15.1-33.8 33.8-33.8h1.7c15 0 29.8-2.1 43.8-6.9C523.5 351.7 562 304.4 562 249.6c0-32.5-16.4-61.5-41.5-78.4z"/></svg>
-                        Solscan
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        
-
-        <section id="web3-site-home" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🎮 My Web3 Portal</h2>
-                <p class="web3-intro">Explore decentralized games, manage your NFTs, and discover Web3 advertising opportunities. <strong style="color: #f39c12;">Connect your wallet below to activate Web3 functions.</strong></p>
-                
-                <div class="wallet-control-box" style="margin: 20px 0; display: flex; flex-direction: column; align-items: flex-start;">
-                    <p class="web3-wallet-display">Your Wallet Address: <strong id="walletAddressDisplay">Not Connected</strong></p>
-                </div>
-                <div class="web3-features-grid">
-                    <div class="feature-card">
-                        <h3>🎮 Games</h3>
-                        <p>Explore blockchain games and earn rewards.</p>
-                        <a href="#games-section" class="web3-link">Go to Games</a>
-                    </div>
-                    <div class="feature-card">
-                        <h3>🖼️ NFTs</h3>
-                        <p>Browse your NFT collections, mint new ones, and explore marketplaces.</p>
-                        <a href="#nft-section" class="web3-link">Explore NFTs</a>
-                    </div>
-                     <div class="feature-card">
-                        <h3>🏛️ DAO</h3>
-                        <p>Participate in governance and vote on proposals.</p>
-                        <a href="#dao-section" class="web3-link">Go to DAO</a>
-                    </div>
-                    <div class="feature-card">
-                        <h3>💰 Staking</h3>
-                        <p>Stake your AFOX tokens to earn passive income.</p>
-                        <a href="#staking-section" class="web3-link">Start Staking</a>
-                    </div>
-                     <div class="feature-card">
-                        <h3>🏦 Lending</h3>
-                        <p>Lend or borrow crypto assets.</p>
-                        <a href="#lending-section" class="web3-link">Go to Lending</a> </div>
-                     <div class="feature-card">
-                        <h3>🔄 Swap</h3>
-                        <p>Exchange AFOX for other tokens easily.</p>
-                        <a href="#swap-section" class="web3-link">Go to Swap</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="games-section" class="section web3-section">
-            <div class="container">
-                <h2 class="web3-heading">🕹️ Games</h2>
-                <p>This section will display user-uploaded games.</p>
-                <button id="uploadGameBtnWeb3" class="web3-btn" aria-label="Upload a new game">Upload New Game</button>
-                <div id="game-list" class="content-area web3-content-area games-grid">
-                    <p class="web3-placeholder">Loading Games...</p>
-                </div>
-                <button id="loadMoreGamesBtn" class="web3-btn" aria-label="Load More Games">Load More Games</button>
-            </div>
-        </section>
-
-        <section id="nft-section" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🖼️ NFT Collections</h2>
-                <p>Manage your NFTs directly from the website! <strong style="color: #f39c12;">Connect your wallet to enable these features.</strong></p>
-
-                <div class="nft-actions">
-                    <button id="viewMyNftsBtn" class="web3-btn" aria-label="View my NFTs">View My NFTs</button>
-                    <button id="mintNftBtn" class="web3-btn" aria-label="Mint a new NFT">Mint New NFT</button>
-                </div>
-
-                <h3 class="web3-subheading">Your NFTs:</h3>
-                <div id="user-nft-list" class="content-area web3-content-area nft-grid">
-                    <p class="placeholder-item web3-placeholder">Connect your wallet to see your NFTs.</p>
-                </div>
-
-                <h3 class="web3-subheading">List your NFT for sale:</h3>
-                <div class="nft-form-container">
-                    <form id="listNftForm" class="web3-form">
-                        <label for="nftToSell">Select NFT to sell:</label>
-                        <select id="nftToSell" name="nftToSell" required aria-required="true">
-                            <option value="">-- Please select an NFT --</option>
-                            </select>
-
-                        <label for="salePrice">Sale Price (SOL):</label>
-                        <input type="number" id="salePrice" name="salePrice" step="0.000001" min="0.000001" placeholder="e.g., 0.5" required aria-required="true">
-
-                        <label for="listingDuration">Listing Duration (Days):</label>
-                        <input type="number" id="listingDuration" name="listingDuration" min="1" max="365" value="7" required aria-required="true">
-
-                        <button type="submit" class="web3-btn" aria-label="List NFT for sale">List NFT</button>
-                    </form>
-                </div>
-
-                <h3 class="web3-subheading">NFTs from Marketplaces:</h3>
-                <div id="marketplace-nft-list" class="content-area web3-content-area nft-grid">
-                    <p class="placeholder-item web3-placeholder">Loading NFTs from Magic Eden...</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="mint-nft-section" class="section web3-section">
-            <div class="container">
-                <h2 class="web3-heading">✨ Create Your Own NFT (Minting)</h2>
-                <p>Unleash your creativity! Upload your artwork and mint it as a unique NFT on the Solana blockchain. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
-
-                <div class="nft-form-container">
-                    <form id="mintNftFormSection" class="web3-form" enctype="multipart/form-data">
-                        <label for="nftFile">Upload Image/Video:</label>
-                        <input type="file" id="nftFile" name="nftFile" accept="image/*,video/*" required aria-required="true">
-
-                        <label for="mintNftName">NFT Name:</label>
-                        <input type="text" id="mintNftName" name="mintNftName" placeholder="e.g., My Masterpiece #1" required aria-required="true">
-
-                        <label for="mintNftDescription">Description:</label>
-                        <textarea id="mintNftDescription" name="mintNftDescription" rows="4" placeholder="Tell us about your NFT..." required aria-required="true"></textarea>
-
-                        <label for="mintNftAttributes">Attributes (e.g., "Background: Blue, Eyes: Green"):</label>
-                        <textarea id="mintNftAttributes" name="mintNftAttributes" rows="3" placeholder="Enter attributes in JSON or plain text, e.g., {'Rarity': 'Rare', 'Type': 'Art'}"></textarea>
-                        <small class="form-help-text">Please use JSON format for attributes for better compatibility.</small>
-
-                        <button type="submit" class="web3-btn" aria-label="Mint NFT">Mint NFT</button>
-                    </form>
-                </div>
-            </div>
-        </section>
-
-        <section id="dao-section" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🏛️ Decentralized Autonomous Organization (DAO)</h2>
-                <p class="web3-intro">Participate in Aurum Fox governance! Create proposals, vote, and shape the future of the project. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
-
-                <div class="dao-actions">
-                    <button id="createProposalBtn" class="web3-btn" aria-label="Create new DAO proposal">Create Proposal</button>
-                </div>
-
-                <h3 class="web3-subheading">Active Proposals</h3>
-                <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
-                    <div class="dao-proposal-item web3-placeholder" data-proposal-id="1">
-                        <h4>Loading Proposal #1: Example Title</h4>
-                        <p>Description: Real-time DAO proposals are loading here.</p>
-                        <p>Creator: <span class="dao-creator">0x123...abc</span></p>
-                        <p>Votes For: <span class="dao-votes-for">100 AFOX</span> | Votes Against: <span class="dao-votes-against">50 AFOX</span></p>
-                        <button class="web3-btn dao-vote-btn" data-vote-type="for" aria-label="Vote FOR Proposal 1">Vote FOR</button>
-                        <button class="web3-btn dao-vote-btn" data-vote-type="against" aria-label="Vote AGAINST Proposal 1">Vote AGAINST</button>
-                    </div>
-                </div>
-
-                <h3 class="web3-subheading">Completed Proposals</h3>
-                <div id="completed-proposals-list" class="content-area web3-content-area dao-proposals-grid">
-                    <p class="web3-placeholder">No completed proposals yet.</p>
-                </div>
-
-                <div id="createProposalModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="newProposalModalTitle" style="display:none;">
-                    <div class="modal-content">
-                        <span class="close-button" id="closeProposalModal" aria-label="Close create proposal modal">&times;</span>
-                        <h3 id="newProposalModalTitle" class="web3-heading">Create New DAO Proposal</h3>
-                        <form id="newProposalForm" class="web3-form">
-                            <label for="proposalTitle">Proposal Title:</label>
-                            <input type="text" id="proposalTitle" name="proposalTitle" placeholder="Enter proposal title" required aria-required="true">
-
-                            <label for="proposalDescription">Proposal Description:</label>
-                            <textarea type="text" id="proposalDescription" name="proposalDescription" rows="6" placeholder="Describe your proposal in detail..." required aria-required="true"></textarea>
-
-                            <button type="submit" class="web3-btn" aria-label="Submit new proposal">Submit Proposal</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="staking-section" class="section web3-section">
-            <div class="container">
-                <h2 class="web3-heading">💰 AFOX Staking</h2>
-                <p class="web3-intro">Stake your AFOX tokens to earn passive income and participate in project governance! <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
-                
-                <div class="staking-info-grid">
-                    <div class="info-card">
-                        <h3>Your AFOX Balance</h3>
-                        <p id="userAfoxBalance" class="info-value">0 AFOX</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Your Staked Amount</h3>
-                        <p id="userStakedAmount" class="info-value">0 AFOX</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Accrued Rewards</h3>
-                        <p id="userRewardsAmount" class="info-value">0 AFOX</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Annual Percentage Rate (APR)</h3>
-                        <p id="stakingApr" class="info-value">--%</p>
-                    </div>
-                </div>
-
-                <div class="staking-actions">
-                    <h3 class="web3-subheading">Stake AFOX</h3>
-                    <div class="input-group">
-                        <input type="number" id="stakeAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX amount to stake" aria-label="Amount to stake">
-                        <button id="stakeAfoxBtn" class="web3-btn" aria-label="Stake AFOX tokens">Stake</button>
-                    </div>
-                    
-                    <h3 class="web3-subheading">Unstake AFOX (Withdraw)</h3>
-                    <div class="input-group">
-                        <input type="number" id="unstakeAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX amount to unstake" aria-label="Amount to unstake">
-                        <button id="unstakeAfoxBtn" class="web3-btn" aria-label="Unstake AFOX tokens">Unstake Tokens</button>
-                    </div>
-                    
-                    <h3 class="web3-subheading">Claim Rewards</h3>
-                    <button id="claimRewardsBtn" class="web3-btn" aria-label="Claim AFOX staking rewards">Claim Rewards</button>
-                </div>
-
-                <div class="staking-details">
-                    <h3 class="web3-subheading">Staking Details</h3>
-                    <ul>
-                        <li><strong>Minimum staking amount:</strong> <span id="minStakeAmount">1 AFOX</span></li>
-                        <li><strong>Lockup period:</strong> <span id="lockupPeriod">0 days (flexible)</span></li>
-                        <li><strong>Early unstake fee:</strong> <span id="unstakeFee">0%</span></li>
-                        <li><strong>Reward calculation:</strong> <span id="rewardCalculation">Daily</span></li>
-                    </ul>
-                    <p class="web3-note">Please connect your wallet to see live data and interact with staking.</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="lending-section" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🏦 AFOX DeFi Lending (Lending & Borrowing)</h2>
-                <p class="web3-intro">Lend AFOX or SOL to liquidity pools to earn interest, or use them as collateral to take out a loan. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
-
-                <div class="staking-info-grid">
-                    <div class="info-card">
-                        <h3>APR for Lending (AFOX)</h3>
-                        <p id="afoxLendApr" class="info-value">--%</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Borrowing Rate (SOL)</h3>
-                        <p id="solBorrowRate" class="info-value">--%</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Your Lent Amount</h3>
-                        <p id="userLentAmount" class="info-value">0 AFOX</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Your Loan</h3>
-                        <p id="userBorrowedAmount" class="info-value">0 SOL</p>
-                    </div>
-                </div>
-
-                <div class="staking-actions" style="margin-top: 30px;">
-                    <h3 class="web3-subheading">Lend AFOX</h3>
-                    <div class="input-group">
-                        <input type="number" id="lendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to lend" aria-label="Amount to lend">
-                        <button id="lendAfoxBtn" class="web3-btn" aria-label="Lend AFOX tokens">Lend</button>
-                    </div>
-                    <h3 class="web3-subheading">Withdraw Lent AFOX</h3>
-                    <div class="input-group">
-                        <input type="number" id="withdrawLendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to withdraw" aria-label="Amount to withdraw from lending">
-                        <button id="withdrawLendBtn" class="web3-btn" aria-label="Withdraw lent AFOX tokens">Withdraw</button>
-                    </div>
-                </div>
-
-                <div class="staking-actions" style="margin-top: 30px;">
-                    <h3 class="web3-subheading">Borrow SOL</h3>
-                    <div class="input-group">
-                        <input type="number" id="borrowAmountInput" min="0.000001" step="0.000001" placeholder="Enter SOL to borrow" aria-label="Amount to borrow">
-                        <button id="borrowSolBtn" class="web3-btn" aria-label="Borrow SOL">Borrow</button>
-                    </div>
-                    <h3 class="web3-subheading">Repay SOL Loan</h3>
-                    <div class="input-group">
-                        <input type="number" id="repayAmountInput" min="0.000001" step="0.000001" placeholder="Enter SOL to repay" aria-label="Amount to repay">
-                        <button id="repaySolBtn" class="web3-btn" aria-label="Repay SOL loan">Repay Loan</button>
-                    </div>
-                </div>
-                
-                <div class="staking-details">
-                    <h3 class="web3-subheading">Lending Terms</h3>
-                    <ul>
-                        <li><strong>Loan-to-Value (LTV) Limit:</strong> <span id="ltvRatio">75%</span></li>
-                        <li><strong>AFOX in Pool:</strong> <span id="poolAfoxAmount">... AFOX</span></li>
-                        <li><strong>SOL in Pool:</strong> <span id="poolSolAmount">... SOL</span></li>
-                    </ul>
-                    <p class="web3-note">DeFi Lending functionality is under development and requires connection to a Solana protocol.</p>
-                </div>
-            </div>
-        </section>
-        <section id="swap-section" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🔄 AFOX Swap & Live Trading</h2>
-                <p class="web3-intro">
-                    Swap your AFOX tokens for SOL or other SPL tokens directly, and track the live market price!
-                    For exchange, use **Jupiter Terminal** — the best liquidity aggregator on Solana.
-                </p>
-
-                <div class="swap-interface">
-                    <h3 class="web3-subheading">⚡️ Jupiter Terminal (AFOX Swap)</h3>
-                    <p>Connect your wallet and swap AFOX at the best rate.</p>
-                    
-                    <div id="afoxChartContainer" style="min-height: 250px; margin: 15px auto;">
-                        <iframe 
-                            src="https://birdeye.so/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?chain=mainnet&amp;theme=dark&amp;chart=true" 
-                            width="100%" 
-                            height="250px" 
-                            style="border:none; border-radius: 8px;">
-                        </iframe>
-                    </div>
-                    
-                    <div id="jupiter-swap-widget" style="min-height: 400px; max-width: 450px; margin: 20px auto; position: relative; z-index: 10000;">
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        </main>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="geckoterminal-promo" style="margin-bottom: 15px;">
-                <p style="font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">Track AFOX Price on:</p>
-                <a href="https://www.geckoterminal.com/solana/pools/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" 
-                   target="_blank" 
-                   rel="noopener noreferrer" 
-                   style="display: inline-block; padding: 10px 15px; background-color: #00bf75; color: #fff; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background-color 0.3s ease;">
-                    <img src="https://www.geckoterminal.com/favicon-16x16.png" alt="GeckoTerminal Logo" style="height: 16px; margin-right: 8px; vertical-align: middle;">
-                    View on GeckoTerminal
-                </a>
-            </div>
-            
-            <div class="disclaimer-area" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                <p style="font-size: 0.85em; color: #aaa; text-align: center;">
-                    <span style="color: #e74c3c; font-weight: bold;">DISCLAIMER:</span>
-                    Aurum Fox (AFOX) is a decentralized meme token created by the community. 
-                    We are not financial advisors, and the information on this portal is not investment advice. 
-                    Investments in cryptocurrencies, including AFOX, are associated with high risk and can lead to complete loss of funds. 
-                    The user assumes full responsibility for all their trading and investment decisions. 
-                    We are not responsible for any losses or damages associated with the use of this portal.
-                </p>
-            </div>
-            <p style="margin-top: 15px;">&copy; 2025 Aurum Fox Unified Portal. All rights reserved.</p>
-            <p>Created with ❤️ for the Web3 community.</p>
-            <p>Contract Address: <span id="footerContractAddress">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> </p>
-            </div>
-    </footer>
-
-    <div id="nftDetailsModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="nftDetailName" style="display:none;">
+    <div id="nft-details-modal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeNftDetailsModal" aria-label="Close NFT details">&times;</span>
-            <h3 id="nftDetailName" class="web3-heading">NFT Name Placeholder</h3>
-            <div class="nft-detail-content">
-                <img id="nftDetailImage" src="https://via.placeholder.com/200" alt="NFT Image" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px;">
-                <p><strong>Owner:</strong> <span id="nftDetailOwner">N/A</span></p>
-                <p><strong>Mint Address:</strong> <span id="nftDetailMint">N/A</span></p>
-                <p><strong>Status:</strong> <span id="nftDetailStatus">Not Listed</span></p>
-                <p id="nftDetailPriceContainer" style="display:none;"><strong>Price:</strong> <span id="nftDetailPrice">N/A</span> SOL</p>
-                <p id="nftDetailDescription">A detailed description of the NFT.</p>
-                
-                <div class="nft-detail-actions" style="margin-top: 20px;">
-                    <button id="nftDetailBuyBtn" class="web3-btn" style="display:none;" aria-label="Buy NFT">Buy NFT</button>
-                    
-                    <button id="nftDetailSellBtn" class="web3-btn" style="display:none;" aria-label="List or Unlist NFT">List/Unlist NFT</button>
-                    
-                    <button id="nftDetailTransferBtn" class="web3-btn" style="display:none;" aria-label="Transfer NFT to another wallet">Transfer NFT</button>
-                </div>
+            <span class="close-modal">&times;</span>
+            <img id="nft-detail-image" src="" style="width:100%; border-radius:10px;">
+            <h2 id="nft-detail-name">NFT Name</h2>
+            <p id="nft-detail-description"></p>
+            <hr>
+            <div style="font-size: 12px;">
+                Owner: <span id="nft-detail-owner"></span><br>
+                Mint: <span id="nft-detail-mint"></span>
             </div>
+            <h3>Attributes</h3>
+            <ul id="attributes-list"></ul>
+            <button id="nft-detail-buy-btn" class="btn btn-primary">Buy NFT</button>
+            <button id="nft-detail-sell-btn" class="btn btn-secondary">List for Sale</button>
+            <button id="nft-detail-transfer-btn" class="btn btn-secondary" style="margin-top:5px;">Transfer</button>
+            <h3>History</h3>
+            <ul id="nft-detail-history" style="font-size: 11px; max-height: 100px; overflow-y: auto;"></ul>
         </div>
     </div>
-    
-    <div id="listNftModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="listNftModalTitle" style="display:none;">
+
+    <div id="mint-nft-modal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeListNftModal" aria-label="Close list NFT modal">&times;</span>
-            <h3 id="listNftModalTitle" class="web3-heading">Create Listing for <span id="listingNftName">NFT Name</span></h3>
-            <form id="listingForm" class="web3-form">
-                <input type="hidden" id="listingNftMintAddress" name="listingNftMintAddress">
-                
-                <label for="listingPriceInput">Sale Price (SOL):</label>
-                <input type="number" id="listingPriceInput" name="listingPriceInput" step="0.000001" min="0.000001" placeholder="e.g., 0.8" required aria-required="true">
-
-                <label for="listingDurationInput">Listing Duration (Days):</label>
-                <input type="number" id="listingDurationInput" name="listingDurationInput" min="1" max="365" value="30" required aria-required="true">
-
-                <button type="submit" id="submitListingBtn" class="web3-btn" aria-label="Confirm NFT Listing">Confirm Listing</button>
+            <span class="close-modal">&times;</span>
+            <h2>Mint AlphaFox NFT</h2>
+            <form id="mint-nft-form">
+                <input type="text" name="mint-name" placeholder="NFT Name" required>
+                <textarea name="mint-description" placeholder="Description" style="width:100%; height:80px; background:#0f172a; color:white; border-radius:6px; padding:10px;" required></textarea>
+                <input type="url" name="mint-image" placeholder="Image URL (optional)">
+                <button type="submit" class="btn btn-primary">Mint (0.05 SOL Fee)</button>
             </form>
         </div>
     </div>
-    
-    <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 30000;"></div>
-    
-    <script src="https://terminal.jup.ag/main-v2.js" data-preload></script>
 
-    <script id="main-inline-script">
-        
-        /******************************************************************
-         * !!! КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ О БЕЗОПАСНОСТИ БЭКЕНДА !!!
-         * * Фронтенд защищен от XSS, но полная безопасность требует
-         * * СТРОГИХ ПРАВИЛ БЕЗОПАСНОСТИ Firebase.
-         * * ВНИМАНИЕ: Все формы записи (Mint NFT, DAO, Upload Game)
-         * * ЗАБЛОКИРОВАНЫ ФУНКЦИЕЙ preventSubmission, пока вы не
-         * * настроите бэкенд-защиту и аутентификацию администратора!
-         ******************************************************************/
-        
-        // 3. INITIALIZATION
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = app.firestore();
-        const auth = app.auth();
-        const storage = app.storage();
-        
-        const COLLECTIONS = {
-            NEWS: 'news',
-            GAMES: 'games',
-        };
+    <div id="sell-nft-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>List NFT for Sale</h2>
+            <form id="list-nft-form">
+                <select id="nft-to-sell" name="nft-to-sell"></select>
+                <input type="number" step="0.01" name="list-price" placeholder="Price in SOL" required>
+                <button type="submit" class="btn btn-primary">Confirm Listing</button>
+            </form>
+        </div>
+    </div>
 
-        const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd';
-        const SOL_MINT = 'So11111111111111111111111111111111111111112';
-        
-        // Переменная для хранения реального адаптера кошелька
-        let solanaWalletAdapter = null;
-        const connection = new window.SolanaWeb3.Connection(window.SolanaWeb3.clusterApiUrl('mainnet-beta'));
+    <div class="nav-mobile-overlay"></div>
 
-        // --- XSS PROTECTION & NOTIFICATIONS ---
-        function sanitizeText(text) {
-            if (!text) return '';
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '/': '&#x2F;' };
-            const reg = /[&<>"'\/]/ig;
-            return (text.toString()).replace(reg, (match)=>(map[match]));
-        }
-
-        function showNotification(message, type = 'info', duration = 3000) {
-            const container = document.getElementById('notificationContainer');
-            if (!container) return;
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.textContent = message; 
-            notification.style.cssText = `
-                margin-bottom: 10px; padding: 10px 15px; border-radius: 8px; color: #fff; font-size: 0.9em; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                background-color: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#3498db'};
-                transition: opacity 0.5s ease-in-out; z-index: 30000;
-            `;
-            container.appendChild(notification);
-            setTimeout(() => { notification.style.opacity = '0'; setTimeout(() => notification.remove(), 500); }, duration);
-        }
-        
-        // --- MODAL WINDOW LOGIC (ДОБАВЛЕНО) ---
-        function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'block';
-                document.body.classList.add('menu-open'); 
-            }
-        }
-
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'none';
-                document.body.classList.remove('menu-open');
-            }
-        }
-
-        function setupModalListeners() {
-            // DAO Modal
-            document.getElementById('createProposalBtn')?.addEventListener('click', () => openModal('createProposalModal'));
-            document.getElementById('closeProposalModal')?.addEventListener('click', () => closeModal('createProposalModal'));
-
-            // NFT Detail Modal
-            document.getElementById('closeNftDetailsModal')?.addEventListener('click', () => closeModal('nftDetailsModal'));
-            
-            // List NFT Modal
-            document.getElementById('closeListNftModal')?.addEventListener('click', () => closeModal('listNftModal'));
-            
-            // Закрытие по клику вне модального окна
-            window.addEventListener('click', (event) => {
-                if (event.target.classList.contains('modal')) {
-                    event.target.style.display = 'none';
-                    document.body.classList.remove('menu-open');
-                }
-            });
-            
-            // Включаем логику, которая при клике на NFT-карточку открывает модалку деталей
-            document.getElementById('marketplace-nft-list')?.addEventListener('click', (e) => {
-                const nftCard = e.target.closest('.nft-card');
-                if (nftCard) {
-                    showNftDetailsMock({
-                        name: nftCard.querySelector('h4').textContent,
-                        mint: 'MockMintAddress123...',
-                        owner: 'MockOwnerAddress456...',
-                        isListed: true, 
-                        price: 0.5,
-                        description: 'This is a mock description for the selected NFT. Connect your wallet to see real details.',
-                        isUserOwned: false 
-                    });
-                }
-            });
-            document.getElementById('user-nft-list')?.addEventListener('click', (e) => {
-                const nftCard = e.target.closest('.nft-card');
-                if (nftCard) {
-                    showNftDetailsMock({
-                        name: nftCard.querySelector('h4').textContent,
-                        mint: 'MockMintAddress789...',
-                        owner: solanaWalletAdapter?.publicKey?.toString() || 'Not Connected',
-                        isListed: false, 
-                        price: null,
-                        description: 'This is your unlisted NFT. You can list it now.',
-                        isUserOwned: true 
-                    });
-                }
-            });
-            
-            function showNftDetailsMock(nft) {
-                document.getElementById('nftDetailName').textContent = nft.name;
-                document.getElementById('nftDetailOwner').textContent = nft.owner;
-                document.getElementById('nftDetailMint').textContent = nft.mint;
-                document.getElementById('nftDetailDescription').textContent = nft.description;
-
-                const statusSpan = document.getElementById('nftDetailStatus');
-                const priceContainer = document.getElementById('nftDetailPriceContainer');
-                const buyBtn = document.getElementById('nftDetailBuyBtn');
-                const sellBtn = document.getElementById('nftDetailSellBtn');
-                const transferBtn = document.getElementById('nftDetailTransferBtn');
-                
-                // Сброс видимости
-                buyBtn.style.display = 'none';
-                sellBtn.style.display = 'none';
-                transferBtn.style.display = 'none';
-                priceContainer.style.display = 'none';
-
-                if (nft.isListed) {
-                    statusSpan.textContent = 'Listed for Sale';
-                    document.getElementById('nftDetailPrice').textContent = nft.price;
-                    priceContainer.style.display = 'block';
-                    
-                    if (!nft.isUserOwned) {
-                        buyBtn.style.display = 'block';
-                    } else {
-                        sellBtn.textContent = 'Unlist NFT';
-                        sellBtn.style.display = 'block';
-                    }
-                } else {
-                    statusSpan.textContent = 'Not Listed (In Wallet)';
-                    
-                    if (nft.isUserOwned) {
-                        sellBtn.textContent = 'List for Sale';
-                        sellBtn.style.display = 'block';
-                        transferBtn.style.display = 'block';
-                    }
-                }
-                
-                sellBtn.onclick = () => {
-                    if (sellBtn.textContent === 'List for Sale') {
-                        document.getElementById('listingNftName').textContent = nft.name;
-                        document.getElementById('listingNftMintAddress').value = nft.mint;
-                        openModal('listNftModal');
-                        closeModal('nftDetailsModal');
-                    } else {
-                        showNotification(`MOCK: Unlisting NFT ${nft.name}...`, 'info');
-                    }
-                };
-                buyBtn.onclick = () => showNotification(`MOCK: Attempting to buy NFT ${nft.name} for ${nft.price} SOL...`, 'info');
-                transferBtn.onclick = () => showNotification(`MOCK: Opening transfer dialog for ${nft.name}...`, 'info');
-
-                openModal('nftDetailsModal');
-            }
-
-            document.getElementById('mintNftBtn')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.getElementById('mint-nft-section').scrollIntoView({ behavior: 'smooth' });
-            });
-            
-            function loadMockNftContent() {
-                const mockCard = (name, status) => `
-                    <div class="nft-card web3-placeholder" data-status="${status}">
-                        <img src="https://via.placeholder.com/150/f39c12/000000?text=${name.replace(' ', '+')}" alt="${name}">
-                        <h4>${name}</h4>
-                        <p>Status: ${status}</p>
-                    </div>
-                `;
-                
-                const marketplaceList = document.getElementById('marketplace-nft-list');
-                if (marketplaceList) {
-                    marketplaceList.innerHTML = mockCard('Fox Market NFT #1', 'Listed') + mockCard('Fox Market NFT #2', 'Listed');
-                }
-
-                const userNftList = document.getElementById('user-nft-list');
-                if (userNftList) {
-                    userNftList.innerHTML = mockCard('My Alpha NFT #A', 'Unlisted') + mockCard('My Rare NFT #B', 'Unlisted');
-                }
-                
-                const nftToSellSelect = document.getElementById('nftToSell');
-                if (nftToSellSelect) {
-                    nftToSellSelect.innerHTML = `
-                        <option value="">-- Please select an NFT --</option>
-                        <option value="mint_a">My Alpha NFT #A</option>
-                        <option value="mint_b">My Rare NFT #B</option>
-                    `;
-                }
-            }
-            loadMockNftContent(); 
-        }
-        // --- /MODAL WINDOW LOGIC ---
-
-        // ====================================================================
-
-        // --- SOLANA WALLET ADAPTER LOGIC (ИСПРАВЛЕНО НА РЕАЛЬНУЮ ЛОГИКУ) ---
-
-        const walletDisplay = document.getElementById('walletDisplay');
-        const connectWalletBtn = document.getElementById('connectWalletBtn');
-        const walletAddressSpan = document.getElementById('walletAddressSpan'); 
-        const copyWalletBtn = document.getElementById('copyWalletBtn');
-        const network = 'mainnet-beta';
-
-        function updateWalletUI(adapter) {
-            
-            if (adapter && adapter.connected && adapter.publicKey) {
-                const publicKey = adapter.publicKey.toString();
-                
-                connectWalletBtn.style.display = 'none';
-                walletDisplay.style.display = 'flex';
-                walletAddressSpan.textContent = `${publicKey.substring(0, 4)}...${publicKey.slice(-4)}`;
-
-                document.getElementById('walletAddressDisplay').textContent = publicKey;
-                
-                walletDisplay.onclick = disconnectWallet; // Нажатие на Display отключает
-                
-                if (copyWalletBtn) {
-                    copyWalletBtn.onclick = (e) => {
-                        e.stopPropagation(); 
-                        navigator.clipboard.writeText(publicKey)
-                            .then(() => showNotification('Address copied!', 'info', 2000))
-                            .catch(err => console.error('Could not copy text: ', err));
-                    };
-                }
-
-                // Активировать загрузку данных
-                fetchStakingState(); 
-
-            } else {
-                connectWalletBtn.style.display = 'block';
-                walletDisplay.style.display = 'none';
-                
-                document.getElementById('walletAddressDisplay').textContent = 'Not Connected';
-                
-                // Очистка UI стейкинга при отключении
-                document.getElementById('userAfoxBalance').textContent = '0 AFOX';
-                document.getElementById('userStakedAmount').textContent = '0 AFOX';
-                document.getElementById('userRewardsAmount').textContent = '0 AFOX';
-            }
-        }
-
-        async function connectWallet() {
-            if (solanaWalletAdapter && solanaWalletAdapter.connected) {
-                // Уже подключен, ничего не делаем
-                return;
-            }
-
-            connectWalletBtn.disabled = true;
-            connectWalletBtn.textContent = 'Connecting...';
-
-            if (typeof window.SolanaWalletAdapterPhantom === 'undefined') {
-                showNotification('Phantom Wallet extension or libraries not installed.', 'error', 5000);
-                connectWalletBtn.disabled = false;
-                connectWalletBtn.textContent = 'Connect Wallet';
-                return;
-            }
-            
-            try {
-                // Использование реального адаптера
-                const adapter = new window.SolanaWalletAdapterPhantom.PhantomWalletAdapter();
-                
-                // Назначение обработчиков ДО подключения
-                adapter.on('connect', () => {
-                    solanaWalletAdapter = adapter;
-                    updateWalletUI(adapter);
-                    showNotification('Wallet successfully connected!', 'success', 4000);
-                });
-                adapter.on('disconnect', () => {
-                    solanaWalletAdapter = null;
-                    updateWalletUI(null);
-                    showNotification('Wallet disconnected.', 'info');
-                });
-                adapter.on('error', (error) => {
-                    console.error('Wallet error:', error);
-                    showNotification(`Wallet error: ${error.message}`, 'error', 5000);
-                });
-
-                // Запуск подключения
-                await adapter.connect();
-
-            } catch (error) {
-                console.error('Wallet connection failed:', error);
-                // Отмена пользователем или другие ошибки
-                showNotification(`Connection failed: ${error.message}`, 'error', 5000);
-            } finally {
-                connectWalletBtn.disabled = false;
-                connectWalletBtn.textContent = 'Connect Wallet';
-            }
-        }
-        
-        async function disconnectWallet() {
-            if (solanaWalletAdapter) {
-                try {
-                    await solanaWalletAdapter.disconnect();
-                } catch (error) {
-                    console.error('Disconnection error (ignoring):', error);
-                }
-                solanaWalletAdapter = null;
-                updateWalletUI(null);
-            }
-        }
-        
-      // ====================================================================
-
-        // --- HAMBURGER MENU LOGIC (Оставлен для полноты) ---
-        function setupHamburgerMenu() {
-             // ... ваш код гамбургер-меню ...
-        }
-        // --- /HAMBURGER MENU LOGIC ---
-
-
-        // --- FIREBASE CONTENT LOADING ---
-        function setupNewsListener() {
-            const newsListElement = document.querySelector('.news-list');
-            if (!newsListElement) return;
-
-            db.collection(COLLECTIONS.NEWS)
-                .orderBy('timestamp', 'desc')
-                .limit(5)
-                .onSnapshot(snapshot => { 
-                    
-                    newsListElement.innerHTML = '';
-                    
-                    if (snapshot.empty) {
-                        newsListElement.innerHTML = '<p>No news yet.</p>';
-                        return;
-                    }
-                    
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'N/A';
-                        
-                        const newsItem = document.createElement('div');
-                        newsItem.className = 'news-item';
-                        
-                        const h4 = document.createElement('h4');
-                        h4.textContent = sanitizeText(data.title || 'Title');
-                        
-                        const p = document.createElement('p');
-                        p.textContent = sanitizeText(data.content || 'Content...');
-                        
-                        const small = document.createElement('small');
-                        small.textContent = date;
-                        
-                        newsItem.appendChild(h4);
-                        newsItem.appendChild(p);
-                        newsItem.appendChild(small);
-                        
-                        newsListElement.appendChild(newsItem);
-                    });
-
-                }, error => {
-                    console.error("News listener error:", error);
-                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Error loading news.</p>';
-                });
-        }
-
-        async function fetchContentList(collectionName, listElementId) {
-            const listElement = document.getElementById(listElementId);
-            if (!listElement) return;
-            
-            try {
-                const snapshot = await db.collection(collectionName).orderBy('order', 'asc').limit(10).get();
-
-                listElement.innerHTML = '';
-                
-                if (snapshot.empty) {
-                    listElement.innerHTML = `<p class="web3-placeholder">No data in the ${collectionName} section.</p>`;
-                    return;
-                }
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    
-                    const div = document.createElement('div');
-                    div.className = "placeholder-item web3-placeholder game";
-                    
-                    const a = document.createElement('a');
-                    a.href = sanitizeText(data.url || '#');
-                    a.target = '_blank';
-                    a.rel = 'noopener noreferrer';
-                    
-                    const strong = document.createElement('strong');
-                    strong.textContent = sanitizeText(data.title || 'Untitled');
-                    
-                    a.appendChild(strong);
-                    a.appendChild(document.createTextNode(`: ${sanitizeText(data.description || 'Description missing.')}`));
-                    
-                    div.appendChild(a);
-                    listElement.appendChild(div);
-                });
-
-
-            } catch (error) {
-                console.error(`Error loading ${collectionName}:`, error);
-                listElement.innerHTML = `<p style="color: #e74c3c;">Error loading content.</p>`;
-            }
-        }
-        // --- /FIREBASE CONTENT LOADING ---
-
-        // --- JUPITER TERMINAL LOGIC ---
-        function initializeJupiterTerminal() {
-            
-            if (window.Jupiter && document.getElementById('jupiter-swap-widget')) {
-                
-                console.log("Jupiter Terminal initialization started.");
-
-                window.Jupiter.init({
-                    displayMode: 'widget',
-                    widgetStyle: { 'container.id': 'jupiter-swap-widget', 'container.zIndex': 10000 },
-                    theme: 'dark', 
-                    formProps: {
-                        fixedInputMint: true, 
-                        initialInputMint: AFOX_MINT,
-                        initialOutputMint: SOL_MINT,
-                    },
-                    swapSwitchboard: true, 
-                    strictTokenList: false, 
-
-                    // Jupiter's custom wallet connection function
-                    onConnectWallet: (callback) => { 
-                        if (solanaWalletAdapter && solanaWalletAdapter.connected) {
-                            // Если наш кошелек уже подключен, передаем его
-                            callback({
-                                publicKey: solanaWalletAdapter.publicKey.toString(),
-                                signTransaction: solanaWalletAdapter.signTransaction.bind(solanaWalletAdapter),
-                                signAllTransactions: solanaWalletAdapter.signAllTransactions.bind(solanaWalletAdapter),
-                            });
-                        } else {
-                            // Если кошелек не подключен, вызываем нашу функцию подключения
-                            connectWallet();
-                            // Временное решение: возвращаем null, пока не сработает адаптер
-                            callback(null); 
-                        }
-                    },
-                    onSwapSuccess: () => { 
-                        showNotification("Swap successful!", 'success'); 
-                        fetchStakingState(); 
-                    },
-                    onError: (error) => { 
-                        console.error("Jupiter Error:", error); 
-                        showNotification("Swap error: See console for details.", 'error'); 
-                    },
-                    onClose: () => {}
-                });
-                
-                console.log("Jupiter Terminal initialized.");
-
-            } else {
-                setTimeout(initializeJupiterTerminal, 500);
-            }
-        }
-        // --- /JUPITER TERMINAL LOGIC ---
-
-        // --- ФУНКЦИЯ-ЗАГЛУШКА ДЛЯ ПРЕДОТВРАЩЕНИЯ ЗАПИСИ ДАННЫХ ---
-        function preventSubmission(event) {
-            event.preventDefault();
-            showNotification("Security Alert: Data submission is temporarily blocked. Please configure Firebase Security Rules and Admin authentication before enabling write operations (Mint, DAO, Upload Game, List NFT, Proposal).", 'warning', 7000);
-            return false;
-        }
-        
-        // --- STARTUP AFTER DOM LOAD ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const connectWalletBtn = document.getElementById('connectWalletBtn');
-            if (connectWalletBtn) {
-                // Привязываем connectWallet к кнопке
-                connectWalletBtn.addEventListener('click', connectWallet);
-            }
-            
-            setupNewsListener();
-            fetchContentList(COLLECTIONS.GAMES, 'game-list');
-            setupModalListeners(); 
-
-            initializeJupiterTerminal();
-            
-            // ====================================================================
-            // 🔗 БЛОК 3: ПРИВЯЗКА КНОПОК STAKING 
-            // ====================================================================
-            const stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
-            if (stakeAfoxBtn) {
-                stakeAfoxBtn.addEventListener('click', handleStake);
-            }
-            
-            const unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
-            if (unstakeAfoxBtn) {
-                unstakeAfoxBtn.addEventListener('click', handleUnstake);
-            }
-            
-            const claimRewardsBtn = document.getElementById('claimRewardsBtn');
-            if (claimRewardsBtn) {
-                claimRewardsBtn.addEventListener('click', handleClaim);
-            }
-            
-            // ====================================================================
-            // 🛑 ПРИВЯЗКА ФУНКЦИЙ-ЗАГЛУШЕК ДЛЯ ЗАПИСИ ДАННЫХ
-            // ====================================================================
-
-            const mintNftFormSection = document.getElementById('mintNftFormSection');
-            if (mintNftFormSection) {
-                mintNftFormSection.addEventListener('submit', preventSubmission);
-            }
-            
-            const listNftForm = document.getElementById('listNftForm');
-            if (listNftForm) {
-                listNftForm.addEventListener('submit', preventSubmission);
-            }
-            
-            const newProposalForm = document.getElementById('newProposalForm');
-            if (newProposalForm) {
-                newProposalForm.addEventListener('submit', preventSubmission);
-            }
-            
-            const listingForm = document.getElementById('listingForm');
-            if (listingForm) {
-                listingForm.addEventListener('submit', preventSubmission);
-            }
-            
-            const uploadGameBtnWeb3 = document.getElementById('uploadGameBtnWeb3');
-            if (uploadGameBtnWeb3) {
-                uploadGameBtnWeb3.addEventListener('click', (e) => {
-                    e.preventDefault(); 
-                    showNotification("Security Alert: Game upload is temporarily blocked. Please configure Firebase Security Rules and Admin authentication.", 'warning', 7000);
-                });
-            }
-            
-            document.getElementById('lendAfoxBtn')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                showNotification("MOCK: Lending functionality is disabled. Please implement DeFi logic.", 'warning');
-            });
-            document.getElementById('borrowSolBtn')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                showNotification("MOCK: Borrowing functionality is disabled. Please implement DeFi logic.", 'warning');
-            });
-
-
-            setupHamburgerMenu(); 
-        });
-
-        
-    </script>
+    <script src="script.js"></script>
 </body>
-                                </html>
+</html>
