@@ -514,32 +514,11 @@
 </head>
 <body>
 
-    <header class="header">
-    <div class="container">
-        <div class="logo">
-            </div>
-
-        <nav class="nav">
-            <ul class="main-nav">
-                </ul>
-        </nav>
-
-        <div class="wallet-controls">
-    <button 
-        id="connectWalletBtn" 
-        class="web3-button connect-fox-btn wallet-connect-btn"
-        aria-label="Подключить криптовалютный кошелек"
-    >
-        <i class="fox-icon">🦊</i> 
-        Connect Wallet
-    </button>
-    
-    <div id="walletDisplay" class="wallet-display" style="display:none;">
-        <span id="walletAddressSpan" class="wallet-address-text"></span>
-        <button id="copyWalletBtn" class="copy-btn" aria-label="Копировать адрес кошелька"><i class="fas fa-copy"></i></button>
-    </div>
-</div>
-        
+<header class="header">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <p class="logo-text">AURUM FOX <span style="font-weight:100">DAO</span></p>
+            <button id="connectBtn" class="btn wallet-btn">CONNECT WALLET</button>
+        </div>
 </header>
 
     <main>
