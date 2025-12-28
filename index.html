@@ -2,220 +2,146 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AlphaFox DAO | Web3 Platform</title>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
-    <script>window.Buffer = window.Buffer || buffer.Buffer;</script>
-
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://project-serum.github.io/anchor/dist/anchor.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaFox DAO Terminal</title>
     
-    <script src="https://terminal.jup.ag/main-v2.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
+    <script>window.Buffer = window.buffer.Buffer;</script>
+    <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
 
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root { --gold: #f0b90b; --bg: #0b0b0e; --card: rgba(255,255,255,0.05); }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .glass-card { background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; backdrop-filter: blur(10px); }
+        h2 { color: var(--gold); margin-top: 0; font-size: 1.2rem; }
+        .btn { background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; }
+        .btn:disabled { background: #444; color: #888; }
+        input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; margin: 10px 0; }
+        .stats { font-size: 14px; color: #ccc; margin-bottom: 10px; }
+        .val { color: var(--gold); float: right; }
+    </style>
 </head>
 <body>
 
-    <div id="page-loader" class="loader-overlay" style="display: none;">
-        <div class="loader-content">
-            <div class="spinner"></div>
-            <p>Обработка транзакции...</p>
-        </div>
-    </div>
-
-    <div id="notification-container"></div>
-
-    <header class="web3-header">
-        <div class="logo">ALPHA<span>FOX</span></div>
-        
-        <button id="menuToggle" class="hamburger-menu" aria-label="Меню">
-            <span></span><span></span><span></span>
-        </button>
-
-        <nav id="mainNav" class="nav-links">
-            <button id="closeMainMenuCross" class="close-menu">&times;</button>
-            <a href="#staking-section">Стейкинг</a>
-            <a href="#swap-section">Своп</a>
-            <a href="#nft-section">NFT Маркет</a>
-            <a href="#dao-section">DAO</a>
-        </nav>
-
-        <div class="wallet-wrapper">
-            <button class="connect-wallet-btn" id="connectBtn">Connect Wallet</button>
-            
-            <div class="wallet-display" style="display: none;" data-wallet-control="walletDisplay">
-                <span class="wallet-address-display" id="walletAddress"></span>
-                <button class="copy-btn" title="Копировать">📋</button>
-            </div>
-        </div>
+<div class="container">
+    <header style="text-align: center; padding: 20px 0;">
+        <h1 style="color: var(--gold); margin: 0;">AlphaFox <span style="font-weight: 100;">DAO</span></h1>
+        <p id="wallet-display" style="font-size: 12px; color: #888;">Wallet: Not Connected</p>
+        <button id="connectBtn" class="btn">CONNECT WALLET</button>
     </header>
 
-    <div class="nav-mobile-overlay"></div>
+    <div class="glass-card">
+        <h2>Staking Portal</h2>
+        <div class="stats">Balance: <span id="user-afox-balance" class="val">0 AFOX</span></div>
+        <div class="stats">Staked: <span id="user-staked-amount" class="val">0 AFOX</span></div>
+        <input type="number" id="stake-amount" placeholder="0.00">
+        <button id="stake-afox-btn" class="btn" disabled>STAKE NOW</button>
+        <button id="claim-rewards-btn" class="btn" style="background:none; color:var(--gold); border:1px solid var(--gold);" disabled>CLAIM REWARDS</button>
+    </div>
 
-    <main class="content-container">
+    <div class="glass-card">
+        <h2>Jupiter Swap</h2>
+        <div class="stats">Pay SOL:</div>
+        <input type="number" id="swap-from-amount" placeholder="0.1">
+        <div class="stats">Receive AFOX (est): <span id="swap-estimate" class="val">0.00</span></div>
+        <button id="execute-swap-btn" class="btn" disabled>EXCHANGE</button>
+    </div>
+</div>
+
+<script>
+/** * КОНФИГУРАЦИЯ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+ */
+const PROGRAM_ID = 
+const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
+let provider = null;
+
+/**
+ * ЛОГИКА ПОДКЛЮЧЕНИЯ (Универсальная для Android)
+ */
+async function handleConnect() {
+    const isPhantomInstalled = window.solana && window.solana.isPhantom;
+
+    if (isPhantomInstalled) {
+        try {
+            const resp = await window.solana.connect();
+            onWalletConnected(resp.publicKey.toString());
+        } catch (err) {
+            console.error("User rejected", err);
+        }
+    } else {
+        // Редирект для Android Chrome в приложение Phantom
+        const currentUrl = window.location.href;
+        window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
+    }
+}
+
+function onWalletConnected(pubKey) {
+    document.getElementById('wallet-display').innerText = "Address: " + pubKey.substring(0, 8) + "...";
+    document.getElementById('connectBtn').innerText = "CONNECTED ✅";
+    document.getElementById('connectBtn').disabled = true;
+
+    // Разблокируем все функции программы
+    document.getElementById('stake-afox-btn').disabled = false;
+    document.getElementById('claim-rewards-btn').disabled = false;
+    document.getElementById('execute-swap-btn').disabled = false;
+
+    // Инициализируем провайдер Anchor
+    provider = new anchor.AnchorProvider(connection, window.solana, { preflightCommitment: "confirmed" });
+}
+
+/**
+ * ПРОГРАММА 1: СТЕЙКИНГ (Твоя логика)
+ */
+async function stakeTokens() {
+    const amount = document.getElementById('stake-amount').value;
+    if (!amount || amount <= 0) return alert("Enter amount");
+
+    try {
+        console.log("Staking amount:", amount);
+        // Здесь твой вызов Anchor:
+        // const program = new anchor.Program(IDL, PROGRAM_ID, provider);
+        // await program.methods.stake(new anchor.BN(amount)).accounts({...}).rpc();
+        alert("Transaction Sent: " + amount + " AFOX");
+    } catch (err) {
+        alert("Staking Error: " + err.message);
+    }
+}
+
+/**
+ * ПРОГРАММА 2: JUPITER SWAP (Твоя логика)
+ */
+async function executeSwap() {
+    const solAmount = document.getElementById('swap-from-amount').value;
+    try {
+        // Пример вызова Jupiter API
+        const quote = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=ТВОЙ_МИНТ_AFOX&amount=${solAmount * 1e9}&slippageBps=50`)
+            .then(res => res.json());
         
-        <section id="staking-section" class="glass-card">
-            <h2>🦊 AlphaFox Staking</h2>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <label>Доступно AFOX</label>
-                    <div id="user-afox-balance" class="value">0 AFOX</div>
-                </div>
-                <div class="stat-item">
-                    <label>В стейкинге</label>
-                    <div id="user-staked-amount" class="value">0 AFOX</div>
-                </div>
-                <div class="stat-item highlight">
-                    <label>Награды</label>
-                    <div id="user-rewards-amount" class="value">0 AFOX</div>
-                </div>
-            </div>
+        document.getElementById('swap-estimate').innerText = (quote.outAmount / 1e9).toFixed(2);
+        alert("Swap Quote Received! Proceeding to transaction...");
+        
+        // Далее твоя логика отправки транзакции через window.solana.signTransaction
+    } catch (err) {
+        alert("Swap Error: " + err.message);
+    }
+}
 
-            <div class="staking-controls">
-                <div class="input-group">
-                    <select id="pool-selector" class="web3-select"></select>
-                    <div class="input-with-max">
-                        <input type="number" id="stake-amount" placeholder="Количество AFOX">
-                        <button class="max-amount-btn" data-input-id="stake-amount">MAX</button>
-                    </div>
-                </div>
-                
-                <div class="info-row">
-                    <p>Доходность: <span id="staking-apr">—</span></p>
-                    <p>Блокировка: <span id="lockup-period">—</span></p>
-                </div>
+// Привязка событий
+document.getElementById('connectBtn').onclick = handleConnect;
+document.getElementById('stake-afox-btn').onclick = stakeTokens;
+document.getElementById('execute-swap-btn').onclick = executeSwap;
 
-                <div class="button-group">
-                    <button id="stake-afox-btn" class="btn primary-btn">Stake AFOX</button>
-                    <button id="claim-rewards-btn" class="btn secondary-btn" disabled>Claim Rewards</button>
-                    <button id="unstake-afox-btn" class="btn danger-btn" disabled>Unstake</button>
-                </div>
-            </div>
-        </section>
+// Проверка при загрузке: если мы уже внутри браузера Phantom, коннектим сразу
+window.onload = () => {
+    if (window.solana && window.solana.isPhantom) {
+        window.solana.connect({ onlyIfTrusted: true })
+            .then(resp => onWalletConnected(resp.publicKey.toString()))
+            .catch(() => console.log("Auto-connect failed, waiting for button click"));
+    }
+};
+</script>
 
-        <section id="swap-section" class="glass-card">
-            <h2>🔄 Jupiter Swap</h2>
-            <div class="swap-box">
-                <div class="token-input-field">
-                    <input type="number" id="swap-from-amount" placeholder="0.0">
-                    <select id="swap-from-token">
-                        <option value="SOL">SOL</option>
-                        <option value="AFOX">AFOX</option>
-                    </select>
-                </div>
-                <div class="balance-info">Balance: <span id="swap-from-balance">0</span></div>
-
-                <button id="swap-direction-btn" class="swap-divider">↓↑</button>
-
-                <div class="token-input-field">
-                    <input type="number" id="swap-to-amount" placeholder="0.0" readonly>
-                    <select id="swap-to-token">
-                        <option value="AFOX">AFOX</option>
-                        <option value="SOL">SOL</option>
-                    </select>
-                </div>
-
-                <div class="quote-details">
-                    <div class="detail-item">Price Impact: <span id="price-impact">0%</span></div>
-                    <div class="detail-item">Fee: <span id="lp-fee">0</span></div>
-                    <div class="detail-item">Min Received: <span id="min-received">0</span></div>
-                </div>
-
-                <div class="swap-buttons">
-                    <button id="get-quote-btn" class="btn secondary-btn">Get Quote</button>
-                    <button id="execute-swap-btn" class="btn primary-btn" style="display: none;">Execute Swap</button>
-                </div>
-            </div>
-        </section>
-
-        <section id="nft-section" class="glass-card">
-            <h2>🖼️ NFT Marketplace</h2>
-            <div class="nft-tabs">
-                <button class="tab-link active" onclick="toggleNftTab('market')">Marketplace</button>
-                <button class="tab-link" onclick="toggleNftTab('user')">My NFTs</button>
-            </div>
-
-            <div id="marketplace-nft-list" class="nft-grid">
-                </div>
-
-            <div id="user-nft-list" class="nft-grid" style="display: none;">
-                <button class="btn mint-trigger" onclick="openMintModal()">+ Mint New NFT</button>
-                </div>
-        </section>
-
-        <section id="dao-section" class="glass-card">
-            <h2>🏛️ DAO Governance</h2>
-            <button id="createProposalBtn" class="btn primary-btn">Create Proposal</button>
-            <div id="announcements-list" class="announcements-container">
-                </div>
-        </section>
-
-    </main>
-
-    <div id="nft-details-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <div class="nft-detail-view">
-                <img id="nft-detail-image" src="" alt="NFT">
-                <div class="nft-info">
-                    <h3 id="nft-detail-name"></h3>
-                    <p id="nft-detail-description"></p>
-                    <div class="meta-tags">
-                        <span>Owner: <b id="nft-detail-owner"></b></span>
-                        <span>Mint: <b id="nft-detail-mint"></b></span>
-                    </div>
-                    <ul id="attributes-list" class="attr-list"></ul>
-                    <div class="nft-actions">
-                        <button id="nft-detail-buy-btn" class="btn primary-btn">Buy NFT</button>
-                        <button id="nft-detail-sell-btn" class="btn secondary-btn">List/Unlist</button>
-                        <button id="nft-detail-transfer-btn" class="btn danger-btn">Transfer</button>
-                    </div>
-                    <h4>History</h4>
-                    <ul id="nft-detail-history" class="history-list"></ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="mint-nft-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h3>Mint AlphaFox NFT</h3>
-            <form id="mint-nft-form">
-                <input type="text" name="mint-name" placeholder="Name" required>
-                <textarea name="mint-description" placeholder="Description"></textarea>
-                <input type="url" name="mint-image" placeholder="Image URL">
-                <button type="submit" class="btn primary-btn">Mint (0.05 SOL)</button>
-            </form>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-
-    <script>
-        // Небольшие вспомогательные функции для работы вкладок
-        function toggleNftTab(type) {
-            const market = document.getElementById('marketplace-nft-list');
-            const user = document.getElementById('user-nft-list');
-            const tabs = document.querySelectorAll('.tab-link');
-            
-            tabs.forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-
-            if (type === 'market') {
-                market.style.display = 'grid';
-                user.style.display = 'none';
-            } else {
-                market.style.display = 'none';
-                user.style.display = 'grid';
-            }
-        }
-
-        function openMintModal() {
-            document.getElementById('mint-nft-modal').style.display = 'flex';
-        }
-    </script>
 </body>
 </html>
