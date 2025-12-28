@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurum Fox Portal: Web3 Ecosystem on Solana</title>
+    <title>Aurum Fox | Web3 Landing & Staking</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
     <script>window.Buffer = window.buffer.Buffer;</script>
@@ -11,296 +11,211 @@
     <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
     <script src="https://terminal.jup.ag/main-v2.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
         :root { 
-            /* Новая премиальная палитра */
-            --gold-gradient: linear-gradient(135deg, #FFD700 0%, #FDB931 50%, #BF953F 100%);
             --gold: #FFD700; 
-            --dark-gold: #AA8800; 
-            --bg: #080808; 
-            --card-bg: rgba(25, 25, 25, 0.7); 
+            --dark-gold: #CC8800; 
+            --bg: #0a0a0a; 
+            --card: #161616; 
             --text: #ffffff;
-            --text-dim: #b0b0b0;
-            --glass: rgba(255, 255, 255, 0.03);
-            --glow: 0 0 20px rgba(255, 215, 0, 0.2);
+            --gold-grad: linear-gradient(135deg, #FFD700 0%, #CC8800 100%);
         }
         
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background-color: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            line-height: 1.6;
-            background-image: radial-gradient(circle at top right, rgba(255, 215, 0, 0.05), transparent);
-        }
-
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; line-height: 1.6; scroll-behavior: smooth; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         
-        /* Header */
-        .header { 
-            background: rgba(0, 0, 0, 0.85); 
-            backdrop-filter: blur(12px);
-            padding: 15px 0; 
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2); 
-            position: sticky; 
-            top: 0; 
-            z-index: 1000; 
-        }
+        /* HEADER */
+        .header { background: rgba(0,0,0,0.9); padding: 20px 0; border-bottom: 2px solid var(--dark-gold); position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(10px); }
+        .logo-text { color: var(--gold); font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 1.8rem; margin: 0; letter-spacing: 1px; }
 
-        .logo-text { 
-            font-family: 'Montserrat', sans-serif; 
-            font-weight: 900; 
-            font-size: 1.7rem; 
-            margin: 0;
-            background: var(--gold-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
-        }
-        
-        /* Кнопки с анимацией */
-        .btn { 
-            padding: 14px 28px; 
-            border-radius: 12px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            border: none; 
-            text-decoration: none; 
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-        }
-
-        .primary-btn { 
-            background: var(--gold-gradient); 
-            color: #000; 
-            box-shadow: var(--glow);
-        }
-
-        .primary-btn:hover { 
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4);
-        }
-
-        .wallet-btn { 
-            background: rgba(255, 215, 0, 0.05); 
-            border: 1px solid var(--gold); 
-            color: var(--gold); 
-        }
-
-        .wallet-btn:hover {
-            background: var(--gold);
-            color: #000;
-        }
-
-        /* Hero */
+        /* HERO / LANDING SECTION */
         .hero { 
-            padding: 120px 0; 
+            min-height: 80vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
             text-align: center;
-            background: radial-gradient(circle, rgba(255,215,0,0.05) 0%, rgba(0,0,0,0) 70%);
+            /* Путь к твоей картинке */
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('./assets/foxcoin-hero.png.jpg'); 
+            background-size: cover; 
+            background-position: center;
+            border-bottom: 1px solid rgba(255,215,0,0.2);
         }
-        
         .hero h1 { 
-            font-size: 3.5rem; 
             font-family: 'Montserrat', sans-serif; 
-            margin-bottom: 15px;
-            background: var(--gold-gradient);
-            -webkit-background-clip: text;
+            font-size: 4rem; 
+            margin: 0; 
+            background: var(--gold-grad); 
+            -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
         }
+        .hero p { font-size: 1.4rem; max-width: 800px; margin: 20px auto; opacity: 0.9; }
 
-        /* Карточки */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 50px; }
+        /* КНОПКИ */
+        .btn { padding: 15px 35px; border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.4s; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; font-size: 1rem; }
+        .primary-btn { background: var(--gold-grad); color: #000; box-shadow: 0 10px 20px rgba(255, 215, 0, 0.2); }
+        .primary-btn:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(255, 215, 0, 0.4); }
+        .wallet-btn { background: transparent; border: 2px solid var(--gold); color: var(--gold); }
+        .wallet-btn:hover { background: var(--gold); color: #000; }
+
+        /* СЕКЦИИ */
+        .section { padding: 100px 0; text-align: center; }
+        h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5rem; color: var(--gold); margin-bottom: 50px; }
         
-        .card { 
-            background: var(--card-bg); 
-            padding: 40px; 
-            border-radius: 24px; 
-            border: 1px solid rgba(255, 215, 0, 0.1);
-            backdrop-filter: blur(10px);
-            transition: 0.4s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card:hover {
-            border-color: var(--gold);
-            transform: translateY(-10px);
-            box-shadow: var(--glow);
-        }
-
-        .card i { font-size: 2.5rem; color: var(--gold); margin-bottom: 20px; display: block; }
+        /* КАРТОЧКИ ТОКЕНОМИКИ */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .card { background: var(--card); padding: 40px; border-radius: 30px; border: 1px solid rgba(255,215,0,0.1); transition: 0.3s; }
+        .card:hover { border-color: var(--gold); transform: translateY(-10px); }
         
-        /* Стейкинг портал */
-        .staking-portal { 
-            background: linear-gradient(145deg, rgba(20,20,20,1) 0%, rgba(40,40,40,1) 100%);
-            border-radius: 32px; 
-            padding: 40px; 
-            max-width: 500px; 
-            margin: 50px auto; 
-            border: 1px solid var(--gold);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-
-        .stats-box {
-            background: rgba(0,0,0,0.3);
-            padding: 20px;
-            border-radius: 16px;
-            margin-bottom: 25px;
-        }
-
-        .val { color: var(--gold); font-weight: 700; font-size: 1.2rem; }
+        /* STAKING */
+        .staking-portal { background: linear-gradient(145deg, #1a1a1a, #000); border-radius: 30px; padding: 50px; max-width: 550px; margin: 0 auto; border: 1px solid var(--gold); }
+        .stats-row { display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 1.1rem; border-bottom: 1px solid rgba(255,215,0,0.1); padding-bottom: 10px; }
+        .val { color: var(--gold); font-weight: bold; }
         
-        input { 
-            width: 100%; padding: 16px; 
-            background: #000; 
-            border: 1px solid #333; 
-            color: #fff; 
-            border-radius: 14px; 
-            margin: 15px 0; 
-            font-size: 1.1rem;
-            outline: none;
-            transition: 0.3s;
-        }
-        input:focus { border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+        input { width: 100%; padding: 18px; background: #000; border: 1px solid #333; color: #fff; border-radius: 15px; margin: 20px 0; font-size: 1.2rem; text-align: center; }
 
-        /* Roadmap */
-        .roadmap-item { 
-            padding: 25px; 
-            background: var(--glass);
-            border-radius: 20px;
-            border-left: 4px solid var(--gold);
-            margin-bottom: 20px;
-        }
-
-        footer { border-top: 1px solid rgba(255,215,0,0.1); padding: 50px 0; opacity: 0.7; }
-
-        @media (max-width: 768px) { .hero h1 { font-size: 2.2rem; } }
+        /* ROADMAP */
+        .roadmap-item { text-align: left; border-left: 4px solid var(--gold); padding: 20px 30px; margin-bottom: 30px; background: rgba(255,255,255,0.03); border-radius: 0 20px 20px 0; }
+        
+        @media (max-width: 768px) { .hero h1 { font-size: 2.5rem; } .hero p { font-size: 1.1rem; } }
     </style>
 </head>
 <body>
 
     <header class="header">
         <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
-            <p class="logo-text"><i class="fas fa-shuttle-space"></i> AURUM FOX</p>
-            <button id="connectBtn" class="btn wallet-btn">
-                <i class="fas fa-wallet"></i> <span>Connect Wallet</span>
-            </button>
+            <p class="logo-text">AURUM FOX <span style="font-weight:100">DAO</span></p>
+            <button id="connectBtn" class="btn wallet-btn"><i class="fas fa-wallet"></i> CONNECT</button>
         </div>
     </header>
 
     <section class="hero">
         <div class="container">
-            <h1>The Future of Luck <br> on Solana</h1>
-            <p style="font-size: 1.2rem; color: var(--text-dim); max-width: 700px; margin: 0 auto 30px;">
-                Harness the power of the Golden Fox. Secure, fast, and community-driven ecosystem for the next generation of DeFi.
-            </p>
-            <div style="display: flex; gap: 15px; justify-content: center;">
-                <a href="#swap-section" class="btn primary-btn"><i class="fas fa-fire"></i> Buy AFOX</a>
-                <a href="#staking-section" class="btn wallet-btn">Explore Staking</a>
+            <h1>Aurum Fox</h1>
+            <p>The premier Web3 ecosystem on Solana. Combining golden prosperity with the speed of light.</p>
+            <div style="margin-top: 40px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                <a href="#swap-section" class="btn primary-btn"><i class="fas fa-bolt"></i> BUY AFOX NOW</a>
+                <a href="#staking-section" class="btn wallet-btn"><i class="fas fa-gem"></i> ENTER PORTAL</a>
             </div>
         </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="tokenomics">
         <div class="container">
+            <h2>Tokenomics</h2>
             <div class="grid">
                 <div class="card">
-                    <i class="fas fa-chart-pie"></i>
-                    <h3>10M Supply</h3>
-                    <p>Fixed supply. No minting. No inflation. 100% of tokens are in circulation and community hands.</p>
+                    <i class="fas fa-coins" style="font-size: 3rem; color: var(--gold); margin-bottom: 20px;"></i>
+                    <h3>10,000,000 AFOX</h3>
+                    <p>Total Supply fixed. No more tokens can ever be created. Pure community ownership.</p>
                 </div>
                 <div class="card">
-                    <i class="fas fa-shield-halved"></i>
-                    <h3>Security First</h3>
-                    <p>Liquidity burned, Freeze and Mint authorities revoked. Your assets are safe with Aurum Fox.</p>
-                </div>
-                <div class="card" style="text-align: left;">
-                    <i class="fas fa-code"></i>
-                    <h3>Contract</h3>
-                    <p style="font-family: monospace; font-size: 0.8rem; background: #000; padding: 10px; border-radius: 8px;">GLkewtq8...uRAd</p>
-                    <button class="btn primary-btn" style="width:100%; margin-top:10px; justify-content: center;">
-                        <i class="fas fa-copy"></i> Copy
-                    </button>
+                    <i class="fas fa-lock" style="font-size: 3rem; color: var(--gold); margin-bottom: 20px;"></i>
+                    <h3>Contract Revoked</h3>
+                    <p>Mint and Freeze authorities are gone. Liquidity is burned forever.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section id="staking-section" style="background: #0c0c0c; padding: 100px 0;">
+    <section class="section" id="staking-section" style="background: #0f0f0f;">
         <div class="container">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <h2 style="font-size: 2.5rem; color: var(--gold);">AlphaFox Staking</h2>
-                <p style="color: var(--text-dim);">Earn passive rewards by holding AFOX</p>
-            </div>
-            
+            <h2>AlphaFox Staking Portal</h2>
             <div class="staking-portal">
-                <div class="stats-box">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                        <span><i class="fas fa-wallet" style="font-size: 1rem; margin:0 5px 0 0; display:inline;"></i> Balance:</span>
-                        <span id="user-balance" class="val">0 AFOX</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span><i class="fas fa-lock" style="font-size: 1rem; margin:0 5px 0 0; display:inline;"></i> Staked:</span>
-                        <span id="staked-amount" class="val">0 AFOX</span>
-                    </div>
+                <div class="stats-row">
+                    <span>Balance:</span>
+                    <span id="user-balance" class="val">0 AFOX</span>
                 </div>
-                
-                <label style="font-size: 0.8rem; color: var(--text-dim); margin-left: 5px;">Enter Amount</label>
+                <div class="stats-row">
+                    <span>Staked:</span>
+                    <span id="staked-amount" class="val">0 AFOX</span>
+                </div>
                 <input type="number" id="stake-input" placeholder="0.00">
-                
-                <button id="stakeBtn" class="btn primary-btn" style="width: 100%; margin-bottom: 12px; justify-content: center;" disabled>
-                    Stake AFOX
-                </button>
-                <button id="claimBtn" class="btn wallet-btn" style="width: 100%; justify-content: center;" disabled>
-                    Claim Rewards
-                </button>
+                <button id="stakeBtn" class="btn primary-btn" style="width: 100%; margin-bottom: 15px; justify-content: center;" disabled>STAKE TOKENS</button>
+                <button id="claimBtn" class="btn wallet-btn" style="width: 100%; justify-content: center;" disabled>CLAIM REWARDS</button>
+                <p id="wallet-status" style="margin-top: 20px; opacity: 0.5;">Please connect your Solana wallet</p>
             </div>
+        </div>
+    </section>
+
+    <section class="section" id="swap-section">
+        <div class="container">
+            <h2>Jupiter Swap</h2>
+            <div id="jupiter-swap-widget"></div>
         </div>
     </section>
 
     <section class="section" id="roadmap">
         <div class="container">
-            <h2 style="text-align: center; margin-bottom: 50px;">Roadmap</h2>
+            <h2>Roadmap</h2>
             <div class="grid">
                 <div class="roadmap-item">
-                    <h4 style="color: var(--gold); margin: 0;">PHASE 01</h4>
-                    <h3>Launch & Burn</h3>
-                    <p>Successful launch on Solana, burning LP, and establishing the core Fox community.</p>
-                </div>
-                <div class="roadmap-item" style="border-color: #fff;">
-                    <h4 style="color: var(--gold); margin: 0;">PHASE 02</h4>
-                    <h3>Utility & Staking</h3>
-                    <p>Release of the AlphaFox Staking Portal and initial marketing push.</p>
+                    <h3>Phase 1: Launch</h3>
+                    <p>Community Building & Initial DEX Offering.</p>
                 </div>
                 <div class="roadmap-item">
-                    <h4 style="color: var(--gold); margin: 0;">PHASE 03</h4>
-                    <h3>Expansion</h3>
-                    <p>NFT Integration, DAO Governance, and Tier-1 Exchange listings.</p>
+                    <h3>Phase 2: Staking</h3>
+                    <p>Utility release and AlphaFox Portal live.</p>
+                </div>
+                <div class="roadmap-item">
+                    <h3>Phase 3: DAO</h3>
+                    <p>Governance and NFT Physical Assets integration.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer style="text-align: center;">
-        <div class="container">
-            <div style="margin-bottom: 20px; font-size: 1.5rem; gap: 20px; display: flex; justify-content: center;">
-                <a href="#" style="color: var(--gold);"><i class="fab fa-twitter"></i></a>
-                <a href="#" style="color: var(--gold);"><i class="fab fa-telegram"></i></a>
-                <a href="#" style="color: var(--gold);"><i class="fab fa-discord"></i></a>
-            </div>
-            <p>&copy; 2025 Aurum Fox Ecosystem. Powered by Solana.</p>
-        </div>
+    <footer style="padding: 60px 0; text-align: center; border-top: 1px solid #222;">
+        <p>&copy; 2025 Aurum Fox DAO. Built on Solana.</p>
     </footer>
 
     <script>
-        // Твоя логика подключения кошелька и Jupiter...
+        const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
+        const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
+        let userPublicKey = null;
+
+        function initJupiter() {
+            if (window.Jupiter) {
+                window.Jupiter.init({
+                    displayMode: "widget",
+                    containerId: "jupiter-swap-widget",
+                    endpoint: "https://api.mainnet-beta.solana.com",
+                    strictTokenList: false,
+                    formProps: {
+                        initialInputMint: "So11111111111111111111111111111111111111112",
+                        initialOutputMint: AFOX_MINT,
+                    },
+                });
+            }
+        }
+
+        async function handleConnect() {
+            const isPhantomInstalled = window.solana && window.solana.isPhantom;
+            if (isPhantomInstalled) {
+                try {
+                    const resp = await window.solana.connect();
+                    userPublicKey = resp.publicKey.toString();
+                    onSuccessConnect(userPublicKey);
+                } catch (err) { console.error(err); }
+            } else {
+                window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}?ref=${window.location.href}`;
+            }
+        }
+
+        function onSuccessConnect(pubKey) {
+            const btn = document.getElementById('connectBtn');
+            btn.innerText = pubKey.substring(0, 4) + "..." + pubKey.slice(-4);
+            document.getElementById('stakeBtn').disabled = false;
+            document.getElementById('claimBtn').disabled = false;
+            document.getElementById('wallet-status').innerText = "Wallet Connected ✅";
+        }
+
+        document.getElementById('connectBtn').onclick = handleConnect;
+        window.onload = () => { initJupiter(); };
     </script>
 </body>
 </html>
