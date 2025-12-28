@@ -3,325 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaFox DAO | Premium Staking & NFT Marketplace</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>AlphaFox DAO - Staking & NFT Marketplace</title>
     
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/anchor.min.js"></script>
-    <script src="https://bundle.run/@solana/wallet-adapter-phantom@0.9.24"></script>
-
+    <script src="https://project-serum.github.io/anchor/dist/anchor.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom/dist/index.iife.min.js"></script>
+    
     <style>
-        :root {
-            --primary: #FF8008;
-            --primary-glow: rgba(255, 128, 8, 0.4);
-            --secondary: #FFC837;
-            --bg-dark: #0B0E14;
-            --card-bg: rgba(23, 28, 38, 0.7);
-            --border: rgba(255, 255, 255, 0.1);
-            --text-main: #FFFFFF;
-            --text-dim: #94A3B8;
-            --danger: #EF4444;
-            --success: #10B981;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top right, #1e1b4b, #0B0E14);
-            background-attachment: fixed;
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* --- СКРЫТЫЙ ЗАГРУЗЧИК --- */
-        #page-loader {
-            position: fixed; inset: 0; background: var(--bg-dark); 
-            z-index: 9999; display: none; justify-content: center; align-items: center;
-        }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid var(--border);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        /* --- ВЕРХНЯЯ ПАНЕЛЬ --- */
-        header {
-            padding: 1.5rem 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-            backdrop-filter: blur(10px); border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 100;
-        }
-
-        .logo-box { display: flex; align-items: center; gap: 12px; }
-        .logo-box h1 { font-weight: 800; font-size: 1.5rem; letter-spacing: -1px; }
-        .logo-box span { color: var(--primary); }
-
-        .wallet-section { display: flex; align-items: center; gap: 1rem; }
-
-        .btn-wallet {
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            border: none; padding: 10px 24px; border-radius: 12px;
-            color: white; font-weight: 700; cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px var(--primary-glow);
-        }
-        .btn-wallet:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--primary-glow); }
-        .btn-wallet:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .wallet-display {
-            background: var(--card-bg); border: 1px solid var(--border);
-            padding: 6px 16px; border-radius: 12px; display: none; align-items: center; gap: 10px;
-        }
-
-        /* --- СЕТКА КОНТЕНТА --- */
-        .main-content {
-            max-width: 1200px; margin: 2rem auto; padding: 0 1rem;
-            display: grid; grid-template-columns: 1fr 400px; gap: 2rem;
-        }
-
-        @media (max-width: 968px) { .main-content { grid-template-columns: 1fr; } }
-
-        .glass-card {
-            background: var(--card-bg); backdrop-filter: blur(12px);
-            border: 1px solid var(--border); border-radius: 24px; padding: 2rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-        }
-
-        .section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
-        .section-title::before { content: ''; width: 4px; height: 20px; background: var(--primary); border-radius: 2px; }
-
-        /* --- СТИЛИ СТЕЙКИНГА --- */
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
-        .stat-item { background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 16px; border: 1px solid var(--border); }
-        .stat-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 1.25rem; font-weight: 700; margin-top: 4px; }
-
-        /* --- СТИЛИ СВАПА --- */
-        .swap-container { display: flex; flex-direction: column; gap: 8px; }
-        .swap-input-group {
-            background: #0B0E14; border: 1px solid var(--border);
-            padding: 16px; border-radius: 16px; transition: border-color 0.2s;
-        }
-        .swap-input-group:focus-within { border-color: var(--primary); }
-        .swap-input-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; }
-        .swap-input-row { display: flex; align-items: center; gap: 12px; }
-        .swap-input-row input {
-            background: transparent; border: none; color: white; font-size: 1.5rem;
-            font-weight: 600; width: 100%; outline: none;
-        }
-        .token-select {
-            background: #1E293B; border: 1px solid var(--border); color: white;
-            padding: 6px 12px; border-radius: 10px; cursor: pointer; font-weight: 600;
-        }
-
-        .swap-divider {
-            height: 40px; width: 40px; background: #1E293B; border: 4px solid var(--bg-dark);
-            border-radius: 12px; margin: -20px auto; z-index: 2; display: flex;
-            justify-content: center; align-items: center; cursor: pointer; transition: transform 0.3s;
-        }
-        .swap-divider:hover { transform: rotate(180deg); color: var(--primary); }
-
-        /* --- МАРКЕТПЛЕЙС --- */
-        .nft-scroll-container {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem;
-            margin-top: 1rem;
-        }
-        .nft-card {
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px;
-            overflow: hidden; transition: 0.3s; cursor: pointer;
-        }
-        .nft-card:hover { transform: translateY(-8px); border-color: var(--primary); }
-        .nft-image-box { width: 100%; aspect-ratio: 1; background: #161b22; position: relative; }
-        .nft-image-box img { width: 100%; height: 100%; object-fit: cover; }
-        .nft-info { padding: 1.25rem; }
-        .nft-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
-        .nft-price { color: var(--primary); font-weight: 600; font-size: 0.9rem; }
-
-        /* --- УВЕДОМЛЕНИЯ --- */
-        #notification-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; width: 350px; }
-        .notification {
-            background: #1E293B; border-radius: 12px; padding: 1rem; margin-top: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-left: 4px solid var(--primary);
-            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-        /* Utility */
-        .hidden { display: none !important; }
-        .mt-2 { margin-top: 1rem; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        :root { --primary: #ff4500; --bg: #1a1a1a; --text: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { background: #2a2a2a; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn:disabled { background: #555; cursor: not-allowed; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #333; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; position: relative; }
+        .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .nft-card { background: #333; padding: 10px; border-radius: 8px; text-align: center; }
+        .nft-card img { width: 100%; border-radius: 5px; }
+        #notification-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .notification { padding: 15px; margin-bottom: 10px; border-radius: 5px; color: white; animation: slideIn 0.3s; }
+        .notification.success { background: #28a745; }
+        .notification.error { background: #dc3545; }
+        .notification.info { background: #007bff; }
+        #page-loader { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; }
+        .hidden { display: none; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
 
-    <div id="page-loader"><div class="spinner"></div></div>
-    <div id="notification-container"></div>
+<div id="notification-container"></div>
+<div id="page-loader">ЗАГРУЗКА...</div>
 
-    <header>
-        <div class="logo-box">
-            <img src="https://via.placeholder.com/40x40/FF8008/FFFFFF?text=A" alt="Logo" style="border-radius: 8px;">
-            <h1>ALPHA<span>FOX</span></h1>
-        </div>
-        
-        <div class="wallet-section">
-            <button class="btn-wallet connect-wallet-btn">Connect Wallet</button>
-            <div class="wallet-display" data-wallet-control="walletDisplay">
-                <div style="text-align: right;">
-                    <div class="wallet-address-display" style="font-weight: 700; font-size: 0.9rem;">0x0...0</div>
-                    <div style="font-size: 0.7rem; color: var(--success);">● Devnet Connected</div>
-                </div>
-                <button class="copy-btn" title="Copy Address" style="background:none; border:none; color:var(--text-dim); cursor:pointer;">📋</button>
+<div class="container">
+    <header class="section" style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>AlphaFox Ecosystem</h1>
+        <div id="wallet-controls">
+            <button class="btn btn-primary connect-wallet-btn">Connect Phantom</button>
+            <div class="wallet-display" style="display: none; align-items: center; gap: 10px;">
+                <span class="wallet-address-display"></span>
+                <button class="btn btn-secondary copy-btn" data-copy-target="">Copy</button>
             </div>
         </div>
     </header>
 
-    <main class="main-content">
-        <div class="left-col">
-            
-            <section class="glass-card">
-                <div class="section-title">Staking Dashboard</div>
-                
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-label">Your Balance</div>
-                        <div class="stat-value" id="user-afox-balance">0.00 AFOX</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Total Staked</div>
-                        <div class="stat-value" id="user-staked-amount">0.00 AFOX</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Available Rewards</div>
-                        <div class="stat-value" id="user-rewards-amount" style="color: var(--success);">0.00 AFOX</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Current APR</div>
-                        <div class="stat-value" id="staking-apr">--%</div>
-                    </div>
-                </div>
-
-                <div class="staking-actions" style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                        <select id="pool-selector" class="token-select" style="height: 50px; flex: 1;"></select>
-                        <div style="flex: 2; position: relative;">
-                            <input type="number" id="stake-amount" placeholder="0.00" style="width: 100%; height: 50px; border-radius: 12px; background: #0B0E14; border: 1px solid var(--border); padding: 0 1rem; color: white;">
-                            <button class="max-amount-btn" data-input-id="stake-amount" style="position: absolute; right: 10px; top: 15px; background: var(--primary); border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">MAX</button>
-                        </div>
-                    </div>
-                    <button id="stake-afox-btn" class="btn-wallet" style="width: 100%; padding: 15px;">Stake Assets</button>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <button id="claim-rewards-btn" class="btn-wallet" style="background: var(--card-bg); border: 1px solid var(--border);">Claim Rewards</button>
-                        <button id="unstake-afox-btn" class="btn-wallet" style="background: var(--card-bg); border: 1px solid var(--border);">Withdraw</button>
-                    </div>
-                    <div id="lockup-period" style="text-align: center; font-size: 0.8rem; color: var(--text-dim);"></div>
-                </div>
-            </section>
-
-            <section class="glass-card mt-2">
-                <div class="section-title">AlphaFox NFT Collection</div>
-                <div class="nft-scroll-container" id="marketplace-nft-list">
-                    </div>
-            </section>
-        </div>
-
-        <div class="right-col">
-            <section class="glass-card" style="padding: 1.5rem;">
-                <div class="section-title">Jupiter Swap</div>
-                
-                <div class="swap-container">
-                    <div class="swap-input-group">
-                        <div class="swap-input-header">
-                            <span>You pay</span>
-                            <span>Balance: <span id="swap-from-balance">0.00</span></span>
-                        </div>
-                        <div class="swap-input-row">
-                            <input type="number" id="swap-from-amount" placeholder="0.0">
-                            <select id="swap-from-token" class="token-select">
-                                <option value="SOL">SOL</option>
-                                <option value="AFOX">AFOX</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="swap-divider" id="swap-direction-btn">↓</div>
-
-                    <div class="swap-input-group">
-                        <div class="swap-input-header">
-                            <span>You receive</span>
-                        </div>
-                        <div class="swap-input-row">
-                            <input type="number" id="swap-to-amount" placeholder="0.0" readonly>
-                            <select id="swap-to-token" class="token-select">
-                                <option value="AFOX">AFOX</option>
-                                <option value="SOL">SOL</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="padding: 10px; font-size: 0.8rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>Price Impact</span> <span id="price-impact">0%</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>Est. Fee</span> <span id="lp-fee">0 AFOX</span>
-                        </div>
-                    </div>
-
-                    <button id="get-quote-btn" class="btn-wallet" style="width: 100%; margin-top: 10px;">Check Quote</button>
-                    <button id="execute-swap-btn" class="btn-wallet" style="width: 100%; margin-top: 10px; display: none;">Confirm Swap</button>
-                </div>
-            </section>
-
-            <section class="glass-card mt-2" style="padding: 1.5rem;">
-                <div class="section-title">My Collection</div>
-                <div id="user-nft-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    </div>
-                <button class="btn-wallet mt-2" style="width: 100%; font-size: 0.8rem;" onclick="document.getElementById('mint-nft-modal').style.display='flex'">+ Mint New NFT</button>
-            </section>
-        </div>
-    </main>
-
-    <div id="nft-details-modal" class="modal" style="position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; justify-content:center; align-items:center; z-index:1000; backdrop-filter: blur(5px);">
-        <div class="glass-card" style="max-width: 450px; width: 90%; position: relative;">
-            <button class="close-modal" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
-            <div id="nft-detail-image-container" style="border-radius: 16px; overflow: hidden; margin-bottom: 1.5rem;">
-                <img id="nft-detail-image" src="" style="width: 100%; display: block;">
+    <section class="section">
+        <h2>Staking AFOX</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <p>Баланс: <strong id="user-afox-balance">0 AFOX</strong></p>
+                <p>В стейкинге: <strong id="user-staked-amount">0 AFOX</strong></p>
+                <p>Награды: <strong id="user-rewards-amount">0 AFOX</strong></p>
+                <p>APR: <span id="staking-apr">—</span></p>
+                <p>Замок: <span id="lockup-period">—</span></p>
             </div>
-            <h2 id="nft-detail-name">--</h2>
-            <p id="nft-detail-description" style="color: var(--text-dim); font-size: 0.9rem; margin: 10px 0;"></p>
-            
-            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
-                    <span>Mint Address</span> <span id="nft-detail-mint" style="color: var(--primary);">--</span>
+            <div>
+                <select id="pool-selector" class="btn" style="width: 100%; margin-bottom: 10px;"></select>
+                <input type="number" id="stake-amount" placeholder="Количество AFOX" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+                <div style="display: flex; gap: 10px;">
+                    <button id="stake-afox-btn" class="btn btn-primary" disabled>Stake</button>
+                    <button id="claim-rewards-btn" class="btn" style="background: #28a745; color: white;" disabled>Claim</button>
+                    <button id="unstake-afox-btn" class="btn" style="background: #dc3545; color: white;" disabled>Unstake</button>
                 </div>
             </div>
-
-            <button id="nft-detail-buy-btn" class="btn-wallet" style="width: 100%;">Buy NFT</button>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                <button id="nft-detail-sell-btn" class="btn-wallet" style="background: #1e293b; border: 1px solid var(--border);">List</button>
-                <button id="nft-detail-transfer-btn" class="btn-wallet" style="background: #1e293b; border: 1px solid var(--border);">Transfer</button>
-            </div>
         </div>
+    </section>
+
+    <section class="section">
+        <h2>Swap (Jupiter API)</h2>
+        <div style="max-width: 400px;">
+            <div style="display: flex; justify-content: space-between;">
+                <label>From:</label>
+                <span id="swap-from-balance">0 SOL</span>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="number" id="swap-from-amount" placeholder="0.0" style="flex:1; padding: 10px;">
+                <select id="swap-from-token" class="btn">
+                    <option value="SOL">SOL</option>
+                    <option value="AFOX">AFOX</option>
+                </select>
+                <button class="btn max-amount-btn" data-input-id="swap-from-amount">MAX</button>
+            </div>
+            <button id="swap-direction-btn" style="display: block; margin: 10px auto; background: none; border: 1px solid #555; color: white; cursor: pointer;">⇅</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="number" id="swap-to-amount" placeholder="0.0" readonly style="flex:1; padding: 10px; background: #444;">
+                <select id="swap-to-token" class="btn">
+                    <option value="AFOX">AFOX</option>
+                    <option value="SOL">SOL</option>
+                </select>
+            </div>
+            <div style="font-size: 0.9em; color: #aaa; margin-bottom: 10px;">
+                Price Impact: <span id="price-impact">0%</span><br>
+                Fee: <span id="lp-fee">0</span><br>
+                Min. Received: <span id="min-received">0</span>
+            </div>
+            <button id="get-quote-btn" class="btn btn-primary" style="width: 100%; margin-bottom: 5px;">Get Quote</button>
+            <button id="execute-swap-btn" class="btn" style="width: 100%; background: #8c32ff; color: white; display: none;">Execute Swap</button>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>NFT Marketplace</h2>
+        <button class="btn btn-primary" onclick="document.getElementById('mint-nft-modal').style.display='flex'">Mint New NFT</button>
+        <h3>Your NFTs</h3>
+        <div id="user-nft-list" class="nft-grid"></div>
+        <h3>Marketplace</h3>
+        <div id="marketplace-nft-list" class="nft-grid"></div>
+    </section>
+</div>
+
+<div id="nft-details-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" style="position: absolute; right: 20px; cursor: pointer;">✕</span>
+        <img id="nft-detail-image" src="" style="width: 100%; border-radius: 10px;">
+        <h2 id="nft-detail-name"></h2>
+        <p id="nft-detail-description"></p>
+        <p>Owner: <span id="nft-detail-owner"></span></p>
+        <p>Mint: <span id="nft-detail-mint"></span></p>
+        <ul id="attributes-list"></ul>
+        <div id="nft-actions">
+            <button id="nft-detail-buy-btn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Buy</button>
+            <button id="nft-detail-sell-btn" class="btn" style="width: 100%; margin-top: 10px; background: #ffc107;">Sell</button>
+            <button id="nft-detail-transfer-btn" class="btn" style="width: 100%; margin-top: 10px; background: #6c757d;">Transfer</button>
+        </div>
+        <h4>History</h4>
+        <ul id="nft-detail-history" style="font-size: 0.8em; max-height: 100px; overflow-y: auto;"></ul>
     </div>
+</div>
 
-    <div id="mint-nft-modal" class="modal" style="position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; justify-content:center; align-items:center; z-index:1000; backdrop-filter: blur(5px);">
-        <div class="glass-card" style="max-width: 400px; width: 90%;">
-             <div class="section-title">Mint New Asset</div>
-             <form id="mint-nft-form">
-                <input type="text" name="mint-name" placeholder="Asset Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; background:#0B0E14; border:1px solid var(--border); color:white;">
-                <textarea name="mint-description" placeholder="Description" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; background:#0B0E14; border:1px solid var(--border); color:white; height:80px;"></textarea>
-                <input type="url" name="mint-image" placeholder="Image IPFS/URL" style="width:100%; padding:12px; margin-bottom:15px; border-radius:10px; background:#0B0E14; border:1px solid var(--border); color:white;">
-                <button type="submit" class="btn-wallet" style="width: 100%;">Confirm Mint</button>
-                <button type="button" class="btn-wallet mt-2 close-modal" style="width: 100%; background:none; border:1px solid var(--border);">Cancel</button>
-             </form>
-        </div>
+<div id="mint-nft-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" style="position: absolute; right: 20px; cursor: pointer;">✕</span>
+        <h2>Mint AlphaFox NFT</h2>
+        <form id="mint-nft-form">
+            <input type="text" name="mint-name" placeholder="Name" required style="width:100%; margin-bottom:10px; padding:8px;">
+            <textarea name="mint-description" placeholder="Description" required style="width:100%; margin-bottom:10px; padding:8px;"></textarea>
+            <input type="url" name="mint-image" placeholder="Image URL (optional)" style="width:100%; margin-bottom:10px; padding:8px;">
+            <button type="submit" class="btn btn-primary" style="width:100%;">Mint (0.05 SOL)</button>
+        </form>
     </div>
+</div>
+
+<div id="sell-nft-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" style="position: absolute; right: 20px; cursor: pointer;">✕</span>
+        <h2>List NFT for Sale</h2>
+        <form id="list-nft-form">
+            <select id="nft-to-sell" name="nft-to-sell" style="width:100%; margin-bottom:10px; padding:8px;"></select>
+            <input type="number" name="list-price" step="0.01" placeholder="Price in SOL" required style="width:100%; margin-bottom:10px; padding:8px;">
+            <button type="submit" class="btn btn-primary" style="width:100%;">List Now</button>
+        </form>
+    </div>
+</div>
+
+<script src="script.js"></script>
 
 </body>
 </html>
