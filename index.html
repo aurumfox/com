@@ -2,56 +2,146 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AlphaFox DAO - Mobile Ready</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <title>AlphaFox DAO Terminal</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
+    <script>window.Buffer = window.buffer.Buffer;</script>
+    <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
+
     <style>
-        body { background: #0b0b0e; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
-        .btn { background: #f0b90b; color: black; border: none; padding: 15px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px; }
-        #status { margin-top: 20px; color: #888; font-size: 14px; }
+        :root { --gold: #f0b90b; --bg: #0b0b0e; --card: rgba(255,255,255,0.05); }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .glass-card { background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; backdrop-filter: blur(10px); }
+        h2 { color: var(--gold); margin-top: 0; font-size: 1.2rem; }
+        .btn { background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; }
+        .btn:disabled { background: #444; color: #888; }
+        input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; margin: 10px 0; }
+        .stats { font-size: 14px; color: #ccc; margin-bottom: 10px; }
+        .val { color: var(--gold); float: right; }
     </style>
 </head>
 <body>
 
-    <h2>AlphaFox Connect</h2>
-    <button id="connectBtn" class="btn">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
-    <div id="status">Ожидание...</div>
+<div class="container">
+    <header style="text-align: center; padding: 20px 0;">
+        <h1 style="color: var(--gold); margin: 0;">AlphaFox <span style="font-weight: 100;">DAO</span></h1>
+        <p id="wallet-display" style="font-size: 12px; color: #888;">Wallet: Not Connected</p>
+        <button id="connectBtn" class="btn">CONNECT WALLET</button>
+    </header>
+
+    <div class="glass-card">
+        <h2>Staking Portal</h2>
+        <div class="stats">Balance: <span id="user-afox-balance" class="val">0 AFOX</span></div>
+        <div class="stats">Staked: <span id="user-staked-amount" class="val">0 AFOX</span></div>
+        <input type="number" id="stake-amount" placeholder="0.00">
+        <button id="stake-afox-btn" class="btn" disabled>STAKE NOW</button>
+        <button id="claim-rewards-btn" class="btn" style="background:none; color:var(--gold); border:1px solid var(--gold);" disabled>CLAIM REWARDS</button>
+    </div>
+
+    <div class="glass-card">
+        <h2>Jupiter Swap</h2>
+        <div class="stats">Pay SOL:</div>
+        <input type="number" id="swap-from-amount" placeholder="0.1">
+        <div class="stats">Receive AFOX (est): <span id="swap-estimate" class="val">0.00</span></div>
+        <button id="execute-swap-btn" class="btn" disabled>EXCHANGE</button>
+    </div>
+</div>
 
 <script>
-    const connectBtn = document.getElementById('connectBtn');
-    const status = document.getElementById('status');
+/** * КОНФИГУРАЦИЯ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+ */
+const PROGRAM_ID = "ТВОЙ_ID_ПРОГРАММЫ"; // Вставь свой ID
+const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
+let provider = null;
 
-    async function connect() {
-        // 1. Проверяем, есть ли Phantom (внутри Phantom Browser или Kiwi)
-        const isPhantomInstalled = window.solana && window.solana.isPhantom;
+/**
+ * ЛОГИКА ПОДКЛЮЧЕНИЯ (Универсальная для Android)
+ */
+async function handleConnect() {
+    const isPhantomInstalled = window.solana && window.solana.isPhantom;
 
-        if (isPhantomInstalled) {
-            try {
-                status.innerText = "Запрос подтверждения...";
-                const resp = await window.solana.connect();
-                status.innerText = "Подключено: " + resp.publicKey.toString().substring(0, 6) + "...";
-                connectBtn.innerText = "ГОТОВО";
-                connectBtn.style.background = "#0ecb81";
-            } catch (err) {
-                status.innerText = "Отказ: " + err.message;
-            }
-        } else {
-            // 2. ЕСЛИ КОШЕЛЬКА НЕТ (как у тебя сейчас в Chrome на Android)
-            status.innerText = "Кошелек не найден. Перенаправление...";
-            
-            // Получаем текущую ссылку на твой сайт
-            const currentUrl = window.location.href;
-            
-            // Создаем Deep Link (глубокую ссылку) для открытия в приложении Phantom
-            // Если приложения нет, ссылка сама предложит Play Market
-            const phantomLink = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
-            
-            // Перекидываем пользователя
-            window.location.href = phantomLink;
+    if (isPhantomInstalled) {
+        try {
+            const resp = await window.solana.connect();
+            onWalletConnected(resp.publicKey.toString());
+        } catch (err) {
+            console.error("User rejected", err);
         }
+    } else {
+        // Редирект для Android Chrome в приложение Phantom
+        const currentUrl = window.location.href;
+        window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
     }
+}
 
-    connectBtn.onclick = connect;
+function onWalletConnected(pubKey) {
+    document.getElementById('wallet-display').innerText = "Address: " + pubKey.substring(0, 8) + "...";
+    document.getElementById('connectBtn').innerText = "CONNECTED ✅";
+    document.getElementById('connectBtn').disabled = true;
+
+    // Разблокируем все функции программы
+    document.getElementById('stake-afox-btn').disabled = false;
+    document.getElementById('claim-rewards-btn').disabled = false;
+    document.getElementById('execute-swap-btn').disabled = false;
+
+    // Инициализируем провайдер Anchor
+    provider = new anchor.AnchorProvider(connection, window.solana, { preflightCommitment: "confirmed" });
+}
+
+/**
+ * ПРОГРАММА 1: СТЕЙКИНГ (Твоя логика)
+ */
+async function stakeTokens() {
+    const amount = document.getElementById('stake-amount').value;
+    if (!amount || amount <= 0) return alert("Enter amount");
+
+    try {
+        console.log("Staking amount:", amount);
+        // Здесь твой вызов Anchor:
+        // const program = new anchor.Program(IDL, PROGRAM_ID, provider);
+        // await program.methods.stake(new anchor.BN(amount)).accounts({...}).rpc();
+        alert("Transaction Sent: " + amount + " AFOX");
+    } catch (err) {
+        alert("Staking Error: " + err.message);
+    }
+}
+
+/**
+ * ПРОГРАММА 2: JUPITER SWAP (Твоя логика)
+ */
+async function executeSwap() {
+    const solAmount = document.getElementById('swap-from-amount').value;
+    try {
+        // Пример вызова Jupiter API
+        const quote = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=ТВОЙ_МИНТ_AFOX&amount=${solAmount * 1e9}&slippageBps=50`)
+            .then(res => res.json());
+        
+        document.getElementById('swap-estimate').innerText = (quote.outAmount / 1e9).toFixed(2);
+        alert("Swap Quote Received! Proceeding to transaction...");
+        
+        // Далее твоя логика отправки транзакции через window.solana.signTransaction
+    } catch (err) {
+        alert("Swap Error: " + err.message);
+    }
+}
+
+// Привязка событий
+document.getElementById('connectBtn').onclick = handleConnect;
+document.getElementById('stake-afox-btn').onclick = stakeTokens;
+document.getElementById('execute-swap-btn').onclick = executeSwap;
+
+// Проверка при загрузке: если мы уже внутри браузера Phantom, коннектим сразу
+window.onload = () => {
+    if (window.solana && window.solana.isPhantom) {
+        window.solana.connect({ onlyIfTrusted: true })
+            .then(resp => onWalletConnected(resp.publicKey.toString()))
+            .catch(() => console.log("Auto-connect failed, waiting for button click"));
+    }
+};
 </script>
+
 </body>
 </html>
