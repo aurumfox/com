@@ -1,57 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AlphaFox Check</title>
+    <title>AlphaFox DAO - Mobile Ready</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <style>
-        body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .box { border: 1px solid #333; padding: 20px; display: inline-block; border-radius: 10px; background: #1a1a1a; }
-        button { background: #f0b90b; padding: 15px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        #log { margin-top: 20px; color: #888; font-size: 12px; }
+        body { background: #0b0b0e; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        .btn { background: #f0b90b; color: black; border: none; padding: 15px 30px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px; }
+        #status { margin-top: 20px; color: #888; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>AlphaFox Connection Test</h2>
-    <p id="helper">Проверка расширения...</p>
-    <button id="btn">СПОДКЛЮЧИТЬ PHANTOM</button>
-    <div id="log"></div>
-</div>
+    <h2>AlphaFox Connect</h2>
+    <button id="connectBtn" class="btn">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
+    <div id="status">Ожидание...</div>
 
 <script>
-    const log = (msg) => { document.getElementById('log').innerHTML += msg + "<br>"; };
-    const btn = document.getElementById('btn');
+    const connectBtn = document.getElementById('connectBtn');
+    const status = document.getElementById('status');
 
-    // 1. Проверка при загрузке
-    window.onload = () => {
-        if (window.solana) {
-            document.getElementById('helper').innerText = "✅ Phantom обнаружен";
-            log("Система готова к подключению.");
+    async function connect() {
+        // 1. Проверяем, есть ли Phantom (внутри Phantom Browser или Kiwi)
+        const isPhantomInstalled = window.solana && window.solana.isPhantom;
+
+        if (isPhantomInstalled) {
+            try {
+                status.innerText = "Запрос подтверждения...";
+                const resp = await window.solana.connect();
+                status.innerText = "Подключено: " + resp.publicKey.toString().substring(0, 6) + "...";
+                connectBtn.innerText = "ГОТОВО";
+                connectBtn.style.background = "#0ecb81";
+            } catch (err) {
+                status.innerText = "Отказ: " + err.message;
+            }
         } else {
-            document.getElementById('helper').innerText = "❌ Phantom НЕ НАЙДЕН";
-            log("Установите расширение Phantom или убедитесь, что вы открыли сайт через http://, а не file://");
+            // 2. ЕСЛИ КОШЕЛЬКА НЕТ (как у тебя сейчас в Chrome на Android)
+            status.innerText = "Кошелек не найден. Перенаправление...";
+            
+            // Получаем текущую ссылку на твой сайт
+            const currentUrl = window.location.href;
+            
+            // Создаем Deep Link (глубокую ссылку) для открытия в приложении Phantom
+            // Если приложения нет, ссылка сама предложит Play Market
+            const phantomLink = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
+            
+            // Перекидываем пользователя
+            window.location.href = phantomLink;
         }
-    };
+    }
 
-    // 2. Логика кнопки
-    btn.onclick = async () => {
-        log("Нажатие зафиксировано...");
-        try {
-            if (!window.solana) throw new Error("Кошелек не найден в окне браузера");
-            
-            log("Запрос к Phantom...");
-            const resp = await window.solana.connect();
-            
-            log("УСПЕХ! Адрес: " + resp.publicKey.toString());
-            btn.innerText = "ПОДКЛЮЧЕНО";
-            btn.style.background = "#0ecb81";
-        } catch (err) {
-            log("ОШИБКА: " + err.message);
-            console.error(err);
-        }
-    };
+    connectBtn.onclick = connect;
 </script>
 </body>
 </html>
