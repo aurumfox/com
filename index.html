@@ -1459,24 +1459,12 @@
             }
             
             try {
-                // Использование реального адаптера
-                const adapter = new window.SolanaWalletAdapterPhantom.PhantomWalletAdapter();
-                
-                // Назначение обработчиков ДО подключения
-                adapter.on('connect', () => {
-                    solanaWalletAdapter = adapter;
-                    updateWalletUI(adapter);
-                    showNotification('Wallet successfully connected!', 'success', 4000);
-                });
-                adapter.on('disconnect', () => {
-                    solanaWalletAdapter = null;
-                    updateWalletUI(null);
-                    showNotification('Wallet disconnected.', 'info');
-                });
-                adapter.on('error', (error) => {
-                    console.error('Wallet error:', error);
-                    showNotification(`Wallet error: ${error.message}`, 'error', 5000);
-                });
+                <div class="container">
+    <header style="text-align: center; padding: 20px 0;">
+        <h1 style="color: var(--gold); margin: 0;">AlphaFox <span style="font-weight: 100;">DAO</span></h1>
+        <p id="wallet-display" style="font-size: 12px; color: #888;">Wallet: Not Connected</p>
+        <button id="connectBtn" class="btn">CONNECT WALLET</button>
+    </header>
 
                 <div class="container">
     <header style="text-align: center; padding: 20px 0;">
