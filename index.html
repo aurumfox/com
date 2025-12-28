@@ -259,135 +259,136 @@
 
         /* Остальные стили (гамбургер, кнопки, уведомления) без изменений) */
 
-        .menu-toggle {
-            display: none; /* Скрыть на десктопе */
-            cursor: pointer;
-            z-index: 10001;
-            padding: 10px;
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
         }
 
-        .hamburger {
+        .modal {
+            display: none;
+            position: fixed; 
+            z-index: 20000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.85); 
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 5% auto; 
+            padding: 30px;
+            border: 2px solid #FF8C00;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .close-button {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            color: #FF8C00;
+            font-size: 35px;
+            cursor: pointer;
+        }
+
+        /* Гамбургер */
+        .menu-toggle {
+            display: none;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 10001;
+        }
+
+        .hamburger, .hamburger::before, .hamburger::after {
             width: 30px;
             height: 3px;
             background-color: #FF8C00;
-            position: relative;
-            transition: background-color 0s 0.15s;
-        }
-
-        .hamburger::before,
-        .hamburger::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 3px;
-            background-color: #FF8C00;
-            transition: transform 0.15s;
-        }
-
-        .hamburger::before {
-            top: -10px;
-        }
-
-        .hamburger::after {
-            top: 10px;
-        }
-
-        /* Анимация при открытии */
-        .menu-toggle.open .hamburger {
-            background-color: transparent;
-        }
-
-        .menu-toggle.open .hamburger::before {
-            transform: translateY(10px) rotate(45deg);
-        }
-
-        .menu-toggle.open .hamburger::after {
-            transform: translateY(-10px) rotate(-45deg);
-        }
-        
-        .nav-mobile-overlay {
-            display: flex;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.95); /* Темный фон */
-            z-index: 10000;
-            transform: translateX(100%); /* Изначально скрыто справа */
-            transition: transform 0.3s ease-in-out;
-            overflow-y: auto;
-            padding-top: 80px; /* Сдвиг вниз от хедера */
-        }
-        
-        .nav-mobile-overlay.active {
-            transform: translateX(0); /* Показать меню */
-        }
-        
-        .main-nav {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            width: 100%;
-            text-align: center;
-        }
-        
-        .main-nav li a {
             display: block;
-            padding: 15px 20px;
-            text-decoration: none;
-            color: #fff;
-            font-size: 1.2em;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: background-color 0.3s;
+            transition: 0.3s;
+            position: relative;
         }
-        
-        .main-nav li a:hover {
-            background-color: #f39c12;
-            color: #000;
+        .hamburger::before { content: ''; top: -10px; position: absolute; }
+        .hamburger::after { content: ''; top: 10px; position: absolute; }
+
+        @media (max-width: 992px) {
+            .menu-toggle { display: block; }
+            .nav { display: none; } /* Скрываем обычную навигацию */
         }
 
-        .close-menu-button {
-            position: absolute;
+        /* Оверлей мобильного меню */
+        .nav-mobile-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transform: translateX(100%);
+            transition: 0.3s;
+        }
+        .nav-mobile-overlay.active { transform: translateX(0); }
+        .nav-list { list-style: none; text-align: center; }
+        .nav-list li { margin: 20px 0; }
+        .nav-list a { color: #fff; font-size: 1.5rem; text-decoration: none; font-weight: bold; }
+
+        .notification {
+            position: fixed;
             top: 20px;
             right: 20px;
-            font-size: 40px;
-            color: #FF8C00;
-            cursor: pointer;
-            z-index: 10001;
+            z-index: 99999;
         }
-        
-        .nav-separator {
-            padding: 20px 0 10px;
-            color: #f39c12;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-        
-        @media (max-width: 992px) {
-            .menu-toggle {
-                display: block; /* Показать на мобильных */
-            }
-            .header-controls-group {
-                display: flex;
-                align-items: center;
-            }
-        }
-        /* Стили для предотвращения прокрутки тела при открытом меню */
-        body.menu-open {
-            overflow: hidden;
-        }
-        
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            margin: -1px;
-            padding: 0;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            border: 0;
-        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container header-flex">
+            <div class="logo">
+                <img src="./assets/favicon.png.jpg" alt="AFOX Logo" style="height: 50px;">
+            </div>
+
+            <nav class="nav">
+                <ul class="main-nav" style="display: flex; list-style: none; gap: 20px;">
+                    <li><a href="#about-afox">About</a></li>
+                    <li><a href="#tokenomics">Tokenomics</a></li>
+                    <li><a href="#web3-site-home">Web3</a></li>
+                    <li><a href="#swap-section">Swap</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-controls-group" style="display: flex; align-items: center;">
+                <div class="wallet-controls">
+                    <button id="connectWalletBtn" class="wallet-connect-btn">
+                        <i class="fas fa-wallet"></i> Connect Wallet
+                    </button>
+                    <div id="walletDisplay" class="wallet-display" style="display:none;">
+                        <span id="walletAddressSpan" class="wallet-address-text"></span>
+                        <button id="copyWalletBtn" class="copy-btn"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <div class="menu-toggle" id="menuToggle">
+                    <div class="hamburger"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-mobile-overlay" id="mobileOverlay">
+            <span class="close-button" id="closeMainMenuCross" style="top: 20px;">&times;</span>
+            <ul class="nav-list">
+                <li><a href="#about-afox">About AFOX</a></li>
+                <li><a href="#tokenomics">Tokenomics</a></li>
+                <li><a href="#how-to-buy">How to Buy</a></li>
+                <li><a href="#web3-site-home">Web3 Portal</a></li>
+                <li><a href="#aurum-community">Community</a></li>
+            </ul>
+        </div>
+    </header>
 
         /* ================================================= */
         /* !!! ОБНОВЛЕННЫЕ СТИЛИ КНОПКИ CONNECT WALLET !!! */
