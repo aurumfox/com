@@ -2,182 +2,219 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaFox DAO | Web3 Staking & NFT</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://project-serum.github.io/anchor/dist/anchor.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AlphaFox DAO | Web3 Platform</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
     <script>window.Buffer = window.Buffer || buffer.Buffer;</script>
+
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://project-serum.github.io/anchor/dist/anchor.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
+    
+    <script src="https://terminal.jup.ag/main-v2.js"></script>
+
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="page-loader" class="loader-overlay" style="display: none;">
-        <div class="spinner"></div>
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <p>Обработка транзакции...</p>
+        </div>
     </div>
 
     <div id="notification-container"></div>
 
-    <header class="header">
-        <div class="logo">ALPHAFOX<span>DAO</span></div>
-        <nav class="main-nav" id="mainNav">
-            <a href="#staking">Стейкинг</a>
-            <a href="#marketplace">NFT Маркет</a>
-            <a href="#swap">Своп</a>
-            <button id="closeMainMenuCross" class="mobile-only">✕</button>
-        </nav>
-        <div class="wallet-controls">
-            <button class="connect-wallet-btn" id="headerConnectBtn">Подключить кошелек</button>
-            <div class="wallet-display" style="display: none;" data-wallet-control="walletDisplay">
-                <span class="wallet-address-display">0x...</span>
-                <button class="copy-btn" title="Копировать адрес">📋</button>
-            </div>
-        </div>
-        <button id="menuToggle" class="hamburger mobile-only">
+    <header class="web3-header">
+        <div class="logo">ALPHA<span>FOX</span></div>
+        
+        <button id="menuToggle" class="hamburger-menu" aria-label="Меню">
             <span></span><span></span><span></span>
         </button>
+
+        <nav id="mainNav" class="nav-links">
+            <button id="closeMainMenuCross" class="close-menu">&times;</button>
+            <a href="#staking-section">Стейкинг</a>
+            <a href="#swap-section">Своп</a>
+            <a href="#nft-section">NFT Маркет</a>
+            <a href="#dao-section">DAO</a>
+        </nav>
+
+        <div class="wallet-wrapper">
+            <button class="connect-wallet-btn" id="connectBtn">Connect Wallet</button>
+            
+            <div class="wallet-display" style="display: none;" data-wallet-control="walletDisplay">
+                <span class="wallet-address-display" id="walletAddress"></span>
+                <button class="copy-btn" title="Копировать">📋</button>
+            </div>
+        </div>
     </header>
 
     <div class="nav-mobile-overlay"></div>
 
-    <main class="container">
-        <section id="staking" class="card-section">
-            <h2><span class="icon">🦊</span> AlphaFox Staking</h2>
-            <div class="staking-grid">
-                <div class="stat-card">
-                    <p>Ваш баланс AFOX</p>
-                    <h3 id="user-afox-balance">0 AFOX</h3>
+    <main class="content-container">
+        
+        <section id="staking-section" class="glass-card">
+            <h2>🦊 AlphaFox Staking</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <label>Доступно AFOX</label>
+                    <div id="user-afox-balance" class="value">0 AFOX</div>
                 </div>
-                <div class="stat-card">
-                    <p>В стейкинге</p>
-                    <h3 id="user-staked-amount">0 AFOX</h3>
+                <div class="stat-item">
+                    <label>В стейкинге</label>
+                    <div id="user-staked-amount" class="value">0 AFOX</div>
                 </div>
-                <div class="stat-card primary">
-                    <p>Награды</p>
-                    <h3 id="user-rewards-amount">0 AFOX</h3>
-                    <button id="claim-rewards-btn" class="btn btn-glow" disabled>Забрать награды</button>
+                <div class="stat-item highlight">
+                    <label>Награды</label>
+                    <div id="user-rewards-amount" class="value">0 AFOX</div>
                 </div>
             </div>
 
-            <div class="staking-actions">
+            <div class="staking-controls">
                 <div class="input-group">
-                    <label>Сумма стейкинга</label>
-                    <div class="input-wrapper">
-                        <input type="number" id="stake-amount" placeholder="0.00">
+                    <select id="pool-selector" class="web3-select"></select>
+                    <div class="input-with-max">
+                        <input type="number" id="stake-amount" placeholder="Количество AFOX">
                         <button class="max-amount-btn" data-input-id="stake-amount">MAX</button>
                     </div>
-                    <select id="pool-selector" class="select-input"></select>
-                    <button id="stake-afox-btn" class="btn btn-primary">Застейкать</button>
                 </div>
-                <div class="info-group">
-                    <p>Текущий план: <span id="staking-apr">—</span></p>
-                    <p>Остаток блокировки: <span id="lockup-period">—</span></p>
-                    <button id="unstake-afox-btn" class="btn btn-outline" disabled>Вывести из стейкинга</button>
+                
+                <div class="info-row">
+                    <p>Доходность: <span id="staking-apr">—</span></p>
+                    <p>Блокировка: <span id="lockup-period">—</span></p>
                 </div>
-            </div>
-        </section>
 
-        <section id="swap" class="card-section">
-            <h2><span class="icon">🔄</span> Быстрый обмен</h2>
-            <div class="swap-container">
-                <div class="swap-box">
-                    <div class="token-input">
-                        <input type="number" id="swap-from-amount" placeholder="0.0">
-                        <select id="swap-from-token">
-                            <option value="SOL">SOL</option>
-                            <option value="AFOX">AFOX</option>
-                        </select>
-                    </div>
-                    <p class="balance-text">Баланс: <span id="swap-from-balance">0</span></p>
-                    
-                    <button id="swap-direction-btn" class="direction-btn">↓↑</button>
-
-                    <div class="token-input">
-                        <input type="number" id="swap-to-amount" placeholder="0.0" readonly>
-                        <select id="swap-to-token">
-                            <option value="AFOX">AFOX</option>
-                            <option value="SOL">SOL</option>
-                        </select>
-                    </div>
-                    
-                    <div class="swap-details">
-                        <p>Влияние на цену: <span id="price-impact">0%</span></p>
-                        <p>Комиссия: <span id="lp-fee">0</span></p>
-                    </div>
-                    <button id="get-quote-btn" class="btn btn-primary">Получить котировку</button>
-                    <button id="execute-swap-btn" class="btn btn-glow" style="display:none;">Обменять</button>
+                <div class="button-group">
+                    <button id="stake-afox-btn" class="btn primary-btn">Stake AFOX</button>
+                    <button id="claim-rewards-btn" class="btn secondary-btn" disabled>Claim Rewards</button>
+                    <button id="unstake-afox-btn" class="btn danger-btn" disabled>Unstake</button>
                 </div>
             </div>
         </section>
 
-        <section id="marketplace" class="card-section">
-            <h2><span class="icon">🖼️</span> NFT Коллекция</h2>
-            <div class="tabs">
-                <button class="tab-btn active" onclick="showTab('market')">Маркет</button>
-                <button class="tab-btn" onclick="showTab('my-nfts')">Мои NFT</button>
-            </div>
-            
-            <div id="market-view" class="nft-grid">
-                <div id="marketplace-nft-list"></div>
-            </div>
-            
-            <div id="my-nfts-view" class="nft-grid" style="display:none;">
-                <button class="btn btn-secondary" onclick="document.getElementById('mint-nft-modal').style.display='flex'">Создать NFT</button>
-                <div id="user-nft-list"></div>
+        <section id="swap-section" class="glass-card">
+            <h2>🔄 Jupiter Swap</h2>
+            <div class="swap-box">
+                <div class="token-input-field">
+                    <input type="number" id="swap-from-amount" placeholder="0.0">
+                    <select id="swap-from-token">
+                        <option value="SOL">SOL</option>
+                        <option value="AFOX">AFOX</option>
+                    </select>
+                </div>
+                <div class="balance-info">Balance: <span id="swap-from-balance">0</span></div>
+
+                <button id="swap-direction-btn" class="swap-divider">↓↑</button>
+
+                <div class="token-input-field">
+                    <input type="number" id="swap-to-amount" placeholder="0.0" readonly>
+                    <select id="swap-to-token">
+                        <option value="AFOX">AFOX</option>
+                        <option value="SOL">SOL</option>
+                    </select>
+                </div>
+
+                <div class="quote-details">
+                    <div class="detail-item">Price Impact: <span id="price-impact">0%</span></div>
+                    <div class="detail-item">Fee: <span id="lp-fee">0</span></div>
+                    <div class="detail-item">Min Received: <span id="min-received">0</span></div>
+                </div>
+
+                <div class="swap-buttons">
+                    <button id="get-quote-btn" class="btn secondary-btn">Get Quote</button>
+                    <button id="execute-swap-btn" class="btn primary-btn" style="display: none;">Execute Swap</button>
+                </div>
             </div>
         </section>
+
+        <section id="nft-section" class="glass-card">
+            <h2>🖼️ NFT Marketplace</h2>
+            <div class="nft-tabs">
+                <button class="tab-link active" onclick="toggleNftTab('market')">Marketplace</button>
+                <button class="tab-link" onclick="toggleNftTab('user')">My NFTs</button>
+            </div>
+
+            <div id="marketplace-nft-list" class="nft-grid">
+                </div>
+
+            <div id="user-nft-list" class="nft-grid" style="display: none;">
+                <button class="btn mint-trigger" onclick="openMintModal()">+ Mint New NFT</button>
+                </div>
+        </section>
+
+        <section id="dao-section" class="glass-card">
+            <h2>🏛️ DAO Governance</h2>
+            <button id="createProposalBtn" class="btn primary-btn">Create Proposal</button>
+            <div id="announcements-list" class="announcements-container">
+                </div>
+        </section>
+
     </main>
 
     <div id="nft-details-modal" class="modal">
         <div class="modal-content">
-            <span class="close-modal">×</span>
-            <div class="modal-body">
+            <span class="close-modal">&times;</span>
+            <div class="nft-detail-view">
                 <img id="nft-detail-image" src="" alt="NFT">
-                <div class="details">
-                    <h2 id="nft-detail-name"></h2>
+                <div class="nft-info">
+                    <h3 id="nft-detail-name"></h3>
                     <p id="nft-detail-description"></p>
-                    <ul id="attributes-list"></ul>
-                    <div class="nft-meta">
-                        <p>Владелец: <span id="nft-detail-owner"></span></p>
-                        <p>Mint: <span id="nft-detail-mint"></span></p>
+                    <div class="meta-tags">
+                        <span>Owner: <b id="nft-detail-owner"></b></span>
+                        <span>Mint: <b id="nft-detail-mint"></b></span>
                     </div>
-                    <div class="modal-actions">
-                        <button id="nft-detail-buy-btn" class="btn btn-glow">Купить</button>
-                        <button id="nft-detail-sell-btn" class="btn btn-primary">Выставить</button>
-                        <button id="nft-detail-transfer-btn" class="btn btn-outline">Передать</button>
+                    <ul id="attributes-list" class="attr-list"></ul>
+                    <div class="nft-actions">
+                        <button id="nft-detail-buy-btn" class="btn primary-btn">Buy NFT</button>
+                        <button id="nft-detail-sell-btn" class="btn secondary-btn">List/Unlist</button>
+                        <button id="nft-detail-transfer-btn" class="btn danger-btn">Transfer</button>
                     </div>
-                    <hr>
-                    <h4>История транзакций</h4>
-                    <ul id="nft-detail-history"></ul>
+                    <h4>History</h4>
+                    <ul id="nft-detail-history" class="history-list"></ul>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="mint-nft-modal" class="modal">
-        <div class="modal-content small">
-            <span class="close-modal">×</span>
-            <h3>Создать новый AlphaFox NFT</h3>
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3>Mint AlphaFox NFT</h3>
             <form id="mint-nft-form">
-                <input type="text" name="mint-name" placeholder="Название NFT" required>
-                <textarea name="mint-description" placeholder="Описание"></textarea>
-                <input type="url" name="mint-image" placeholder="URL изображения">
-                <button type="submit" class="btn btn-glow">Минтить (0.05 SOL)</button>
+                <input type="text" name="mint-name" placeholder="Name" required>
+                <textarea name="mint-description" placeholder="Description"></textarea>
+                <input type="url" name="mint-image" placeholder="Image URL">
+                <button type="submit" class="btn primary-btn">Mint (0.05 SOL)</button>
             </form>
         </div>
     </div>
 
     <script src="script.js"></script>
+
     <script>
-        // Простая логика переключения вкладок
-        function showTab(tab) {
-            document.getElementById('market-view').style.display = tab === 'market' ? 'grid' : 'none';
-            document.getElementById('my-nfts-view').style.display = tab === 'my-nfts' ? 'grid' : 'none';
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        // Небольшие вспомогательные функции для работы вкладок
+        function toggleNftTab(type) {
+            const market = document.getElementById('marketplace-nft-list');
+            const user = document.getElementById('user-nft-list');
+            const tabs = document.querySelectorAll('.tab-link');
+            
+            tabs.forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
+
+            if (type === 'market') {
+                market.style.display = 'grid';
+                user.style.display = 'none';
+            } else {
+                market.style.display = 'none';
+                user.style.display = 'grid';
+            }
+        }
+
+        function openMintModal() {
+            document.getElementById('mint-nft-modal').style.display = 'flex';
         }
     </script>
 </body>
