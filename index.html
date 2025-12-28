@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaFox | Elite DAO Terminal</title>
+    <title>AlphaFox DAO | Terminal</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
@@ -14,24 +14,30 @@
     <style>
         :root {
             --gold: #FFD700;
-            --gold-gradient: linear-gradient(135deg, #FFD700 0%, #B8860B 100%);
+            --gold-80: rgba(255, 215, 0, 0.8);
             --bg: #030405;
-            --panel-bg: rgba(13, 14, 18, 0.7);
+            --card: rgba(20, 21, 26, 0.6);
             --border: rgba(255, 255, 255, 0.08);
             --success: #00ffa3;
-            --error: #ff3e3e;
         }
 
         body {
             background: var(--bg);
-            color: #ffffff;
+            color: #fff;
             font-family: 'Plus Jakarta Sans', sans-serif;
             margin: 0;
-            line-height: 1.5;
-            background-image: 
-                radial-gradient(circle at 0% 0%, rgba(255, 215, 0, 0.07) 0%, transparent 35%),
-                radial-gradient(circle at 100% 100%, rgba(255, 0, 255, 0.05) 0%, transparent 35%);
-            background-attachment: fixed;
+            overflow-x: hidden;
+            /* Анимированный фон */
+            background: radial-gradient(circle at 50% -20%, #1a1b20, #030405);
+        }
+
+        /* Декоративные свечения на фоне */
+        body::before {
+            content: "";
+            position: fixed;
+            top: -10%; left: -10%; width: 40%; height: 40%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.05), transparent 70%);
+            z-index: -1;
         }
 
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -41,271 +47,209 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 0;
-            margin-bottom: 30px;
+            padding: 30px 0;
         }
 
-        .logo { font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .status-pill {
-            background: rgba(255,255,255,0.05);
+        .logo { font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; color: #fff; }
+        .logo span { background: linear-gradient(90deg, #FFD700, #B8860B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .wallet-pill {
+            background: var(--card);
+            border: 1px solid var(--border);
             padding: 8px 16px;
             border-radius: 100px;
-            border: 1px solid var(--border);
             font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            backdrop-filter: blur(10px);
+            display: flex; align-items: center; gap: 10px;
         }
-
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--error); transition: 0.3s; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; }
         .dot.active { background: var(--success); box-shadow: 0 0 10px var(--success); }
 
-        /* GRID LAYOUT */
-        .dashboard-grid {
+        /* GRID */
+        .dashboard {
             display: grid;
-            grid-template-columns: 8fr 4fr;
-            gap: 25px;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
         }
 
         .panel {
-            background: var(--panel-bg);
+            background: var(--card);
             backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 30px;
-            padding: 30px;
+            border-radius: 28px;
+            padding: 25px;
             transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .panel:hover { border-color: rgba(255, 215, 0, 0.2); transform: translateY(-4px); }
 
-        .panel:hover { border-color: rgba(255, 215, 0, 0.2); transform: translateY(-2px); }
-
-        /* TYPOGRAPHY */
-        h2 { font-size: 1.4rem; font-weight: 700; margin-top: 0; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; }
-        .label { color: rgba(255,255,255,0.5); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; letter-spacing: 1px; }
-        .big-value { font-size: 1.8rem; font-weight: 800; margin: 5px 0; }
+        .span-7 { grid-column: span 7; }
+        .span-5 { grid-column: span 5; }
+        .span-12 { grid-column: span 12; }
 
         /* UI ELEMENTS */
-        .stat-card {
-            background: rgba(255,255,255,0.03);
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid var(--border);
-        }
+        h2 { font-size: 1.2rem; font-weight: 700; margin-top: 0; margin-bottom: 20px; color: var(--gold-80); }
+        .label { color: rgba(255,255,255,0.4); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .val { font-size: 1.6rem; font-weight: 800; margin: 4px 0; }
 
         .input-box {
-            background: rgba(0,0,0,0.3);
-            border-radius: 18px;
-            padding: 15px;
+            background: rgba(0,0,0,0.2);
             border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px 16px;
             margin: 15px 0;
-            display: flex;
-            align-items: center;
+            display: flex; align-items: center;
+        }
+        input { background: transparent; border: none; color: #fff; font-size: 1.2rem; width: 100%; outline: none; font-family: inherit; }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #FFD700, #B8860B);
+            color: #000; border: none; padding: 16px; border-radius: 18px;
+            font-weight: 800; font-size: 1rem; cursor: pointer; width: 100%;
+            transition: 0.3s; box-shadow: 0 8px 20px rgba(184, 134, 11, 0.2);
+        }
+        .btn-gold:hover { transform: scale(1.02); box-shadow: 0 12px 30px rgba(184, 134, 11, 0.4); }
+        .btn-gold:disabled { filter: grayscale(1); opacity: 0.4; transform: none; }
+
+        .btn-outline {
+            background: transparent; border: 1px solid var(--border); color: #fff;
+            padding: 12px; border-radius: 16px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s;
+        }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); border-color: #fff; }
+
+        /* TOAST NOTIFICATION */
+        #toast {
+            position: fixed; bottom: 30px; right: 30px; 
+            background: #1a1b20; border-left: 4px solid var(--gold);
+            padding: 16px 24px; border-radius: 12px; display: none;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 1000;
+            animation: slideUp 0.4s ease-out;
         }
 
-        input {
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            width: 100%;
-            outline: none;
-            font-family: inherit;
-        }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .btn-main {
-            background: var(--gold-gradient);
-            color: black;
-            border: none;
-            padding: 18px;
-            border-radius: 18px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            width: 100%;
-            transition: 0.3s;
-            box-shadow: 0 10px 20px rgba(184, 134, 11, 0.2);
-        }
-
-        .btn-main:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(184, 134, 11, 0.4); }
-        .btn-main:disabled { filter: grayscale(1); opacity: 0.3; cursor: not-allowed; }
-
-        .btn-secondary {
-            background: rgba(255,255,255,0.05);
-            color: white;
-            border: 1px solid var(--border);
-            padding: 12px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-
-        /* ASSETS & NFT LISTING */
-        .nft-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .nft-card {
-            background: rgba(255,255,255,0.02);
-            border-radius: 22px;
-            padding: 12px;
-            border: 1px solid var(--border);
-            text-align: center;
-        }
-
-        .nft-preview { width: 100%; aspect-ratio: 1; border-radius: 15px; background: #111; margin-bottom: 12px; }
-
-        @media (max-width: 900px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 900px) { .span-7, .span-5 { grid-column: span 12; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="logo">ALPHAFOX</div>
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <div class="status-pill">
-                <div id="status-dot" class="dot"></div>
-                <span id="wallet-status">Disconnected</span>
-            </div>
-            <button id="connectBtn" class="btn-main" style="width: auto; padding: 10px 25px; margin: 0; font-size: 0.9rem;">Connect Wallet</button>
+        <div class="logo">AlphaFox <span>DAO</span></div>
+        <div class="wallet-pill">
+            <div id="status-dot" class="dot"></div>
+            <span id="addr-display">Wallet: Not Connected</span>
         </div>
     </header>
 
-    <div class="dashboard-grid">
+    <div class="dashboard">
         
-        <div style="display: flex; flex-direction: column; gap: 25px;">
-            
-            <div class="panel">
-                <h2>💰 Yield Staking</h2>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-                    <div class="stat-card">
-                        <div class="label">Balance</div>
-                        <div id="userAfoxBalance" class="big-value">0.00</div>
-                        <div style="font-size: 0.8rem; color: var(--gold);">AFOX available</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="label">Staked</div>
-                        <div id="userStakedAmount" class="big-value">0.00</div>
-                        <div style="font-size: 0.8rem; color: var(--gold);">AFOX locked</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="label">Rewards</div>
-                        <div id="userRewardsAmount" class="big-value" style="color: var(--success);">0.00</div>
-                        <div style="font-size: 0.8rem; color: var(--success);">Pending AFOX</div>
-                    </div>
+        <div class="panel span-7">
+            <h2>💰 Yield Staking</h2>
+            <div style="display: flex; gap: 30px; margin-bottom: 25px;">
+                <div>
+                    <div class="label">Available</div>
+                    <div class="val" id="user-afox-balance">0.00</div>
+                    <div style="font-size: 0.8rem; color: var(--gold)">AFOX</div>
                 </div>
-
-                <div class="input-box">
-                    <input type="number" id="stakeAmountInput" placeholder="0.00">
-                    <span style="color: var(--gold); font-weight: 700; margin-left: 10px;">AFOX</span>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
-                    <button id="stakeAfoxBtn" class="btn-main" disabled>Stake Now</button>
-                    <button id="claimRewardsBtn" class="btn-secondary" disabled>Claim</button>
+                <div style="width: 1px; background: var(--border);"></div>
+                <div>
+                    <div class="label">Staked Assets</div>
+                    <div class="val" id="user-staked-amount">0.00</div>
+                    <div style="font-size: 0.8rem; color: var(--gold)">AFOX</div>
                 </div>
             </div>
 
-            <div class="panel">
-                <h2>🏦 Lending Market</h2>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div class="stat-card">
-                        <div class="label">Lending APR</div>
-                        <div id="afoxLendApr" class="big-value" style="color: var(--success);">--%</div>
-                        <button id="lendAfoxBtn" class="btn-main" style="margin-top: 15px;" disabled>Lend Assets</button>
-                    </div>
-                    <div class="stat-card">
-                        <div class="label">Borrow Rate</div>
-                        <div id="solBorrowRate" class="big-value" style="color: var(--error);">--%</div>
-                        <button id="borrowSolBtn" class="btn-main" style="margin-top: 15px; background: white;" disabled>Borrow SOL</button>
-                    </div>
-                </div>
+            <div class="input-box">
+                <input type="number" id="stake-amount" placeholder="0.00">
+                <button class="btn-outline" style="width: auto; padding: 4px 10px; font-size: 0.7rem; margin-left: 10px;" onclick="setMax()">MAX</button>
+            </div>
+            
+            <div style="display: flex; gap: 12px;">
+                <button id="stake-btn" class="btn-gold" onclick="triggerAction('Staking')">STAKE NOW</button>
+                <button id="claim-btn" class="btn-outline" style="width: 140px;" onclick="triggerAction('Rewards Claiming')">CLAIM</button>
             </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 25px;">
+        <div class="panel span-5">
+            <h2>🔄 Quick Swap</h2>
+            <div class="label">Pay</div>
+            <div class="input-box">
+                <input type="number" id="swap-sol" placeholder="0.0">
+                <span style="font-weight: 700; font-size: 0.9rem;">SOL</span>
+            </div>
             
-            <div class="panel">
-                <h2>🔄 Instant Swap</h2>
-                <div class="label">You Pay</div>
-                <div class="input-box">
-                    <input type="number" id="swapFromAmount" placeholder="0.1">
-                    <span style="font-weight: 600;">SOL</span>
-                </div>
-                
-                <div style="text-align: center; margin: -15px 0; position: relative; z-index: 5;">
-                    <div style="background: var(--bg); width: 40px; height: 40px; margin: 0 auto; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;">↓</div>
-                </div>
-
-                <div class="label">You Receive (est)</div>
-                <div class="input-box" style="background: rgba(255,215,0,0.05); border-color: rgba(255,215,0,0.2);">
-                    <div id="swapEstimate" class="big-value" style="font-size: 1.4rem; margin: 0;">0.00</div>
-                    <span style="margin-left: auto; font-weight: 600; color: var(--gold);">AFOX</span>
-                </div>
-                
-                <button id="executeSwapBtn" class="btn-main" disabled>Exchange</button>
+            <div style="text-align: center; margin: -10px 0;">
+                <div style="background: var(--bg); display: inline-block; padding: 5px; border-radius: 50%; border: 1px solid var(--border);">↓</div>
             </div>
 
-            <div class="panel">
-                <h2>🖼️ My NFT Collection</h2>
-                <div id="user-nft-list" class="nft-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="nft-card">
-                        <div class="nft-preview"></div>
-                        <div class="label">Empty</div>
-                    </div>
-                    <div class="nft-card">
-                        <div class="nft-preview"></div>
-                        <div class="label">Empty</div>
-                    </div>
-                </div>
-                <button id="viewMyNftsBtn" class="btn-secondary" style="width: 100%; margin-top: 20px;" disabled>Refresh Gallery</button>
+            <div class="label">Receive</div>
+            <div class="input-box" style="border-color: rgba(255,215,0,0.3); background: rgba(255,215,0,0.02);">
+                <div id="swap-est" class="val" style="font-size: 1.2rem; margin: 0;">0.00</div>
+                <span style="margin-left: auto; color: var(--gold); font-weight: 700;">AFOX</span>
             </div>
-
+            
+            <button id="swap-btn" class="btn-gold" onclick="triggerAction('Swap')">EXCHANGE</button>
         </div>
+
+        <div class="panel span-12">
+            <h2>🏦 DeFi Lending</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div class="input-box" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <div class="label">Supply APR</div>
+                    <div style="color: var(--success); font-weight: 800; font-size: 1.4rem;">12.4%</div>
+                </div>
+                <div class="input-box" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <div class="label">Lent Amount</div>
+                    <div id="lent-val" class="val" style="font-size: 1.4rem;">0.00 AFOX</div>
+                </div>
+                <button class="btn-gold" style="height: fit-content; align-self: center;" onclick="triggerAction('Lending')">LEND ASSETS</button>
+            </div>
+        </div>
+
     </div>
 </div>
 
+<div id="toast">
+    <div style="font-weight: 800; color: var(--gold); margin-bottom: 4px;">Transaction Sent</div>
+    <div id="toast-msg" style="font-size: 0.85rem; opacity: 0.8;"></div>
+</div>
+
 <script>
-    // КОНСТАНТЫ
-    const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
-
-    // ЛОГИКА КОННЕКТА
-    async function handleConnect() {
-        if (window.solana && window.solana.isPhantom) {
-            try {
-                const resp = await window.solana.connect();
-                updateUI(resp.publicKey.toString());
-            } catch (err) { console.error("Connection failed", err); }
-        } else {
-            window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`;
-        }
-    }
-
-    function updateUI(pubKey) {
-        // Меняем статус кошелька
+    // Имитация подключения (заменишь на свою логику Phantom)
+    function onWalletConnected(pubKey) {
         document.getElementById('status-dot').classList.add('active');
-        document.getElementById('wallet-status').innerText = pubKey.substring(0,4) + '...' + pubKey.slice(-4);
-        document.getElementById('connectBtn').innerText = 'Wallet Ready';
-        
-        // Разблокируем интерфейс
-        document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+        document.getElementById('addr-display').innerText = pubKey.substring(0,6) + '...' + pubKey.slice(-4);
+        showToast("Connected to " + pubKey.substring(0,8));
     }
 
-    // Слушатели событий
-    document.getElementById('connectBtn').onclick = handleConnect;
-    
-    // Инициализация при загрузке
+    function triggerAction(actionName) {
+        const btn = event.target;
+        btn.innerText = "PROCESSING...";
+        btn.disabled = true;
+
+        // Вместо alert используем Toast
+        setTimeout(() => {
+            showToast(actionName + " initiated successfully");
+            btn.innerText = (actionName === 'Staking' ? 'STAKE NOW' : actionName.toUpperCase());
+            btn.disabled = false;
+        }, 1500);
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-msg').innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+
+    function setMax() {
+        document.getElementById('stake-amount').value = "1000";
+    }
+
+    // Пример вызова после загрузки (для теста дизайна)
     window.onload = () => {
-        if (window.solana && window.solana.isPhantom && window.solana.isConnected) {
-            handleConnect();
-        }
+        // Эмуляция подключения
+        setTimeout(() => onWalletConnected("GDk2Ufqf7..."), 500);
     };
 </script>
 
