@@ -3,174 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaFox DAO Terminal</title>
+    <title>AlphaFox DAO | DeFi Terminal</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
     <script>window.Buffer = window.buffer.Buffer;</script>
     <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
 
     <style>
-        :root { --gold: #f0b90b; --bg: #0b0b0e; --card: rgba(255,255,255,0.05); }
-        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; line-height: 1.6; }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        
-        /* Стили карточек и секций */
-        .section { margin-bottom: 40px; padding: 20px; border-radius: 20px; background: var(--card); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
-        .web3-heading { color: var(--gold); border-bottom: 1px solid var(--gold); padding-bottom: 10px; margin-bottom: 20px; }
-        
-        /* Кнопки */
-        .btn, .web3-btn { background: var(--gold); color: #000; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; transition: 0.3s; }
-        .btn:disabled, .web3-btn:disabled { background: #444; color: #888; }
-        .btn:hover { opacity: 0.8; }
+        :root {
+            --gold: #f0b90b;
+            --gold-glow: rgba(240, 185, 11, 0.3);
+            --bg: #050507;
+            --card-bg: rgba(20, 20, 25, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --error: #ff4d4d;
+            --success: #00ff96;
+        }
 
-        /* Поля ввода */
-        input, select, textarea { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px; border-radius: 8px; width: 100%; box-sizing: border-box; margin: 10px 0; }
+        body {
+            background: var(--bg);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding-bottom: 50px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(240, 185, 11, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 255, 0.05) 0%, transparent 40%);
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 30px; }
+        .logo { font-weight: 800; font-size: 1.5rem; letter-spacing: -1px; }
+        .logo span { color: var(--gold); }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: 0.3s;
+        }
+
+        .main-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+        .span-12 { grid-column: span 12; }
+        .span-8 { grid-column: span 8; }
+        .span-4 { grid-column: span 4; }
+        .span-6 { grid-column: span 6; }
+
+        .web3-heading { color: var(--gold); margin-top: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+        .label { color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .value { font-size: 1.2rem; font-weight: 600; }
+        .gold-text { color: var(--gold); }
+
+        .input-group { background: rgba(0,0,0,0.4); border-radius: 16px; padding: 12px 15px; border: 1px solid var(--border); margin: 10px 0; }
+        input { background: transparent; border: none; color: #fff; font-size: 1.1rem; width: 100%; outline: none; }
         
-        /* Сетки */
-        .web3-features-grid, .content-area { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
-        .feature-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .feature-card h3 { color: var(--gold); font-size: 1rem; }
-        .web3-link { color: var(--gold); text-decoration: none; font-size: 0.9rem; font-weight: bold; }
+        .web3-btn {
+            background: linear-gradient(90deg, var(--gold), #ffda61);
+            color: #000; border: none; padding: 14px; border-radius: 14px; font-weight: 700;
+            cursor: pointer; width: 100%; transition: 0.3s; margin-top: 10px;
+        }
+        .web3-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px var(--gold-glow); }
+        .web3-btn:disabled { background: #222; color: #555; cursor: not-allowed; }
 
-        .staking-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .info-card { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; text-align: center; }
-        .info-value { color: var(--gold); font-weight: bold; font-size: 1.1rem; margin: 5px 0; }
+        .info-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
 
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: #1a1a1d; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; border: 1px solid var(--gold); }
+        @media (max-width: 900px) { .span-8, .span-4, .span-6 { grid-column: span 12; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header style="text-align: center; padding: 30px 0;">
-        <h1 style="color: var(--gold); margin: 0; font-size: 2.5rem;">AlphaFox <span style="font-weight: 100;">DAO</span></h1>
-        <div class="section" style="margin-top: 20px;">
-            <p id="wallet-display">Wallet: <strong>Not Connected</strong></p>
-            <button id="connectBtn" class="btn">CONNECT PHANTOM WALLET</button>
+    <nav>
+        <div class="logo">ALPHAFOX <span>DAO</span></div>
+        <div>
+            <button id="connectBtn" class="web3-btn" style="width: auto; padding: 10px 20px; margin: 0;">Connect Wallet</button>
+            <span id="walletAddressDisplay" style="font-family: monospace; color: var(--gold); font-size: 0.9rem;"></span>
         </div>
-    </header>
+    </nav>
 
-    <section id="web3-site-home" class="section">
-        <h2 class="web3-heading">🎮 My Web3 Portal</h2>
-        <div class="web3-features-grid">
-            <div class="feature-card"><h3>🎮 Games</h3><a href="#games-section" class="web3-link">Explore</a></div>
-            <div class="feature-card"><h3>🖼️ NFTs</h3><a href="#nft-section" class="web3-link">Manage</a></div>
-            <div class="feature-card"><h3>🏛️ DAO</h3><a href="#dao-section" class="web3-link">Vote</a></div>
-            <div class="feature-card"><h3>💰 Staking</h3><a href="#staking-section" class="web3-link">Earn</a></div>
-            <div class="feature-card"><h3>🔄 Swap</h3><a href="#swap-section" class="web3-link">Exchange</a></div>
+    <div class="main-grid">
+        
+        <div class="glass-panel span-8">
+            <h2 class="web3-heading">💰 Staking Portal</h2>
+            <div class="main-grid" style="gap: 10px; margin-bottom: 20px;">
+                <div class="info-card span-4">
+                    <div class="label">Balance</div>
+                    <div id="userAfoxBalance" class="value">0 AFOX</div>
+                </div>
+                <div class="info-card span-4">
+                    <div class="label">Staked</div>
+                    <div id="userStakedAmount" class="value">0 AFOX</div>
+                </div>
+                <div class="info-card span-4">
+                    <div class="label">Rewards</div>
+                    <div id="userRewardsAmount" class="value gold-text">0 AFOX</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="label">Amount to Stake</div>
+                <input type="number" id="stakeAmountInput" placeholder="0.00">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="stakeAfoxBtn" class="web3-btn" disabled>Stake</button>
+                <button id="claimRewardsBtn" class="web3-btn" style="background: transparent; border: 1px solid var(--gold); color: var(--gold);" disabled>Claim</button>
+            </div>
+            <button id="unstakeAfoxBtn" class="web3-btn" style="background: transparent; border: 1px solid #444; color: #888; margin-top: 15px;" disabled>Unstake Tokens</button>
         </div>
-    </section>
 
-    <section id="staking-section" class="section">
-        <h2 class="web3-heading">💰 AFOX Staking</h2>
-        <div class="staking-info-grid">
-            <div class="info-card"><h3>Balance</h3><p id="user-afox-balance" class="info-value">0 AFOX</p></div>
-            <div class="info-card"><h3>Staked</h3><p id="user-staked-amount" class="info-value">0 AFOX</p></div>
-            <div class="info-card"><h3>Rewards</h3><p id="user-rewards-amount" class="info-value">0 AFOX</p></div>
-            <div class="info-card"><h3>APR</h3><p id="staking-apr" class="info-value">12%</p></div>
+        <div class="glass-panel span-4">
+            <h2 class="web3-heading">🔄 Swap</h2>
+            <div class="input-group">
+                <div class="label">Pay SOL</div>
+                <input type="number" id="swapFromAmount" placeholder="0.1">
+            </div>
+            <div style="text-align: center; margin: -10px 0;">↓</div>
+            <div class="input-group">
+                <div class="label">Receive AFOX (est)</div>
+                <div id="swapEstimate" class="value gold-text">0.00</div>
+            </div>
+            <button id="executeSwapBtn" class="web3-btn" disabled>Swap Now</button>
         </div>
-        <input type="number" id="stake-amount" placeholder="Amount to stake">
-        <button id="stake-afox-btn" class="web3-btn" disabled>STAKE NOW</button>
-        <button id="claim-rewards-btn" class="web3-btn" style="background:none; color:var(--gold); border:1px solid var(--gold);" disabled>CLAIM REWARDS</button>
-    </section>
 
-    <section id="swap-section" class="section">
-        <h2 class="web3-heading">🔄 Jupiter Swap</h2>
-        <p style="font-size: 0.8rem; color: #888;">Pay SOL:</p>
-        <input type="number" id="swap-from-amount" placeholder="0.1">
-        <p style="font-size: 0.8rem; color: #888;">Receive AFOX (est): <span id="swap-estimate" style="color:var(--gold)">0.00</span></p>
-        <button id="execute-swap-btn" class="web3-btn" disabled>EXCHANGE VIA JUPITER</button>
-    </section>
+        <div class="glass-panel span-12">
+            <h2 class="web3-heading">🏦 Lending & Borrowing</h2>
+            <div class="main-grid" style="margin-bottom: 25px;">
+                <div class="info-card span-3">
+                    <div class="label">Lending APR</div>
+                    <div id="afoxLendApr" class="value" style="color: var(--success);">--%</div>
+                </div>
+                <div class="info-card span-3">
+                    <div class="label">Borrow Rate</div>
+                    <div id="solBorrowRate" class="value" style="color: var(--error);">--%</div>
+                </div>
+                <div class="info-card span-3">
+                    <div class="label">Lent</div>
+                    <div id="userLentAmount" class="value">0 AFOX</div>
+                </div>
+                <div class="info-card span-3">
+                    <div class="label">Debt</div>
+                    <div id="userBorrowedAmount" class="value" style="color: var(--error);">0 SOL</div>
+                </div>
+            </div>
 
-    <section id="nft-section" class="section">
-        <h2 class="web3-heading">🖼️ NFT Collections</h2>
-        <div class="nft-actions" style="display:flex; gap:10px;">
-            <button id="viewMyNftsBtn" class="web3-btn">View My NFTs</button>
-            <button id="mintNftBtn" class="web3-btn" onclick="document.getElementById('mint-modal').style.display='flex'">Mint New</button>
-        </div>
-        <div id="user-nft-list" class="content-area"><p>Connect wallet to see NFTs...</p></div>
-    </section>
-
-    <section id="dao-section" class="section">
-        <h2 class="web3-heading">🏛️ DAO Governance</h2>
-        <button id="createProposalBtn" class="web3-btn">Create Proposal</button>
-        <div id="active-proposals-list" class="content-area">
-            <div class="feature-card">
-                <h4>Proposal #1: Community Fund</h4>
-                <p>Votes: 150 AFOX</p>
-                <button class="web3-btn" style="padding:5px; font-size:12px;">Vote For</button>
+            <div class="main-grid">
+                <div class="span-6">
+                    <div class="input-group">
+                        <div class="label">Lend AFOX</div>
+                        <input type="number" id="lendAmountInput" placeholder="0.00">
+                    </div>
+                    <button id="lendAfoxBtn" class="web3-btn" disabled>Deposit</button>
+                    <button id="withdrawLendBtn" class="web3-btn" style="background: none; color: #888;" disabled>Withdraw</button>
+                </div>
+                <div class="span-6">
+                    <div class="input-group">
+                        <div class="label">Borrow SOL</div>
+                        <input type="number" id="borrowAmountInput" placeholder="0.00">
+                    </div>
+                    <button id="borrowSolBtn" class="web3-btn" style="background: var(--error); color: white;" disabled>Borrow SOL</button>
+                    <button id="repaySolBtn" class="web3-btn" style="background: none; color: #888;" disabled>Repay Loan</button>
+                </div>
             </div>
         </div>
-    </section>
-</div>
 
-<div id="mint-modal" class="modal">
-    <div class="modal-content">
-        <h2 style="color:var(--gold)">Mint Your NFT</h2>
-        <input type="text" id="mintNftName" placeholder="NFT Name">
-        <textarea id="mintNftDescription" placeholder="Description"></textarea>
-        <input type="file" id="nftFile">
-        <button class="web3-btn" onclick="alert('Minting process started...')">MINT (0.05 SOL)</button>
-        <button class="web3-btn" style="background:#333; color:#fff;" onclick="this.parentElement.parentElement.style.display='none'">Close</button>
+        <div class="glass-panel span-12">
+            <h2 class="web3-heading">🖼️ NFT Inventory</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button id="viewMyNftsBtn" class="web3-btn" style="width: auto; padding: 8px 20px;">Refresh</button>
+                <button id="mintNftBtn" class="web3-btn" style="width: auto; padding: 8px 20px; background: white; color: black;">Mint New</button>
+            </div>
+            <div id="user-nft-list" class="main-grid">
+                <p style="grid-column: span 12; color: #555; text-align: center;">No NFTs detected. Connect wallet to sync.</p>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script>
-/**
- * ЛОГИКА И КОНФИГУРАЦИЯ
- */
-const PROGRAM_ID = "ТВОЙ_ID_ПРОГРАММЫ"; 
-const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
-let provider = null;
+    /** КОНФИГУРАЦИЯ **/
+    const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-async function handleConnect() {
-    if (window.solana && window.solana.isPhantom) {
-        try {
-            const resp = await window.solana.connect();
-            onWalletConnected(resp.publicKey.toString());
-        } catch (err) { console.error(err); }
-    } else {
-        window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`;
+    async function handleConnect() {
+        if (window.solana && window.solana.isPhantom) {
+            try {
+                const resp = await window.solana.connect();
+                const pubKey = resp.publicKey.toString();
+                
+                // UI Updates
+                document.getElementById('connectBtn').style.display = 'none';
+                document.getElementById('walletAddressDisplay').innerText = pubKey.substring(0,4) + '...' + pubKey.slice(-4);
+                
+                // Активируем все кнопки
+                document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+                
+                console.log("Connected to", pubKey);
+            } catch (err) { console.error("User rejected", err); }
+        } else {
+            // Mobile Redirect
+            const url = window.location.href;
+            window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
+        }
     }
-}
 
-function onWalletConnected(pubKey) {
-    document.getElementById('wallet-display').innerHTML = `Connected: <span style="color:var(--gold)">${pubKey.substring(0,6)}...${pubKey.slice(-4)}</span>`;
-    document.getElementById('connectBtn').style.display = 'none';
+    // Привязка кликов
+    document.getElementById('connectBtn').onclick = handleConnect;
     
-    // Активация кнопок
-    document.querySelectorAll('button:disabled').forEach(btn => btn.disabled = false);
-    
-    provider = new anchor.AnchorProvider(connection, window.solana, { preflightCommitment: "confirmed" });
-}
+    // Заглушки для функций (интегрируй сюда свой Anchor JS)
+    document.getElementById('stakeAfoxBtn').onclick = () => alert("Staking logic triggered");
+    document.getElementById('lendAfoxBtn').onclick = () => alert("Lending logic triggered");
+    document.getElementById('executeSwapBtn').onclick = () => alert("Swap logic triggered");
 
-async function stakeTokens() {
-    const amount = document.getElementById('stake-amount').value;
-    if (!amount) return alert("Введите сумму");
-    alert(`Транзакция стейкинга на ${amount} AFOX инициирована!`);
-}
-
-async function executeSwap() {
-    const solAmount = document.getElementById('swap-from-amount').value;
-    try {
-        const quote = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=AFOX_MINT_ADDRESS&amount=${solAmount * 1e9}&slippageBps=50`).then(res => res.json());
-        document.getElementById('swap-estimate').innerText = (quote.outAmount / 1e9).toFixed(2);
-        alert("Котировка получена. Подпишите транзакцию в кошельке.");
-    } catch (e) { alert("Ошибка Swap: " + e.message); }
-}
-
-// Слушатели событий
-document.getElementById('connectBtn').onclick = handleConnect;
-document.getElementById('stake-afox-btn').onclick = stakeTokens;
-document.getElementById('execute-swap-btn').onclick = executeSwap;
-
-window.onload = () => {
-    if (window.solana && window.solana.isPhantom && window.solana.isConnected) {
-        window.solana.connect({ onlyIfTrusted: true }).then(r => onWalletConnected(r.publicKey.toString()));
-    }
-};
+    // Авто-коннект (если уже разрешено)
+    window.onload = () => {
+        if (window.solana && window.solana.isPhantom && window.solana.isConnected) {
+            handleConnect();
+        }
+    };
 </script>
 
 </body>
