@@ -3,162 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaFox DAO - Staking & NFT Marketplace</title>
+    <title>AlphaFox DAO | Premium Dashboard</title>
     
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://project-serum.github.io/anchor/dist/anchor.min.js"></script>
     <script src="https://unpkg.com/@solana/wallet-adapter-phantom/dist/index.iife.min.js"></script>
     
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        :root { --primary: #ff4500; --bg: #1a1a1a; --text: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .section { background: #2a2a2a; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn:disabled { background: #555; cursor: not-allowed; }
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: #333; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; position: relative; }
-        .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-        .nft-card { background: #333; padding: 10px; border-radius: 8px; text-align: center; }
-        .nft-card img { width: 100%; border-radius: 5px; }
-        #notification-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-        .notification { padding: 15px; margin-bottom: 10px; border-radius: 5px; color: white; animation: slideIn 0.3s; }
-        .notification.success { background: #28a745; }
-        .notification.error { background: #dc3545; }
-        .notification.info { background: #007bff; }
-        #page-loader { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; }
-        .hidden { display: none; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        :root {
+            --primary: #ff4500;
+            --primary-hover: #e63e00;
+            --bg: #0b0b0e;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #ffffff;
+            --text-dim: #a1a1a1;
+            --accent-purple: #8c32ff;
+        }
+
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg); 
+            background-image: radial-gradient(circle at top right, rgba(255, 69, 0, 0.1), transparent),
+                              radial-gradient(circle at bottom left, rgba(140, 50, 255, 0.1), transparent);
+            color: var(--text); 
+            margin: 0; 
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* HEADER & NAVIGATION */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 40px;
+        }
+
+        .logo { font-size: 24px; font-weight: 700; letter-spacing: -1px; color: var(--primary); }
+
+        .wallet-section { display: flex; align-items: center; gap: 15px; }
+
+        /* BUTTONS */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { background: var(--primary); color: white; border: none; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255, 69, 0, 0.3); }
+        .btn-secondary { background: var(--card-bg); color: white; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        /* CONNECTED WALLET BADGE */
+        .wallet-display {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 6px 6px 6px 16px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .wallet-address-display { font-family: monospace; color: var(--primary); font-weight: 600; }
+
+        /* DASHBOARD GRID */
+        .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 { margin-top: 0; font-size: 20px; font-weight: 600; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; }
+
+        /* INPUTS */
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 14px; }
+        .input-wrapper {
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            display: flex;
+            overflow: hidden;
+        }
+        .input-wrapper input {
+            background: transparent;
+            border: none;
+            padding: 15px;
+            color: white;
+            flex: 1;
+            font-size: 16px;
+            outline: none;
+        }
+        .input-wrapper select {
+            background: var(--border);
+            border: none;
+            color: white;
+            padding: 0 15px;
+            cursor: pointer;
+        }
+
+        /* STAKING STATS */
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-box {
+            background: rgba(255,255,255,0.02);
+            padding: 15px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+        .stat-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; }
+        .stat-value { font-size: 18px; font-weight: 700; margin-top: 5px; }
+
+        /* NFT CARDS */
+        .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .nft-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .nft-card:hover { border-color: var(--primary); transform: scale(1.02); }
+        .nft-card img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+        .nft-info { padding: 12px; }
+        .nft-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .nft-price { font-size: 12px; color: var(--primary); }
+
+        /* NOTIFICATIONS */
+        #notification-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; width: 350px; }
+        .notification {
+            background: #1c1c1f;
+            border-left: 4px solid var(--primary);
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* LOADER */
+        #page-loader {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 11, 14, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
+<div id="page-loader"><div class="spinner"></div></div>
 <div id="notification-container"></div>
-<div id="page-loader">ЗАГРУЗКА...</div>
 
 <div class="container">
-    <header class="section" style="display: flex; justify-content: space-between; align-items: center;">
-        <h1>AlphaFox Ecosystem</h1>
-        <div id="wallet-controls">
-            <button class="btn btn-primary connect-wallet-btn">Connect Phantom</button>
-            <div class="wallet-display" style="display: none; align-items: center; gap: 10px;">
-                <span class="wallet-address-display"></span>
-                <button class="btn btn-secondary copy-btn" data-copy-target="">Copy</button>
+    <header>
+        <div class="logo">ALPHAFOX<span style="color:white">DAO</span></div>
+        <div class="wallet-section">
+            <button class="btn btn-primary connect-wallet-btn" id="mainConnectBtn">
+                Connect Wallet
+            </button>
+            <div class="wallet-display" style="display: none;">
+                <span class="wallet-address-display">0000...0000</span>
+                <button class="btn btn-secondary copy-btn" style="padding: 8px 12px;">Copy</button>
             </div>
         </div>
     </header>
 
-    <section class="section">
-        <h2>Staking AFOX</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-                <p>Баланс: <strong id="user-afox-balance">0 AFOX</strong></p>
-                <p>В стейкинге: <strong id="user-staked-amount">0 AFOX</strong></p>
-                <p>Награды: <strong id="user-rewards-amount">0 AFOX</strong></p>
-                <p>APR: <span id="staking-apr">—</span></p>
-                <p>Замок: <span id="lockup-period">—</span></p>
-            </div>
-            <div>
-                <select id="pool-selector" class="btn" style="width: 100%; margin-bottom: 10px;"></select>
-                <input type="number" id="stake-amount" placeholder="Количество AFOX" style="width: 100%; padding: 10px; margin-bottom: 10px;">
-                <div style="display: flex; gap: 10px;">
-                    <button id="stake-afox-btn" class="btn btn-primary" disabled>Stake</button>
-                    <button id="claim-rewards-btn" class="btn" style="background: #28a745; color: white;" disabled>Claim</button>
-                    <button id="unstake-afox-btn" class="btn" style="background: #dc3545; color: white;" disabled>Unstake</button>
+    <div class="grid">
+        <div class="card">
+            <h2>🦊 Staking Dashboard</h2>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-label">Your Balance</div>
+                    <div class="stat-value" id="user-afox-balance">0 AFOX</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Total Staked</div>
+                    <div class="stat-value" id="user-staked-amount">0 AFOX</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Pending Rewards</div>
+                    <div class="stat-value" id="user-rewards-amount" style="color: #4ade80;">0 AFOX</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Current APR</div>
+                    <div class="stat-value" id="staking-apr" style="color: var(--accent-purple);">—</div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <section class="section">
-        <h2>Swap (Jupiter API)</h2>
-        <div style="max-width: 400px;">
-            <div style="display: flex; justify-content: space-between;">
-                <label>From:</label>
-                <span id="swap-from-balance">0 SOL</span>
+            <div class="input-group">
+                <label>Select Staking Duration</label>
+                <div class="input-wrapper">
+                    <select id="pool-selector" style="width: 100%; background: transparent; padding: 15px; border: none; color: white;"></select>
+                </div>
             </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <input type="number" id="swap-from-amount" placeholder="0.0" style="flex:1; padding: 10px;">
-                <select id="swap-from-token" class="btn">
-                    <option value="SOL">SOL</option>
-                    <option value="AFOX">AFOX</option>
-                </select>
-                <button class="btn max-amount-btn" data-input-id="swap-from-amount">MAX</button>
-            </div>
-            <button id="swap-direction-btn" style="display: block; margin: 10px auto; background: none; border: 1px solid #555; color: white; cursor: pointer;">⇅</button>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <input type="number" id="swap-to-amount" placeholder="0.0" readonly style="flex:1; padding: 10px; background: #444;">
-                <select id="swap-to-token" class="btn">
-                    <option value="AFOX">AFOX</option>
-                    <option value="SOL">SOL</option>
-                </select>
-            </div>
-            <div style="font-size: 0.9em; color: #aaa; margin-bottom: 10px;">
-                Price Impact: <span id="price-impact">0%</span><br>
-                Fee: <span id="lp-fee">0</span><br>
-                Min. Received: <span id="min-received">0</span>
-            </div>
-            <button id="get-quote-btn" class="btn btn-primary" style="width: 100%; margin-bottom: 5px;">Get Quote</button>
-            <button id="execute-swap-btn" class="btn" style="width: 100%; background: #8c32ff; color: white; display: none;">Execute Swap</button>
-        </div>
-    </section>
 
-    <section class="section">
-        <h2>NFT Marketplace</h2>
-        <button class="btn btn-primary" onclick="document.getElementById('mint-nft-modal').style.display='flex'">Mint New NFT</button>
-        <h3>Your NFTs</h3>
-        <div id="user-nft-list" class="nft-grid"></div>
-        <h3>Marketplace</h3>
-        <div id="marketplace-nft-list" class="nft-grid"></div>
-    </section>
-</div>
+            <div class="input-group">
+                <label>Amount to Stake</label>
+                <div class="input-wrapper">
+                    <input type="number" id="stake-amount" placeholder="0.00">
+                    <button class="btn btn-secondary max-amount-btn" style="border:none; border-radius:0" data-input-id="stake-amount">MAX</button>
+                </div>
+            </div>
 
-<div id="nft-details-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" style="position: absolute; right: 20px; cursor: pointer;">✕</span>
-        <img id="nft-detail-image" src="" style="width: 100%; border-radius: 10px;">
-        <h2 id="nft-detail-name"></h2>
-        <p id="nft-detail-description"></p>
-        <p>Owner: <span id="nft-detail-owner"></span></p>
-        <p>Mint: <span id="nft-detail-mint"></span></p>
-        <ul id="attributes-list"></ul>
-        <div id="nft-actions">
-            <button id="nft-detail-buy-btn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Buy</button>
-            <button id="nft-detail-sell-btn" class="btn" style="width: 100%; margin-top: 10px; background: #ffc107;">Sell</button>
-            <button id="nft-detail-transfer-btn" class="btn" style="width: 100%; margin-top: 10px; background: #6c757d;">Transfer</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <button id="stake-afox-btn" class="btn btn-primary" disabled>Stake</button>
+                <button id="claim-rewards-btn" class="btn btn-secondary" disabled>Claim</button>
+                <button id="unstake-afox-btn" class="btn btn-secondary" style="color: #ff4444;" disabled>Unstake</button>
+            </div>
+            <p id="lockup-period" style="font-size: 12px; color: var(--text-dim); margin-top: 15px; text-align: center;"></p>
         </div>
-        <h4>History</h4>
-        <ul id="nft-detail-history" style="font-size: 0.8em; max-height: 100px; overflow-y: auto;"></ul>
+
+        <div class="card" style="background: linear-gradient(145deg, rgba(140, 50, 255, 0.05), rgba(0,0,0,0));">
+            <h2>🔄 Quick Swap</h2>
+            <div class="input-group">
+                <div style="display:flex; justify-content: space-between; margin-bottom: 5px;">
+                    <label>You Pay</label>
+                    <span id="swap-from-balance" style="font-size: 12px; color: var(--text-dim);">Balance: 0</span>
+                </div>
+                <div class="input-wrapper">
+                    <input type="number" id="swap-from-amount" placeholder="0.0">
+                    <select id="swap-from-token">
+                        <option value="SOL">SOL</option>
+                        <option value="AFOX">AFOX</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: -10px 0 10px 0;">
+                <button id="swap-direction-btn" style="background: var(--border); border: none; width: 32px; height: 32px; border-radius: 50%; color: white; cursor: pointer;">⇅</button>
+            </div>
+
+            <div class="input-group">
+                <label>You Receive (Est.)</label>
+                <div class="input-wrapper">
+                    <input type="number" id="swap-to-amount" placeholder="0.0" readonly>
+                    <select id="swap-to-token">
+                        <option value="AFOX">AFOX</option>
+                        <option value="SOL">SOL</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; font-size: 13px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between;"><span>Price Impact</span><span id="price-impact">0%</span></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 5px;"><span>Min. Received</span><span id="min-received">0</span></div>
+            </div>
+
+            <button id="execute-swap-btn" class="btn btn-primary" style="width: 100%; background: var(--accent-purple); display: none;">Confirm Swap</button>
+            <button id="get-quote-btn" class="btn btn-secondary" style="width: 100%;">Get Quote</button>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="margin: 0;">🖼 NFT Collection</h2>
+            <button class="btn btn-secondary" onclick="document.getElementById('mint-nft-modal').style.display='flex'">+ Mint New</button>
+        </div>
+        <div class="nft-grid" id="user-nft-list">
+            </div>
     </div>
 </div>
 
-<div id="mint-nft-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" style="position: absolute; right: 20px; cursor: pointer;">✕</span>
-        <h2>Mint AlphaFox NFT</h2>
-        <form id="mint-nft-form">
-            <input type="text" name="mint-name" placeholder="Name" required style="width:100%; margin-bottom:10px; padding:8px;">
-            <textarea name="mint-description" placeholder="Description" required style="width:100%; margin-bottom:10px; padding:8px;"></textarea>
-            <input type="url" name="mint-image" placeholder="Image URL (optional)" style="width:100%; margin-bottom:10px; padding:8px;">
-            <button type="submit" class="btn btn-primary" style="width:100%;">Mint (0.05 SOL)</button>
-        </form>
-    </div>
-</div>
-
-<div id="sell-nft-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" style="position: absolute; right: 20px; cursor: pointer;">✕</span>
-        <h2>List NFT for Sale</h2>
-        <form id="list-nft-form">
-            <select id="nft-to-sell" name="nft-to-sell" style="width:100%; margin-bottom:10px; padding:8px;"></select>
-            <input type="number" name="list-price" step="0.01" placeholder="Price in SOL" required style="width:100%; margin-bottom:10px; padding:8px;">
-            <button type="submit" class="btn btn-primary" style="width:100%;">List Now</button>
-        </form>
+<div id="nft-details-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:3000; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+    <div class="card" style="max-width:500px; width:90%; position:relative;">
+        <span class="close-modal" style="position:absolute; right:20px; top:20px; cursor:pointer; font-size:24px;">✕</span>
+        <img id="nft-detail-image" src="" style="width:100%; border-radius:15px; margin-bottom:20px;">
+        <h2 id="nft-detail-name" style="margin-bottom:10px;"></h2>
+        <p id="nft-detail-description" style="color:var(--text-dim); font-size:14px;"></p>
+        <div id="nft-actions" style="margin-top:20px;">
+            <button id="nft-detail-buy-btn" class="btn btn-primary" style="width:100%;">Buy NFT</button>
+            <button id="nft-detail-sell-btn" class="btn btn-secondary" style="width:100%; margin-top:10px;">List on Market</button>
+        </div>
     </div>
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
