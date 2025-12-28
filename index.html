@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AlphaFox Staking & NFT Dashboard</title>
+    
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://project-serum.github.io/anchor/dist/anchor.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@latest/lib/index.iife.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
     <style>
         :root {
@@ -28,7 +29,6 @@
             line-height: 1.5;
         }
 
-        /* Навигация */
         nav {
             display: flex;
             justify-content: space-between;
@@ -44,8 +44,6 @@
 
         .logo { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
 
-        .wallet-section { display: flex; align-items: center; gap: 10px; }
-
         .btn {
             background: var(--accent);
             color: var(--bg-color);
@@ -58,12 +56,9 @@
         }
 
         .btn:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-secondary { background: #334155; color: white; }
 
-        /* Контейнер */
         .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; }
 
         .card {
@@ -71,192 +66,153 @@
             border: 1px solid #334155;
             border-radius: 16px;
             padding: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         h2 { margin-top: 0; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; font-size: 1.25rem; }
 
-        /* Стейкинг UI */
-        .stat-row { display: flex; justify-content: space-between; margin: 10px 0; color: var(--text-dim); }
-        .stat-value { color: var(--text); font-weight: bold; }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: white;
-            box-sizing: border-box;
+        input, select, textarea {
+            width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px;
+            border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box;
         }
 
-        /* Уведомления */
-        #notification-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        /* Чат */
+        #chat-box {
+            height: 250px; overflow-y: auto; background: #0f172a;
+            border-radius: 8px; padding: 10px; border: 1px solid #334155;
+            display: flex; flex-direction: column; gap: 8px;
         }
+        .msg { border-bottom: 1px solid #1e293b; padding-bottom: 5px; }
+        .msg-user { color: var(--accent); font-weight: bold; font-size: 0.8rem; }
 
-        .notification {
-            padding: 1rem;
-            border-radius: 8px;
-            background: var(--card-bg);
-            border-left: 4px solid var(--accent);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
-            min-width: 250px;
-            animation: slideIn 0.3s ease-out;
-        }
-        .notification.error { border-color: var(--danger); }
-        .notification.success { border-color: var(--success); }
-
-        /* NFT Карточки */
-        .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem; }
-        .nft-card {
-            background: #0f172a;
-            border-radius: 12px;
-            overflow: hidden;
-            text-align: center;
-            padding-bottom: 10px;
-            border: 1px solid #334155;
-        }
-        .nft-card img { width: 100%; height: 150px; object-fit: cover; }
-        .nft-name { font-size: 0.9rem; margin: 5px 0; }
-
-        /* Лоадер */
-        #page-loader {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.7);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        #notification-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        .notification { padding: 1rem; border-radius: 8px; background: var(--card-bg); border-left: 4px solid var(--accent); margin-top: 10px; box-shadow: 0 10px 15px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
-    <div id="page-loader">
-        <div class="btn">Загрузка сети Solana...</div>
-    </div>
-
     <nav>
         <div class="logo">AlphaFox DAO</div>
         <div class="wallet-section">
-            <div id="walletDisplay" class="wallet-display" style="display: none; align-items: center; gap: 10px;">
-                <span id="walletAddress" class="wallet-address-display" style="color: var(--text-dim);"></span>
+            <div id="walletDisplay" style="display: none; align-items: center; gap: 10px;">
+                <span id="walletAddress" style="color: var(--text-dim); font-family: monospace;"></span>
                 <button class="btn btn-secondary" onclick="disconnectWallet()">Выйти</button>
             </div>
-            <button id="connectBtn" class="btn connect-wallet-btn">Подключить Phantom</button>
+            <button id="connectBtn" class="btn" onclick="connectWallet()">Подключить Кошелек</button>
         </div>
     </nav>
 
     <div class="container">
         <div class="grid">
-            
             <div class="card">
-                <h2>🥩 AlphaFox Стейкинг</h2>
-                <div class="stat-row">
-                    <span>Ваш баланс:</span>
-                    <span id="user-afox-balance" class="stat-value">0 AFOX</span>
-                </div>
-                <div class="stat-row">
-                    <span>В стейке:</span>
-                    <span id="user-staked-amount" class="stat-value">0 AFOX</span>
-                </div>
-                <div class="stat-row">
-                    <span>Награды:</span>
-                    <span id="user-rewards-amount" class="stat-value" style="color: var(--success);">0 AFOX</span>
-                </div>
-                
-                <hr style="border-color: #334155; margin: 1.5rem 0;">
-                
-                <label>Выберите Пул:</label>
-                <select id="pool-selector"></select>
-                
-                <label>Сумма стейкинга:</label>
-                <input type="number" id="stake-amount" placeholder="0.00">
-                
-                <button id="stake-afox-btn" class="btn" style="width: 100%; margin-bottom: 10px;">Застейкать AFOX</button>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button id="claim-rewards-btn" class="btn btn-secondary">Забрать награды</button>
-                    <button id="unstake-afox-btn" class="btn btn-secondary">Вывести всё</button>
-                </div>
-                
-                <div class="stat-row" style="margin-top: 15px; font-size: 0.8rem;">
-                    <span>Период блокировки:</span>
-                    <span id="lockup-period" class="stat-value">—</span>
-                </div>
+                <h2>🥩 Стейкинг AFOX</h2>
+                <p>Ваш баланс: <span id="sol-balance" class="stat-value">0 SOL</span></p>
+                <input type="number" id="stake-amount" placeholder="Количество AFOX">
+                <button class="btn" style="width: 100%;">Застейкать</button>
             </div>
 
             <div class="card">
-                <h2>🔄 Быстрый Своп</h2>
-                <div class="stat-row">
-                    <span>Отдаете:</span>
-                    <span id="swap-from-balance" style="font-size: 0.8rem;">0 SOL</span>
+                <h2>💬 Сообщество (ПК + Мобайл)</h2>
+                <div id="chat-box">
+                    <p style="text-align: center; color: var(--text-dim);">Подключитесь, чтобы видеть сообщения...</p>
                 </div>
-                <div style="display: flex; gap: 5px;">
-                    <input type="number" id="swap-from-amount" placeholder="0.0">
-                    <select id="swap-from-token" style="width: 100px;">
-                        <option value="SOL">SOL</option>
-                        <option value="AFOX">AFOX</option>
-                    </select>
+                <div style="display: flex; gap: 5px; margin-top: 10px;">
+                    <input type="text" id="chat-input" placeholder="Введите сообщение..." style="margin:0;">
+                    <button class="btn" onclick="sendMessage()">📢</button>
                 </div>
-
-                <button id="swap-direction-btn" style="background:none; border:none; color:var(--accent); cursor:pointer; width:100%; text-align:center; font-size:1.2rem;">⇅</button>
-
-                <div class="stat-row"><span>Получаете (примерно):</span></div>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" id="swap-to-amount" readonly placeholder="0.0">
-                    <select id="swap-to-token" style="width: 100px;">
-                        <option value="AFOX">AFOX</option>
-                        <option value="SOL">SOL</option>
-                    </select>
-                </div>
-
-                <div class="stat-row" style="font-size: 0.8rem;">
-                    <span>Impact: <span id="price-impact">0%</span></span>
-                    <span>Fee: <span id="lp-fee">0</span></span>
-                </div>
-
-                <button id="get-quote-btn" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">Рассчитать</button>
-                <button id="execute-swap-btn" class="btn" style="width: 100%; margin-top: 10px; display: none;">Обменять</button>
             </div>
-
-            <div class="card" style="grid-column: span 1;">
-                <h2>🖼️ Ваши NFT</h2>
-                <div id="user-nft-list" class="nft-grid">
-                    </div>
-                <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="document.getElementById('mint-nft-modal').style.display='flex'">Минт нового NFT (MOCK)</button>
-            </div>
-
-        </div>
-    </div>
-
-    <div id="mint-nft-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
-        <div class="card" style="width: 400px;">
-            <h2>Минт NFT</h2>
-            <form id="mint-nft-form">
-                <input type="text" name="mint-name" placeholder="Название NFT" required>
-                <textarea name="mint-description" placeholder="Описание" style="width:100%; background:#0f172a; border:1px solid #334155; color:white; border-radius:8px; padding:10px; margin-bottom:10px; box-sizing:border-box;"></textarea>
-                <input type="text" name="mint-image" placeholder="URL картинки">
-                <div style="display:flex; gap:10px;">
-                    <button type="submit" class="btn" style="flex:1">Создать</button>
-                    <button type="button" class="btn btn-secondary" onclick="this.closest('#mint-nft-modal').style.display='none'">Отмена</button>
-                </div>
-            </form>
         </div>
     </div>
 
     <div id="notification-container"></div>
 
-    <script src="script.js"></script>
+    <script>
+        // --- 1. CONFIG (Замените на свои данные из Firebase Console) ---
+        const firebaseConfig = {
+            apiKey: "ВАШ_API_KEY",
+            databaseURL: "https://ВАШ_ID.firebaseio.com",
+            projectId: "ВАШ_ID",
+            appId: "ВАШ_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- 2. ДВИЖОК CONNECT WALLET (Universal) ---
+        const getProvider = () => {
+            if ('phantom' in window) return window.phantom?.solana;
+            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`;
+                return null;
+            }
+            alert("Пожалуйста, установите Phantom Wallet");
+            return null;
+        };
+
+        async function connectWallet() {
+            const provider = getProvider();
+            if (!provider) return;
+            try {
+                const resp = await provider.connect();
+                localStorage.setItem('walletConnected', 'true');
+                updateUI(resp.publicKey.toString());
+                loadChat(); // Загружаем чат после входа
+            } catch (err) { console.error(err); }
+        }
+
+        function disconnectWallet() {
+            localStorage.removeItem('walletConnected');
+            location.reload();
+        }
+
+        function updateUI(pubKey) {
+            document.getElementById('connectBtn').style.display = 'none';
+            document.getElementById('walletDisplay').style.display = 'flex';
+            document.getElementById('walletAddress').innerText = pubKey.slice(0,4) + '...' + pubKey.slice(-4);
+            fetchBalance(pubKey);
+        }
+
+        async function fetchBalance(pubKey) {
+            try {
+                const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+                const balance = await connection.getBalance(new solanaWeb3.PublicKey(pubKey));
+                document.getElementById('sol-balance').innerText = (balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(3) + " SOL";
+            } catch (e) { console.log("Баланс не подгружен"); }
+        }
+
+        // --- 3. ДВИЖОК КОММЕНТАРИЕВ (Firebase) ---
+        function loadChat() {
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML = ''; // Очистка лоадера
+            
+            db.ref('messages').limitToLast(50).on('child_added', (snapshot) => {
+                const data = snapshot.val();
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'msg';
+                msgDiv.innerHTML = `<span class="msg-user">${data.user.slice(0,4)}...:</span> <span>${data.text}</span>`;
+                chatBox.appendChild(msgDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const user = window.phantom?.solana?.publicKey?.toString();
+            
+            if (!user) return alert("Сначала подключите кошелек!");
+            if (!input.value.trim()) return;
+
+            await db.ref('messages').push({
+                user: user,
+                text: input.value,
+                timestamp: Date.now()
+            });
+            input.value = '';
+        }
+
+        // Авто-логин
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('walletConnected') === 'true') connectWallet();
+        });
+    </script>
 </body>
 </html>
