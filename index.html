@@ -9,139 +9,147 @@
     <script>window.Buffer = window.buffer.Buffer;</script>
     <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.24/dist/index.iife.min.js"></script>
 
     <style>
-        :root { --gold: #f0b90b; --bg: #0b0b0e; --card: rgba(255,255,255,0.05); }
-        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; }
-        .container { max-width: 500px; margin: 0 auto; }
-        .glass-card { background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; backdrop-filter: blur(10px); }
-        h2 { color: var(--gold); margin-top: 0; font-size: 1.2rem; }
-        .btn { background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; }
-        .btn:disabled { background: #444; color: #888; }
-        input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; margin: 10px 0; }
-        .stats { font-size: 14px; color: #ccc; margin-bottom: 10px; }
-        .val { color: var(--gold); float: right; }
+        :root { 
+            --gold: #f0b90b; 
+            --bg: #0b0b0e; 
+            --card: rgba(255,255,255,0.05); 
+            --border: rgba(255,255,255,0.1);
+        }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; padding-bottom: 50px; }
+        .container { max-width: 480px; margin: 0 auto; }
+        
+        /* Стили карточек */
+        .glass-card { 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            border-radius: 20px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            backdrop-filter: blur(10px); 
+        }
+        
+        h1 { color: var(--gold); font-size: 24px; text-align: center; margin-bottom: 5px; }
+        h2 { color: var(--gold); font-size: 18px; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
+        /* Кнопки */
+        .btn { 
+            background: var(--gold); color: #000; border: none; padding: 14px; 
+            border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; 
+            margin: 8px 0; transition: 0.3s;
+        }
+        .btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .btn-outline { background: none; color: var(--gold); border: 1px solid var(--gold); }
+
+        /* Ввод данных */
+        input, select { 
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border); 
+            color: #fff; padding: 12px; border-radius: 10px; width: 100%; 
+            box-sizing: border-box; margin: 10px 0; font-size: 16px;
+        }
+
+        /* Информационные строки */
+        .stats { font-size: 14px; color: #aaa; margin: 8px 0; display: flex; justify-content: space-between; }
+        .val { color: var(--gold); font-weight: bold; }
+
+        /* Уведомления */
+        #notification-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; width: 90%; }
+        .notification { background: #222; border-left: 4px solid var(--gold); padding: 15px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        
+        /* Лоадер */
+        #page-loader { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 9999; 
+        }
+
+        /* Сетка NFT */
+        .nft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
+<div id="page-loader">
+    <div style="border: 4px solid #f3f3f3; border-top: 4px solid var(--gold); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
+    <p>Processing Transaction...</p>
+</div>
+<div id="notification-container"></div>
+
 <div class="container">
-    <header style="text-align: center; padding: 20px 0;">
-        <h1 style="color: var(--gold); margin: 0;">AlphaFox <span style="font-weight: 100;">DAO</span></h1>
-        <p id="wallet-display" style="font-size: 12px; color: #888;">Wallet: Not Connected</p>
-        <button id="connectBtn" class="btn">CONNECT WALLET</button>
+    <header style="padding: 20px 0;">
+        <h1>AlphaFox <span style="font-weight: 100;">DAO</span></h1>
+        <div class="glass-card" style="text-align: center; padding: 15px;">
+            <p id="walletAddressDisplay" style="font-family: monospace; font-size: 14px; margin-bottom: 10px;">Not Connected</p>
+            <button id="connectWalletBtn" class="btn connect-wallet-btn">CONNECT WALLET</button>
+            <button class="btn copy-btn" style="display:none; font-size: 12px; padding: 5px;">Copy Address</button>
+        </div>
     </header>
 
     <div class="glass-card">
         <h2>Staking Portal</h2>
-        <div class="stats">Balance: <span id="user-afox-balance" class="val">0 AFOX</span></div>
+        <div class="stats">Available: <span id="user-afox-balance" class="val">0 AFOX</span></div>
         <div class="stats">Staked: <span id="user-staked-amount" class="val">0 AFOX</span></div>
-        <input type="number" id="stake-amount" placeholder="0.00">
-        <button id="stake-afox-btn" class="btn" disabled>STAKE NOW</button>
-        <button id="claim-rewards-btn" class="btn" style="background:none; color:var(--gold); border:1px solid var(--gold);" disabled>CLAIM REWARDS</button>
+        <div class="stats">Rewards: <span id="user-rewards-amount" class="val">0 AFOX</span></div>
+        <div class="stats">APR: <span id="staking-apr" class="val">—</span></div>
+        <div class="stats">Lock: <span id="lockup-period" class="val">—</span></div>
+
+        <label style="font-size: 12px; color: #888;">Select Pool Duration:</label>
+        <select id="pool-selector"></select>
+
+        <input type="number" id="stake-amount" placeholder="Amount AFOX">
+        <button id="stake-afox-btn" class="btn" disabled>STAKE AFOX</button>
+        
+        <div style="display: flex; gap: 10px;">
+            <button id="claim-rewards-btn" class="btn btn-outline" disabled>CLAIM</button>
+            <button id="unstake-afox-btn" class="btn btn-outline" disabled>UNSTAKE</button>
+        </div>
     </div>
 
     <div class="glass-card">
         <h2>Jupiter Swap</h2>
-        <div class="stats">Pay SOL:</div>
-        <input type="number" id="swap-from-amount" placeholder="0.1">
-        <div class="stats">Receive AFOX (est): <span id="swap-estimate" class="val">0.00</span></div>
-        <button id="execute-swap-btn" class="btn" disabled>EXCHANGE</button>
+        <div class="stats">From: <span id="swap-from-balance" class="val">0</span></div>
+        <div style="display: flex; gap: 5px;">
+            <input type="number" id="swap-from-amount" placeholder="0.00">
+            <button class="max-amount-btn" data-input-id="swap-from-amount" style="width: 60px; height: 45px; margin-top: 10px; border-radius: 8px; background: #333; color: var(--gold); border: 1px solid var(--border);">MAX</button>
+        </div>
+        
+        <select id="swap-from-token">
+            <option value="SOL">SOL</option>
+            <option value="AFOX">AFOX</option>
+        </select>
+
+        <button id="swap-direction-btn" style="background: none; border: none; color: var(--gold); cursor: pointer; width: 100%; font-size: 20px;">⇅</button>
+
+        <div class="stats">To (Estimate):</div>
+        <input type="number" id="swap-to-amount" readonly placeholder="0.00">
+        <select id="swap-to-token">
+            <option value="AFOX">AFOX</option>
+            <option value="SOL">SOL</option>
+        </select>
+
+        <div style="font-size: 11px; color: #777; margin-bottom: 10px;">
+            Impact: <span id="price-impact">0%</span> | Min: <span id="min-received">0</span>
+        </div>
+
+        <button id="get-quote-btn" class="btn btn-outline">REFRESH QUOTE</button>
+        <button id="execute-swap-btn" class="btn" style="display: none; background: #27ae60;">CONFIRM SWAP</button>
+    </div>
+
+    <div class="glass-card">
+        <h2>Your AlphaFox NFTs</h2>
+        <div id="user-nft-list" class="nft-grid">
+            <p style="grid-column: 1/3; text-align: center; color: #555; font-size: 12px;">Connect wallet to see NFTs</p>
+        </div>
     </div>
 </div>
 
-<script>
-/** * КОНФИГУРАЦИЯ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
- */
-const PROGRAM_ID = "ТВОЙ_ID_ПРОГРАММЫ"; // Вставь свой ID
-const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
-let provider = null;
+<style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
 
-/**
- * ЛОГИКА ПОДКЛЮЧЕНИЯ (Универсальная для Android)
- */
-async function handleConnect() {
-    const isPhantomInstalled = window.solana && window.solana.isPhantom;
-
-    if (isPhantomInstalled) {
-        try {
-            const resp = await window.solana.connect();
-            onWalletConnected(resp.publicKey.toString());
-        } catch (err) {
-            console.error("User rejected", err);
-        }
-    } else {
-        // Редирект для Android Chrome в приложение Phantom
-        const currentUrl = window.location.href;
-        window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
-    }
-}
-
-function onWalletConnected(pubKey) {
-    document.getElementById('wallet-display').innerText = "Address: " + pubKey.substring(0, 8) + "...";
-    document.getElementById('connectBtn').innerText = "CONNECTED ✅";
-    document.getElementById('connectBtn').disabled = true;
-
-    // Разблокируем все функции программы
-    document.getElementById('stake-afox-btn').disabled = false;
-    document.getElementById('claim-rewards-btn').disabled = false;
-    document.getElementById('execute-swap-btn').disabled = false;
-
-    // Инициализируем провайдер Anchor
-    provider = new anchor.AnchorProvider(connection, window.solana, { preflightCommitment: "confirmed" });
-}
-
-/**
- * ПРОГРАММА 1: СТЕЙКИНГ (Твоя логика)
- */
-async function stakeTokens() {
-    const amount = document.getElementById('stake-amount').value;
-    if (!amount || amount <= 0) return alert("Enter amount");
-
-    try {
-        console.log("Staking amount:", amount);
-        // Здесь твой вызов Anchor:
-        // const program = new anchor.Program(IDL, PROGRAM_ID, provider);
-        // await program.methods.stake(new anchor.BN(amount)).accounts({...}).rpc();
-        alert("Transaction Sent: " + amount + " AFOX");
-    } catch (err) {
-        alert("Staking Error: " + err.message);
-    }
-}
-
-/**
- * ПРОГРАММА 2: JUPITER SWAP (Твоя логика)
- */
-async function executeSwap() {
-    const solAmount = document.getElementById('swap-from-amount').value;
-    try {
-        // Пример вызова Jupiter API
-        const quote = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=ТВОЙ_МИНТ_AFOX&amount=${solAmount * 1e9}&slippageBps=50`)
-            .then(res => res.json());
-        
-        document.getElementById('swap-estimate').innerText = (quote.outAmount / 1e9).toFixed(2);
-        alert("Swap Quote Received! Proceeding to transaction...");
-        
-        // Далее твоя логика отправки транзакции через window.solana.signTransaction
-    } catch (err) {
-        alert("Swap Error: " + err.message);
-    }
-}
-
-// Привязка событий
-document.getElementById('connectBtn').onclick = handleConnect;
-document.getElementById('stake-afox-btn').onclick = stakeTokens;
-document.getElementById('execute-swap-btn').onclick = executeSwap;
-
-// Проверка при загрузке: если мы уже внутри браузера Phantom, коннектим сразу
-window.onload = () => {
-    if (window.solana && window.solana.isPhantom) {
-        window.solana.connect({ onlyIfTrusted: true })
-            .then(resp => onWalletConnected(resp.publicKey.toString()))
-            .catch(() => console.log("Auto-connect failed, waiting for button click"));
-    }
-};
-</script>
+<script src="script.js"></script>
 
 </body>
 </html>
