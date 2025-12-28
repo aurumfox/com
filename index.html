@@ -52,15 +52,13 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
-    <script src="https://unpkg.com/@solana/web3.js@1.91.7/lib/index.iife.js" crossorigin="anonymous"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
+<script>window.Buffer = window.buffer.Buffer;</script>
 
-    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/index.js" crossorigin="anonymous"></script>
-    
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 
-    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
-    
-    <script src="https://unpkg.com/@solana/wallet-adapter-react-ui@0.9.23/dist/index.iife.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
+
 
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
@@ -524,7 +522,21 @@
                 </ul>
         </nav>
 
-    11111
+        <div class="wallet-controls">
+    <button 
+        id="connectWalletBtn" 
+        class="web3-button connect-fox-btn wallet-connect-btn"
+        aria-label="Подключить криптовалютный кошелек"
+    >
+        <i class="fox-icon">🦊</i> 
+        Connect Wallet
+    </button>
+    
+    <div id="walletDisplay" class="wallet-display" style="display:none;">
+        <span id="walletAddressSpan" class="wallet-address-text"></span>
+        <button id="copyWalletBtn" class="copy-btn" aria-label="Копировать адрес кошелька"><i class="fas fa-copy"></i></button>
+    </div>
+</div>
         
 </header>
 
@@ -1185,6 +1197,26 @@
 
     <script id="main-inline-script">
         
+        /******************************************************************
+         * !!! КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ О БЕЗОПАСНОСТИ БЭКЕНДА !!!
+         * * Фронтенд защищен от XSS, но полная безопасность требует
+         * * СТРОГИХ ПРАВИЛ БЕЗОПАСНОСТИ Firebase.
+         * * ВНИМАНИЕ: Все формы записи (Mint NFT, DAO, Upload Game)
+         * * ЗАБЛОКИРОВАНЫ ФУНКЦИЕЙ preventSubmission, пока вы не
+         * * настроите бэкенд-защиту и аутентификацию администратора!
+         ******************************************************************/
+        
+        // 2. YOUR CONFIGURATION WITH KEYS (Public keys for client access)
+        const firebaseConfig = {
+            apiKey: "ВАШ_РЕАЛЬНЫЙ_FIREBASE_API_KEY_СЮДА", 
+            authDomain: "aurum-fox.firebaseapp.com",
+            projectId: "aurum-fox",
+            storageBucket: "aurum-fox.firebasestorage.app",
+            messagingSenderId: "650661732233",
+            appId: "1:650661732233:web:e8b12d73c1df56cde70b58",
+            measurementId: "G-L9XHK0DPB7" 
+        };
+        
         // 3. INITIALIZATION
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
@@ -1381,7 +1413,24 @@
                 }
             }
             loadMockNftContent(); 
-        }    
+        }
+        // --- /MODAL WINDOW LOGIC ---
+
+        // ====================================================================
+        // 🛑 БЛОК 1: КОНФИГУРАЦИЯ RUST/ANCHOR 
+        // ====================================================================
+        
+        const STAKING_PROGRAM_ID = "СТАВЬ_АДРЕС_ПРОГРАММЫ_RUST_СЮДА"; 
+        const POOL_STATE_ID = "СТАВЬ_АДРЕС_POOL_STATE_PDA_СЮДА"; 
+        const STAKING_POOL_SEED = "alphafox_pool_pda"; 
+        const USER_STAKING_SEED = "alphafox_staking_pda"; 
+        const AFOX_DECIMALS = 6; 
+
+        const IDL = { /* ВАШ IDL СЮДА */ }; 
+        
+        // ====================================================================
+
+
         // --- SOLANA WALLET ADAPTER LOGIC (ИСПРАВЛЕНО НА РЕАЛЬНУЮ ЛОГИКУ) ---
 
         const walletDisplay = document.getElementById('walletDisplay');
@@ -1445,30 +1494,189 @@
             }
             
             try {
-                <div class="container">
-    <header style="text-align: center; padding: 20px 0;">
-        <h1 style="color: var(--gold); margin: 0;">AlphaFox <span style="font-weight: 100;">DAO</span></h1>
-        <p id="wallet-display" style="font-size: 12px; color: #888;">Wallet: Not Connected</p>
-        <button id="connectBtn" class="btn">CONNECT WALLET</button>
-    </header>
+                // Использование реального адаптера
+                const adapter = new window.SolanaWalletAdapterPhantom.PhantomWalletAdapter();
+                
+                // Назначение обработчиков ДО подключения
+                adapter.on('connect', () => {
+                    solanaWalletAdapter = adapter;
+                    updateWalletUI(adapter);
+                    showNotification('Wallet successfully connected!', 'success', 4000);
+                });
+                adapter.on('disconnect', () => {
+                    solanaWalletAdapter = null;
+                    updateWalletUI(null);
+                    showNotification('Wallet disconnected.', 'info');
+                });
+                adapter.on('error', (error) => {
+                    console.error('Wallet error:', error);
+                    showNotification(`Wallet error: ${error.message}`, 'error', 5000);
+                });
 
-    <div class="glass-card">
-        <h2>Staking Portal</h2>
-        <div class="stats">Balance: <span id="user-afox-balance" class="val">0 AFOX</span></div>
-        <div class="stats">Staked: <span id="user-staked-amount" class="val">0 AFOX</span></div>
-        <input type="number" id="stake-amount" placeholder="0.00">
-        <button id="stake-afox-btn" class="btn" disabled>STAKE NOW</button>
-        <button id="claim-rewards-btn" class="btn" style="background:none; color:var(--gold); border:1px solid var(--gold);" disabled>CLAIM REWARDS</button>
-    </div>
+                // Запуск подключения
+                await adapter.connect();
 
-    <div class="glass-card">
-        <h2>Jupiter Swap</h2>
-        <div class="stats">Pay SOL:</div>
-        <input type="number" id="swap-from-amount" placeholder="0.1">
-        <div class="stats">Receive AFOX (est): <span id="swap-estimate" class="val">0.00</span></div>
-        <button id="execute-swap-btn" class="btn" disabled>EXCHANGE</button>
-    </div>
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+                // Отмена пользователем или другие ошибки
+                showNotification(`Connection failed: ${error.message}`, 'error', 5000);
+            } finally {
+                connectWalletBtn.disabled = false;
+                connectWalletBtn.textContent = 'Connect Wallet';
+            }
+        }
+        
+        async function disconnectWallet() {
+            if (solanaWalletAdapter) {
+                try {
+                    await solanaWalletAdapter.disconnect();
+                } catch (error) {
+                    console.error('Disconnection error (ignoring):', error);
+                }
+                solanaWalletAdapter = null;
+                updateWalletUI(null);
+            }
+        }
+        // --- /SOLANA WALLET ADAPTER LOGIC ---
 
+
+        // ====================================================================
+        // 💡 БЛОК 2: ОСНОВНАЯ ЛОГИКА ANCHOR/WEB3 (Заглушки оставлены)
+        // ====================================================================
+
+        /** Заглушка: Читает состояние и обновляет UI. */
+        async function fetchStakingState() {
+            const pubkey = solanaWalletAdapter?.publicKey;
+            if (!pubkey) return;
+            
+            showNotification("MOCK: Fetching staking state... (requires real Web3 setup)", 'info');
+                
+            // MOCK data (эмулируем данные)
+            const afoxBalance = 1500;
+            const stakedAmount = 500;
+            const rewardsAmount = 10.5;
+            const apr = 5.5; 
+
+            document.getElementById('stakingApr').textContent = `${apr.toFixed(2)}%`;
+            document.getElementById('userAfoxBalance').textContent = `${afoxBalance.toFixed(2)} AFOX`;
+            document.getElementById('userStakedAmount').textContent = `${stakedAmount.toFixed(2)} AFOX`;
+            document.getElementById('userRewardsAmount').textContent = `${rewardsAmount.toFixed(2)} AFOX`;
+
+            const unstakeBtn = document.getElementById('unstakeAfoxBtn');
+            const lockupDisplay = document.getElementById('lockupPeriod');
+
+            lockupDisplay.textContent = '0 days (Flexible)';
+            if (unstakeBtn) {
+                unstakeBtn.disabled = stakedAmount === 0;
+                unstakeBtn.textContent = 'Unstake Tokens';
+            }
+        }
+
+
+        /** Обрабатывает транзакцию Staking (Заглушка). */
+        async function handleStake() {
+            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
+                 showNotification("Please connect your wallet first.", 'error');
+                 return;
+            }
+            showNotification("SECURITY WARNING: Staking logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
+            const btn = document.getElementById('stakeAfoxBtn');
+            btn.disabled = true;
+            btn.textContent = 'Staking...';
+            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            btn.disabled = false;
+            btn.textContent = 'Stake';
+            fetchStakingState(); 
+        }
+
+
+        /** Обрабатывает Unstaking (Заглушка). */
+        async function handleUnstake() {
+            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
+                 showNotification("Please connect your wallet first.", 'error');
+                 return;
+            }
+            showNotification("SECURITY WARNING: Unstake logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
+            const btn = document.getElementById('unstakeAfoxBtn');
+            btn.disabled = true;
+            btn.textContent = 'Unstaking...';
+            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            btn.disabled = false;
+            btn.textContent = 'Unstake Tokens';
+            fetchStakingState(); 
+        }
+
+
+        /** Обрабатывает Claiming Rewards (Заглушка). */
+        async function handleClaim() {
+            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
+                 showNotification("Please connect your wallet first.", 'error');
+                 return;
+            }
+            showNotification("SECURITY WARNING: Claim logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
+            const btn = document.getElementById('claimRewardsBtn');
+            btn.disabled = true;
+            btn.textContent = 'Claiming...';
+            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            btn.disabled = false;
+            btn.textContent = 'Claim Rewards';
+            fetchStakingState();
+        }
+
+        // ====================================================================
+
+        // --- HAMBURGER MENU LOGIC (Оставлен для полноты) ---
+        function setupHamburgerMenu() {
+             // ... ваш код гамбургер-меню ...
+        }
+        // --- /HAMBURGER MENU LOGIC ---
+
+
+        // --- FIREBASE CONTENT LOADING ---
+        function setupNewsListener() {
+            const newsListElement = document.querySelector('.news-list');
+            if (!newsListElement) return;
+
+            db.collection(COLLECTIONS.NEWS)
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .onSnapshot(snapshot => { 
+                    
+                    newsListElement.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        newsListElement.innerHTML = '<p>No news yet.</p>';
+                        return;
+                    }
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'N/A';
+                        
+                        const newsItem = document.createElement('div');
+                        newsItem.className = 'news-item';
+                        
+                        const h4 = document.createElement('h4');
+                        h4.textContent = sanitizeText(data.title || 'Title');
+                        
+                        const p = document.createElement('p');
+                        p.textContent = sanitizeText(data.content || 'Content...');
+                        
+                        const small = document.createElement('small');
+                        small.textContent = date;
+                        
+                        newsItem.appendChild(h4);
+                        newsItem.appendChild(p);
+                        newsItem.appendChild(small);
+                        
+                        newsListElement.appendChild(newsItem);
+                    });
+
+                }, error => {
+                    console.error("News listener error:", error);
+                    newsListElement.innerHTML = '<p style="color: #e74c3c;">Error loading news.</p>';
+                });
+        }
 
         async function fetchContentList(collectionName, listElementId) {
             const listElement = document.getElementById(listElementId);
