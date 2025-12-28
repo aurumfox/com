@@ -1199,26 +1199,6 @@
 
     <script id="main-inline-script">
         
-        /******************************************************************
-         * !!! КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ О БЕЗОПАСНОСТИ БЭКЕНДА !!!
-         * * Фронтенд защищен от XSS, но полная безопасность требует
-         * * СТРОГИХ ПРАВИЛ БЕЗОПАСНОСТИ Firebase.
-         * * ВНИМАНИЕ: Все формы записи (Mint NFT, DAO, Upload Game)
-         * * ЗАБЛОКИРОВАНЫ ФУНКЦИЕЙ preventSubmission, пока вы не
-         * * настроите бэкенд-защиту и аутентификацию администратора!
-         ******************************************************************/
-        
-        // 2. YOUR CONFIGURATION WITH KEYS (Public keys for client access)
-        const firebaseConfig = {
-            apiKey: "ВАШ_РЕАЛЬНЫЙ_FIREBASE_API_KEY_СЮДА", 
-            authDomain: "aurum-fox.firebaseapp.com",
-            projectId: "aurum-fox",
-            storageBucket: "aurum-fox.firebasestorage.app",
-            messagingSenderId: "650661732233",
-            appId: "1:650661732233:web:e8b12d73c1df56cde70b58",
-            measurementId: "G-L9XHK0DPB7" 
-        };
-        
         // 3. INITIALIZATION
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
