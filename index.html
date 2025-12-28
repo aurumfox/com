@@ -1208,17 +1208,6 @@
          * * настроите бэкенд-защиту и аутентификацию администратора!
          ******************************************************************/
         
-        // 2. YOUR CONFIGURATION WITH KEYS (Public keys for client access)
-        const firebaseConfig = {
-            apiKey: "ВАШ_РЕАЛЬНЫЙ_FIREBASE_API_KEY_СЮДА", 
-            authDomain: "aurum-fox.firebaseapp.com",
-            projectId: "aurum-fox",
-            storageBucket: "aurum-fox.firebasestorage.app",
-            messagingSenderId: "650661732233",
-            appId: "1:650661732233:web:e8b12d73c1df56cde70b58",
-            measurementId: "G-L9XHK0DPB7" 
-        };
-        
         // 3. INITIALIZATION
         const app = firebase.initializeApp(firebaseConfig);
         const db = app.firestore();
@@ -1419,19 +1408,6 @@
         // --- /MODAL WINDOW LOGIC ---
 
         // ====================================================================
-        // 🛑 БЛОК 1: КОНФИГУРАЦИЯ RUST/ANCHOR 
-        // ====================================================================
-        
-        const STAKING_PROGRAM_ID = "СТАВЬ_АДРЕС_ПРОГРАММЫ_RUST_СЮДА"; 
-        const POOL_STATE_ID = "СТАВЬ_АДРЕС_POOL_STATE_PDA_СЮДА"; 
-        const STAKING_POOL_SEED = "alphafox_pool_pda"; 
-        const USER_STAKING_SEED = "alphafox_staking_pda"; 
-        const AFOX_DECIMALS = 6; 
-
-        const IDL = { /* ВАШ IDL СЮДА */ }; 
-        
-        // ====================================================================
-
 
         // --- SOLANA WALLET ADAPTER LOGIC (ИСПРАВЛЕНО НА РЕАЛЬНУЮ ЛОГИКУ) ---
 
@@ -1539,93 +1515,8 @@
                 updateWalletUI(null);
             }
         }
-        // --- /SOLANA WALLET ADAPTER LOGIC ---
-
-
-        // ====================================================================
-        // 💡 БЛОК 2: ОСНОВНАЯ ЛОГИКА ANCHOR/WEB3 (Заглушки оставлены)
-        // ====================================================================
-
-        /** Заглушка: Читает состояние и обновляет UI. */
-        async function fetchStakingState() {
-            const pubkey = solanaWalletAdapter?.publicKey;
-            if (!pubkey) return;
-            
-            showNotification("MOCK: Fetching staking state... (requires real Web3 setup)", 'info');
-                
-            // MOCK data (эмулируем данные)
-            const afoxBalance = 1500;
-            const stakedAmount = 500;
-            const rewardsAmount = 10.5;
-            const apr = 5.5; 
-
-            document.getElementById('stakingApr').textContent = `${apr.toFixed(2)}%`;
-            document.getElementById('userAfoxBalance').textContent = `${afoxBalance.toFixed(2)} AFOX`;
-            document.getElementById('userStakedAmount').textContent = `${stakedAmount.toFixed(2)} AFOX`;
-            document.getElementById('userRewardsAmount').textContent = `${rewardsAmount.toFixed(2)} AFOX`;
-
-            const unstakeBtn = document.getElementById('unstakeAfoxBtn');
-            const lockupDisplay = document.getElementById('lockupPeriod');
-
-            lockupDisplay.textContent = '0 days (Flexible)';
-            if (unstakeBtn) {
-                unstakeBtn.disabled = stakedAmount === 0;
-                unstakeBtn.textContent = 'Unstake Tokens';
-            }
-        }
-
-
-        /** Обрабатывает транзакцию Staking (Заглушка). */
-        async function handleStake() {
-            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
-                 showNotification("Please connect your wallet first.", 'error');
-                 return;
-            }
-            showNotification("SECURITY WARNING: Staking logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
-            const btn = document.getElementById('stakeAfoxBtn');
-            btn.disabled = true;
-            btn.textContent = 'Staking...';
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
-            btn.disabled = false;
-            btn.textContent = 'Stake';
-            fetchStakingState(); 
-        }
-
-
-        /** Обрабатывает Unstaking (Заглушка). */
-        async function handleUnstake() {
-            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
-                 showNotification("Please connect your wallet first.", 'error');
-                 return;
-            }
-            showNotification("SECURITY WARNING: Unstake logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
-            const btn = document.getElementById('unstakeAfoxBtn');
-            btn.disabled = true;
-            btn.textContent = 'Unstaking...';
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
-            btn.disabled = false;
-            btn.textContent = 'Unstake Tokens';
-            fetchStakingState(); 
-        }
-
-
-        /** Обрабатывает Claiming Rewards (Заглушка). */
-        async function handleClaim() {
-            if (!solanaWalletAdapter || !solanaWalletAdapter.connected) {
-                 showNotification("Please connect your wallet first.", 'error');
-                 return;
-            }
-            showNotification("SECURITY WARNING: Claim logic is a MOCK. Please integrate real Solana Anchor code.", 'warning', 7000);
-            const btn = document.getElementById('claimRewardsBtn');
-            btn.disabled = true;
-            btn.textContent = 'Claiming...';
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
-            btn.disabled = false;
-            btn.textContent = 'Claim Rewards';
-            fetchStakingState();
-        }
-
-        // ====================================================================
+        
+      // ====================================================================
 
         // --- HAMBURGER MENU LOGIC (Оставлен для полноты) ---
         function setupHamburgerMenu() {
