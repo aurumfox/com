@@ -2,169 +2,106 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaFox DAO - Professional Edition</title>
-
+    <title>AlphaFox DAO - Final Stable</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
     <script>window.Buffer = window.buffer.Buffer;</script>
     <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
 
     <style>
-        :root { --gold: #f0b90b; --bg: #0d0d10; --glass: rgba(255, 255, 255, 0.03); --border: rgba(255, 255, 255, 0.1); }
-        body { background: var(--bg); color: #e0e0e0; font-family: 'Inter', system-ui, sans-serif; margin: 0; line-height: 1.6; }
-        
-        /* Сетка и Контейнер */
-        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 30px 0; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
-        .card { background: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 25px; backdrop-filter: blur(10px); }
-
-        /* Кнопки */
-        .btn { background: var(--gold); color: #000; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; transition: all 0.2s ease; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(240, 185, 11, 0.3); }
-        .btn:disabled { background: #333; color: #777; cursor: not-allowed; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: #fff; margin-top: 10px; }
-
-        /* Инпуты */
-        input { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; width: 100%; box-sizing: border-box; margin: 10px 0; }
-        
-        /* Статусы */
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .online { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
-        .offline { background: #ff4444; }
-        
-        h2 { font-size: 1.2rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-top: 0; }
-        .balance-text { font-size: 0.9rem; color: #888; }
-        .val { color: #fff; font-weight: bold; }
+        body { background: #0b0d11; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #161a1e; border: 1px solid #2b3139; border-radius: 16px; padding: 30px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .btn { background: #f0b90b; color: #000; border: none; padding: 15px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; transition: 0.3s; }
+        .btn:hover { background: #ffe066; }
+        .btn:disabled { background: #474d57; color: #848e9c; cursor: not-allowed; }
+        #wallet-info { margin-top: 20px; font-family: monospace; color: #848e9c; word-break: break-all; font-size: 12px; }
+        .status { margin-bottom: 15px; font-size: 14px; }
+        .online { color: #0ecb81; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <div>
-            <h1 style="margin:0; font-size: 1.8rem;">ALPHA<span style="color:var(--gold)">FOX</span></h1>
-            <div id="connection-status" style="font-size: 12px; margin-top: 5px;">
-                <span class="status-dot offline" id="status-dot"></span> <span id="status-text">Disconnected</span>
-            </div>
-        </div>
-        <button id="connect-wallet-btn" class="btn" style="width: auto;">Connect Wallet</button>
-    </header>
+<div class="card">
+    <h2 style="color:#f0b90b">AlphaFox Terminal</h2>
+    <div class="status" id="status">Status: <span style="color: #ff4d4d;">Disconnected</span></div>
+    
+    <button id="connect-btn" class="btn">Connect Phantom</button>
+    
+    <div id="wallet-info"></div>
 
-    <div class="grid">
-        <div class="card">
-            <h2>Staking Pool</h2>
-            <div style="margin-bottom: 20px;">
-                <div class="balance-text">Available: <span class="val" id="user-balance">0.00 AFOX</span></div>
-                <div class="balance-text">Staked: <span class="val" id="staked-balance">0.00 AFOX</span></div>
-            </div>
-            <input type="number" id="stake-input" placeholder="Amount to stake">
-            <button id="stake-btn" class="btn" disabled>Stake Tokens</button>
-            <button id="claim-btn" class="btn btn-outline" disabled>Claim Rewards</button>
-        </div>
-
-        <div class="card">
-            <h2>Fast Swap</h2>
-            <div class="balance-text">Pay: <b>SOL</b></div>
-            <input type="number" id="swap-input" placeholder="0.0">
-            <div style="text-align: center; margin: 5px 0;">↓</div>
-            <div class="balance-text">Receive: <b>AFOX</b></div>
-            <input type="text" id="swap-output" placeholder="Result" readonly>
-            <button id="swap-btn" class="btn" disabled>Execute Swap</button>
-        </div>
+    <div id="staking-ui" style="display:none; margin-top: 20px; border-top: 1px solid #2b3139; padding-top: 20px;">
+        <input type="number" id="amt" placeholder="Amount" style="width:80%; padding:10px; margin-bottom:10px; border-radius:5px; border:none;">
+        <button class="btn" onclick="alert('Staking logic triggers now!')">Stake AFOX</button>
     </div>
 </div>
 
 <script>
-/**
- * ЦЕНТРАЛЬНЫЙ СКРИПТ УПРАВЛЕНИЯ (AlphaFox Unified)
- */
+// Ждем полной загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+    
+    const connectBtn = document.getElementById('connect-btn');
+    const statusEl = document.getElementById('status');
+    const walletInfo = document.getElementById('wallet-info');
+    const stakingUi = document.getElementById('staking-ui');
 
-const CONFIG = {
-    rpc: "https://api.mainnet-beta.solana.com",
-    programId: "ВАШ_PROGRAM_ID_ЗДЕСЬ", // Замени на свой реальный ID
-};
-
-let wallet = null;
-let connection = null;
-
-// 1. Функция инициализации кошелька
-async function initWallet() {
-    const btn = document.getElementById('connect-wallet-btn');
-    const statusText = document.getElementById('status-text');
-    const statusDot = document.getElementById('status-dot');
-
-    try {
-        // Проверка Phantom
-        const isPhantomInstalled = window.solana && window.solana.isPhantom;
-        
-        if (!isPhantomInstalled) {
-            alert("Please install Phantom Wallet!");
-            window.open("https://phantom.app/", "_blank");
-            return;
+    // Функция получения провайдера (Phantom)
+    const getProvider = () => {
+        if ('solana' in window) {
+            const provider = window.solana;
+            if (provider.isPhantom) return provider;
         }
+        return null;
+    };
 
-        // Подключение
-        const response = await window.solana.connect();
-        wallet = response.publicKey.toString();
-        connection = new solanaWeb3.Connection(CONFIG.rpc, "confirmed");
+    // ГЛАВНАЯ ФУНКЦИЯ КОННЕКТА
+    async function connect() {
+        const provider = getProvider();
 
-        // UI Обновление
-        btn.innerText = wallet.substring(0, 4) + "..." + wallet.slice(-4);
-        statusText.innerText = "Mainnet-Beta Online";
-        statusDot.className = "status-dot online";
-        
-        // Разблокировка кнопок
-        document.querySelectorAll('.btn').forEach(b => b.disabled = false);
-        
-        console.log("Wallet Connected:", wallet);
-        
-        // Запуск фоновых обновлений (балансы)
-        updateBalances();
+        if (provider) {
+            try {
+                connectBtn.disabled = true;
+                connectBtn.innerText = "Connecting...";
 
-    } catch (err) {
-        console.error("Connection failed:", err);
+                // Запрос к Phantom
+                const resp = await provider.connect();
+                const publicKey = resp.publicKey.toString();
+
+                // Обновляем интерфейс
+                statusEl.innerHTML = 'Status: <span class="online">Connected</span>';
+                walletInfo.innerText = "Wallet: " + publicKey;
+                connectBtn.innerText = "Connected ✅";
+                stakingUi.style.display = "block";
+                
+                console.log("Успешное подключение! Адрес:", publicKey);
+
+            } catch (err) {
+                console.error("Пользователь отклонил запрос:", err);
+                statusEl.innerHTML = 'Status: <span style="color:#ff4d4d">Rejected</span>';
+                connectBtn.disabled = false;
+                connectBtn.innerText = "Try Again";
+            }
+        } else {
+            // Если Phantom не найден
+            alert("Phantom не найден! Установите расширение.");
+            window.open("https://phantom.app/", "_blank");
+        }
     }
-}
 
-// 2. Функция обновления балансов
-async function updateBalances() {
-    if (!wallet) return;
-    try {
-        const pubKey = new solanaWeb3.PublicKey(wallet);
-        const bal = await connection.getBalance(pubKey);
-        console.log("SOL Balance:", bal / solanaWeb3.LAMPORTS_PER_SOL);
-        // Здесь логика получения баланса токена AFOX через getParsedTokenAccountsByOwner
-    } catch (e) {
-        console.log("Balance fetch error", e);
+    // Вешаем событие на кнопку
+    connectBtn.addEventListener('click', connect);
+
+    // Слушаем автоматическое отключение
+    const provider = getProvider();
+    if (provider) {
+        provider.on('disconnect', () => {
+            statusEl.innerHTML = 'Status: <span style="color:#ff4d4d">Disconnected</span>';
+            stakingUi.style.display = "none";
+            connectBtn.disabled = false;
+            connectBtn.innerText = "Connect Phantom";
+        });
     }
-}
-
-// 3. Заглушки для твоих функций (вставь сюда свою логику из прошлого кода)
-async function handleStake() {
-    const amount = document.getElementById('stake-input').value;
-    if(!amount) return alert("Enter amount");
-    console.log("Staking...", amount);
-    // Твой код Anchor здесь
-}
-
-async function handleSwap() {
-    console.log("Swapping via Jupiter...");
-    // Твой код Jupiter API здесь
-}
-
-// ПРИВЯЗКА СОБЫТИЙ
-document.getElementById('connect-wallet-btn').addEventListener('click', initWallet);
-document.getElementById('stake-btn').addEventListener('click', handleStake);
-document.getElementById('swap-btn').addEventListener('click', handleSwap);
-
-// Слушатель на случай, если пользователь сменит аккаунт в Phantom
-if (window.solana) {
-    window.solana.on('accountChanged', () => window.location.reload());
-}
-
+});
 </script>
+
 </body>
 </html>
