@@ -11,208 +11,296 @@
     <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
     <script src="https://terminal.jup.ag/main-v2.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Poppins:wght@300;600&display=swap" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        :root { --gold: #FFD700; --dark-gold: #CC8800; --bg: #121212; --card: #1a1a1a; --text: #ffffff; }
+        :root { 
+            /* Новая премиальная палитра */
+            --gold-gradient: linear-gradient(135deg, #FFD700 0%, #FDB931 50%, #BF953F 100%);
+            --gold: #FFD700; 
+            --dark-gold: #AA8800; 
+            --bg: #080808; 
+            --card-bg: rgba(25, 25, 25, 0.7); 
+            --text: #ffffff;
+            --text-dim: #b0b0b0;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
         
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; line-height: 1.6; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            line-height: 1.6;
+            background-image: radial-gradient(circle at top right, rgba(255, 215, 0, 0.05), transparent);
+        }
+
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         
-        /* Header & Navigation */
-        .header { background: #000; padding: 15px 0; border-bottom: 3px solid var(--dark-gold); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        .logo-text { color: var(--gold); font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.5rem; margin: 0; }
-        
-        /* Buttons */
-        .btn { padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; border: none; text-decoration: none; display: inline-block; }
-        .primary-btn { background: var(--gold); color: #000; }
-        .primary-btn:hover { background: var(--dark-gold); }
-        .wallet-btn { background: transparent; border: 2px solid var(--gold); color: var(--gold); }
-        .wallet-btn.connected { background: var(--gold); color: #000; }
+        /* Header */
+        .header { 
+            background: rgba(0, 0, 0, 0.85); 
+            backdrop-filter: blur(12px);
+            padding: 15px 0; 
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+        }
 
-        /* Sections */
-        .section { padding: 80px 0; text-align: center; }
-        .hero { background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('./assets/foxcoin-hero.png.jpg'); background-size: cover; padding: 120px 0; }
-        h1, h2 { font-family: 'Montserrat', sans-serif; color: var(--gold); }
+        .logo-text { 
+            font-family: 'Montserrat', sans-serif; 
+            font-weight: 900; 
+            font-size: 1.7rem; 
+            margin: 0;
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
         
-        /* Cards & Grid */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-top: 40px; }
-        .card { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid var(--dark-gold); }
-        
-        /* Staking UI */
-        .staking-portal { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; max-width: 500px; margin: 40px auto; border: 1px solid var(--gold); }
-        .stats-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 0.9rem; }
-        .val { color: var(--gold); font-weight: bold; }
-        input { width: 100%; padding: 12px; background: #000; border: 1px solid #444; color: #fff; border-radius: 8px; margin: 10px 0; box-sizing: border-box; }
+        /* Кнопки с анимацией */
+        .btn { 
+            padding: 14px 28px; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            border: none; 
+            text-decoration: none; 
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
 
-        /* Jupiter Swap Area */
-        #jupiter-swap-widget { max-width: 440px; margin: 40px auto; min-height: 500px; }
+        .primary-btn { 
+            background: var(--gold-gradient); 
+            color: #000; 
+            box-shadow: var(--glow);
+        }
+
+        .primary-btn:hover { 
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4);
+        }
+
+        .wallet-btn { 
+            background: rgba(255, 215, 0, 0.05); 
+            border: 1px solid var(--gold); 
+            color: var(--gold); 
+        }
+
+        .wallet-btn:hover {
+            background: var(--gold);
+            color: #000;
+        }
+
+        /* Hero */
+        .hero { 
+            padding: 120px 0; 
+            text-align: center;
+            background: radial-gradient(circle, rgba(255,215,0,0.05) 0%, rgba(0,0,0,0) 70%);
+        }
         
+        .hero h1 { 
+            font-size: 3.5rem; 
+            font-family: 'Montserrat', sans-serif; 
+            margin-bottom: 15px;
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Карточки */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 50px; }
+        
+        .card { 
+            background: var(--card-bg); 
+            padding: 40px; 
+            border-radius: 24px; 
+            border: 1px solid rgba(255, 215, 0, 0.1);
+            backdrop-filter: blur(10px);
+            transition: 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: var(--gold);
+            transform: translateY(-10px);
+            box-shadow: var(--glow);
+        }
+
+        .card i { font-size: 2.5rem; color: var(--gold); margin-bottom: 20px; display: block; }
+        
+        /* Стейкинг портал */
+        .staking-portal { 
+            background: linear-gradient(145deg, rgba(20,20,20,1) 0%, rgba(40,40,40,1) 100%);
+            border-radius: 32px; 
+            padding: 40px; 
+            max-width: 500px; 
+            margin: 50px auto; 
+            border: 1px solid var(--gold);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .stats-box {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+        }
+
+        .val { color: var(--gold); font-weight: 700; font-size: 1.2rem; }
+        
+        input { 
+            width: 100%; padding: 16px; 
+            background: #000; 
+            border: 1px solid #333; 
+            color: #fff; 
+            border-radius: 14px; 
+            margin: 15px 0; 
+            font-size: 1.1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+
         /* Roadmap */
-        .roadmap-item { text-align: left; border-left: 2px solid var(--gold); padding-left: 20px; margin-bottom: 30px; position: relative; }
-        
-        @media (max-width: 768px) { .hero-content h1 { font-size: 2rem; } }
+        .roadmap-item { 
+            padding: 25px; 
+            background: var(--glass);
+            border-radius: 20px;
+            border-left: 4px solid var(--gold);
+            margin-bottom: 20px;
+        }
+
+        footer { border-top: 1px solid rgba(255,215,0,0.1); padding: 50px 0; opacity: 0.7; }
+
+        @media (max-width: 768px) { .hero h1 { font-size: 2.2rem; } }
     </style>
 </head>
 <body>
 
     <header class="header">
-        <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <p class="logo-text">AURUM FOX <span style="font-weight:100">DAO</span></p>
-            <button id="connectBtn" class="btn wallet-btn">CONNECT WALLET</button>
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <p class="logo-text"><i class="fas fa-shuttle-space"></i> AURUM FOX</p>
+            <button id="connectBtn" class="btn wallet-btn">
+                <i class="fas fa-wallet"></i> <span>Connect Wallet</span>
+            </button>
         </div>
     </header>
 
     <section class="hero">
         <div class="container">
-            <h1>Aurum Fox: Your Golden Luck on Solana</h1>
-            <p>Combine the cunning of the fox, the prosperity of gold, and the speed of Solana blockchain.</p>
-            <div style="margin-top: 30px;">
-                <a href="#swap-section" class="btn primary-btn">BUY AFOX</a>
-                <a href="#staking-section" class="btn wallet-btn" style="margin-left:10px;">STAKE NOW</a>
+            <h1>The Future of Luck <br> on Solana</h1>
+            <p style="font-size: 1.2rem; color: var(--text-dim); max-width: 700px; margin: 0 auto 30px;">
+                Harness the power of the Golden Fox. Secure, fast, and community-driven ecosystem for the next generation of DeFi.
+            </p>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <a href="#swap-section" class="btn primary-btn"><i class="fas fa-fire"></i> Buy AFOX</a>
+                <a href="#staking-section" class="btn wallet-btn">Explore Staking</a>
             </div>
         </div>
     </section>
 
-    <section class="section" id="tokenomics">
+    <section class="section">
         <div class="container">
-            <h2>Tokenomics</h2>
             <div class="grid">
                 <div class="card">
-                    <h3>Total Supply</h3>
-                    <p class="val" style="font-size: 1.5rem;">10,000,000 AFOX</p>
-                    <p>Mint & Freeze authority revoked. 100% Community owned.</p>
+                    <i class="fas fa-chart-pie"></i>
+                    <h3>10M Supply</h3>
+                    <p>Fixed supply. No minting. No inflation. 100% of tokens are in circulation and community hands.</p>
                 </div>
                 <div class="card">
+                    <i class="fas fa-shield-halved"></i>
+                    <h3>Security First</h3>
+                    <p>Liquidity burned, Freeze and Mint authorities revoked. Your assets are safe with Aurum Fox.</p>
+                </div>
+                <div class="card" style="text-align: left;">
+                    <i class="fas fa-code"></i>
                     <h3>Contract</h3>
-                    <p style="font-size: 0.8rem; word-break: break-all;">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</p>
-                    <button class="btn primary-btn" style="padding: 5px 15px; font-size: 0.7rem;">Copy Address</button>
+                    <p style="font-family: monospace; font-size: 0.8rem; background: #000; padding: 10px; border-radius: 8px;">GLkewtq8...uRAd</p>
+                    <button class="btn primary-btn" style="width:100%; margin-top:10px; justify-content: center;">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="section" id="staking-section" style="background: #161616;">
+    <section id="staking-section" style="background: #0c0c0c; padding: 100px 0;">
         <div class="container">
-            <h2>AlphaFox Staking Portal</h2>
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h2 style="font-size: 2.5rem; color: var(--gold);">AlphaFox Staking</h2>
+                <p style="color: var(--text-dim);">Earn passive rewards by holding AFOX</p>
+            </div>
+            
             <div class="staking-portal">
-                <div class="stats-row">
-                    <span>Your Balance:</span>
-                    <span id="user-balance" class="val">0 AFOX</span>
+                <div class="stats-box">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span><i class="fas fa-wallet" style="font-size: 1rem; margin:0 5px 0 0; display:inline;"></i> Balance:</span>
+                        <span id="user-balance" class="val">0 AFOX</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><i class="fas fa-lock" style="font-size: 1rem; margin:0 5px 0 0; display:inline;"></i> Staked:</span>
+                        <span id="staked-amount" class="val">0 AFOX</span>
+                    </div>
                 </div>
-                <div class="stats-row">
-                    <span>Total Staked:</span>
-                    <span id="staked-amount" class="val">0 AFOX</span>
-                </div>
+                
+                <label style="font-size: 0.8rem; color: var(--text-dim); margin-left: 5px;">Enter Amount</label>
                 <input type="number" id="stake-input" placeholder="0.00">
-                <button id="stakeBtn" class="btn primary-btn" style="width: 100%; margin-bottom: 10px;" disabled>STAKE TOKENS</button>
-                <button id="claimBtn" class="btn wallet-btn" style="width: 100%;" disabled>CLAIM REWARDS</button>
-                <p id="wallet-status" style="font-size: 12px; margin-top: 15px; color: #888;">Connect wallet to interact with staking</p>
+                
+                <button id="stakeBtn" class="btn primary-btn" style="width: 100%; margin-bottom: 12px; justify-content: center;" disabled>
+                    Stake AFOX
+                </button>
+                <button id="claimBtn" class="btn wallet-btn" style="width: 100%; justify-content: center;" disabled>
+                    Claim Rewards
+                </button>
             </div>
-        </div>
-    </section>
-
-    <section class="section" id="swap-section">
-        <div class="container">
-            <h2>Jupiter Instant Swap</h2>
-            <p>Exchange SOL to AFOX at the best market rates.</p>
-            <div id="jupiter-swap-widget"></div>
         </div>
     </section>
 
     <section class="section" id="roadmap">
         <div class="container">
-            <h2>Ecosystem Roadmap</h2>
-            <div class="grid" style="text-align: left;">
+            <h2 style="text-align: center; margin-bottom: 50px;">Roadmap</h2>
+            <div class="grid">
                 <div class="roadmap-item">
-                    <h3>Phase 1: Launch</h3>
-                    <p>Token creation, LP Burn, Community building, and Airdrops.</p>
+                    <h4 style="color: var(--gold); margin: 0;">PHASE 01</h4>
+                    <h3>Launch & Burn</h3>
+                    <p>Successful launch on Solana, burning LP, and establishing the core Fox community.</p>
+                </div>
+                <div class="roadmap-item" style="border-color: #fff;">
+                    <h4 style="color: var(--gold); margin: 0;">PHASE 02</h4>
+                    <h3>Utility & Staking</h3>
+                    <p>Release of the AlphaFox Staking Portal and initial marketing push.</p>
                 </div>
                 <div class="roadmap-item">
-                    <h3>Phase 2: Growth</h3>
-                    <p>Staking Portal (Live), CoinGecko/CMC listing, Influencer marketing.</p>
-                </div>
-                <div class="roadmap-item">
-                    <h3>Phase 3: Utility</h3>
-                    <p>NFT Collection launch, DAO Governance, NFC Physical Assets.</p>
+                    <h4 style="color: var(--gold); margin: 0;">PHASE 03</h4>
+                    <h3>Expansion</h3>
+                    <p>NFT Integration, DAO Governance, and Tier-1 Exchange listings.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer style="padding: 40px 0; text-align: center; border-top: 1px solid #333;">
-        <p>&copy; 2025 Aurum Fox Ecosystem. Built on Solana.</p>
+    <footer style="text-align: center;">
+        <div class="container">
+            <div style="margin-bottom: 20px; font-size: 1.5rem; gap: 20px; display: flex; justify-content: center;">
+                <a href="#" style="color: var(--gold);"><i class="fab fa-twitter"></i></a>
+                <a href="#" style="color: var(--gold);"><i class="fab fa-telegram"></i></a>
+                <a href="#" style="color: var(--gold);"><i class="fab fa-discord"></i></a>
+            </div>
+            <p>&copy; 2025 Aurum Fox Ecosystem. Powered by Solana.</p>
+        </div>
     </footer>
 
     <script>
-        /** КЛИЕНТСКАЯ ЛОГИКА SOLANA **/
-        const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
-        const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
-        let userPublicKey = null;
-
-        // Инициализация Jupiter Swap
-        function initJupiter() {
-            if (window.Jupiter) {
-                window.Jupiter.init({
-                    displayMode: "widget",
-                    containerId: "jupiter-swap-widget",
-                    endpoint: "https://api.mainnet-beta.solana.com",
-                    strictTokenList: false,
-                    formProps: {
-                        initialInputMint: "So11111111111111111111111111111111111111112",
-                        initialOutputMint: AFOX_MINT,
-                    },
-                });
-            }
-        }
-
-        // Подключение кошелька (Android Friendly)
-        async function handleConnect() {
-            const isPhantomInstalled = window.solana && window.solana.isPhantom;
-
-            if (isPhantomInstalled) {
-                try {
-                    const resp = await window.solana.connect();
-                    userPublicKey = resp.publicKey.toString();
-                    onSuccessConnect(userPublicKey);
-                } catch (err) {
-                    console.error("Connection rejected", err);
-                }
-            } else {
-                // Deep link для мобильных (открывает сайт внутри Phantom Browser)
-                const url = encodeURIComponent(window.location.href);
-                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
-            }
-        }
-
-        function onSuccessConnect(pubKey) {
-            const btn = document.getElementById('connectBtn');
-            btn.innerText = pubKey.substring(0, 4) + "..." + pubKey.slice(-4);
-            btn.classList.add('connected');
-            
-            // Активация кнопок
-            document.getElementById('stakeBtn').disabled = false;
-            document.getElementById('claimBtn').disabled = false;
-            document.getElementById('wallet-status').innerText = "Wallet Connected ✅";
-            
-            // Здесь можно добавить функцию fetchTokenBalance(pubKey);
-        }
-
-        // Заглушки для функций Staking
-        document.getElementById('stakeBtn').onclick = () => alert("Transaction sent to your wallet for approval!");
-        document.getElementById('claimBtn').onclick = () => alert("Searching for accrued rewards...");
-        document.getElementById('connectBtn').onclick = handleConnect;
-
-        // Запуск при загрузке
-        window.onload = () => {
-            initJupiter();
-            if (window.solana && window.solana.isPhantom) {
-                window.solana.connect({ onlyIfTrusted: true })
-                    .then(resp => onSuccessConnect(resp.publicKey.toString()))
-                    .catch(() => console.log("Manual connect required"));
-            }
-        };
+        // Твоя логика подключения кошелька и Jupiter...
     </script>
 </body>
 </html>
