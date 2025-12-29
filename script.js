@@ -695,10 +695,6 @@ function updateWalletDisplay(address) {
     }
 }
 
-
-/**
- * Handles changes to the wallet public key (connect/disconnect).
- */
 function handlePublicKeyChange(newPublicKey) {
     appState.walletPublicKey = newPublicKey;
     const address = newPublicKey ? newPublicKey.toBase58() : null;
@@ -706,19 +702,35 @@ function handlePublicKeyChange(newPublicKey) {
     updateWalletDisplay(address);
 
     if (newPublicKey) {
-        // MOCK: Handle initial state for MOCK DB and Balances
-        if (!MOCK_DB.staking[address]) {
-             MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0', stakeHistory: [] };
-             // --- УДАЛЕНА MOCK ЛОГИКА AFOX/SOL
-             persistMockData();
-        }
-
-        MOCK_DB.nfts.filter(n => n.owner === 'NO_WALLET_CONNECTED').forEach(n => n.owner = address);
-
         loadUserNFTs();
+        fetchUserStakingData();
         updateStakingAndBalanceUI();
         
-        fetchUserStakingData(); 
+        console.log("Wallet connected:", address);
+    } else {
+        appState.userBalances.SOL = BigInt(0);
+        appState.userBalances.AFOX = BigInt(0);
+        
+        appState.userStakingData = { 
+            stakedAmount: BigInt(0), 
+            rewards: BigInt(0), 
+            lockupEndTime: 0, 
+            poolIndex: 4, 
+            lending: BigInt(0) 
+        };
+
+        updateStakingAndBalanceUI();
+        appState.currentOpenNft = null;
+        
+        const fields = ['user-afox-balance', 'user-staked-amount', 'user-rewards-amount', 'staking-apr', 'lockup-period'];
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = (id.includes('amount') || id.includes('balance')) ? '0 AFOX' : '—';
+        });
+
+        showNotification('Wallet disconnected.', 'info');
+    }
+}
 
     } else {
         loadUserNFTs();
