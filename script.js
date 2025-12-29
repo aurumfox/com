@@ -558,52 +558,61 @@ function getSolanaTxnFeeReserve() {
 
 // =========================================================================================
 // --- WALLET & CONNECTION FUNCTIONS (Fully implemented) ---
-// =========================================================================================
+// ===========================
 
-async function connectWallet(adapter) {
+// Единая функция подключения
+async function connectWallet() {
     setLoadingState(true);
-
     try {
-        // 1. Ищем провайдер (Phantom) напрямую в окне, чтобы обойти конфликты адаптеров
+        // 1. Проверка наличия провайдера (Phantom)
         const provider = window?.phantom?.solana || window?.solana;
 
-        if (!provider) {
+        if (!provider || !provider.isPhantom) {
             const installUrl = 'https://phantom.app/';
-            showNotification(`Phantom wallet not found. <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
+            showNotification(`Phantom не найден. <a href="${installUrl}" target="_blank">Установить</a>`, 'warning', 10000);
             return;
         }
 
-        // 2. Устанавливаем соединение с сетью
+        // 2. Установка соединения с RPC
         appState.connection = await getRobustConnection();
+        appState.provider = provider;
 
-        // 3. ПРИНУДИТЕЛЬНАЯ СВЯЗКА (Критическое изменение)
-        // Мы не просто проверяем connected, мы вызываем connect(), 
-        // чтобы кошелек "проснулся" именно для твоего домена.
+        // 3. Запрос подключения (откроет окно кошелька)
         const resp = await provider.connect();
         
-        // Сохраняем провайдер в состояние приложения
-        appState.provider = provider;
+        // 4. Обработка адреса
+        handlePublicKeyChange(resp.publicKey);
         
-        // 4. Ручное обновление адреса, если слушатели (listeners) заблокированы сайтом
-        if (resp.publicKey) {
-            handlePublicKeyChange(resp.publicKey);
-            showNotification('Wallet connected successfully!', 'success');
+        // Регистрация слушателей (события disconnect и т.д.)
+        if (!appState.areProviderListenersAttached) {
+            provider.on('disconnect', () => handlePublicKeyChange(null));
+            provider.on('accountChanged', (publicKey) => {
+                if (publicKey) handlePublicKeyChange(publicKey);
+                else provider.disconnect();
+            });
+            appState.areProviderListenersAttached = true;
         }
 
-        registerProviderListeners();
+        showNotification('Кошелек успешно подключен!', 'success');
         closeAllPopups();
 
     } catch (error) {
-        console.error('Wallet connection failed:', error);
-        // Если пользователь закрыл окно кошелька - это не ошибка, просто сбрасываем состояние
+        console.error('Ошибка подключения:', error);
         if (error.code === 4001) {
-            showNotification('Connection cancelled by user', 'info');
+            showNotification('Подключение отклонено пользователем', 'info');
         } else {
-            showNotification(`Connection failed: ${error.message.substring(0, 50)}`, 'error');
+            showNotification(`Ошибка: ${error.message}`, 'error');
         }
     } finally {
         setLoadingState(false);
     }
+}
+
+// Исправленный обработчик кнопки
+async function simulateConnectButtonUpdate(btn) {
+    if (!btn || btn.classList.contains('connected')) return;
+    await connectWallet();
+}
 
  * Robust function to get a working RPC connection.
  */
