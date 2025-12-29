@@ -695,45 +695,6 @@ function updateWalletDisplay(address) {
     }
 }
 
-// Единый обработчик изменения состояния кошелька
-function handlePublicKeyChange(newPublicKey) {
-    appState.walletPublicKey = newPublicKey;
-    const address = newPublicKey ? newPublicKey.toBase58() : null;
-
-    // Обновляем UI кнопок и адресов
-    updateWalletDisplay(address);
-
-    if (newPublicKey) {
-        // Если кошелек подключен — загружаем данные параллельно
-        console.log("Wallet connected:", address);
-        
-        // Запускаем процессы обновления данных
-        loadUserNFTs();
-        fetchUserBalances().then(() => {
-            updateStakingUI();
-        });
-        
-        // Регистрируем слушателей, если еще не сделано
-        registerProviderListeners();
-    } else {
-        // Если кошелек отключен — обнуляем состояние
-        appState.userBalances.SOL = BigInt(0);
-        appState.userBalances.AFOX = BigInt(0);
-        appState.userStakingData = { 
-            stakedAmount: BigInt(0), 
-            rewards: BigInt(0), 
-            lockupEndTime: 0, 
-            poolIndex: 4, 
-            lending: BigInt(0) 
-        };
-
-        updateStakingUI(); // Визуально обнуляем стейкинг
-        updateSwapBalances(); // Обнуляем балансы в свапе
-        
-        console.log("Wallet disconnected");
-    }
-}
-
 // Функция физического подключения
 async function connectWallet() {
     try {
