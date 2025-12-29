@@ -2368,6 +2368,22 @@ async function init() {
 
 }
 // --------------------------------------------------------
+window.addEventListener('load', async () => {
+    const provider = window?.phantom?.solana;
+    
+    // Проверяем, разрешил ли пользователь подключаться автоматически
+    if (provider && provider.isPhantom) {
+        try {
+            // onlyIfTrusted: true — это магия. 
+            // Она подключит кошелек без всплывающего окна, если юзер уже давал разрешение.
+            const resp = await provider.connect({ onlyIfTrusted: true });
+            handlePublicKeyChange(resp.publicKey);
+        } catch (err) {
+            // Пользователь еще не подключался или запретил авто-вход
+            console.log("Автоматическое подключение не удалось");
+        }
+    }
+});
 
 // --- STARTUP AFTER DOM LOAD ---
 document.addEventListener('DOMContentLoaded', init);
