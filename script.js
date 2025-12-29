@@ -4,6 +4,8 @@
 // =========================================================================================
 // 🚨 ⚠️ ⚠️ REQUIRED CHANGES (Leave stubs for standalone operation) ⚠️ ⚠️ 🚨
 // =========================================================================================
+import { Buffer } from 'buffer';
+window.Buffer = Buffer;
 
 // 1. INSERT YOUR IDL (JSON schema of the staking program)
 // The IDL structure looks complete based on your transactions, but the 'accounts' definition
