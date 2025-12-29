@@ -560,53 +560,54 @@ function getSolanaTxnFeeReserve() {
 // --- WALLET & CONNECTION FUNCTIONS (Fully implemented) ---
 // ===========================
 
-// Единая функция подключения
 async function connectWallet() {
-    setLoadingState(true);
+    console.log("Попытка подключения...");
     try {
-        // 1. Проверка наличия провайдера (Phantom)
         const provider = window?.phantom?.solana || window?.solana;
 
-        if (!provider || !provider.isPhantom) {
-            const installUrl = 'https://phantom.app/';
-            showNotification(`Phantom не найден. <a href="${installUrl}" target="_blank">Установить</a>`, 'warning', 10000);
+        if (!provider) {
+            alert("Phantom не найден! Установи расширение.");
+            window.open('https://phantom.app/', '_blank');
             return;
         }
 
-        // 2. Установка соединения с RPC
-        appState.connection = await getRobustConnection();
-        appState.provider = provider;
-
-        // 3. Запрос подключения (откроет окно кошелька)
+        // 1. Ждем ответа от кошелька
         const resp = await provider.connect();
         
-        // 4. Обработка адреса
-        handlePublicKeyChange(resp.publicKey);
+        // 2. СРАЗУ сохраняем данные в память, чтобы они не потерялись
+        appState.provider = provider;
+        appState.walletPublicKey = resp.publicKey;
         
-        // Регистрация слушателей (события disconnect и т.д.)
+        console.log("Кошелек получен:", resp.publicKey.toBase58());
+
+        // 3. ПРИНУДИТЕЛЬНО вызываем обновление интерфейса
+        updateWalletDisplay(resp.publicKey.toBase58());
+        
+        // 4. Запускаем загрузку данных
+        if (!appState.connection) {
+            appState.connection = await getRobustConnection();
+        }
+        
+        await fetchUserBalances();
+        await updateStakingUI();
+
+        // 5. Устанавливаем слушатели, чтобы связь не рвалась
         if (!appState.areProviderListenersAttached) {
-            provider.on('disconnect', () => handlePublicKeyChange(null));
-            provider.on('accountChanged', (publicKey) => {
-                if (publicKey) handlePublicKeyChange(publicKey);
-                else provider.disconnect();
+            provider.on('accountChanged', (newPk) => {
+                if (newPk) handlePublicKeyChange(newPk);
+                else location.reload(); // Перезагрузка при выходе
             });
             appState.areProviderListenersAttached = true;
         }
 
-        showNotification('Кошелек успешно подключен!', 'success');
-        closeAllPopups();
+        showNotification('Подключено успешно!', 'success');
 
-    } catch (error) {
-        console.error('Ошибка подключения:', error);
-        if (error.code === 4001) {
-            showNotification('Подключение отклонено пользователем', 'info');
-        } else {
-            showNotification(`Ошибка: ${error.message}`, 'error');
-        }
-    } finally {
-        setLoadingState(false);
+    } catch (err) {
+        console.error("Ошибка на этапе коннекта:", err);
+        showNotification('Ошибка подключения: ' + err.message, 'error');
     }
 }
+
 
 // Исправленный обработчик кнопки
 async function simulateConnectButtonUpdate(btn) {
