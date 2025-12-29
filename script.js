@@ -2417,3 +2417,35 @@ window.addEventListener('load', async () => {
 
 // --- STARTUP AFTER DOM LOAD ---
 document.addEventListener('DOMContentLoaded', init);
+
+// --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ DOM ---
+document.addEventListener('DOMContentLoaded', init);
+
+// --- АВТО-ПОДКЛЮЧЕНИЕ КОШЕЛЬКА (СТАВИТЬ В САМЫЙ КОНЕЦ) ---
+window.addEventListener('load', async () => {
+    // Ждем инициализации провайдера
+    setTimeout(async () => {
+        const provider = window?.phantom?.solana || window?.solana;
+        
+        if (provider && provider.isPhantom) {
+            try {
+                // onlyIfTrusted: true — позволяет войти без всплывающего окна
+                const resp = await provider.connect({ onlyIfTrusted: true });
+                if (resp.publicKey) {
+                    console.log("Auto-reconnecting to Phantom...");
+                    // Важно: сначала устанавливаем провайдер и соединение
+                    appState.provider = provider;
+                    appState.connection = await getRobustConnection();
+                    
+                    // Вызываем обработчик, который обновит UI и балансы
+                    handlePublicKeyChange(resp.publicKey);
+                }
+            } catch (err) {
+                // Это не ошибка, просто пользователь еще не "доверяет" сайту
+                console.log("Silent connection skipped (not trusted).");
+                updateWalletDisplay(null);
+            }
+        }
+    }, 500); 
+});
+
