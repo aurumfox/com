@@ -104,9 +104,9 @@ const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F
 const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
 // -----------------------------------------------------------------------------------------
 
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
+const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';            
+const AFOX_MINT = 'BFpW4MDj8fENn1LpLFboGWjTc5hnsYhXUyptsS3LkjgL';
 
-const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd'; // Changed for greater MOCK uniqueness
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const JUPITER_RPC_ENDPOINT = 'https://rpc.jupag';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
@@ -1006,40 +1006,6 @@ async function handleStakeAfox() {
             STAKING_PROGRAM_ID
         );
 
-                // ====================================================================
-        // 🔗 БЛОК 1: АКТУАЛЬНАЯ КОНФИГУРАЦИЯ SOLANA PROGRAM (ОБНОВЛЕНО)
-        // ====================================================================
-        
-        // ID Вашей Программы Стейкинга
-        const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-        
-        // Адрес IDL (интерфейса программы)
-        const IDL_ADDRESS = new window.SolanaWeb3.PublicKey('GgyYeVAimWGTAXNuu8Eh2YhMNRao3WsfS9Sn12xE9TC2');
-
-        // Адрес минта токена AFOX
-        const AFOX_MINT = new window.SolanaWeb3.PublicKey('BFpW4MDj8fENn1LpLFboGWjTc5hnsYhXUyptsS3LkjgL');
-        const AFOX_DECIMALS = 6; 
-
-        // Сиды (Seeds) для генерации PDA (должны точно совпадать с Rust-кодом)
-        const STAKING_POOL_SEED = "alphafox_pool_pda"; // Для общего пула
-        const USER_STAKING_SEED = "alphafox_staking_pda"; // Для аккаунта пользователя
-
-        // --- КЛЮЧИ ИЗ ЛОГОВ ИНИЦИАЛИЗАЦИИ ---
-        
-        // Главный PDA пула (PoolState)
-        const POOL_STATE_ID = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
-
-        // Хранилище стейка (Pool Vault)
-        const AFOX_POOL_VAULT = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
-
-        // Хранилище наград (Rewards Vault)
-        const AFOX_REWARDS_VAULT = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
-
-        // Казначейство DAO
-        const DAO_TREASURY_VAULT = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
-
-        // Пустой IDL (Сюда нужно будет вставить содержимое JSON файла вашей программы)
-        const IDL = { "version": "0.1.0", "name": "alpha_fox_staking", "instructions": [], "accounts": [] }; 
         
         // ====================================================================
 
