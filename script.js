@@ -2358,53 +2358,33 @@ async function init() {
     updateWalletDisplay(null);
 
 }
-// --------------------------------------------------------
-window.addEventListener('load', async () => {
-    const provider = window?.phantom?.solana;
-    
-    // Проверяем, разрешил ли пользователь подключаться автоматически
-    if (provider && provider.isPhantom) {
-        try {
-            // onlyIfTrusted: true — это магия. 
-            // Она подключит кошелек без всплывающего окна, если юзер уже давал разрешение.
-            const resp = await provider.connect({ onlyIfTrusted: true });
-            handlePublicKeyChange(resp.publicKey);
-        } catch (err) {
-            // Пользователь еще не подключался или запретил авто-вход
-            console.log("Автоматическое подключение не удалось");
-        }
-    }
-});
 
-// --- STARTUP AFTER DOM LOAD ---
+// --- 1. ЗАПУСК ОСНОВНОЙ ЛОГИКИ (DOM) ---
 document.addEventListener('DOMContentLoaded', init);
 
-// --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ DOM ---
-document.addEventListener('DOMContentLoaded', init);
-
-// --- АВТО-ПОДКЛЮЧЕНИЕ КОШЕЛЬКА (СТАВИТЬ В САМЫЙ КОНЕЦ) ---
-window.addEventListener('load', async () => {
-    // Ждем инициализации провайдера
+// --- 2. АВТО-ВОССТАНОВЛЕНИЕ СЕССИИ (PHANTOM) ---
+window.addEventListener('load', () => {
+    // Небольшая задержка, чтобы расширение Phantom успело "проснуться"
     setTimeout(async () => {
         const provider = window?.phantom?.solana || window?.solana;
         
         if (provider && provider.isPhantom) {
             try {
-                // onlyIfTrusted: true — позволяет войти без всплывающего окна
+                // Пытаемся подключиться тихо (без окна), если сайт в белом списке
                 const resp = await provider.connect({ onlyIfTrusted: true });
+                
                 if (resp.publicKey) {
                     console.log("Auto-reconnecting to Phantom...");
-                    // Важно: сначала устанавливаем провайдер и соединение
                     appState.provider = provider;
-                    appState.connection = await getRobustConnection();
-                    
-                    // Вызываем обработчик, который обновит UI и балансы
+                    // Создаем соединение, если оно еще не создано в init
+                    if (!appState.connection) {
+                        appState.connection = await getRobustConnection();
+                    }
+                    // Обновляем UI
                     handlePublicKeyChange(resp.publicKey);
                 }
             } catch (err) {
-                // Это не ошибка, просто пользователь еще не "доверяет" сайту
-                console.log("Silent connection skipped (not trusted).");
-                updateWalletDisplay(null);
+                console.log("Silent connection skipped (not trusted yet).");
             }
         }
     }, 500); 
