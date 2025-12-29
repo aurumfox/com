@@ -560,16 +560,49 @@ function getSolanaTxnFeeReserve() {
 // --- WALLET & CONNECTION FUNCTIONS (Fully implemented) ---
 // =========================================================================================
 
-/**
- * Checks RPC connection status.
- */
-async function checkRpcHealth(connection) {
+async function connectWallet(adapter) {
+    setLoadingState(true);
+
     try {
-        await connection.getSlot('confirmed');
-        return true;
-    } catch (rpcError) {
-        console.error('RPC endpoint failed health check:', rpcError);
-        return false;
+        // 1. Ищем провайдер (Phantom) напрямую в окне, чтобы обойти конфликты адаптеров
+        const provider = window?.phantom?.solana || window?.solana;
+
+        if (!provider) {
+            const installUrl = 'https://phantom.app/';
+            showNotification(`Phantom wallet not found. <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
+            return;
+        }
+
+        // 2. Устанавливаем соединение с сетью
+        appState.connection = await getRobustConnection();
+
+        // 3. ПРИНУДИТЕЛЬНАЯ СВЯЗКА (Критическое изменение)
+        // Мы не просто проверяем connected, мы вызываем connect(), 
+        // чтобы кошелек "проснулся" именно для твоего домена.
+        const resp = await provider.connect();
+        
+        // Сохраняем провайдер в состояние приложения
+        appState.provider = provider;
+        
+        // 4. Ручное обновление адреса, если слушатели (listeners) заблокированы сайтом
+        if (resp.publicKey) {
+            handlePublicKeyChange(resp.publicKey);
+            showNotification('Wallet connected successfully!', 'success');
+        }
+
+        registerProviderListeners();
+        closeAllPopups();
+
+    } catch (error) {
+        console.error('Wallet connection failed:', error);
+        // Если пользователь закрыл окно кошелька - это не ошибка, просто сбрасываем состояние
+        if (error.code === 4001) {
+            showNotification('Connection cancelled by user', 'info');
+        } else {
+            showNotification(`Connection failed: ${error.message.substring(0, 50)}`, 'error');
+        }
+    } finally {
+        setLoadingState(false);
     }
 }
 
