@@ -637,62 +637,33 @@ async function getRobustConnection() {
     throw new Error('Both primary and backup RPC endpoints failed to connect or are unhealthy.');
 }
 
-// 🟢 Corrected and simplified function to update wallet UI
 function updateWalletDisplay(address) {
-    const connectBtns = uiElements.connectWalletButtons;
-    const walletDisplays = Array.from(document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]'));
-    const walletAddresses = uiElements.walletAddressDisplays;
-    const copyBtns = uiElements.copyButtons; 
-    
-    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
-
+    const connectBtns = document.querySelectorAll('.connect-wallet-btn');
+    const walletDisplays = document.querySelectorAll('.wallet-display');
+    const walletAddressSpans = document.querySelectorAll('.wallet-address-display');
 
     if (address) {
         const shortAddress = `${address.substring(0, 4)}...${address.slice(-4)}`;
         
-        // 2. STATE: CONNECTED
-        connectBtns.forEach(btn => {
-             btn.style.display = 'none';
-             btn.classList.add('connected'); 
-        });
-        walletDisplays.forEach(display => {
-            display.style.display = 'flex';
-            display.removeEventListener('click', disconnectWallet);
-            display.addEventListener('click', disconnectWallet);
-        });
-        walletAddresses.forEach(span => span.textContent = shortAddress);
-
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = address;
-            fullAddressDisplay.classList.add('connected');
-        }
+        // Скрываем кнопки "Connect"
+        connectBtns.forEach(btn => btn.style.display = 'none');
         
-        copyBtns.forEach(copyBtn => {
-             copyBtn.dataset.copyTarget = address; 
-             copyBtn.style.display = 'block';
+        // Показываем блок с адресом
+        walletDisplays.forEach(div => {
+            div.style.display = 'flex';
+            div.classList.add('connected');
         });
 
+        // Вставляем текст адреса
+        walletAddressSpans.forEach(span => {
+            span.textContent = shortAddress;
+        });
+        
+        console.log("Интерфейс обновлен для адреса:", address);
     } else {
-        // 3. STATE: DISCONNECTED
-        
-        connectBtns.forEach(btn => {
-             btn.style.display = 'block';
-             btn.classList.remove('connected');
-        });
-        walletDisplays.forEach(display => {
-            display.style.display = 'none';
-            display.removeEventListener('click', disconnectWallet);
-        });
-        
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = 'Not Connected';
-            fullAddressDisplay.classList.remove('connected');
-        }
-
-        copyBtns.forEach(copyBtn => {
-            delete copyBtn.dataset.copyTarget;
-            copyBtn.style.display = 'none';
-        });
+        // Если адрес null - возвращаем всё назад
+        connectBtns.forEach(btn => btn.style.display = 'block');
+        walletDisplays.forEach(div => div.style.display = 'none');
     }
 }
 
