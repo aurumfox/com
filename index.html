@@ -37,15 +37,7 @@
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> 
     <script src="https://js-de.sentry-cdn.com/93b9760a7026c9acedf1f14b044146c6.min.js" crossorigin="anonymous"></script>
     <script>
-        Sentry.init({
-            dsn: "https://93b9760a7026c9acedf1f14b044146c6@o4505059231873024.ingest.sentry.io/4505059233642496", 
-            integrations: [ new Sentry.BrowserTracing() ],
-            tracesSampleRate: 1.0, 
-            release: "aurum-fox-portal@1.0.0", 
-            environment: "production",
-        });
-        Sentry.setTag("context", "Web3 Solana Interface");
-    </script>
+    
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -105,91 +97,7 @@
             border: 3px solid #e74c3c;
             color: white;
         }
-        /* ================================================= */
-        /* !!! КОНЕЦ ОБНОВЛЕННЫХ СТИЛЕЙ КНОПКИ !!! */
-        /* ================================================= */
-        
-        .error { color: red; }
-        .primary-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #f39c12; 
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 700;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-top: 15px;
-        }
-        
-        .primary-btn:hover {
-            background-color: #e67e22; 
-        }
-        .web3-wallet-display {
-            font-size: 0.9em;
-            color: #ccc;
-            margin-top: 10px;
-            word-break: break-all;
-        }
-        .web3-wallet-display strong {
-            color: #fff;
-        }
-        
-        @media (max-width: 600px) {
-            .ai-diagnostic-tool__controls {
-                flex-direction: column;
-            }
-            .wallet-connect-btn {
-                width: 100%;
-                margin-top: 10px;
-            }
-        }
-        /* Стили для уведомлений */
-        .notification-success { background-color: #2ecc71; }
-        .notification-error { background-color: #e74c3c; }
-        .notification-info { background-color: #3498db; }
-        .notification-warning { background-color: #f39c12; }
-        
-        /* Стили для отображения подключенного кошелька в шапке */
-        .wallet-display {
-            display: flex;
-            align-items: center;
-            padding: 10px 18px; /* Обновлено для соответствия размеру кнопки */
-            border: 2px solid #FFB347; /* Золотой цвет для рамки */
-            background-color: #1a1a1a;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s, border-color 0.3s;
-            margin-left: 15px; 
-            font-size: 1em; /* Обновлено */
-        }
-        .wallet-display:hover {
-            background-color: #e74c3c; /* Для отключения */
-            border-color: #e74c3c;
-        }
-        .wallet-display .fox-icon {
-            font-size: 1.2em;
-            margin-right: 8px;
-        }
-        .wallet-display .wallet-address-text {
-            font-size: 0.9em;
-            font-weight: 600;
-        }
-        .wallet-display .copy-btn {
-            background: none;
-            border: none;
-            color: #FFB347; /* Золотой цвет для иконки копирования */
-            margin-left: 10px;
-            cursor: pointer;
-            font-size: 1em;
-        }
-        .wallet-display .copy-btn:hover {
-            color: white;
-        }
+    
     </style>
 </head>
 <body>
