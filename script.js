@@ -695,22 +695,30 @@ function updateWalletDisplay(address) {
     }
 }
 
+// Единый обработчик изменения состояния кошелька
 function handlePublicKeyChange(newPublicKey) {
     appState.walletPublicKey = newPublicKey;
     const address = newPublicKey ? newPublicKey.toBase58() : null;
 
+    // Обновляем UI кнопок и адресов
     updateWalletDisplay(address);
 
     if (newPublicKey) {
-        loadUserNFTs();
-        fetchUserStakingData();
-        updateStakingAndBalanceUI();
-        
+        // Если кошелек подключен — загружаем данные параллельно
         console.log("Wallet connected:", address);
+        
+        // Запускаем процессы обновления данных
+        loadUserNFTs();
+        fetchUserBalances().then(() => {
+            updateStakingUI();
+        });
+        
+        // Регистрируем слушателей, если еще не сделано
+        registerProviderListeners();
     } else {
+        // Если кошелек отключен — обнуляем состояние
         appState.userBalances.SOL = BigInt(0);
         appState.userBalances.AFOX = BigInt(0);
-        
         appState.userStakingData = { 
             stakedAmount: BigInt(0), 
             rewards: BigInt(0), 
@@ -719,34 +727,44 @@ function handlePublicKeyChange(newPublicKey) {
             lending: BigInt(0) 
         };
 
-        updateStakingAndBalanceUI();
-        appState.currentOpenNft = null;
+        updateStakingUI(); // Визуально обнуляем стейкинг
+        updateSwapBalances(); // Обнуляем балансы в свапе
         
-        const fields = ['user-afox-balance', 'user-staked-amount', 'user-rewards-amount', 'staking-apr', 'lockup-period'];
-        fields.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = (id.includes('amount') || id.includes('balance')) ? '0 AFOX' : '—';
-        });
-
-        showNotification('Wallet disconnected.', 'info');
+        console.log("Wallet disconnected");
     }
 }
 
-    } else {
-        loadUserNFTs();
-        appState.userBalances.SOL = BigInt(0);
-        appState.userBalances.AFOX = BigInt(0);
-        updateStakingAndBalanceUI();
-        appState.currentOpenNft = null;
-        showNotification('Wallet disconnected.', 'info');
+// Функция физического подключения
+async function connectWallet() {
+    try {
+        const provider = window?.phantom?.solana || window?.solana;
+
+        if (!provider || !provider.isPhantom) {
+            window.open('https://phantom.app/', '_blank');
+            showNotification('Please install Phantom Wallet', 'warning');
+            return;
+        }
+
+        // Подключаемся к провайдеру
+        const resp = await provider.connect();
+        appState.provider = provider;
         
-        if (document.getElementById('user-afox-balance')) document.getElementById('user-afox-balance').textContent = '0 AFOX';
-        if (document.getElementById('user-staked-amount')) document.getElementById('user-staked-amount').textContent = '0 AFOX';
-        if (document.getElementById('user-rewards-amount')) document.getElementById('user-rewards-amount').textContent = '0 AFOX';
-        if (document.getElementById('staking-apr')) document.getElementById('staking-apr').textContent = '—';
-        if (document.getElementById('lockup-period')) document.getElementById('lockup-period').textContent = '—';
+        // Устанавливаем RPC соединение, если его нет
+        if (!appState.connection) {
+            appState.connection = await getRobustConnection();
+        }
+
+        handlePublicKeyChange(resp.publicKey);
+        showNotification('Connected!', 'success');
+
+    } catch (err) {
+        console.error("Connection error:", err);
+        if (err.code === 4001) {
+            showNotification('Connection rejected by user', 'info');
+        }
     }
 }
+
 
 /**
  * Attaches event listeners to the wallet provider.
