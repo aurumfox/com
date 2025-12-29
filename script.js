@@ -753,61 +753,6 @@ function registerProviderListeners() {
 }
 
 /**
- * Connects the wallet using the provided adapter.
- * 🛑 ИСПРАВЛЕНА ЛОГИКА: Гарантирован вызов adapter.connect()
- */
-async function connectWallet(adapter) {
-    setLoadingState(true);
-
-    try {
-        const selectedAdapter = WALLETS.find(w => w.name === adapter.name);
-
-        if (adapter.name === 'Phantom' && !window.solana) {
-             const installUrl = 'https://phantom.app/';
-            showNotification(`Phantom wallet not found. Please install it: <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
-            setLoadingState(false); // Добавлено, чтобы разблокировать UI
-            return;
-        } else if (!selectedAdapter) {
-             showNotification(`Wallet adapter for ${adapter.name} not found.`, 'warning', 5000);
-             setLoadingState(false);
-             return;
-        }
-
-        appState.provider = selectedAdapter;
-        appState.connection = await getRobustConnection();
-
-        registerProviderListeners(); 
-        
-        // 🚨 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Пытаемся подключиться всегда.
-        // Это откроет паллету, если кошелек не подключен,
-        // или просто обновит состояние, если он уже подключен.
-        if (!appState.provider.connected) {
-             await appState.provider.connect();
-        }
-        
-        // В случае успеха handlePublicKeyChange будет вызван через listener 'connect'
-        // или сразу, если кошелек уже был подключен.
-        if (appState.provider.publicKey) {
-             handlePublicKeyChange(appState.provider.publicKey);
-        }
-
-        closeAllPopups();
-
-    } catch (error) {
-        console.error('Wallet connection failed:', error);
-        appState.provider = null;
-        appState.connection = null;
-        appState.walletPublicKey = null;
-        updateWalletDisplay(null); 
-        const message = error.message.includes('Both primary and backup') ? error.message : `Connection failed: ${error.message.substring(0, 70)}...`;
-        showNotification(message, 'error');
-        throw error;
-    } finally {
-        setLoadingState(false); // Важно: разблокировать UI здесь
-    }
-}
-
-/**
  * Fetches real balances from RPC (SOL and AFOX) and updates appState.userBalances.
  * 🟢 ИСПРАВЛЕНО: УДАЛЕНА ВСЯ MOCK-ЛОГИКА ДЛЯ AFOX И SOL.
  */
