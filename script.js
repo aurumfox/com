@@ -604,9 +604,7 @@ async function connectWallet(adapter) {
     } finally {
         setLoadingState(false);
     }
-}
 
-/**
  * Robust function to get a working RPC connection.
  */
 async function getRobustConnection() {
