@@ -2359,4 +2359,20 @@ window.addEventListener('load', () => {
         }
     }, 500); 
 });
+window.addEventListener('load', async () => {
+    // Проверяем, зашли ли мы через Deep Link (внутри Phantom)
+    const provider = window?.phantom?.solana || window?.solana;
+    
+    if (provider) {
+        // Небольшая задержка для стабильности на Android
+        setTimeout(async () => {
+            try {
+                // Пытаемся подключить кошелек автоматически
+                await provider.connect({ onlyIfTrusted: false }); 
+            } catch (e) {
+                console.log("Авто-коннект ожидает действия пользователя");
+            }
+        }, 1000);
+    }
+});
 
