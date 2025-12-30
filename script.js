@@ -92,18 +92,21 @@ const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addr
 // PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
 // =========================================================================================
 
-// --- CRITICAL POOL KEYS (ФИНАЛЬНЫЕ, ПОДТВЕРЖДЕННЫЕ АДРЕСА DEVNET) ---
-// 1. Адрес главного PDA пула (PoolState)
+// // 1. ID вашей программы (тот, что в DeclareID в Rust и после деплоя)
+const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
+
+// 2. Главный аккаунт настроек пула (PoolState)
 const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
 
-// 2. Хранилище стейка (Pool Vault)
+// 3. Кошелек-хранилище токенов AFOX (Pool Vault)
 const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
 
-// 3. Хранилище админ. комиссии (Admin Fee Vault)
+// 4. Кошелек-хранилище наград (Rewards Vault)
 const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
 
-// 4. КАЗНАЧЕЙСТВО DAO (DAO Treasury Vault) - ФИНАЛЬНЫЙ АДРЕС!
-const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
+// 5. Казначейство для штрафов и комиссий (DAO Treasury)
+const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C');
+
 // -----------------------------------------------------------------------------------------
 
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';            
