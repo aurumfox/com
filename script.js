@@ -2322,23 +2322,21 @@ async function init() {
         }
     }
 
-    updateWalletDisplay(appState.walletPublicKey?.toBase58() || null);
-}
-
-window.addEventListener('load', async () => {
-    // Проверяем, зашли ли мы через Deep Link (внутри Phantom)
+    updateWalletDisplay(appState.walletPublicKey?.toBase58() 
+                        
+// Как только страница загрузилась
+window.addEventListener('DOMContentLoaded', () => {
     const provider = window?.phantom?.solana || window?.solana;
     
+    // Если мы открылись ВНУТРИ Phantom, сразу просим коннект
     if (provider) {
-        // Небольшая задержка для стабильности на Android
         setTimeout(async () => {
             try {
-                // Пытаемся подключить кошелек автоматически
-                await provider.connect({ onlyIfTrusted: false }); 
+                // Пытаемся подключиться автоматически
+                await provider.connect({ onlyIfTrusted: false });
             } catch (e) {
-                console.log("Авто-коннект ожидает действия пользователя");
+                console.log("Ждем ручного нажатия кнопки");
             }
-        }, 1000);
+        }, 1500); // Даем 1.5 секунды на прогрузку интерфейса
     }
 });
-
