@@ -2328,37 +2328,6 @@ async function init() {
     updateWalletDisplay(appState.walletPublicKey?.toBase58() || null);
 }
 
-
-// --- 1. ЗАПУСК ОСНОВНОЙ ЛОГИКИ (DOM) ---
-document.addEventListener('DOMContentLoaded', init);
-
-// --- 2. АВТО-ВОССТАНОВЛЕНИЕ СЕССИИ (PHANTOM) ---
-window.addEventListener('load', () => {
-    // Небольшая задержка, чтобы расширение Phantom успело "проснуться"
-    setTimeout(async () => {
-        const provider = window?.phantom?.solana || window?.solana;
-        
-        if (provider && provider.isPhantom) {
-            try {
-                // Пытаемся подключиться тихо (без окна), если сайт в белом списке
-                const resp = await provider.connect({ onlyIfTrusted: true });
-                
-                if (resp.publicKey) {
-                    console.log("Auto-reconnecting to Phantom...");
-                    appState.provider = provider;
-                    // Создаем соединение, если оно еще не создано в init
-                    if (!appState.connection) {
-                        appState.connection = await getRobustConnection();
-                    }
-                    // Обновляем UI
-                    handlePublicKeyChange(resp.publicKey);
-                }
-            } catch (err) {
-                console.log("Silent connection skipped (not trusted yet).");
-            }
-        }
-    }, 500); 
-});
 window.addEventListener('load', async () => {
     // Проверяем, зашли ли мы через Deep Link (внутри Phantom)
     const provider = window?.phantom?.solana || window?.solana;
