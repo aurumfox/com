@@ -1,155 +1,53 @@
-// script.js - Fully implemented code for interacting with Solana with 100% Anchor integration.
-// Requires SolanaWeb3, Anchor, and Wallet Adapters libraries to be included in the HTML.
-
-// =========================================================================================
-// 🚨 ⚠️ ⚠️ REQUIRED CHANGES (Leave stubs for standalone operation) ⚠️ ⚠️ 🚨
-// =========================================================================================
 import { Buffer } from 'buffer';
 window.Buffer = Buffer;
 
-// 1. INSERT YOUR IDL (JSON schema of the staking program)
-// The IDL structure looks complete based on your transactions, but the 'accounts' definition
-// of 'PoolState' is missing and needed for real account fetches.
-// Assuming your Rust struct 'PoolState' contains no extra fields needed by the client here,
-// we rely on the instruction accounts only.
+// 1. IDL (JSON schema) - Оставляем как есть, это техническая часть для Anchor
 const STAKING_IDL = {
     version: "0.1.0",
     name: "alphafox_staking",
     instructions: [
-        {
-            name: "stake",
-            accounts: [
-                { name: "staker", isMut: true, isSigner: true },
-                { name: "userStakingAccount", isMut: true, isSigner: false },
-                { name: "tokenFrom", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false },
-                { name: "poolVault", isMut: true, isSigner: false },
-                { name: "tokenProgram", isMut: false, isSigner: false },
-                { name: "systemProgram", isMut: false, isSigner: false },
-            ],
-            args: [
-                { name: "amount", type: "u64" },
-                { name: "poolIndex", type: "u8" }
-            ],
-        },
-        {
-            name: "claimRewards",
-            accounts: [
-                { name: "staker", isMut: false, isSigner: true },
-                { name: "userStakingAccount", isMut: true, isSigner: false },
-                { name: "userRewardTokenAccount", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false },
-                { name: "rewardsVault", isMut: true, isSigner: false },
-                { name: "tokenProgram", isMut: false, isSigner: false },
-            ],
-            args: [],
-        },
-        {
-            name: "unstake",
-            accounts: [
-                { name: "staker", isMut: false, isSigner: true },
-                { name: "userStakingAccount", isMut: true, isSigner: false },
-                { name: "tokenTo", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false },
-                { name: "poolVault", isMut: true, isSigner: false },
-                { name: "daoTreasuryVault", isMut: true, isSigner: false },
-                { name: "tokenProgram", isMut: false, isSigner: false },
-            ],
-            args: [],
-        }
+        { name: "stake", accounts: [ { name: "staker", isMut: true, isSigner: true }, { name: "userStakingAccount", isMut: true, isSigner: false }, { name: "tokenFrom", isMut: true, isSigner: false }, { name: "poolState", isMut: false, isSigner: false }, { name: "poolVault", isMut: true, isSigner: false }, { name: "tokenProgram", isMut: false, isSigner: false }, { name: "systemProgram", isMut: false, isSigner: false } ], args: [ { name: "amount", type: "u64" }, { name: "poolIndex", type: "u8" } ] },
+        { name: "claimRewards", accounts: [ { name: "staker", isMut: false, isSigner: true }, { name: "userStakingAccount", isMut: true, isSigner: false }, { name: "userRewardTokenAccount", isMut: true, isSigner: false }, { name: "poolState", isMut: false, isSigner: false }, { name: "rewardsVault", isMut: true, isSigner: false }, { name: "tokenProgram", isMut: false, isSigner: false } ], args: [] },
+        { name: "unstake", accounts: [ { name: "staker", isMut: false, isSigner: true }, { name: "userStakingAccount", isMut: true, isSigner: false }, { name: "tokenTo", isMut: true, isSigner: false }, { name: "poolState", isMut: false, isSigner: false }, { name: "poolVault", isMut: true, isSigner: false }, { name: "daoTreasuryVault", isMut: true, isSigner: false }, { name: "tokenProgram", isMut: false, isSigner: false } ], args: [] }
     ],
-    accounts: [
-        // Account structure required for Anchor to deserialize (fetchUserStakingData)
-        {
-            name: "userStakingAccount",
-            type: {
-                kind: "struct",
-                fields: [
-                    { name: "staker", type: "publicKey" },
-                    { name: "poolId", type: "publicKey" },
-                    { name: "stakedAmount", type: "u64" },
-                    { name: "rewardsAmount", type: "u64" },
-                    { name: "lastStakeTime", type: "i64" },
-                    { name: "lockupEndTime", type: "i64" },
-                    { name: "poolIndex", type: "u8" },
-                    { name: "lending", type: "u64" },
-                ],
-            },
-        },
-        // IMPORTANT: If you need to fetch PoolState, its definition must be here too.
-        // Assuming fetchUserStakingData is enough for this UI.
-    ]
+    accounts: [ { name: "userStakingAccount", type: { kind: "struct", fields: [ { name: "staker", type: "publicKey" }, { name: "poolId", type: "publicKey" }, { name: "stakedAmount", type: "u64" }, { name: "rewardsAmount", type: "u64" }, { name: "lastStakeTime", type: "i64" }, { name: "lockupEndTime", type: "i64" }, { name: "poolIndex", type: "u8" }, { name: "lending", type: "u64" } ] } } ]
 };
 
-// 2. INSERT YOUR SEED (Keyword for the staking account PDA from your Rust program)
-// This is used for the User's PDA (UserStakingAccount)
 const STAKING_ACCOUNT_SEED = "alphafox_staking_pda";
+const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
 
-// 3. 🔑 SECURE CHANGES: Helius API Key removed, HELIUS_BASE_URL replaced with your Cloudflare Worker
-const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addresses/';
+// --- CONFIGURATION ---
+const NETWORK_STR = 'devnet'; 
+const RPC_ENDPOINT = 'https://api.devnet.solana.com';
+const JUPITER_RPC_ENDPOINT = RPC_ENDPOINT; // В Devnet используем один и тот же RPC
 
-// =========================================================================================
-// PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
-// =========================================================================================
-
-// --- CRITICAL POOL KEYS (DEVNET ТЕСТОВЫЕ АДРЕСА) ---
-// ⚠️ ВНИМАНИЕ: Эти адреса пулов (1-4) станут реальными только ПОСЛЕ запуска скрипта инициализации.
-// Пока оставляем старые или пустые, но Program ID и Mint уже верные!
-
-// 1. Адрес главного PDA пула (PoolState)
-const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
-
-// 2. Хранилище стейка (Pool Vault)
-const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
-
-// 3. Хранилище админ. комиссии (Admin Fee Vault)
-const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
-
-// 4. КАЗНАЧЕЙСТВО DAO (DAO Treasury Vault)
-const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
-// -----------------------------------------------------------------------------------------
-
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';            
-
-// ✅ ИСПРАВЛЕНО: Твой новый Mint ID токена из терминала (35dyS7...)
+// Твои данные из терминала
+const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
 const AFOX_MINT = '35dyS78g2XvJTKugFYxQq0U8zD6EKhr1n1CMa4nDT5xp'; 
-
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-// 🌐 СЕТЕВЫЕ НАСТРОЙКИ (DEVNET)
-const BACKUP_RPC_ENDPOINT = 'https://api.devnet.solana.com';
-const NETWORK = 'devnet';
+// PDA Пулов (Пока заглушки, их нужно будет обновить после инициализации!)
+const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
+const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
+const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
+const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
 
-const TXN_FEE_RESERVE_SOL = 0.005;
-const SECONDS_PER_DAY = 86400;
-
-// Pool Configurations (MUST MATCH RUST)
-const POOLS_CONFIG = [
-    { name: '7 Days', duration_days: 7, apr_rate: 100, vote_multiplier: 1 },
-    { name: '30 Days', duration_days: 30, apr_rate: 200, vote_multiplier: 2 },
-    { name: '60 Days', duration_days: 60, apr_rate: 350, vote_multiplier: 3 },
-    { name: '90 Days', duration_days: 90, apr_rate: 500, vote_multiplier: 4 },
-    { name: 'Flexible', duration_days: 0, apr_rate: 100, vote_multiplier: 1 },
-]; 
-
-const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
-
-// ✅ ИСПРАВЛЕНО: Твой новый Program ID после деплоя (ZiECmS...)
-const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
-
+// Системные константы
 const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbnPUb4A5L5EyrgFP1G8AtiT');
 const SYSTEM_PROGRAM_ID = window.SolanaWeb3.SystemProgram.programId;
 
+const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
 const TOKEN_MINT_ADDRESSES = {
     'SOL': new window.SolanaWeb3.PublicKey(SOL_MINT),
     'AFOX': AFOX_TOKEN_MINT_ADDRESS,
 };
 
-const AFOX_DECIMALS = 9; //
+const AFOX_DECIMALS = 9;
 const SOL_DECIMALS = 9;
 
-const NETWORK = window.SolanaWeb3.WalletAdapterNetwork.devnet;
+// Важно: берем значение из библиотеки
+const CURRENT_NETWORK = window.SolanaWeb3.WalletAdapterNetwork.Devnet; 
 
 // --- GLOBAL APP STATE & WALLET ADAPTERS ---
 const appState = {
