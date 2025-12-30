@@ -92,7 +92,10 @@ const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addr
 // PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
 // =========================================================================================
 
-// --- CRITICAL POOL KEYS (ФИНАЛЬНЫЕ, ПОДТВЕРЖДЕННЫЕ АДРЕСА DEVNET) ---
+// --- CRITICAL POOL KEYS (DEVNET ТЕСТОВЫЕ АДРЕСА) ---
+// ⚠️ ВНИМАНИЕ: Эти адреса пулов (1-4) станут реальными только ПОСЛЕ запуска скрипта инициализации.
+// Пока оставляем старые или пустые, но Program ID и Mint уже верные!
+
 // 1. Адрес главного PDA пула (PoolState)
 const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
 
@@ -102,32 +105,38 @@ const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5
 // 3. Хранилище админ. комиссии (Admin Fee Vault)
 const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
 
-// 4. КАЗНАЧЕЙСТВО DAO (DAO Treasury Vault) - ФИНАЛЬНЫЙ АДРЕС!
+// 4. КАЗНАЧЕЙСТВО DAO (DAO Treasury Vault)
 const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
 // -----------------------------------------------------------------------------------------
 
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';            
-const AFOX_MINT = 'BFpW4MDj8fENn1LpLFboGWjTc5hnsYhXUyptsS3LkjgL';
+
+// ✅ ИСПРАВЛЕНО: Твой новый Mint ID токена из терминала (35dyS7...)
+const AFOX_MINT = '35dyS78g2XvJTKugFYxQq0U8zD6EKhr1n1CMa4nDT5xp'; 
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
-const JUPITER_RPC_ENDPOINT = 'https://rpc.jupag';
-const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
-const TXN_FEE_RESERVE_SOL = 0.005;
-const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
 
-// Pool Configurations (MUST MATCH RUST) - Used for MOCK
+// 🌐 СЕТЕВЫЕ НАСТРОЙКИ (DEVNET)
+const BACKUP_RPC_ENDPOINT = 'https://api.devnet.solana.com';
+const NETWORK = 'devnet';
+
+const TXN_FEE_RESERVE_SOL = 0.005;
+const SECONDS_PER_DAY = 86400;
+
+// Pool Configurations (MUST MATCH RUST)
 const POOLS_CONFIG = [
-    { name: '7 Days', duration_days: 7, apr_rate: 100, vote_multiplier: 1 },  // Index 0
-    { name: '30 Days', duration_days: 30, apr_rate: 200, vote_multiplier: 2 }, // Index 1
-    { name: '60 Days', duration_days: 60, apr_rate: 350, vote_multiplier: 3 }, // Index 2
-    { name: '90 Days', duration_days: 90, apr_rate: 500, vote_multiplier: 4 }, // Index 3
-    { name: 'Flexible', duration_days: 0, apr_rate: 100, vote_multiplier: 1 }, // Index 4 (Default)
+    { name: '7 Days', duration_days: 7, apr_rate: 100, vote_multiplier: 1 },
+    { name: '30 Days', duration_days: 30, apr_rate: 200, vote_multiplier: 2 },
+    { name: '60 Days', duration_days: 60, apr_rate: 350, vote_multiplier: 3 },
+    { name: '90 Days', duration_days: 90, apr_rate: 500, vote_multiplier: 4 },
+    { name: 'Flexible', duration_days: 0, apr_rate: 100, vote_multiplier: 1 },
 ]; 
 
 const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
-// 🔑 INTEGRATED PROGRAM ID: ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH
+
+// ✅ ИСПРАВЛЕНО: Твой новый Program ID после деплоя (ZiECmS...)
 const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
-const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
+
 const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbnPUb4A5L5EyrgFP1G8AtiT');
 const SYSTEM_PROGRAM_ID = window.SolanaWeb3.SystemProgram.programId;
@@ -136,9 +145,11 @@ const TOKEN_MINT_ADDRESSES = {
     'SOL': new window.SolanaWeb3.PublicKey(SOL_MINT),
     'AFOX': AFOX_TOKEN_MINT_ADDRESS,
 };
-const AFOX_DECIMALS = 6;
+
+const AFOX_DECIMALS = 9; //
 const SOL_DECIMALS = 9;
-const NETWORK = window.SolanaWeb3.WalletAdapterNetwork.Mainnet;
+
+const NETWORK = window.SolanaWeb3.WalletAdapterNetwork.devnet;
 
 // --- GLOBAL APP STATE & WALLET ADAPTERS ---
 const appState = {
