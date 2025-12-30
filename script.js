@@ -2280,41 +2280,54 @@ function populatePoolSelector() {
     }
 }
 
-// --- MAIN INITIALIZATION FUNCTION ---
-/**
- * Main initialization function.
- */
 async function init() {
-    // 🛑 ИСПРАВЛЕНО: Увеличен таймаут проверки зависимостей
-    if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined' || typeof window.SolanaWalletAdapterPhantom === 'undefined') {
-        setTimeout(init, 100); 
+    console.log("Initializing AlphaFox dApp...");
+
+    // Проверка наличия библиотек с повтором
+    const checkDeps = () => {
+        return (
+            window.SolanaWeb3 && 
+            window.Anchor && 
+            (window.SolanaWalletAdapterPhantom || window.phantom)
+        );
+    };
+
+    if (!checkDeps()) {
+        console.log("Waiting for libraries to load...");
+        setTimeout(init, 200); 
         return;
     }
 
     cacheUIElements();
     populatePoolSelector();
-    
     setupHamburgerMenu(); 
-    
     initEventListeners();
-    initializeJupiterTerminal();
-
-    // Initial data load
-    loadAnnouncements();
-    loadGames();
-    loadUserNFTs();
-
+    
+    // Инициализация соединения
     try {
         appState.connection = await getRobustConnection();
+        console.log("Solana Connection Established");
     } catch (e) {
-        console.warn(e.message);
-        showNotification("Warning: Failed to connect to Solana RPC on startup.", 'warning', 7000);
+        console.error("Connection failed:", e);
     }
-    
-    updateStakingUI();
-    updateWalletDisplay(null);
 
+    // Авто-коннект если уже доверяем
+    const provider = window?.phantom?.solana || window?.solana;
+    if (provider?.isPhantom) {
+        try {
+            const resp = await provider.connect({ onlyIfTrusted: true });
+            if (resp.publicKey) {
+                appState.provider = provider;
+                handlePublicKeyChange(resp.publicKey);
+            }
+        } catch (err) {
+            // Не залогинены — это нормально
+        }
+    }
+
+    updateWalletDisplay(appState.walletPublicKey?.toBase58() || null);
 }
+
 
 // --- 1. ЗАПУСК ОСНОВНОЙ ЛОГИКИ (DOM) ---
 document.addEventListener('DOMContentLoaded', init);
