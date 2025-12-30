@@ -653,36 +653,44 @@ function updateWalletDisplay(address) {
 }
 
 async function connectWallet() {
+    const dappUrl = "https://aurumfox.github.io/com/"; 
+    const encodedUrl = encodeURIComponent(dappUrl);
+    
+    // Пытаемся найти провайдер
     const provider = window?.phantom?.solana || window?.solana;
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-    const dappUrl = "https://aurumfox.github.io/com/"; // Ваш сайт
 
-    // Если это мобилка и мы НЕ внутри Phantom
     if (!provider && isMobile) {
-        const encodedUrl = encodeURIComponent(dappUrl);
-        const deepLink = `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedUrl}`;
+        // Пробуем альтернативный формат ссылки v1
+        const deepLink = `https://phantom.app/ul/v1/browse/${encodedUrl}?ref=${encodedUrl}`;
         
-        console.log("Перенаправление в Phantom App...");
+        console.log("Redirecting to Phantom via v1 link...");
         window.location.href = deepLink;
+
+        // Резервный вариант: если через 2 секунды ничего не случилось, пробуем обычную ссылку
+        setTimeout(() => {
+            if (document.hasFocus()) { // Если мы всё еще в браузере
+                 window.location.href = `phantom://browse/${encodedUrl}`;
+            }
+        }, 2000);
         return;
     }
 
-    // Если мы в Phantom или на ПК
     if (provider) {
         try {
             const resp = await provider.connect();
-            console.log("Подключено:", resp.publicKey.toString());
-            // Здесь вызывайте вашу функцию обновления интерфейса
+            console.log("Connected:", resp.publicKey.toString());
             if (typeof updateWalletDisplay === 'function') {
                 updateWalletDisplay(resp.publicKey.toBase58());
             }
         } catch (err) {
-            console.error("Ошибка подключения:", err);
+            console.error("User rejected:", err);
         }
     } else {
-        alert("Пожалуйста, установите кошелек Phantom на ваш компьютер.");
+        window.open('https://phantom.app/', '_blank');
     }
 }
+
 
 /**
  * Attaches event listeners to the wallet provider.
