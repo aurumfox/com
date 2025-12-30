@@ -653,40 +653,45 @@ function updateWalletDisplay(address) {
 }
 
 async function connectWallet() {
-    const dappUrl = "https://aurumfox.github.io/com/"; 
-    const encodedUrl = encodeURIComponent(dappUrl);
+    const siteUrl = "https://aurumfox.github.io/com/";
+    const encodedUrl = encodeURIComponent(siteUrl);
     
-    // Пытаемся найти провайдер
     const provider = window?.phantom?.solana || window?.solana;
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
+    // Логика для мобильных устройств
     if (!provider && isMobile) {
-        // Пробуем альтернативный формат ссылки v1
-        const deepLink = `https://phantom.app/ul/v1/browse/${encodedUrl}?ref=${encodedUrl}`;
+        console.log("Мобильный браузер. Пытаемся открыть Phantom...");
         
-        console.log("Redirecting to Phantom via v1 link...");
+        // Попытка №1: Официальный Deep Link
+        const deepLink = `https://phantom.app/ul/v1/browse/${encodedUrl}?ref=${encodedUrl}`;
         window.location.href = deepLink;
 
-        // Резервный вариант: если через 2 секунды ничего не случилось, пробуем обычную ссылку
+        // Попытка №2: Если через 1 секунду мы всё еще на этой странице (не перебросило)
+        // Пробуем прямой протокол приложения
         setTimeout(() => {
-            if (document.hasFocus()) { // Если мы всё еще в браузере
-                 window.location.href = `phantom://browse/${encodedUrl}`;
+            if (document.hasFocus()) { 
+                console.log("Первая попытка не удалась, пробуем прямой протокол...");
+                window.location.href = `phantom://browse/${encodedUrl}`;
             }
-        }, 2000);
+        }, 1200);
         return;
     }
 
+    // Логика для ПК или если мы уже внутри Phantom
     if (provider) {
         try {
             const resp = await provider.connect();
-            console.log("Connected:", resp.publicKey.toString());
+            console.log("Успешное подключение:", resp.publicKey.toString());
+            // Вызываем вашу функцию обновления баланса/адреса
             if (typeof updateWalletDisplay === 'function') {
                 updateWalletDisplay(resp.publicKey.toBase58());
             }
         } catch (err) {
-            console.error("User rejected:", err);
+            console.error("Пользователь отменил подключение:", err);
         }
     } else {
+        // Если это компьютер и нет расширения
         window.open('https://phantom.app/', '_blank');
     }
 }
