@@ -653,57 +653,64 @@ function updateWalletDisplay(address) {
 }
 
 async function connectWallet() {
-    // 1. Ссылка должна быть БЕЗ ошибок и лишних символов
-    const dappUrl = "https://aurumfox.github.io/com/"; 
-    const encodedUrl = encodeURIComponent(dappUrl);
-    
+    const siteUrl = "https://aurumfox.github.io/com/";
+    const encodedUrl = encodeURIComponent(siteUrl);
+
+    // Проверяем, есть ли кошелек в браузере
     const provider = window?.phantom?.solana || window?.solana;
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    // 2. Если мы в обычном браузере (Chrome/TG/Opera)
+    // ЕСЛИ МЫ В ОБЫЧНОМ БРАУЗЕРЕ (Chrome, Samsung, TG)
     if (!provider && isMobile) {
-        // ВНИМАНИЕ: Это самый точный формат ссылки для Android на 2024-2025 год
-        // Мы добавляем пустые параметры dapps, чтобы заставить Phantom включить режим браузера
-        const deepLink = `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedUrl}`;
+        console.log("Запуск режима 'Phantom Browser'...");
 
-        // Трюк №1: Открываем через скрытую ссылку (это работает лучше на Android)
-        const link = document.createElement('a');
-        link.href = deepLink;
-        link.rel = 'noopener noreferrer';
-        link.click();
-
-        // Трюк №2: Если через 1.5 секунды мы всё еще тут — пробуем "силовой" метод
-        setTimeout(() => {
-            if (document.hasFocus()) {
-                window.location.replace(`phantom://browse/${encodedUrl}`);
-            }
-        }, 1500);
+        // Метод 1: Прямой вызов браузера (самый надежный для новых Android)
+        const link = `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedUrl}`;
+        
+        // Трюк: создаем невидимую кнопку и "кликаем" по ней программно
+        const a = document.createElement('a');
+        a.href = link;
+        a.onclick = (e) => {
+            // Если через 1 секунду мы еще тут, пробуем запасной путь
+            setTimeout(() => {
+                window.location.href = `phantom://browse/${encodedUrl}`;
+            }, 1000);
+        };
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         return;
     }
 
-    // 3. Если мы УЖЕ ВНУТРИ Phantom
+    // ЕСЛИ МЫ УЖЕ ВНУТРИ PHANTOM (или на ПК)
     if (provider) {
         try {
-            // Запрашиваем коннект
+            console.log("Попытка прямого подключения...");
             const resp = await provider.connect();
             
-            // Если успех — сохраняем и обновляем
+            // Сохраняем данные
             appState.walletPublicKey = resp.publicKey;
             appState.provider = provider;
-            
+
+            // Обновляем UI (ваша функция)
             if (typeof updateWalletDisplay === 'function') {
                 updateWalletDisplay(resp.publicKey.toBase58());
             }
-            alert("Подключено: " + resp.publicKey.toString().substring(0, 6) + "...");
             
+            alert("Успешно подключено!");
         } catch (err) {
             console.error("Ошибка:", err);
-            alert("Вы отклонили запрос в кошельке");
+            // Если пользователь нажал "отмена" в кошельке
+            if (err.code === 4001) {
+                alert("Пожалуйста, подтвердите подключение в кошельке.");
+            }
         }
     } else {
-        alert("Установите расширение Phantom на ПК");
+        // Если это компьютер
+        window.open('https://phantom.app/', '_blank');
     }
 }
+
 
  * Fetches real balances from RPC (SOL and AFOX) and updates appState.userBalances.
  * 🟢 ИСПРАВЛЕНО: УДАЛЕНА ВСЯ MOCK-ЛОГИКА ДЛЯ AFOX И SOL.
