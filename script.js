@@ -557,48 +557,53 @@ function getSolanaTxnFeeReserve() {
 }
 
 // =========================================================================================
-/**
- * Core logic triggered whenever a wallet connects, changes, or disconnects.
- */
-async function handlePublicKeyChange(publicKey) {
-    if (publicKey) {
-        appState.walletPublicKey = publicKey;
-        const address = publicKey.toBase58();
-        
-        console.log("Wallet Connected:", address);
-        
-        // Update UI state
-        updateWalletDisplay(address);
-        registerProviderListeners();
-        
-        // Fetch Real Data
-        try {
-            await fetchUserBalances();
-            await fetchUserStakingData();
-            await updateStakingUI();
-            loadUserNFTs();
-            loadMarketplaceNFTs();
-            updateSwapBalances();
-        } catch (err) {
-            console.error("Error refreshing data for new wallet:", err);
+// --- WALLET & CONNECTION FUNCTIONS (Fully implemented) ---
+// =========================================================================================
+
+async function connectWallet(adapter) {
+    setLoadingState(true);
+
+    try {
+        // 1. Ищем провайдер (Phantom) напрямую в окне, чтобы обойти конфликты адаптеров
+        const provider = window?.phantom?.solana || window?.solana;
+
+        if (!provider) {
+            const installUrl = 'https://phantom.app/';
+            showNotification(`Phantom wallet not found. <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
+            return;
         }
-    } else {
-        // Reset State
-        appState.walletPublicKey = null;
-        appState.userBalances = { SOL: BigInt(0), AFOX: BigInt(0) };
-        updateWalletDisplay(null);
-        await updateStakingUI();
-        loadUserNFTs();
+
+        // 2. Устанавливаем соединение с сетью
+        appState.connection = await getRobustConnection();
+
+        // 3. ПРИНУДИТЕЛЬНАЯ СВЯЗКА (Критическое изменение)
+        // Мы не просто проверяем connected, мы вызываем connect(), 
+        // чтобы кошелек "проснулся" именно для твоего домена.
+        const resp = await provider.connect();
+        
+        // Сохраняем провайдер в состояние приложения
+        appState.provider = provider;
+        
+        // 4. Ручное обновление адреса, если слушатели (listeners) заблокированы сайтом
+        if (resp.publicKey) {
+            handlePublicKeyChange(resp.publicKey);
+            showNotification('Wallet connected successfully!', 'success');
+        }
+
+        registerProviderListeners();
+        closeAllPopups();
+
+    } catch (error) {
+        console.error('Wallet connection failed:', error);
+        // Если пользователь закрыл окно кошелька - это не ошибка, просто сбрасываем состояние
+        if (error.code === 4001) {
+            showNotification('Connection cancelled by user', 'info');
+        } else {
+            showNotification(`Connection failed: ${error.message.substring(0, 50)}`, 'error');
+        }
+    } finally {
+        setLoadingState(false);
     }
-}
-
-
-
-// Исправленный обработчик кнопки
-async function simulateConnectButtonUpdate(btn) {
-    if (!btn || btn.classList.contains('connected')) return;
-    await connectWallet();
-}
 
  * Robust function to get a working RPC connection.
  */
@@ -622,82 +627,178 @@ async function getRobustConnection() {
     throw new Error('Both primary and backup RPC endpoints failed to connect or are unhealthy.');
 }
 
+// 🟢 Corrected and simplified function to update wallet UI
 function updateWalletDisplay(address) {
-    const connectBtns = document.querySelectorAll('.connect-wallet-btn');
-    const walletDisplays = document.querySelectorAll('.wallet-display');
-    const walletAddressSpans = document.querySelectorAll('.wallet-address-display');
+    const connectBtns = uiElements.connectWalletButtons;
+    const walletDisplays = Array.from(document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]'));
+    const walletAddresses = uiElements.walletAddressDisplays;
+    const copyBtns = uiElements.copyButtons; 
+    
+    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
+
 
     if (address) {
         const shortAddress = `${address.substring(0, 4)}...${address.slice(-4)}`;
         
-        // Скрываем кнопки "Connect"
-        connectBtns.forEach(btn => btn.style.display = 'none');
-        
-        // Показываем блок с адресом
-        walletDisplays.forEach(div => {
-            div.style.display = 'flex';
-            div.classList.add('connected');
+        // 2. STATE: CONNECTED
+        connectBtns.forEach(btn => {
+             btn.style.display = 'none';
+             btn.classList.add('connected'); 
         });
-
-        // Вставляем текст адреса
-        walletAddressSpans.forEach(span => {
-            span.textContent = shortAddress;
+        walletDisplays.forEach(display => {
+            display.style.display = 'flex';
+            display.removeEventListener('click', disconnectWallet);
+            display.addEventListener('click', disconnectWallet);
         });
-        
-        console.log("Интерфейс обновлен для адреса:", address);
-    } else {
-        // Если адрес null - возвращаем всё назад
-        connectBtns.forEach(btn => btn.style.display = 'block');
-        walletDisplays.forEach(div => div.style.display = 'none');
-    }
-}
+        walletAddresses.forEach(span => span.textContent = shortAddress);
 
-async function connectWallet() {
-    // Твоя прямая ссылка (обязательно с https://)
-    const mySite = "https://aurumfox.github.io/com/";
-    const encodedSite = encodeURIComponent(mySite);
-
-    // Ссылка-команда: "Фантом, открой внутри себя этот сайт"
-    const phantomAction = `https://phantom.app/ul/browse/${encodedSite}?ref=${encodedSite}`;
-
-    // Проверяем, где мы находимся
-    const provider = window?.phantom?.solana || window?.solana;
-    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-
-    if (isMobile && !provider) {
-        // Если мы в Chrome - ПРИНУДИТЕЛЬНО выталкиваем пользователя в Phantom
-        console.log("Переход в браузер Phantom...");
-        
-        // Используем replace, чтобы Chrome не держал страницу
-        window.location.replace(phantomAction);
-        
-        // Запасной вариант для старых Android, если первый не сработал через 1 сек
-        setTimeout(() => {
-            window.location.href = `phantom://browse/${encodedSite}`;
-        }, 1000);
-        return;
-    }
-
-    // Если мы уже ВНУТРИ Phantom или на ПК
-    if (provider) {
-        try {
-            const resp = await provider.connect();
-            appState.walletPublicKey = resp.publicKey;
-            appState.provider = provider;
-            
-            if (typeof updateWalletDisplay === 'function') {
-                updateWalletDisplay(resp.publicKey.toBase58());
-            }
-            console.log("Успех! Кошелек видит сайт.");
-        } catch (err) {
-            console.error("Ошибка коннекта:", err);
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = address;
+            fullAddressDisplay.classList.add('connected');
         }
+        
+        copyBtns.forEach(copyBtn => {
+             copyBtn.dataset.copyTarget = address; 
+             copyBtn.style.display = 'block';
+        });
+
     } else {
-        window.open("https://phantom.app/", "_blank");
+        // 3. STATE: DISCONNECTED
+        
+        connectBtns.forEach(btn => {
+             btn.style.display = 'block';
+             btn.classList.remove('connected');
+        });
+        walletDisplays.forEach(display => {
+            display.style.display = 'none';
+            display.removeEventListener('click', disconnectWallet);
+        });
+        
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = 'Not Connected';
+            fullAddressDisplay.classList.remove('connected');
+        }
+
+        copyBtns.forEach(copyBtn => {
+            delete copyBtn.dataset.copyTarget;
+            copyBtn.style.display = 'none';
+        });
     }
 }
 
 
+/**
+ * Handles changes to the wallet public key (connect/disconnect).
+ */
+function handlePublicKeyChange(newPublicKey) {
+    appState.walletPublicKey = newPublicKey;
+    const address = newPublicKey ? newPublicKey.toBase58() : null;
+
+    updateWalletDisplay(address);
+
+    if (newPublicKey) {
+        // MOCK: Handle initial state for MOCK DB and Balances
+        if (!MOCK_DB.staking[address]) {
+             MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0', stakeHistory: [] };
+             // --- УДАЛЕНА MOCK ЛОГИКА AFOX/SOL
+             persistMockData();
+        }
+
+        MOCK_DB.nfts.filter(n => n.owner === 'NO_WALLET_CONNECTED').forEach(n => n.owner = address);
+
+        loadUserNFTs();
+        updateStakingAndBalanceUI();
+        
+        fetchUserStakingData(); 
+
+    } else {
+        loadUserNFTs();
+        appState.userBalances.SOL = BigInt(0);
+        appState.userBalances.AFOX = BigInt(0);
+        updateStakingAndBalanceUI();
+        appState.currentOpenNft = null;
+        showNotification('Wallet disconnected.', 'info');
+        
+        if (document.getElementById('user-afox-balance')) document.getElementById('user-afox-balance').textContent = '0 AFOX';
+        if (document.getElementById('user-staked-amount')) document.getElementById('user-staked-amount').textContent = '0 AFOX';
+        if (document.getElementById('user-rewards-amount')) document.getElementById('user-rewards-amount').textContent = '0 AFOX';
+        if (document.getElementById('staking-apr')) document.getElementById('staking-apr').textContent = '—';
+        if (document.getElementById('lockup-period')) document.getElementById('lockup-period').textContent = '—';
+    }
+}
+
+/**
+ * Attaches event listeners to the wallet provider.
+ */
+function registerProviderListeners() {
+    if (appState.provider && !appState.areProviderListenersAttached) {
+        appState.provider.on('connect', () => {
+            if (appState.provider.publicKey) {
+                handlePublicKeyChange(appState.provider.publicKey);
+                showNotification('Wallet successfully connected! 🦊', 'success');
+            }
+        });
+        appState.provider.on('disconnect', () => handlePublicKeyChange(null));
+        appState.areProviderListenersAttached = true;
+    }
+}
+
+/**
+ * Connects the wallet using the provided adapter.
+ * 🛑 ИСПРАВЛЕНА ЛОГИКА: Гарантирован вызов adapter.connect()
+ */
+async function connectWallet(adapter) {
+    setLoadingState(true);
+
+    try {
+        const selectedAdapter = WALLETS.find(w => w.name === adapter.name);
+
+        if (adapter.name === 'Phantom' && !window.solana) {
+             const installUrl = 'https://phantom.app/';
+            showNotification(`Phantom wallet not found. Please install it: <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
+            setLoadingState(false); // Добавлено, чтобы разблокировать UI
+            return;
+        } else if (!selectedAdapter) {
+             showNotification(`Wallet adapter for ${adapter.name} not found.`, 'warning', 5000);
+             setLoadingState(false);
+             return;
+        }
+
+        appState.provider = selectedAdapter;
+        appState.connection = await getRobustConnection();
+
+        registerProviderListeners(); 
+        
+        // 🚨 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Пытаемся подключиться всегда.
+        // Это откроет паллету, если кошелек не подключен,
+        // или просто обновит состояние, если он уже подключен.
+        if (!appState.provider.connected) {
+             await appState.provider.connect();
+        }
+        
+        // В случае успеха handlePublicKeyChange будет вызван через listener 'connect'
+        // или сразу, если кошелек уже был подключен.
+        if (appState.provider.publicKey) {
+             handlePublicKeyChange(appState.provider.publicKey);
+        }
+
+        closeAllPopups();
+
+    } catch (error) {
+        console.error('Wallet connection failed:', error);
+        appState.provider = null;
+        appState.connection = null;
+        appState.walletPublicKey = null;
+        updateWalletDisplay(null); 
+        const message = error.message.includes('Both primary and backup') ? error.message : `Connection failed: ${error.message.substring(0, 70)}...`;
+        showNotification(message, 'error');
+        throw error;
+    } finally {
+        setLoadingState(false); // Важно: разблокировать UI здесь
+    }
+}
+
+/**
  * Fetches real balances from RPC (SOL and AFOX) and updates appState.userBalances.
  * 🟢 ИСПРАВЛЕНО: УДАЛЕНА ВСЯ MOCK-ЛОГИКА ДЛЯ AFOX И SOL.
  */
@@ -2277,66 +2378,42 @@ function populatePoolSelector() {
     }
 }
 
+// --- MAIN INITIALIZATION FUNCTION ---
+/**
+ * Main initialization function.
+ */
 async function init() {
-    console.log("Initializing AlphaFox dApp...");
-
-    // Проверка наличия библиотек с повтором
-    const checkDeps = () => {
-        return (
-            window.SolanaWeb3 && 
-            window.Anchor && 
-            (window.SolanaWalletAdapterPhantom || window.phantom)
-        );
-    };
-
-    if (!checkDeps()) {
-        console.log("Waiting for libraries to load...");
-        setTimeout(init, 200); 
+    // 🛑 ИСПРАВЛЕНО: Увеличен таймаут проверки зависимостей
+    if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined' || typeof window.SolanaWalletAdapterPhantom === 'undefined') {
+        setTimeout(init, 100); 
         return;
     }
 
     cacheUIElements();
     populatePoolSelector();
-    setupHamburgerMenu(); 
-    initEventListeners();
     
-    // Инициализация соединения
+    setupHamburgerMenu(); 
+    
+    initEventListeners();
+    initializeJupiterTerminal();
+
+    // Initial data load
+    loadAnnouncements();
+    loadGames();
+    loadUserNFTs();
+
     try {
         appState.connection = await getRobustConnection();
-        console.log("Solana Connection Established");
     } catch (e) {
-        console.error("Connection failed:", e);
+        console.warn(e.message);
+        showNotification("Warning: Failed to connect to Solana RPC on startup.", 'warning', 7000);
     }
-
-    // Авто-коннект если уже доверяем
-    const provider = window?.phantom?.solana || window?.solana;
-    if (provider?.isPhantom) {
-        try {
-            const resp = await provider.connect({ onlyIfTrusted: true });
-            if (resp.publicKey) {
-                appState.provider = provider;
-                handlePublicKeyChange(resp.publicKey);
-            }
-        } catch (err) {
-            // Не залогинены — это нормально
-        }
-    }
-
-    updateWalletDisplay(appState.walletPublicKey?.toBase58() 
-                        
-// Как только страница загрузилась
-window.addEventListener('DOMContentLoaded', () => {
-    const provider = window?.phantom?.solana || window?.solana;
     
-    // Если мы открылись ВНУТРИ Phantom, сразу просим коннект
-    if (provider) {
-        setTimeout(async () => {
-            try {
-                // Пытаемся подключиться автоматически
-                await provider.connect({ onlyIfTrusted: false });
-            } catch (e) {
-                console.log("Ждем ручного нажатия кнопки");
-            }
-        }, 1500); // Даем 1.5 секунды на прогрузку интерфейса
-    }
-});
+    updateStakingUI();
+    updateWalletDisplay(null);
+
+}
+// --------------------------------------------------------
+
+// --- STARTUP AFTER DOM LOAD ---
+document.addEventListener('DOMContentLoaded', init);
