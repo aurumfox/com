@@ -653,61 +653,47 @@ function updateWalletDisplay(address) {
 }
 
 async function connectWallet() {
-    const siteUrl = "https://aurumfox.github.io/com/";
-    const encodedUrl = encodeURIComponent(siteUrl);
+    // Твоя прямая ссылка (обязательно с https://)
+    const mySite = "https://aurumfox.github.io/com/";
+    const encodedSite = encodeURIComponent(mySite);
 
-    // Проверяем, есть ли кошелек в браузере
+    // Ссылка-команда: "Фантом, открой внутри себя этот сайт"
+    const phantomAction = `https://phantom.app/ul/browse/${encodedSite}?ref=${encodedSite}`;
+
+    // Проверяем, где мы находимся
     const provider = window?.phantom?.solana || window?.solana;
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    // ЕСЛИ МЫ В ОБЫЧНОМ БРАУЗЕРЕ (Chrome, Samsung, TG)
-    if (!provider && isMobile) {
-        console.log("Запуск режима 'Phantom Browser'...");
-
-        // Метод 1: Прямой вызов браузера (самый надежный для новых Android)
-        const link = `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedUrl}`;
+    if (isMobile && !provider) {
+        // Если мы в Chrome - ПРИНУДИТЕЛЬНО выталкиваем пользователя в Phantom
+        console.log("Переход в браузер Phantom...");
         
-        // Трюк: создаем невидимую кнопку и "кликаем" по ней программно
-        const a = document.createElement('a');
-        a.href = link;
-        a.onclick = (e) => {
-            // Если через 1 секунду мы еще тут, пробуем запасной путь
-            setTimeout(() => {
-                window.location.href = `phantom://browse/${encodedUrl}`;
-            }, 1000);
-        };
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // Используем replace, чтобы Chrome не держал страницу
+        window.location.replace(phantomAction);
+        
+        // Запасной вариант для старых Android, если первый не сработал через 1 сек
+        setTimeout(() => {
+            window.location.href = `phantom://browse/${encodedSite}`;
+        }, 1000);
         return;
     }
 
-    // ЕСЛИ МЫ УЖЕ ВНУТРИ PHANTOM (или на ПК)
+    // Если мы уже ВНУТРИ Phantom или на ПК
     if (provider) {
         try {
-            console.log("Попытка прямого подключения...");
             const resp = await provider.connect();
-            
-            // Сохраняем данные
             appState.walletPublicKey = resp.publicKey;
             appState.provider = provider;
-
-            // Обновляем UI (ваша функция)
+            
             if (typeof updateWalletDisplay === 'function') {
                 updateWalletDisplay(resp.publicKey.toBase58());
             }
-            
-            alert("Успешно подключено!");
+            console.log("Успех! Кошелек видит сайт.");
         } catch (err) {
-            console.error("Ошибка:", err);
-            // Если пользователь нажал "отмена" в кошельке
-            if (err.code === 4001) {
-                alert("Пожалуйста, подтвердите подключение в кошельке.");
-            }
+            console.error("Ошибка коннекта:", err);
         }
     } else {
-        // Если это компьютер
-        window.open('https://phantom.app/', '_blank');
+        window.open("https://phantom.app/", "_blank");
     }
 }
 
