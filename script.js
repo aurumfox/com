@@ -653,53 +653,36 @@ function updateWalletDisplay(address) {
 }
 
 async function connectWallet() {
-    console.log("Попытка подключения...");
-
-    // 1. Ищем провайдер (Phantom)
     const provider = window?.phantom?.solana || window?.solana;
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    const dappUrl = "https://aurumfox.github.io/com/"; // Ваш сайт
 
-    // 2. Если мы на мобильном и провайдер НЕ найден (открыто в обычном браузере)
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
+    // Если это мобилка и мы НЕ внутри Phantom
     if (!provider && isMobile) {
-        console.log("Мобильное устройство: перенаправление в приложение Phantom...");
+        const encodedUrl = encodeURIComponent(dappUrl);
+        const deepLink = `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedUrl}`;
         
-        // Кодируем текущий URL, чтобы Phantom открыл именно его
-        const currentUrl = window.location.href;
-        const encodedUrl = encodeURIComponent(currentUrl);
-        
-        // Формируем Deep Link для открытия сайта во встроенном браузере Phantom
-        const phantomDeepLink = `https://phantom.app/ul/browse/${encodedUrl}`;
-        
-        // Перекидываем пользователя
-        window.location.href = phantomDeepLink;
+        console.log("Перенаправление в Phantom App...");
+        window.location.href = deepLink;
         return;
     }
 
-    // 3. Если провайдер найден (ПК или встроенный браузер Phantom)
+    // Если мы в Phantom или на ПК
     if (provider) {
         try {
             const resp = await provider.connect();
-            appState.walletPublicKey = resp.publicKey;
-            appState.provider = provider;
-            
-            // Обновляем интерфейс
-            updateWalletDisplay(resp.publicKey.toBase58());
-            showNotification('Кошелек подключен!', 'success');
-            
-            console.log("Подключено к адресу:", resp.publicKey.toString());
+            console.log("Подключено:", resp.publicKey.toString());
+            // Здесь вызывайте вашу функцию обновления интерфейса
+            if (typeof updateWalletDisplay === 'function') {
+                updateWalletDisplay(resp.publicKey.toBase58());
+            }
         } catch (err) {
-            console.error("Пользователь отклонил коннект:", err);
-            showNotification('Ошибка подключения', 'error');
+            console.error("Ошибка подключения:", err);
         }
     } else {
-        // 4. Если это ПК, но расширение не установлено
-        showNotification('Установите кошелек Phantom!', 'error');
-        window.open('https://phantom.app/', '_blank');
+        alert("Пожалуйста, установите кошелек Phantom на ваш компьютер.");
     }
 }
-
-
 
 /**
  * Attaches event listeners to the wallet provider.
