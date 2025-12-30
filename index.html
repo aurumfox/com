@@ -52,7 +52,7 @@
     <link rel="icon" href="./assets/favicon.png.jpg" type="image/png.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght%40300;400;600&display=swap" rel="stylesheet">
     
-     <link rel="stylesheet" 
+        <link rel="stylesheet" href="style.css"> 
     
 </head>
 <body>
@@ -68,10 +68,14 @@
         </nav>
 
         <div class="wallet-controls">
-        <button id="connectWalletBtn" class="web3-button connect-fox-btn wallet-connect-btn">
-    <i class="fox-icon">🦊</i> Connect Wallet
-</button>
-
+    <button 
+        id="connectWalletBtn" 
+        class="web3-button connect-fox-btn wallet-connect-btn"
+        aria-label="Подключить криптовалютный кошелек"
+    >
+        <i class="fox-icon">🦊</i> 
+        Connect Wallet
+    </button>
     
     <div id="walletDisplay" class="wallet-display" style="display:none;">
         <span id="walletAddressSpan" class="wallet-address-text"></span>
@@ -741,8 +745,43 @@
 
     <script src="script.js" defer></script>
      
-</script>
-    
+</body>
+       <script>
+        // Это блок JavaScript внутри твоего HTML
+        const connectBtn = document.getElementById('connectWalletBtn');
+        
+        async function handleConnect() {
+            // Проверяем, есть ли кошелек (работает на ПК или внутри браузера Phantom)
+            const isPhantomInstalled = window.solana && window.solana.isPhantom;
+
+            if (isPhantomInstalled) {
+                try {
+                    const resp = await window.solana.connect();
+                    const pubKey = resp.publicKey.toString();
+                    
+                    // Обновляем текст кнопки
+                    connectBtn.innerText = pubKey.substring(0, 4) + "..." + pubKey.slice(-4);
+                    
+                    // Обновляем адрес в поле под кнопкой (если оно есть)
+                    const addressDisplay = document.getElementById('walletAddressDisplay');
+                    if (addressDisplay) addressDisplay.innerText = pubKey;
+                    
+                } catch (err) {
+                    console.error("Ошибка подключения:", err);
+                }
+            } else {
+                // ВОТ ТА САМАЯ СТРОКА ДЛЯ ANDROID
+                // Она сработает, если юзер нажал кнопку в обычном Chrome
+                const url = encodeURIComponent(window.location.href);
+                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
+            }
+        }
+
+        // Привязываем нажатие на кнопку к этой функции
+        if (connectBtn) {
+            connectBtn.onclick = handleConnect;
+        }
+    </script>
 </body>
                            
 </html>
