@@ -557,56 +557,41 @@ function getSolanaTxnFeeReserve() {
 }
 
 // =========================================================================================
-// --- WALLET & CONNECTION FUNCTIONS (Fully implemented) ---
-// ===========================
-
-async function connectWallet() {
-    console.log("Попытка подключения...");
-    try {
-        const provider = window?.phantom?.solana || window?.solana;
-
-        if (!provider) {
-            alert("Phantom не найден! Установи расширение.");
-            window.open('https://phantom.app/', '_blank');
-            return;
+/**
+ * Core logic triggered whenever a wallet connects, changes, or disconnects.
+ */
+async function handlePublicKeyChange(publicKey) {
+    if (publicKey) {
+        appState.walletPublicKey = publicKey;
+        const address = publicKey.toBase58();
+        
+        console.log("Wallet Connected:", address);
+        
+        // Update UI state
+        updateWalletDisplay(address);
+        registerProviderListeners();
+        
+        // Fetch Real Data
+        try {
+            await fetchUserBalances();
+            await fetchUserStakingData();
+            await updateStakingUI();
+            loadUserNFTs();
+            loadMarketplaceNFTs();
+            updateSwapBalances();
+        } catch (err) {
+            console.error("Error refreshing data for new wallet:", err);
         }
-
-        // 1. Ждем ответа от кошелька
-        const resp = await provider.connect();
-        
-        // 2. СРАЗУ сохраняем данные в память, чтобы они не потерялись
-        appState.provider = provider;
-        appState.walletPublicKey = resp.publicKey;
-        
-        console.log("Кошелек получен:", resp.publicKey.toBase58());
-
-        // 3. ПРИНУДИТЕЛЬНО вызываем обновление интерфейса
-        updateWalletDisplay(resp.publicKey.toBase58());
-        
-        // 4. Запускаем загрузку данных
-        if (!appState.connection) {
-            appState.connection = await getRobustConnection();
-        }
-        
-        await fetchUserBalances();
+    } else {
+        // Reset State
+        appState.walletPublicKey = null;
+        appState.userBalances = { SOL: BigInt(0), AFOX: BigInt(0) };
+        updateWalletDisplay(null);
         await updateStakingUI();
-
-        // 5. Устанавливаем слушатели, чтобы связь не рвалась
-        if (!appState.areProviderListenersAttached) {
-            provider.on('accountChanged', (newPk) => {
-                if (newPk) handlePublicKeyChange(newPk);
-                else location.reload(); // Перезагрузка при выходе
-            });
-            appState.areProviderListenersAttached = true;
-        }
-
-        showNotification('Подключено успешно!', 'success');
-
-    } catch (err) {
-        console.error("Ошибка на этапе коннекта:", err);
-        showNotification('Ошибка подключения: ' + err.message, 'error');
+        loadUserNFTs();
     }
 }
+
 
 
 // Исправленный обработчик кнопки
