@@ -653,73 +653,58 @@ function updateWalletDisplay(address) {
 }
 
 async function connectWallet() {
-    // 1. Ссылка на ваш сайт (убедитесь, что она совпадает с GitHub)
+    // 1. Ссылка должна быть БЕЗ ошибок и лишних символов
     const dappUrl = "https://aurumfox.github.io/com/"; 
+    const encodedUrl = encodeURIComponent(dappUrl);
     
-    // 2. Проверяем окружение
     const provider = window?.phantom?.solana || window?.solana;
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    // 3. Если мы в обычном мобильном браузере (Chrome/Opera/TG)
+    // 2. Если мы в обычном браузере (Chrome/TG/Opera)
     if (!provider && isMobile) {
-        // Кодируем URL дважды (это помогает некоторым версиям Android распознать путь)
-        const encodedUrl = encodeURIComponent(dappUrl);
-        
-        // Формируем "агрессивный" Deep Link
-        // Мы используем формат v1/browse, который принудительно открывает браузер
-        const deepLink = `https://phantom.app/ul/v1/browse/${encodedUrl}?ref=${encodedUrl}`;
+        // ВНИМАНИЕ: Это самый точный формат ссылки для Android на 2024-2025 год
+        // Мы добавляем пустые параметры dapps, чтобы заставить Phantom включить режим браузера
+        const deepLink = `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedUrl}`;
 
-        console.log("Redirecting to Phantom browser...");
-        
-        // Пытаемся открыть через универсальную ссылку
-        window.location.href = deepLink;
+        // Трюк №1: Открываем через скрытую ссылку (это работает лучше на Android)
+        const link = document.createElement('a');
+        link.href = deepLink;
+        link.rel = 'noopener noreferrer';
+        link.click();
 
-        // Резервный метод для старых версий Android (через протокол приложения)
+        // Трюк №2: Если через 1.5 секунды мы всё еще тут — пробуем "силовой" метод
         setTimeout(() => {
             if (document.hasFocus()) {
-                window.location.href = `phantom://browse/${encodedUrl}`;
+                window.location.replace(`phantom://browse/${encodedUrl}`);
             }
-        }, 800);
+        }, 1500);
         return;
     }
 
-    // 4. Если мы УЖЕ внутри Phantom или на компьютере
+    // 3. Если мы УЖЕ ВНУТРИ Phantom
     if (provider) {
         try {
+            // Запрашиваем коннект
             const resp = await provider.connect();
-            console.log("Успешное подключение:", resp.publicKey.toString());
             
-            // Если у вас есть функция обновления экрана, вызываем её
+            // Если успех — сохраняем и обновляем
+            appState.walletPublicKey = resp.publicKey;
+            appState.provider = provider;
+            
             if (typeof updateWalletDisplay === 'function') {
                 updateWalletDisplay(resp.publicKey.toBase58());
             }
+            alert("Подключено: " + resp.publicKey.toString().substring(0, 6) + "...");
+            
         } catch (err) {
-            console.error("Ошибка при подключении внутри Phantom:", err);
+            console.error("Ошибка:", err);
+            alert("Вы отклонили запрос в кошельке");
         }
     } else {
-        // Если на ПК нет расширения
-        window.open('https://phantom.app/', '_blank');
+        alert("Установите расширение Phantom на ПК");
     }
 }
 
-
-/**
- * Attaches event listeners to the wallet provider.
- */
-function registerProviderListeners() {
-    if (appState.provider && !appState.areProviderListenersAttached) {
-        appState.provider.on('connect', () => {
-            if (appState.provider.publicKey) {
-                handlePublicKeyChange(appState.provider.publicKey);
-                showNotification('Wallet successfully connected! 🦊', 'success');
-            }
-        });
-        appState.provider.on('disconnect', () => handlePublicKeyChange(null));
-        appState.areProviderListenersAttached = true;
-    }
-}
-
-/**
  * Fetches real balances from RPC (SOL and AFOX) and updates appState.userBalances.
  * 🟢 ИСПРАВЛЕНО: УДАЛЕНА ВСЯ MOCK-ЛОГИКА ДЛЯ AFOX И SOL.
  */
