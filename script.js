@@ -653,45 +653,51 @@ function updateWalletDisplay(address) {
 }
 
 async function connectWallet() {
-    const siteUrl = "https://aurumfox.github.io/com/";
-    const encodedUrl = encodeURIComponent(siteUrl);
+    // 1. Ссылка на ваш сайт (убедитесь, что она совпадает с GitHub)
+    const dappUrl = "https://aurumfox.github.io/com/"; 
     
+    // 2. Проверяем окружение
     const provider = window?.phantom?.solana || window?.solana;
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    // Логика для мобильных устройств
+    // 3. Если мы в обычном мобильном браузере (Chrome/Opera/TG)
     if (!provider && isMobile) {
-        console.log("Мобильный браузер. Пытаемся открыть Phantom...");
+        // Кодируем URL дважды (это помогает некоторым версиям Android распознать путь)
+        const encodedUrl = encodeURIComponent(dappUrl);
         
-        // Попытка №1: Официальный Deep Link
+        // Формируем "агрессивный" Deep Link
+        // Мы используем формат v1/browse, который принудительно открывает браузер
         const deepLink = `https://phantom.app/ul/v1/browse/${encodedUrl}?ref=${encodedUrl}`;
+
+        console.log("Redirecting to Phantom browser...");
+        
+        // Пытаемся открыть через универсальную ссылку
         window.location.href = deepLink;
 
-        // Попытка №2: Если через 1 секунду мы всё еще на этой странице (не перебросило)
-        // Пробуем прямой протокол приложения
+        // Резервный метод для старых версий Android (через протокол приложения)
         setTimeout(() => {
-            if (document.hasFocus()) { 
-                console.log("Первая попытка не удалась, пробуем прямой протокол...");
+            if (document.hasFocus()) {
                 window.location.href = `phantom://browse/${encodedUrl}`;
             }
-        }, 1200);
+        }, 800);
         return;
     }
 
-    // Логика для ПК или если мы уже внутри Phantom
+    // 4. Если мы УЖЕ внутри Phantom или на компьютере
     if (provider) {
         try {
             const resp = await provider.connect();
             console.log("Успешное подключение:", resp.publicKey.toString());
-            // Вызываем вашу функцию обновления баланса/адреса
+            
+            // Если у вас есть функция обновления экрана, вызываем её
             if (typeof updateWalletDisplay === 'function') {
                 updateWalletDisplay(resp.publicKey.toBase58());
             }
         } catch (err) {
-            console.error("Пользователь отменил подключение:", err);
+            console.error("Ошибка при подключении внутри Phantom:", err);
         }
     } else {
-        // Если это компьютер и нет расширения
+        // Если на ПК нет расширения
         window.open('https://phantom.app/', '_blank');
     }
 }
