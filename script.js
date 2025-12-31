@@ -228,7 +228,12 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // =========================================================================================
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
-
+// Функция для ускорения транзакций в Mainnet
+async function getPriorityFeeInstruction() {
+    return window.SolanaWeb3.ComputeBudgetProgram.setComputeUnitPrice({
+        microLamports: 50000 
+    });
+}
 // --- 1. Global function for menu state management ---
 function toggleMenuState(forceClose = false) {
     const menuToggle = document.getElementById('menuToggle');
