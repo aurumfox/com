@@ -161,34 +161,6 @@ const uiElements = {};
 // Using window.SolanaWalletAdapterPhantom for universality
 const WALLETS = [new window.SolanaWalletAdapterPhantom.PhantomWalletAdapter()];
 
-// --- LOCAL BACKEND SIMULATION (MOCK DB) ---
-const MOCK_DB = {
-    nfts: [
-        // Initial MOCK data for standalone operation
-        { mint: 'NFT1_MOCK_MINT', name: 'Alpha Fox #001 (Listed)', description: 'Rare Alpha Fox NFT. Buy me!', owner: 'NO_WALLET_CONNECTED', price: 5.5, isListed: true, image: 'https://via.placeholder.com/180x180/007bff/ffffff?text=Fox+001', attributes: [{ trait_type: 'Rarity', value: 'Epic' }, { trait_type: 'Edition', value: 'First' }] },
-        { mint: 'NFT2_MOCK_MINT', name: 'Alpha Fox #002 (Owned)', description: 'Common Alpha Fox NFT. My personal collection.', owner: 'NO_WALLET_CONNECTED', price: 0, isListed: false, image: 'https://via.placeholder.com/180x180/17a2b8/ffffff?text=Fox+002', attributes: [{ trait_type: 'Rarity', value: 'Common' }] }
-    ],
-    announcements: [
-        { text: 'Welcome to the standalone simulation! Staking and NFT-Marketplace run on MOCK data.', date: new Date(Date.now() - 3600000).toISOString() },
-        { text: 'Swap uses the real Jupiter API for quotes, but the transaction is simulated.', date: new Date().toISOString() }
-    ],
-    games: [
-        { title: 'Solana Runner (MOCK)', description: 'Infinite runner, game simulation.', url: '#' }
-    ],
-    nftHistory: {
-        'NFT1_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 86400000).toISOString(), to: 'INITIAL_OWNER' }],
-        'NFT2_MOCK_MINT': [{ type: 'Mint', timestamp: new Date(Date.now() - 7200000).toISOString(), to: 'INITIAL_OWNER' }]
-    },
-    staking: {} // { address: { stakedAmount: 'BigIntStr', rewards: 'BigIntStr', lockupEndTime: unix_timestamp, poolIndex: 4, lending: 'BigIntStr' } }
-};
-
-/**
- * MOCK: Persists the current state of MOCK_DB (memory-only).
- */
-function persistMockData() {
-    // In real code, this would involve real Solana program calls.
-}
-
 // =========================================================================================
 // 🟢 NEW FUNCTION: SECURE LOG SENDING VIA PROXY
 // =========================================================================================
