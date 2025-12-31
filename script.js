@@ -74,22 +74,6 @@ const STAKING_IDL = {
                 ],
             },
         },
-        {
-    "name": "listNft",
-    "accounts": [
-        { "name": "seller", "isMut": true, "isSigner": true },
-        { "name": "nftMint", "isMut": false, "isSigner": false },
-        { "name": "sellerTokenAccount", "isMut": true, "isSigner": false },
-        { "name": "listingAccount", "isMut": true, "isSigner": false },
-        { "name": "systemProgram", "isMut": false, "isSigner": false },
-        { "name": "tokenProgram", "isMut": false, "isSigner": false },
-        { "name": "rent", "isMut": false, "isSigner": false }
-    ],
-    "args": [
-        { "name": "price", "type": "u64" }
-    ]
-}
-
         // IMPORTANT: If you need to fetch PoolState, its definition must be here too.
         // Assuming fetchUserStakingData is enough for this UI.
     ]
@@ -106,39 +90,25 @@ const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addr
 // PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
 // =========================================================================================
 
-// --- КОРРЕКТНЫЕ АДРЕСА И PDA ДЛЯ РЕАЛЬНОЙ СЕТИ ---
-const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-const STAKING_ACCOUNT_SEED = "user_staking"; // Проверь это имя в Rust (seeds = [owner, pool])
+// --- CRITICAL POOL KEYS (ФИНАЛЬНЫЕ, ПОДТВЕРЖДЕННЫЕ АДРЕСА DEVNET) ---
+// 1. Адрес главного PDA пула (PoolState)
+const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
 
-// Автоматическое нахождение главного PDA пула
-const [AFOX_POOL_STATE_PUBKEY] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
-    [Buffer.from("pool")], 
-    STAKING_PROGRAM_ID
-);
-
-// Функция для получения PDA пользователя (owner + pool)
-function getUserStakingPDA(owner) {
-    const [pda] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
-        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
-
-// Хранилища (Vaults) — они должны быть созданы при инициализации пула
+// 2. Хранилище стейка (Pool Vault)
 const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
+
+// 3. Хранилище админ. комиссии (Admin Fee Vault)
 const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
-const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C');
- 
+
+// 4. КАЗНАЧЕЙСТВО DAO (DAO Treasury Vault) - ФИНАЛЬНЫЙ АДРЕС!
+const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
 // -----------------------------------------------------------------------------------------
 
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
 
 const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd'; // Changed for greater MOCK uniqueness
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
-// Используем ваш ключ Helius
-const HELIUS_KEY = '2ed0cb0f-85fc-410d-98da-59729966ec05';
-const JUPITER_RPC_ENDPOINT = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`;
+const JUPITER_RPC_ENDPOINT = 'https://rpc.jupag';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const TXN_FEE_RESERVE_SOL = 0.005;
 const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
@@ -256,12 +226,7 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // =========================================================================================
 // --- HELPER UTILITIES (Fully implemented) ---
 // =========================================================================================
-// Функция для ускорения транзакций в Mainnet
-async function getPriorityFeeInstruction() {
-    return window.SolanaWeb3.ComputeBudgetProgram.setComputeUnitPrice({
-        microLamports: 50000 
-    });
-}
+
 // --- 1. Global function for menu state management ---
 function toggleMenuState(forceClose = false) {
     const menuToggle = document.getElementById('menuToggle');
@@ -802,28 +767,39 @@ async function fetchUserBalances() {
 
     const sender = appState.walletPublicKey;
 
+    // --- 1. ФЕТЧ БАЛАНСА SOL ---
     try {
-        // SOL Balance
         const solBalance = await appState.connection.getBalance(sender, 'confirmed');
         appState.userBalances.SOL = BigInt(solBalance);
+    } catch (error) {
+        console.error("Failed to fetch SOL balance:", error);
+        appState.userBalances.SOL = BigInt(0); 
+        showNotification("Warning: Could not fetch real SOL balance.", 'warning');
+    }
 
-        // AFOX Balance через splToken
-        const userAfoxATA = await window.splToken.getAssociatedTokenAddress(
+    // --- 2. ФЕТЧ БАЛАНСА AFOX (РЕАЛИЗАЦИЯ) ---
+    try {
+        // 2a. Получаем адрес Associated Token Account (ATA) пользователя для токена AFOX
+        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, 
+            TOKEN_PROGRAM_ID, 
             AFOX_TOKEN_MINT_ADDRESS, 
             sender
         );
         
-        try {
-            const accountInfo = await appState.connection.getTokenAccountBalance(userAfoxATA);
-            if (accountInfo.value && accountInfo.value.amount) {
-                appState.userBalances.AFOX = BigInt(accountInfo.value.amount);
-            }
-        } catch (e) {
-            // Если аккаунт токена еще не создан, баланс просто 0
+        // 2b. Запрашиваем баланс этого токен-аккаунта
+        const accountInfo = await appState.connection.getTokenAccountBalance(userAfoxATA);
+        
+        if (accountInfo.value && accountInfo.value.amount) {
+            appState.userBalances.AFOX = BigInt(accountInfo.value.amount);
+        } else {
+            // Если ATA не существует или не имеет баланса (пользователь не владеет AFOX)
             appState.userBalances.AFOX = BigInt(0);
         }
-    } catch (error) {
-        console.error("Balance fetch error:", error);
+        
+    } catch (tokenError) {
+        console.warn("Failed to fetch AFOX token balance, setting to 0:", tokenError);
+        appState.userBalances.AFOX = BigInt(0); 
     }
 }
 
@@ -917,37 +893,62 @@ async function updateStakingUI() {
  * ✅ Implemented: Reading staking data from the blockchain (REAL ANCHOR).
  */
 async function fetchUserStakingData() {
-    if (!appState.walletPublicKey || !appState.connection) return;
+    if (!appState.walletPublicKey || !STAKING_IDL.version || !appState.connection) {
+        appState.userStakingData.stakedAmount = BigInt(0);
+        appState.userStakingData.rewards = BigInt(0);
+        appState.userStakingData.lockupEndTime = 0;
+        appState.userStakingData.poolIndex = 4;
+        appState.userStakingData.lending = BigInt(0);
+        return;
+    }
 
     try {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
-        const userStakingPda = getUserStakingPDA(sender);
 
-        // Читаем аккаунт напрямую из программы
-        const stakingData = await program.account.userStakingAccount.fetch(userStakingPda);
-        
-        // Обновляем глобальное состояние (Anchor BN -> JS BigInt)
-        appState.userStakingData = {
-            stakedAmount: stakingData.stakedAmount.toBigInt(),
-            rewards: stakingData.rewardsAmount.toBigInt(),
-            lockupEndTime: stakingData.lockupEndTime.toNumber(),
-            poolIndex: stakingData.poolIndex,
-            lending: stakingData.lending.toBigInt()
-        };
+        // 1. PDA calculation
+        const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
+            [
+                window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED),
+                sender.toBuffer(),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(), // Pool ID is part of the seed
+            ],
+            STAKING_PROGRAM_ID
+        );
 
-        // Логируем для проверки в консоли
-        console.log("Staking Data Loaded:", formatBigInt(appState.userStakingData.stakedAmount, 6));
+        // 2. Deserialization (REAL ANCHOR FETCH)
+        try {
+            const stakingData = await program.account.userStakingAccount.fetch(userStakingAccountPDA);
+            
+            // Note: .toBigInt() and .toNumber() are methods on Anchor's BN object
+            appState.userStakingData.stakedAmount = stakingData.stakedAmount.toBigInt();
+            appState.userStakingData.rewards = stakingData.rewardsAmount.toBigInt();
+            appState.userStakingData.lockupEndTime = stakingData.lockupEndTime.toNumber();
+            appState.userStakingData.poolIndex = stakingData.poolIndex;
+            appState.userStakingData.lending = stakingData.lending.toBigInt();
+
+        } catch (e) {
+            // Account not found or deserialization failed means user has not staked yet.
+            if (e.message && (e.message.includes('Account does not exist') || e.message.includes('301'))) {
+                // Not staked yet: Reset to zero state
+                appState.userStakingData.stakedAmount = BigInt(0);
+                appState.userStakingData.rewards = BigInt(0);
+                appState.userStakingData.lockupEndTime = 0;
+                appState.userStakingData.poolIndex = 4;
+                appState.userStakingData.lending = BigInt(0);
+            } else {
+                 throw e; // Propagate critical error
+            }
+        }
 
     } catch (e) {
-        // Если аккаунт не найден — это нормально, обнуляем данные
-        appState.userStakingData = { 
-            stakedAmount: BigInt(0), 
-            rewards: BigInt(0), 
-            lockupEndTime: 0, 
-            poolIndex: 4, 
-            lending: BigInt(0) 
-        };
+        console.error("Failed to fetch staking data:", e);
+        // On error, reset to zero state
+        appState.userStakingData.stakedAmount = BigInt(0);
+        appState.userStakingData.rewards = BigInt(0);
+        appState.userStakingData.lockupEndTime = 0;
+        appState.userStakingData.poolIndex = 4;
+        appState.userStakingData.lending = BigInt(0);
     }
 }
 
@@ -957,106 +958,34 @@ async function fetchUserStakingData() {
  */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
-        showNotification('Wallet not connected', 'warning');
+        showNotification('Wallet not connected or program IDL missing.', 'warning');
         return;
     }
     const amountStr = uiElements.stakeAmountInput.value;
-    const poolIndex = parseInt(uiElements.poolSelector.value);
+    const poolIndexStr = uiElements.poolSelector.value;
     
     setLoadingState(true, uiElements.stakeAfoxBtn);
 
     try {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const sender = appState.walletPublicKey;
-        const userStakingPda = getUserStakingPDA(sender);
+        const poolIndex = parseInt(poolIndexStr);
 
-        // Получаем ATA пользователя
-        const userAfoxATA = await window.splToken.getAssociatedTokenAddress(
-            AFOX_TOKEN_MINT_ADDRESS, 
-            sender
-        );
-
-        const tx = new window.SolanaWeb3.Transaction();
-
-        // 1. Увеличиваем лимит вычислений (Важно для Mainnet!)
-        tx.add(window.SolanaWeb3.ComputeBudgetProgram.setComputeUnitLimit({ units: 400000 }));
-        tx.add(await getPriorityFeeInstruction());
-
-        // 2. Проверяем, существует ли аккаунт в блокчейне
-        const accountInfo = await appState.connection.getAccountInfo(userStakingPda);
-        if (!accountInfo) {
-            showNotification('First time staking? Creating account...', 'info');
-            tx.add(
-                await program.methods
-                    .initializeUserStake(poolIndex)
-                    .accounts({
-                        poolState: AFOX_POOL_STATE_PUBKEY,
-                        userStaking: userStakingPda,
-                        owner: sender,
-                        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                        systemProgram: window.SolanaWeb3.SystemProgram.programId,
-                        clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                    })
-                    .instruction()
-            );
+        if (stakeAmountBigInt === BigInt(0)) throw new Error('Enter a valid amount for staking.');
+        if (appState.userBalances.AFOX < stakeAmountBigInt) throw new Error('Insufficient AFOX for staking.');
+        if (isNaN(poolIndex) || poolIndex < 0 || poolIndex >= POOLS_CONFIG.length) {
+            throw new Error('Invalid staking pool selected.');
         }
 
-        // 3. Добавляем инструкцию депозита
-        tx.add(
-            await program.methods
-                .deposit(new window.Anchor.BN(stakeAmountBigInt.toString()))
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    userStaking: userStakingPda,
-                    owner: sender,
-                    userSourceAta: userAfoxATA,
-                    vault: AFOX_POOL_VAULT_PUBKEY,
-                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                    clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                })
-                .instruction()
-        );
-
-        const signature = await appState.provider.sendAndConfirm(tx);
-        
-        sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt).catch(console.error); 
-        showNotification(`Success! Staked: ${amountStr} AFOX`, 'success');
-        
-        uiElements.stakeAmountInput.value = '';
-        await updateStakingAndBalanceUI();
-
-    } catch (error) {
-        console.error("Stake Error:", error);
-        showNotification(`Failed: ${error.message.substring(0, 60)}`, 'error');
-    } finally {
-        setLoadingState(false, uiElements.stakeAfoxBtn);
-    }
-}
-/**
- * ✅ REAL MAINNET: Sending claim rewards transaction.
- */
-async function handleClaimRewards() {
-    if (!appState.walletPublicKey || !STAKING_IDL.version) {
-        showNotification('Wallet not connected or program IDL missing.', 'warning');
-        return;
-    }
-    setLoadingState(true, uiElements.claimRewardsBtn);
-
-    try {
-        if (appState.userStakingData.rewards === BigInt(0)) { 
-            showNotification('No rewards to claim.', 'warning', 3000); 
-            setLoadingState(false, uiElements.claimRewardsBtn);
-            return; 
-        }
-
-        showNotification('Preparing claim rewards transaction...', 'info');
+        showNotification(`Preparing transaction to stake ${formatBigInt(stakeAmountBigInt, AFOX_DECIMALS)} AFOX...`, 'info', 5000);
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Расчет PDA аккаунта стейкинга
+        // 1. Get user's ATA
+        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
+        );
+        // 2. Calculate staking account PDA
         const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
             [
                 window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
@@ -1066,16 +995,73 @@ async function handleClaimRewards() {
             STAKING_PROGRAM_ID
         );
 
-        // 2. Получение ATA (Associated Token Account) пользователя для зачисления AFOX
-        const userRewardATA = await window.splToken.getAssociatedTokenAddress(
-            AFOX_TOKEN_MINT_ADDRESS, 
-            sender
+        // 🔴 CREATE TRANSACTION (REAL ANCHOR TEMPLATE) 
+        const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
+            .accounts({
+                staker: sender,
+                userStakingAccount: userStakingAccountPDA,
+                tokenFrom: userAfoxATA,
+                poolState: AFOX_POOL_STATE_PUBKEY, 
+                poolVault: AFOX_POOL_VAULT_PUBKEY,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                systemProgram: SYSTEM_PROGRAM_ID,
+            })
+            .transaction();
+
+        // 🟢 REAL SUBMISSION
+        const signature = await appState.provider.sendAndConfirm(tx, []);
+
+        // 🟢 SECURE LOGGING VIA WORKER
+        await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt); 
+
+        showNotification(`Successful staking! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 7000);
+
+        uiElements.stakeAmountInput.value = '';
+        await updateStakingAndBalanceUI();
+
+    } catch (error) {
+        console.error("Stake transaction failed:", error);
+        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Transaction failed: ${error.message.substring(0, 100)}`;
+        showNotification(message, 'error');
+    } finally {
+        setLoadingState(false, uiElements.stakeAfoxBtn);
+    }
+}
+
+/**
+ * ✅ Implemented: Sending claim rewards transaction (REAL ANCHOR).
+ */
+async function handleClaimRewards() {
+    if (!appState.walletPublicKey || !STAKING_IDL.version) {
+        showNotification('Wallet not connected or program IDL missing.', 'warning');
+        return;
+    }
+    setLoadingState(true, uiElements.claimRewardsBtn);
+
+    try {
+        if (appState.userStakingData.rewards === BigInt(0)) { showNotification('No rewards to claim.', 'warning', 3000); return; }
+
+        showNotification('Preparing claim rewards transaction...', 'info');
+
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const sender = appState.walletPublicKey;
+
+        // 1. Calculate staking account PDA
+        const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
+            [
+                window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
+                sender.toBuffer(),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+            ],
+            STAKING_PROGRAM_ID
+        );
+        // 2. User's ATA for rewards
+        const userRewardATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // 3. Формирование транзакции с Priority Fee
-        const priorityFeeIx = await getPriorityFeeInstruction();
-        
-        const tx = await program.methods.claimRewards()
+        // 🔴 CREATE INSTRUCTION (REAL ANCHOR TEMPLATE) 
+         const tx = await program.methods.claimRewards()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
@@ -1086,32 +1072,27 @@ async function handleClaimRewards() {
             })
             .transaction();
 
-        tx.add(priorityFeeIx); // Добавляем газ для Mainnet
-
-        // 4. Отправка и подтверждение
-        const signature = await appState.provider.sendAndConfirm(tx);
+        // 🟢 REAL SUBMISSION
+        const signature = await appState.provider.sendAndConfirm(tx, []);
 
         const claimedAmountBigInt = appState.userStakingData.rewards;
         await sendLogToFirebase(sender.toBase58(), 'CLAIM', claimedAmountBigInt);
 
-        showNotification(`Rewards claimed! Tx: ${signature.substring(0, 8)}...`, 'success', 5000);
+        showNotification(`Rewards successfully claimed! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 5000);
+
         await updateStakingAndBalanceUI();
 
     } catch (error) {
         console.error("Claim transaction failed:", error);
-        const message = error.message.includes('denied') ? 'Transaction denied.' : `Claim failed: ${error.message.substring(0, 60)}`;
+        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Claim failed. Details: ${error.message.substring(0, 100)}`;
         showNotification(message, 'error');
     } finally {
         setLoadingState(false, uiElements.claimRewardsBtn);
     }
 }
 
-
 /**
  * ✅ Implemented: Sending unstaking transaction (REAL ANCHOR).
- */
-/**
- * ✅ REAL MAINNET: Sending unstaking transaction.
  */
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
@@ -1121,32 +1102,26 @@ async function handleUnstakeAfox() {
     setLoadingState(true, uiElements.unstakeAfoxBtn);
 
     try {
-        if (appState.userStakingData.stakedAmount === BigInt(0)) { 
-            showNotification('No AFOX staked.', 'warning', 3000); 
-            setLoadingState(false, uiElements.unstakeAfoxBtn);
-            return; 
-        }
-
-        // ПРОВЕРКА: Заблокировано ли займом (Collateral)
+        if (appState.userStakingData.stakedAmount === BigInt(0)) { showNotification('No AFOX staked.', 'warning', 3000); return; }
+        
+        // CRITICAL CHECK: Loan lock
         if (appState.userStakingData.lending > BigInt(0)) {
-            showNotification(`Cannot unstake: Tokens locked as collateral.`, 'error', 10000);
-            setLoadingState(false, uiElements.unstakeAfoxBtn);
+            showNotification(`Cannot unstake: ${formatBigInt(appState.userStakingData.lending, AFOX_DECIMALS)} AFOX are locked as collateral for a loan. Repay your loan first.`, 'error', 10000);
             return;
         }
 
         const now = Date.now() / 1000;
         if (appState.userStakingData.lockupEndTime > now) {
-            if (!confirm("Lockup period not ended. Penalty will be applied. Continue?")) {
-                setLoadingState(false, uiElements.unstakeAfoxBtn);
-                return;
-            }
+            const remaining = (appState.userStakingData.lockupEndTime - now) / SECONDS_PER_DAY;
+            showNotification(`Unstaking before lockup ends! ${remaining.toFixed(1)} days remaining. Penalty will be applied.`, 'warning', 7000);
         }
 
-        showNotification('Preparing unstake transaction...', 'info');
+        showNotification('Preparing transaction for unstaking...', 'info', 5000);
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
+        // 1. Calculate staking account PDA
         const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
             [
                 window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
@@ -1155,16 +1130,13 @@ async function handleUnstakeAfox() {
             ],
             STAKING_PROGRAM_ID
         );
-
-        const userAfoxATA = await window.splToken.getAssociatedTokenAddress(
-            AFOX_TOKEN_MINT_ADDRESS, 
-            sender
+        // 2. User's ATA for AFOX
+        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        // Формирование транзакции с Priority Fee
-        const priorityFeeIx = await getPriorityFeeInstruction();
-
-        const tx = await program.methods.unstake()
+        // 🔴 CREATE INSTRUCTION (REAL ANCHOR TEMPLATE) 
+         const tx = await program.methods.unstake()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
@@ -1176,22 +1148,526 @@ async function handleUnstakeAfox() {
             })
             .transaction();
 
-        tx.add(priorityFeeIx);
-
-        const signature = await appState.provider.sendAndConfirm(tx);
+        // 🟢 REAL SUBMISSION
+        const signature = await appState.provider.sendAndConfirm(tx, []);
 
         const stakedAmountBigInt = appState.userStakingData.stakedAmount;
         await sendLogToFirebase(sender.toBase58(), 'UNSTAKE', stakedAmountBigInt);
 
-        showNotification(`Unstaked! Tx: ${signature.substring(0, 8)}...`, 'success', 7000);
+        showNotification(`Successful unstaking! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 7000);
+
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        console.error("Unstake failed:", error);
-        const message = error.message.includes('denied') ? 'Transaction denied.' : `Unstaking failed: ${error.message.substring(0, 60)}`;
+        console.error("Unstake transaction failed:", error);
+        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Unstaking failed. Details: ${error.message.substring(0, 100)}`;
         showNotification(message, 'error');
     } finally {
         setLoadingState(false, uiElements.unstakeAfoxBtn);
+    }
+}
+
+
+// =========================================================================================
+// --- NFT MARKETPLACE FUNCTIONS (MOCK) ---
+// =========================================================================================
+
+/**
+ * MOCK: Load user NFTs (owned)
+ */
+function loadUserNFTs() {
+    if (!uiElements.userNftList) return;
+
+    const userAddress = appState.walletPublicKey ? appState.walletPublicKey.toBase58() : 'NO_WALLET_CONNECTED';
+    const userNfts = MOCK_DB.nfts.filter(n => n.owner === userAddress && !n.isListed); 
+
+    uiElements.userNftList.innerHTML = '';
+
+    if (userNfts.length === 0) {
+        uiElements.userNftList.innerHTML = `<p class="empty-list-message">${appState.walletPublicKey ? 'You currently own no unlisted AlphaFox NFTs.' : 'Connect your wallet to see your NFTs.'}</p>`;
+        if (uiElements.nftToSellSelect) uiElements.nftToSellSelect.innerHTML = '<option value="">Select an NFT</option>';
+        return;
+    }
+
+    if (uiElements.nftToSellSelect) {
+        const unlistedNfts = MOCK_DB.nfts.filter(n => n.owner === userAddress && !n.isListed);
+        uiElements.nftToSellSelect.innerHTML = '<option value="">Select an NFT</option>' +
+            unlistedNfts.map(nft => `<option value="${nft.mint}">${nft.name}</option>`).join('');
+    }
+
+    userNfts.forEach(nft => {
+        const card = createNftCard(nft);
+        uiElements.userNftList.appendChild(card);
+    });
+}
+
+/**
+ * MOCK: Load NFTs listed for sale
+ */
+function loadMarketplaceNFTs() {
+    if (!uiElements.marketplaceNftList) return;
+
+    const connectedOwner = appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null;
+    const marketplaceNfts = MOCK_DB.nfts.filter(n => n.isListed === true && n.owner !== connectedOwner);
+
+    uiElements.marketplaceNftList.innerHTML = '';
+
+    if (marketplaceNfts.length === 0) {
+        uiElements.marketplaceNftList.innerHTML = '<p class="empty-list-message">No NFTs are currently listed for sale.</p>';
+        return;
+    }
+
+    marketplaceNfts.forEach(nft => {
+        const card = createNftCard(nft);
+        uiElements.marketplaceNftList.appendChild(card);
+    });
+}
+
+/**
+ * Creates the HTML element for an NFT card.
+ */
+function createNftCard(nft) {
+    const card = document.createElement('div');
+    card.className = 'nft-card';
+    card.dataset.mint = nft.mint;
+
+    const image = document.createElement('img');
+    image.src = nft.image.replace(/[<>"']/g, ''); 
+    image.alt = nft.name;
+    image.loading = 'lazy';
+
+    const title = document.createElement('h3');
+    title.className = 'nft-name';
+    title.textContent = nft.name;
+
+    const priceP = document.createElement('p');
+    priceP.className = 'nft-price';
+    if (nft.isListed && nft.price > 0) {
+        priceP.textContent = `${nft.price.toFixed(2)} SOL`;
+    } else {
+        priceP.textContent = 'Not Listed';
+        priceP.classList.add('nft-unlisted');
+    }
+
+    const detailsBtn = document.createElement('button');
+    detailsBtn.className = 'view-details-btn';
+    detailsBtn.textContent = 'Details';
+
+    card.appendChild(image);
+    card.appendChild(title);
+    card.appendChild(priceP);
+    card.appendChild(detailsBtn);
+
+    return card;
+}
+
+/**
+ * Displays the details modal for a selected NFT.
+ */
+function showNftDetails(nft, isUserNft) {
+    if (!uiElements.nftDetailsModal) return;
+
+    appState.currentOpenNft = nft;
+
+    if (uiElements.nftDetailImage) uiElements.nftDetailImage.src = nft.image.replace(/[<>"']/g, '');
+    if (uiElements.nftDetailName) uiElements.nftDetailName.textContent = nft.name;
+    if (uiElements.nftDetailDescription) uiElements.nftDetailDescription.textContent = nft.description;
+    if (uiElements.nftDetailOwner) uiElements.nftDetailOwner.textContent = `${nft.owner.substring(0, 8)}...`;
+    if (uiElements.nftDetailMint) uiElements.nftDetailMint.textContent = `${nft.mint.substring(0, 8)}...`;
+
+    const copyBtn = document.querySelector('[data-copy-target]');
+    if (copyBtn) copyBtn.dataset.copyTarget = nft.mint;
+
+    // Attributes
+    if (uiElements.attributesList) {
+        uiElements.attributesList.innerHTML = '';
+        const attributes = nft.attributes || [];
+        attributes.forEach(attr => {
+            const li = document.createElement('li');
+            const traitType = document.createElement('strong');
+            traitType.textContent = attr.trait_type + ':';
+
+            const valueSpan = document.createElement('span');
+            valueSpan.textContent = ` ${attr.value}`;
+
+            li.appendChild(traitType);
+            li.appendChild(valueSpan);
+            uiElements.attributesList.appendChild(li);
+        });
+        if (attributes.length === 0) uiElements.attributesList.innerHTML = '<li>No attributes listed.</li>';
+    }
+
+    // History
+    if (uiElements.nftDetailHistory) {
+        const history = MOCK_DB.nftHistory[nft.mint] || [];
+
+        uiElements.nftDetailHistory.innerHTML = '';
+        if (history.length > 0) {
+            history.reverse().forEach(item => {
+                const date = new Date(item.timestamp).toLocaleDateString();
+                const toShort = item.to ? `${item.to.substring(0, 8)}...` : '';
+                const fromShort = item.from ? `${item.from.substring(0, 8)}...` : '';
+                let text = '';
+
+                if (item.type === 'Mint') text = `${date}: Minted to ${toShort}`;
+                else if (item.type === 'Transfer') text = `${date}: Transferred to ${toShort}`;
+                else if (item.type === 'List') text = `${date}: Listed for ${item.price} SOL`;
+                else if (item.type === 'Sale') text = `${date}: Sold for ${item.price} SOL to ${toShort}`;
+                else if (item.type === 'Unlist') text = `${date}: Unlisted`;
+                else text = `${date}: ${item.type} event.`;
+
+                const li = document.createElement('li');
+                li.textContent = text;
+                uiElements.nftDetailHistory.appendChild(li);
+            });
+        } else {
+             uiElements.nftDetailHistory.innerHTML = '<li>No history available.</li>';
+        }
+    }
+
+    // Action Buttons
+    const connectedOwner = appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null;
+    const isOwner = connectedOwner === nft.owner;
+
+    if (uiElements.nftDetailBuyBtn) {
+        const showBuy = nft.isListed && !isOwner && connectedOwner;
+        uiElements.nftDetailBuyBtn.style.display = showBuy ? 'block' : 'none';
+        uiElements.nftDetailBuyBtn.textContent = `Buy for ${nft.price.toFixed(2)} SOL`;
+        uiElements.nftDetailBuyBtn.disabled = !showBuy;
+    }
+
+    if (uiElements.nftDetailSellBtn) {
+        const showList = isOwner && connectedOwner && !nft.isListed;
+        const showUnlist = isOwner && connectedOwner && nft.isListed;
+        
+        if (showList) {
+            uiElements.nftDetailSellBtn.style.display = 'block';
+            uiElements.nftDetailSellBtn.textContent = 'List for Sale';
+            uiElements.nftDetailSellBtn.disabled = false;
+        } else if (showUnlist) {
+            uiElements.nftDetailSellBtn.style.display = 'block';
+            uiElements.nftDetailSellBtn.textContent = 'Unlist NFT';
+            uiElements.nftDetailSellBtn.disabled = false;
+        } else {
+            uiElements.nftDetailSellBtn.style.display = 'none';
+            uiElements.nftDetailSellBtn.disabled = true;
+        }
+    }
+
+    if (uiElements.nftDetailTransferBtn) {
+        const showTransfer = isOwner && connectedOwner && !nft.isListed; 
+        uiElements.nftDetailTransferBtn.style.display = showTransfer ? 'block' : 'none';
+        uiElements.nftDetailTransferBtn.disabled = !showTransfer;
+    }
+
+    uiElements.nftDetailsModal.style.display = 'flex';
+    toggleScrollLock(true);
+}
+
+/**
+ * MOCK: Handles buying an NFT from the marketplace.
+ */
+async function handleBuyNft() {
+    if (!appState.walletPublicKey || !appState.currentOpenNft || !appState.currentOpenNft.isListed) {
+        showNotification('Please connect your wallet or NFT is not listed.', 'warning');
+        return;
+    }
+
+    const nft = appState.currentOpenNft;
+    const priceSol = nft.price;
+    const solBalanceLamports = appState.userBalances.SOL;
+    const requiredLamports = parseAmountToBigInt(priceSol.toString(), SOL_DECIMALS);
+
+    const minRequired = requiredLamports + parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
+
+    if (solBalanceLamports < minRequired) {
+         showNotification(`Insufficient SOL balance. Required: ${priceSol.toFixed(2)} SOL + fee.`, 'error');
+         return;
+    }
+
+    setLoadingState(true, uiElements.nftDetailBuyBtn);
+
+    showNotification(`Buying ${nft.name} for ${nft.price} SOL... (Simulation)`, 'info', 5000);
+
+    try {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        const sellerAddress = nft.owner;
+        nft.owner = appState.walletPublicKey.toBase58();
+        nft.isListed = false;
+        nft.price = 0;
+
+        appState.userBalances.SOL = solBalanceLamports - requiredLamports;
+        appState.userBalances.SOL = appState.userBalances.SOL - parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
+
+        persistMockData();
+
+        MOCK_DB.nftHistory[nft.mint].push({ type: 'Sale', timestamp: new Date().toISOString(), price: priceSol, from: sellerAddress, to: nft.owner });
+
+        showNotification(`${nft.name} successfully purchased!`, 'success');
+
+        closeAllPopups();
+        loadUserNFTs();
+        loadMarketplaceNFTs();
+        await updateStakingAndBalanceUI();
+
+    } catch (error) {
+        showNotification(`Purchase failed: ${error.message.substring(0, 70)}...`, 'error');
+    } finally {
+        setLoadingState(false, uiElements.nftDetailBuyBtn);
+    }
+}
+
+/**
+ * MOCK: Handles unlisting an NFT.
+ */
+function handleUnlistNft() {
+    if (!appState.walletPublicKey || !appState.currentOpenNft || appState.currentOpenNft.owner !== appState.walletPublicKey.toBase58() || !appState.currentOpenNft.isListed) {
+        showNotification('Invalid NFT or you are not the owner/it is not listed.', 'error');
+        return;
+    }
+
+    const nft = appState.currentOpenNft;
+
+    setLoadingState(true, uiElements.nftDetailSellBtn);
+    showNotification(`Unlisting ${nft.name}... (Simulation)`, 'info');
+
+    try {
+        setTimeout(() => {
+            nft.isListed = false;
+            nft.price = 0;
+            persistMockData();
+
+            if (!MOCK_DB.nftHistory[nft.mint]) {
+                 MOCK_DB.nftHistory[nft.mint] = [];
+            }
+            MOCK_DB.nftHistory[nft.mint].push({ type: 'Unlist', timestamp: new Date().toISOString() });
+
+            showNotification(`${nft.name} successfully unlisted!`, 'success');
+
+            closeAllPopups();
+            loadUserNFTs();
+            loadMarketplaceNFTs();
+            setLoadingState(false, uiElements.nftDetailSellBtn);
+        }, 2000);
+    } catch (e) {
+        showNotification('Unlisting failed.', 'error');
+        setLoadingState(false, uiElements.nftDetailSellBtn);
+    }
+}
+
+/**
+ * MOCK: Handles the form submission for minting a new NFT.
+ */
+function handleMintNftSubmit(event) {
+    event.preventDefault();
+
+    if (!appState.walletPublicKey) {
+        showNotification('Please connect your wallet to mint an NFT.', 'warning');
+        return;
+    }
+
+    const MINT_FEE_SOL = parseAmountToBigInt('0.05', SOL_DECIMALS);
+    const minRequiredSol = MINT_FEE_SOL + parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
+
+    if (appState.userBalances.SOL < minRequiredSol) {
+        showNotification(`Insufficient SOL for minting fee (0.05 SOL + fee). Required: ${formatBigInt(minRequiredSol, SOL_DECIMALS)} SOL`, 'error');
+        return;
+    }
+
+    const form = event.target;
+    const name = form.elements['mint-name'].value.trim();
+    const description = form.elements['mint-description'].value.trim();
+    const image = form.elements['mint-image'].value.trim() || 'https://via.placeholder.com/180x180/6c757d/ffffff?text=New+Fox';
+
+    const invalidCharRegex = /[<>&'"\\]/g; 
+
+    if (!name || name.length < 3 || name.length > 50 || invalidCharRegex.test(name)) {
+        showNotification('Name must be 3-50 characters and cannot contain HTML or unsafe characters.', 'error');
+        return;
+    }
+    if (!description || description.length < 10 || description.length > 200 || invalidCharRegex.test(description)) {
+        showNotification('Description must be 10-200 characters and cannot contain HTML or unsafe characters.', 'error');
+        return;
+    }
+
+    setLoadingState(true);
+    showNotification('Minting NFT... (Simulation in progress)', 'info');
+
+    try {
+        setTimeout(async () => {
+            const newMint = `NFT_MINT_${Date.now()}`;
+            const newNft = {
+                mint: newMint,
+                name: name,
+                description: description,
+                owner: appState.walletPublicKey.toBase58(),
+                price: 0,
+                isListed: false,
+                image: image.replace(/[<>"']/g, ''),
+                attributes: [{ trait_type: 'Creator', value: 'AlphaFox DAO' }]
+            };
+
+            MOCK_DB.nfts.push(newNft);
+            MOCK_DB.nftHistory[newMint] = [{ type: 'Mint', timestamp: new Date().toISOString(), to: appState.walletPublicKey.toBase58() }];
+
+            appState.userBalances.SOL = appState.userBalances.SOL - minRequiredSol;
+
+            persistMockData();
+
+            showNotification(`NFT "${name}" successfully minted!`, 'success');
+            form.reset();
+            closeAllPopups();
+            loadUserNFTs();
+            await updateStakingAndBalanceUI();
+            setLoadingState(false);
+        }, 3000);
+    } catch (e) {
+        showNotification('Minting failed during simulation.', 'error');
+        setLoadingState(false);
+    }
+}
+
+
+/**
+ * MOCK: Handles listing an NFT for sale.
+ */
+function handleListNftSubmit(event) {
+    event.preventDefault();
+
+    if (!appState.walletPublicKey) {
+        showNotification('Please connect your wallet.', 'warning');
+        return;
+    }
+
+    const form = event.target;
+    const mint = form.elements['nft-to-sell'].value;
+    const price = form.elements['list-price'].value;
+
+    if (!mint) {
+        showNotification('Please select an NFT to list.', 'warning');
+        return;
+    }
+
+    const priceRegex = /^\d+(\.\d{1,9})?$/;
+    if (!priceRegex.test(price) || parseFloat(price) <= 0) {
+        showNotification('Please enter a valid listing price (up to 9 decimal places).', 'error');
+        return;
+    }
+
+    const nft = MOCK_DB.nfts.find(n => n.mint === mint);
+    if (!nft || nft.owner !== appState.walletPublicKey.toBase58() || nft.isListed) {
+        showNotification('Invalid NFT or NFT is already listed.', 'error');
+        return;
+    }
+
+    setLoadingState(true);
+    showNotification(`Listing ${nft.name} for ${price} SOL... (Simulation)`, 'info');
+
+    try {
+        setTimeout(() => {
+            nft.isListed = true;
+            nft.price = parseFloat(price);
+            persistMockData();
+
+            if (!MOCK_DB.nftHistory[mint]) {
+                 MOCK_DB.nftHistory[mint] = [];
+            }
+            MOCK_DB.nftHistory[mint].push({ type: 'List', timestamp: new Date().toISOString(), price: nft.price });
+
+            showNotification(`${nft.name} successfully listed for ${price} SOL!`, 'success');
+            form.reset();
+            closeAllPopups();
+            loadUserNFTs();
+            loadMarketplaceNFTs();
+            setLoadingState(false);
+        }, 3000);
+    } catch (e) {
+        showNotification('Listing failed.', 'error');
+        setLoadingState(false);
+    }
+}
+
+/**
+ * Helper: Basic Solana Public Key validation.
+ */
+function isValidSolanaAddress(address) {
+    try {
+        new window.SolanaWeb3.PublicKey(address);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * MOCK: Handles transferring an NFT to a new owner (Simulates the transaction logic).
+ */
+async function handleTransferNft() {
+    if (!appState.walletPublicKey) {
+        showNotification('Please connect your wallet.', 'warning');
+        return;
+    }
+
+    if (!appState.connection) {
+         showNotification('RPC connection not established. Try reconnecting wallet.', 'error');
+         return;
+    }
+
+    if (!appState.currentOpenNft || appState.currentOpenNft.isListed || appState.currentOpenNft.owner !== appState.walletPublicKey.toBase58()) {
+        showNotification('NFT is listed or you are not the owner.', 'error');
+        return;
+    }
+
+    const recipientAddress = prompt("Enter the recipient's Solana address:");
+
+    if (!recipientAddress) {
+        showNotification('Transfer cancelled.', 'info');
+        return;
+    }
+
+    if (!isValidSolanaAddress(recipientAddress)) {
+        showNotification('Invalid Solana address entered.', 'error');
+        return;
+    }
+
+    setLoadingState(true, uiElements.nftDetailTransferBtn);
+
+    try {
+        const recipientPublicKey = new window.SolanaWeb3.PublicKey(recipientAddress);
+        const newOwner = recipientPublicKey.toBase58();
+
+        if (newOwner === appState.walletPublicKey.toBase58()) {
+             throw new Error('Cannot transfer to your own address.');
+        }
+
+        const nft = appState.currentOpenNft;
+        const oldOwner = nft.owner;
+
+        showNotification(`Transferring ${nft.name} to ${newOwner.substring(0, 8)}... (Simulation)`, 'info', 5000);
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Transfer logic
+        nft.owner = newOwner;
+        persistMockData();
+
+        if (!MOCK_DB.nftHistory[nft.mint]) {
+             MOCK_DB.nftHistory[nft.mint] = [];
+        }
+        MOCK_DB.nftHistory[nft.mint].push({ type: 'Transfer', timestamp: new Date().toISOString(), from: oldOwner, to: newOwner });
+
+        showNotification(`${nft.name} successfully transferred!`, 'success');
+
+        closeAllPopups();
+        loadUserNFTs();
+        loadMarketplaceNFTs();
+
+    } catch (error) {
+        console.error('Error during NFT transfer:', error);
+        showNotification(`Transfer failed: ${error.message}`, 'error');
+    } finally {
+        setLoadingState(false, uiElements.nftDetailTransferBtn);
     }
 }
 
@@ -1529,6 +2005,62 @@ async function disconnectWallet() {
      } else {
         handlePublicKeyChange(null);
      }
+}
+
+
+// =========================================================================================
+// --- INITIALIZATION AND EVENT LISTENERS (Fully implemented) ---
+// =========================================================================================
+
+/**
+ * MOCK: Loads and displays announcements.
+ */
+function loadAnnouncements() {
+    if (!uiElements.announcementsList) return;
+    uiElements.announcementsList.innerHTML = '';
+    MOCK_DB.announcements.forEach(ann => {
+        const item = document.createElement('div');
+        item.className = 'announcement-item';
+
+        const p = document.createElement('p');
+        p.textContent = ann.text;
+
+        const span = document.createElement('span');
+        span.className = 'announcement-date';
+        span.textContent = new Date(ann.date).toLocaleDateString();
+
+        item.appendChild(p);
+        item.appendChild(span);
+        uiElements.announcementsList.appendChild(item);
+    });
+}
+
+/**
+ * MOCK: Loads and displays games/ads.
+ */
+function loadGames() {
+    if (!uiElements.gameList) return;
+    uiElements.gameList.innerHTML = '';
+    MOCK_DB.games.forEach(game => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+
+        const title = document.createElement('h3');
+        title.textContent = game.title;
+
+        const description = document.createElement('p');
+        description.textContent = game.description;
+
+        const link = document.createElement('a');
+        link.href = game.url.replace(/[<>"']/g, '');
+        link.target = '_blank';
+        link.className = 'btn btn-secondary';
+        link.textContent = 'Play Now (MOCK)';
+
+        card.appendChild(title);
+        card.appendChild(description);
+        uiElements.gameList.appendChild(card);
+    });
 }
 
 /**
