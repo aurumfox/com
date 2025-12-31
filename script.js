@@ -769,39 +769,28 @@ async function fetchUserBalances() {
 
     const sender = appState.walletPublicKey;
 
-    // --- 1. ФЕТЧ БАЛАНСА SOL ---
     try {
+        // SOL Balance
         const solBalance = await appState.connection.getBalance(sender, 'confirmed');
         appState.userBalances.SOL = BigInt(solBalance);
-    } catch (error) {
-        console.error("Failed to fetch SOL balance:", error);
-        appState.userBalances.SOL = BigInt(0); 
-        showNotification("Warning: Could not fetch real SOL balance.", 'warning');
-    }
 
-    // --- 2. ФЕТЧ БАЛАНСА AFOX (РЕАЛИЗАЦИЯ) ---
-    try {
-        // 2a. Получаем адрес Associated Token Account (ATA) пользователя для токена AFOX
-        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, 
-            TOKEN_PROGRAM_ID, 
+        // AFOX Balance через splToken
+        const userAfoxATA = await window.splToken.getAssociatedTokenAddress(
             AFOX_TOKEN_MINT_ADDRESS, 
             sender
         );
         
-        // 2b. Запрашиваем баланс этого токен-аккаунта
-        const accountInfo = await appState.connection.getTokenAccountBalance(userAfoxATA);
-        
-        if (accountInfo.value && accountInfo.value.amount) {
-            appState.userBalances.AFOX = BigInt(accountInfo.value.amount);
-        } else {
-            // Если ATA не существует или не имеет баланса (пользователь не владеет AFOX)
+        try {
+            const accountInfo = await appState.connection.getTokenAccountBalance(userAfoxATA);
+            if (accountInfo.value && accountInfo.value.amount) {
+                appState.userBalances.AFOX = BigInt(accountInfo.value.amount);
+            }
+        } catch (e) {
+            // Если аккаунт токена еще не создан, баланс просто 0
             appState.userBalances.AFOX = BigInt(0);
         }
-        
-    } catch (tokenError) {
-        console.warn("Failed to fetch AFOX token balance, setting to 0:", tokenError);
-        appState.userBalances.AFOX = BigInt(0); 
+    } catch (error) {
+        console.error("Balance fetch error:", error);
     }
 }
 
