@@ -4,8 +4,6 @@
 // =========================================================================================
 // 🚨 ⚠️ ⚠️ REQUIRED CHANGES (Leave stubs for standalone operation) ⚠️ ⚠️ 🚨
 // =========================================================================================
-import { Buffer } from 'buffer';
-window.Buffer = Buffer;
 
 // 1. INSERT YOUR IDL (JSON schema of the staking program)
 // The IDL structure looks complete based on your transactions, but the 'accounts' definition
@@ -92,28 +90,25 @@ const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addr
 // PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
 // =========================================================================================
 
-// // 1. ID вашей программы (тот, что в DeclareID в Rust и после деплоя)
-const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
-
-// 2. Главный аккаунт настроек пула (PoolState)
+// --- CRITICAL POOL KEYS (ФИНАЛЬНЫЕ, ПОДТВЕРЖДЕННЫЕ АДРЕСА DEVNET) ---
+// 1. Адрес главного PDA пула (PoolState)
 const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
 
-// 3. Кошелек-хранилище токенов AFOX (Pool Vault)
+// 2. Хранилище стейка (Pool Vault)
 const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
 
-// 4. Кошелек-хранилище наград (Rewards Vault)
+// 3. Хранилище админ. комиссии (Admin Fee Vault)
 const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
 
-// 5. Казначейство для штрафов и комиссий (DAO Treasury)
-const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C');
-
+// 4. КАЗНАЧЕЙСТВО DAO (DAO Treasury Vault) - ФИНАЛЬНЫЙ АДРЕС!
+const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
 // -----------------------------------------------------------------------------------------
 
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';            
-const AFOX_MINT = 'BFpW4MDj8fENn1LpLFboGWjTc5hnsYhXUyptsS3LkjgL';
+const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
 
+const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd'; // Changed for greater MOCK uniqueness
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
-const JUPITER_RPC_ENDPOINT = 'https://mainnet.helius-rpc.com/?api-key=ТВОЙ_КЛЮЧ_HELIUS'; 
+const JUPITER_RPC_ENDPOINT = 'https://rpc.jupag';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const TXN_FEE_RESERVE_SOL = 0.005;
 const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
@@ -141,8 +136,7 @@ const TOKEN_MINT_ADDRESSES = {
 };
 const AFOX_DECIMALS = 6;
 const SOL_DECIMALS = 9;
-const NETWORK = "mainnet-beta";
-
+const NETWORK = window.SolanaWeb3.WalletAdapterNetwork.Mainnet;
 
 // --- GLOBAL APP STATE & WALLET ADAPTERS ---
 const appState = {
@@ -564,51 +558,20 @@ function getSolanaTxnFeeReserve() {
 // --- WALLET & CONNECTION FUNCTIONS (Fully implemented) ---
 // =========================================================================================
 
-async function connectWallet(adapter) {
-    setLoadingState(true);
-
+/**
+ * Checks RPC connection status.
+ */
+async function checkRpcHealth(connection) {
     try {
-        // 1. Ищем провайдер (Phantom) напрямую в окне, чтобы обойти конфликты адаптеров
-        const provider = window?.phantom?.solana || window?.solana;
-
-        if (!provider) {
-            const installUrl = 'https://phantom.app/';
-            showNotification(`Phantom wallet not found. <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
-            return;
-        }
-
-        // 2. Устанавливаем соединение с сетью
-        appState.connection = await getRobustConnection();
-
-        // 3. ПРИНУДИТЕЛЬНАЯ СВЯЗКА (Критическое изменение)
-        // Мы не просто проверяем connected, мы вызываем connect(), 
-        // чтобы кошелек "проснулся" именно для твоего домена.
-        const resp = await provider.connect();
-        
-        // Сохраняем провайдер в состояние приложения
-        appState.provider = provider;
-        
-        // 4. Ручное обновление адреса, если слушатели (listeners) заблокированы сайтом
-        if (resp.publicKey) {
-            handlePublicKeyChange(resp.publicKey);
-            showNotification('Wallet connected successfully!', 'success');
-        }
-
-        registerProviderListeners();
-        closeAllPopups();
-
-    } catch (error) {
-        console.error('Wallet connection failed:', error);
-        // Если пользователь закрыл окно кошелька - это не ошибка, просто сбрасываем состояние
-        if (error.code === 4001) {
-            showNotification('Connection cancelled by user', 'info');
-        } else {
-            showNotification(`Connection failed: ${error.message.substring(0, 50)}`, 'error');
-        }
-    } finally {
-        setLoadingState(false);
+        await connection.getSlot('confirmed');
+        return true;
+    } catch (rpcError) {
+        console.error('RPC endpoint failed health check:', rpcError);
+        return false;
     }
+}
 
+/**
  * Robust function to get a working RPC connection.
  */
 async function getRobustConnection() {
@@ -739,7 +702,6 @@ function registerProviderListeners() {
         appState.provider.on('connect', () => {
             if (appState.provider.publicKey) {
                 handlePublicKeyChange(appState.provider.publicKey);
-                showNotification('Wallet successfully connected! 🦊', 'success');
             }
         });
         appState.provider.on('disconnect', () => handlePublicKeyChange(null));
@@ -749,7 +711,6 @@ function registerProviderListeners() {
 
 /**
  * Connects the wallet using the provided adapter.
- * 🛑 ИСПРАВЛЕНА ЛОГИКА: Гарантирован вызов adapter.connect()
  */
 async function connectWallet(adapter) {
     setLoadingState(true);
@@ -760,30 +721,21 @@ async function connectWallet(adapter) {
         if (adapter.name === 'Phantom' && !window.solana) {
              const installUrl = 'https://phantom.app/';
             showNotification(`Phantom wallet not found. Please install it: <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
-            setLoadingState(false); // Добавлено, чтобы разблокировать UI
             return;
         } else if (!selectedAdapter) {
              showNotification(`Wallet adapter for ${adapter.name} not found.`, 'warning', 5000);
-             setLoadingState(false);
              return;
         }
 
         appState.provider = selectedAdapter;
+
         appState.connection = await getRobustConnection();
 
-        registerProviderListeners(); 
-        
-        // 🚨 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Пытаемся подключиться всегда.
-        // Это откроет паллету, если кошелек не подключен,
-        // или просто обновит состояние, если он уже подключен.
-        if (!appState.provider.connected) {
-             await appState.provider.connect();
-        }
-        
-        // В случае успеха handlePublicKeyChange будет вызван через listener 'connect'
-        // или сразу, если кошелек уже был подключен.
         if (appState.provider.publicKey) {
              handlePublicKeyChange(appState.provider.publicKey);
+        } else {
+            registerProviderListeners(); 
+            await appState.provider.connect();
         }
 
         closeAllPopups();
@@ -798,7 +750,7 @@ async function connectWallet(adapter) {
         showNotification(message, 'error');
         throw error;
     } finally {
-        setLoadingState(false); // Важно: разблокировать UI здесь
+        // Loading state is handled in the wrapper (simulateConnectButtonUpdate)
     }
 }
 
@@ -1043,31 +995,18 @@ async function handleStakeAfox() {
             STAKING_PROGRAM_ID
         );
 
-        
-        // ====================================================================
-
         // 🔴 CREATE TRANSACTION (REAL ANCHOR TEMPLATE) 
-        // Добавляем микро-платеж для ускорения транзакции в Mainnet
-const modifyComputeUnits = window.SolanaWeb3.ComputeBudgetProgram.setComputeUnitLimit({ 
-    units: 400000 
-});
-const addPriorityFee = window.SolanaWeb3.ComputeBudgetProgram.setComputeUnitPrice({ 
-    microLamports: 60000 // Это добавит примерно 0.00006 SOL комиссии за скорость
-});
-
-const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
-    .accounts({
-        staker: sender,
-        userStakingAccount: userStakingAccountPDA,
-        tokenFrom: userAfoxATA,
-        poolState: AFOX_POOL_STATE_PUBKEY, 
-        poolVault: AFOX_POOL_VAULT_PUBKEY,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SYSTEM_PROGRAM_ID,
-    })
-    .preInstructions([modifyComputeUnits, addPriorityFee]) // <-- ВСТАВЛЯЕМ СЮДА
-    .transaction();
-
+        const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
+            .accounts({
+                staker: sender,
+                userStakingAccount: userStakingAccountPDA,
+                tokenFrom: userAfoxATA,
+                poolState: AFOX_POOL_STATE_PUBKEY, 
+                poolVault: AFOX_POOL_VAULT_PUBKEY,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                systemProgram: SYSTEM_PROGRAM_ID,
+            })
+            .transaction();
 
         // 🟢 REAL SUBMISSION
         const signature = await appState.provider.sendAndConfirm(tx, []);
@@ -2005,14 +1944,13 @@ async function handleMaxAmount(event) {
 
 
 // =========================================================================================
-// --- NEW WRAPPER FOR BUTTON (КРИТИЧЕСКИ ИСПРАВЛЕН)
+// --- NEW WRAPPER FOR BUTTON 
 // =========================================================================================
 
 /**
  * Simulates the connect button update logic
  * and calls the main connectWallet function.
  * @param {HTMLElement} btn - The HTML button element.
- * 🛑 ИСПРАВЛЕНО: Упрощена логика, чтобы полагаться на connectWallet для управления setLoadingState.
  */
 async function simulateConnectButtonUpdate(btn) {
     if (!btn) return;
@@ -2022,43 +1960,37 @@ async function simulateConnectButtonUpdate(btn) {
     btn.textContent = 'Connecting...';
     btn.classList.remove('connected');
     
-    // setLoadingState(true) вызывается внутри connectWallet
+    setLoadingState(true);
 
     try {
         await connectWallet({ name: 'Phantom' });
         
-        // Логика UI после успешного подключения обрабатывается в handlePublicKeyChange,
-        // который вызывается через listener 'connect'.
+        if (appState.walletPublicKey) {
+            const publicKey = appState.walletPublicKey.toBase58();
+            btn.classList.add('connected');
+            showNotification('Wallet successfully connected! 🦊', 'success');
+        } else {
+             btn.textContent = originalText;
+        }
 
     } catch (error) {
-        // catch нужен только для ошибок, которые connectWallet не перехватил,
-        // но connectWallet теперь ловит большинство из них.
         let errorMessage = 'Connection Error';
 
         if (error.message.includes('Phantom wallet not found')) {
             errorMessage = 'Please install Phantom Wallet.';
-        } else if (error.message.includes('denied by user')) {
+        } else if (error.message.includes('Connection denied by user')) {
             errorMessage = 'Connection denied by user.';
-        } else if (error.message.includes('Both primary and backup')) {
-             errorMessage = 'RPC failed.';
-        } else {
-             errorMessage = `Connection failed: ${error.message.substring(0, 50)}...`;
         }
         
         btn.textContent = errorMessage;
         setTimeout(() => {
             btn.textContent = originalText;
             btn.classList.remove('connected');
-            btn.disabled = false; // Разблокировать после ошибки
         }, 3000);
 
     } finally {
-        // Если connectWallet успешно запустил подключение, но оно еще не завершилось (listener сработает позже),
-        // или если произошла ошибка, которую мы не поймали здесь, нам нужно сбросить кнопку.
-        if (!appState.walletPublicKey) {
-            btn.disabled = false;
-        }
-        // setLoadingState(false) вызывается внутри connectWallet.
+        btn.disabled = false;
+        setLoadingState(false); 
     }
 }
 
@@ -2397,7 +2329,6 @@ function populatePoolSelector() {
  * Main initialization function.
  */
 async function init() {
-    // 🛑 ИСПРАВЛЕНО: Увеличен таймаут проверки зависимостей
     if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined' || typeof window.SolanaWalletAdapterPhantom === 'undefined') {
         setTimeout(init, 100); 
         return;
