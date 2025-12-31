@@ -113,7 +113,7 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 const AFOX_MINT = 'BFpW4MDj8fENn1LpLFboGWjTc5hnsYhXUyptsS3LkjgL';
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
-const JUPITER_RPC_ENDPOINT = 'https://rpc.jupag';
+const JUPITER_RPC_ENDPOINT = 'https://mainnet.helius-rpc.com/?api-key=ТВОЙ_КЛЮЧ_HELIUS'; 
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const TXN_FEE_RESERVE_SOL = 0.005;
 const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
@@ -141,7 +141,8 @@ const TOKEN_MINT_ADDRESSES = {
 };
 const AFOX_DECIMALS = 6;
 const SOL_DECIMALS = 9;
-const NETWORK = window.SolanaWeb3.WalletAdapterNetwork.Mainnet;
+const NETWORK = "mainnet-beta";
+
 
 // --- GLOBAL APP STATE & WALLET ADAPTERS ---
 const appState = {
