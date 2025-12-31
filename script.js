@@ -917,62 +917,37 @@ async function updateStakingUI() {
  * ✅ Implemented: Reading staking data from the blockchain (REAL ANCHOR).
  */
 async function fetchUserStakingData() {
-    if (!appState.walletPublicKey || !STAKING_IDL.version || !appState.connection) {
-        appState.userStakingData.stakedAmount = BigInt(0);
-        appState.userStakingData.rewards = BigInt(0);
-        appState.userStakingData.lockupEndTime = 0;
-        appState.userStakingData.poolIndex = 4;
-        appState.userStakingData.lending = BigInt(0);
-        return;
-    }
+    if (!appState.walletPublicKey || !appState.connection) return;
 
     try {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
+        const userStakingPda = getUserStakingPDA(sender);
 
-        // 1. PDA calculation
-        const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
-            [
-                window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED),
-                sender.toBuffer(),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(), // Pool ID is part of the seed
-            ],
-            STAKING_PROGRAM_ID
-        );
+        // Читаем аккаунт напрямую из программы
+        const stakingData = await program.account.userStakingAccount.fetch(userStakingPda);
+        
+        // Обновляем глобальное состояние (Anchor BN -> JS BigInt)
+        appState.userStakingData = {
+            stakedAmount: stakingData.stakedAmount.toBigInt(),
+            rewards: stakingData.rewardsAmount.toBigInt(),
+            lockupEndTime: stakingData.lockupEndTime.toNumber(),
+            poolIndex: stakingData.poolIndex,
+            lending: stakingData.lending.toBigInt()
+        };
 
-        // 2. Deserialization (REAL ANCHOR FETCH)
-        try {
-            const stakingData = await program.account.userStakingAccount.fetch(userStakingAccountPDA);
-            
-            // Note: .toBigInt() and .toNumber() are methods on Anchor's BN object
-            appState.userStakingData.stakedAmount = stakingData.stakedAmount.toBigInt();
-            appState.userStakingData.rewards = stakingData.rewardsAmount.toBigInt();
-            appState.userStakingData.lockupEndTime = stakingData.lockupEndTime.toNumber();
-            appState.userStakingData.poolIndex = stakingData.poolIndex;
-            appState.userStakingData.lending = stakingData.lending.toBigInt();
-
-        } catch (e) {
-            // Account not found or deserialization failed means user has not staked yet.
-            if (e.message && (e.message.includes('Account does not exist') || e.message.includes('301'))) {
-                // Not staked yet: Reset to zero state
-                appState.userStakingData.stakedAmount = BigInt(0);
-                appState.userStakingData.rewards = BigInt(0);
-                appState.userStakingData.lockupEndTime = 0;
-                appState.userStakingData.poolIndex = 4;
-                appState.userStakingData.lending = BigInt(0);
-            } else {
-                 throw e; // Propagate critical error
-            }
-        }
+        // Логируем для проверки в консоли
+        console.log("Staking Data Loaded:", formatBigInt(appState.userStakingData.stakedAmount, 6));
 
     } catch (e) {
-        console.error("Failed to fetch staking data:", e);
-        // On error, reset to zero state
-        appState.userStakingData.stakedAmount = BigInt(0);
-        appState.userStakingData.rewards = BigInt(0);
-        appState.userStakingData.lockupEndTime = 0;
-        appState.userStakingData.poolIndex = 4;
-        appState.userStakingData.lending = BigInt(0);
+        // Если аккаунт не найден — это нормально, обнуляем данные
+        appState.userStakingData = { 
+            stakedAmount: BigInt(0), 
+            rewards: BigInt(0), 
+            lockupEndTime: 0, 
+            poolIndex: 4, 
+            lending: BigInt(0) 
+        };
     }
 }
 
