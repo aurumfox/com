@@ -1047,17 +1047,27 @@ async function handleStakeAfox() {
         // ====================================================================
 
         // 🔴 CREATE TRANSACTION (REAL ANCHOR TEMPLATE) 
-        const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
-            .accounts({
-                staker: sender,
-                userStakingAccount: userStakingAccountPDA,
-                tokenFrom: userAfoxATA,
-                poolState: AFOX_POOL_STATE_PUBKEY, 
-                poolVault: AFOX_POOL_VAULT_PUBKEY,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                systemProgram: SYSTEM_PROGRAM_ID,
-            })
-            .transaction();
+        // Добавляем микро-платеж для ускорения транзакции в Mainnet
+const modifyComputeUnits = window.SolanaWeb3.ComputeBudgetProgram.setComputeUnitLimit({ 
+    units: 400000 
+});
+const addPriorityFee = window.SolanaWeb3.ComputeBudgetProgram.setComputeUnitPrice({ 
+    microLamports: 60000 // Это добавит примерно 0.00006 SOL комиссии за скорость
+});
+
+const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
+    .accounts({
+        staker: sender,
+        userStakingAccount: userStakingAccountPDA,
+        tokenFrom: userAfoxATA,
+        poolState: AFOX_POOL_STATE_PUBKEY, 
+        poolVault: AFOX_POOL_VAULT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SYSTEM_PROGRAM_ID,
+    })
+    .preInstructions([modifyComputeUnits, addPriorityFee]) // <-- ВСТАВЛЯЕМ СЮДА
+    .transaction();
+
 
         // 🟢 REAL SUBMISSION
         const signature = await appState.provider.sendAndConfirm(tx, []);
