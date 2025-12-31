@@ -1023,6 +1023,9 @@ async function handleStakeAfox() {
 /**
  * ✅ Implemented: Sending claim rewards transaction (REAL ANCHOR).
  */
+/**
+ * ✅ REAL MAINNET: Sending claim rewards transaction.
+ */
 async function handleClaimRewards() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
         showNotification('Wallet not connected or program IDL missing.', 'warning');
@@ -1031,14 +1034,18 @@ async function handleClaimRewards() {
     setLoadingState(true, uiElements.claimRewardsBtn);
 
     try {
-        if (appState.userStakingData.rewards === BigInt(0)) { showNotification('No rewards to claim.', 'warning', 3000); return; }
+        if (appState.userStakingData.rewards === BigInt(0)) { 
+            showNotification('No rewards to claim.', 'warning', 3000); 
+            setLoadingState(false, uiElements.claimRewardsBtn);
+            return; 
+        }
 
         showNotification('Preparing claim rewards transaction...', 'info');
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Calculate staking account PDA
+        // 1. Расчет PDA аккаунта стейкинга
         const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
             [
                 window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
@@ -1047,13 +1054,17 @@ async function handleClaimRewards() {
             ],
             STAKING_PROGRAM_ID
         );
-        // 2. User's ATA for rewards
-        const userRewardATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
+
+        // 2. Получение ATA (Associated Token Account) пользователя для зачисления AFOX
+        const userRewardATA = await window.splToken.getAssociatedTokenAddress(
+            AFOX_TOKEN_MINT_ADDRESS, 
+            sender
         );
 
-        // 🔴 CREATE INSTRUCTION (REAL ANCHOR TEMPLATE) 
-         const tx = await program.methods.claimRewards()
+        // 3. Формирование транзакции с Priority Fee
+        const priorityFeeIx = await getPriorityFeeInstruction();
+        
+        const tx = await program.methods.claimRewards()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
@@ -1064,24 +1075,26 @@ async function handleClaimRewards() {
             })
             .transaction();
 
-        // 🟢 REAL SUBMISSION
-        const signature = await appState.provider.sendAndConfirm(tx, []);
+        tx.add(priorityFeeIx); // Добавляем газ для Mainnet
+
+        // 4. Отправка и подтверждение
+        const signature = await appState.provider.sendAndConfirm(tx);
 
         const claimedAmountBigInt = appState.userStakingData.rewards;
         await sendLogToFirebase(sender.toBase58(), 'CLAIM', claimedAmountBigInt);
 
-        showNotification(`Rewards successfully claimed! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 5000);
-
+        showNotification(`Rewards claimed! Tx: ${signature.substring(0, 8)}...`, 'success', 5000);
         await updateStakingAndBalanceUI();
 
     } catch (error) {
         console.error("Claim transaction failed:", error);
-        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Claim failed. Details: ${error.message.substring(0, 100)}`;
+        const message = error.message.includes('denied') ? 'Transaction denied.' : `Claim failed: ${error.message.substring(0, 60)}`;
         showNotification(message, 'error');
     } finally {
         setLoadingState(false, uiElements.claimRewardsBtn);
     }
 }
+
 
 /**
  * ✅ Implemented: Sending unstaking transaction (REAL ANCHOR).
