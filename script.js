@@ -74,6 +74,22 @@ const STAKING_IDL = {
                 ],
             },
         },
+        {
+    "name": "listNft",
+    "accounts": [
+        { "name": "seller", "isMut": true, "isSigner": true },
+        { "name": "nftMint", "isMut": false, "isSigner": false },
+        { "name": "sellerTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "listingAccount", "isMut": true, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false },
+        { "name": "rent", "isMut": false, "isSigner": false }
+    ],
+    "args": [
+        { "name": "price", "type": "u64" }
+    ]
+}
+
         // IMPORTANT: If you need to fetch PoolState, its definition must be here too.
         // Assuming fetchUserStakingData is enough for this UI.
     ]
@@ -1476,74 +1492,64 @@ function handleUnlistNft() {
     }
 }
 
-/**
- * MOCK: Handles the form submission for minting a new NFT.
- */
-function handleMintNftSubmit(event) {
+async function handleListNftSubmit(event) {
     event.preventDefault();
 
-    if (!appState.walletPublicKey) {
-        showNotification('Please connect your wallet to mint an NFT.', 'warning');
-        return;
-    }
-
-    const MINT_FEE_SOL = parseAmountToBigInt('0.05', SOL_DECIMALS);
-    const minRequiredSol = MINT_FEE_SOL + parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
-
-    if (appState.userBalances.SOL < minRequiredSol) {
-        showNotification(`Insufficient SOL for minting fee (0.05 SOL + fee). Required: ${formatBigInt(minRequiredSol, SOL_DECIMALS)} SOL`, 'error');
+    if (!appState.walletPublicKey || !appState.connection) {
+        showNotification('Please connect your wallet.', 'warning');
         return;
     }
 
     const form = event.target;
-    const name = form.elements['mint-name'].value.trim();
-    const description = form.elements['mint-description'].value.trim();
-    const image = form.elements['mint-image'].value.trim() || 'https://via.placeholder.com/180x180/6c757d/ffffff?text=New+Fox';
-
-    const invalidCharRegex = /[<>&'"\\]/g; 
-
-    if (!name || name.length < 3 || name.length > 50 || invalidCharRegex.test(name)) {
-        showNotification('Name must be 3-50 characters and cannot contain HTML or unsafe characters.', 'error');
-        return;
-    }
-    if (!description || description.length < 10 || description.length > 200 || invalidCharRegex.test(description)) {
-        showNotification('Description must be 10-200 characters and cannot contain HTML or unsafe characters.', 'error');
-        return;
-    }
-
-    setLoadingState(true);
-    showNotification('Minting NFT... (Simulation in progress)', 'info');
+    const mintAddressStr = form.elements['nft-to-sell'].value; // Адрес NFT
+    const priceSol = form.elements['list-price'].value;       // Цена в SOL
 
     try {
-        setTimeout(async () => {
-            const newMint = `NFT_MINT_${Date.now()}`;
-            const newNft = {
-                mint: newMint,
-                name: name,
-                description: description,
-                owner: appState.walletPublicKey.toBase58(),
-                price: 0,
-                isListed: false,
-                image: image.replace(/[<>"']/g, ''),
-                attributes: [{ trait_type: 'Creator', value: 'AlphaFox DAO' }]
-            };
+        setLoadingState(true);
+        const mintPublicKey = new window.SolanaWeb3.PublicKey(mintAddressStr);
+        const priceLamports = new window.Anchor.BN(parseAmountToBigInt(priceSol, SOL_DECIMALS).toString());
+        
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL); // Убедитесь, что IDL маркетплейса загружен
+        const seller = appState.walletPublicKey;
 
-            MOCK_DB.nfts.push(newNft);
-            MOCK_DB.nftHistory[newMint] = [{ type: 'Mint', timestamp: new Date().toISOString(), to: appState.walletPublicKey.toBase58() }];
+        // 1. Находим PDA для записи о продаже (Listing)
+        const [listingAddress] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
+            [Buffer.from("listing"), seller.toBuffer(), mintPublicKey.toBuffer()],
+            STAKING_PROGRAM_ID
+        );
 
-            appState.userBalances.SOL = appState.userBalances.SOL - minRequiredSol;
+        // 2. Получаем ATA (где NFT сейчас)
+        const sellerTokenAccount = await window.splToken.getAssociatedTokenAddress(
+            mintPublicKey,
+            seller
+        );
 
-            persistMockData();
+        showNotification(`Listing NFT for ${priceSol} SOL...`, 'info');
 
-            showNotification(`NFT "${name}" successfully minted!`, 'success');
-            form.reset();
-            closeAllPopups();
-            loadUserNFTs();
-            await updateStakingAndBalanceUI();
-            setLoadingState(false);
-        }, 3000);
-    } catch (e) {
-        showNotification('Minting failed during simulation.', 'error');
+        // 3. Вызов реального метода контракта
+        const tx = await program.methods
+            .listNft(priceLamports) 
+            .accounts({
+                seller: seller,
+                nftMint: mintPublicKey,
+                sellerTokenAccount: sellerTokenAccount,
+                listingAccount: listingAddress,
+                systemProgram: window.SolanaWeb3.SystemProgram.programId,
+                tokenProgram: window.splToken.TOKEN_PROGRAM_ID,
+                rent: window.SolanaWeb3.SYSVAR_RENT_PUBKEY,
+            })
+            .rpc();
+
+        showNotification(`Success! NFT listed. ID: ${tx.substring(0, 8)}`, 'success');
+        
+        // Очистка и обновление
+        closeAllPopups();
+        await loadUserNFTs(); // Перезагружаем список (NFT должен исчезнуть из кошелька)
+        
+    } catch (error) {
+        console.error("Listing error:", error);
+        showNotification(`Failed to list NFT: ${error.message}`, 'error');
+    } finally {
         setLoadingState(false);
     }
 }
