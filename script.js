@@ -1197,39 +1197,30 @@ async function handleUnstakeAfox() {
     }
 }
 
-
-// =========================================================================================
-// --- NFT MARKETPLACE FUNCTIONS (MOCK) ---
-// =========================================================================================
-
-/**
- * MOCK: Load user NFTs (owned)
- */
-function loadUserNFTs() {
-    if (!uiElements.userNftList) return;
-
-    const userAddress = appState.walletPublicKey ? appState.walletPublicKey.toBase58() : 'NO_WALLET_CONNECTED';
-    const userNfts = MOCK_DB.nfts.filter(n => n.owner === userAddress && !n.isListed); 
-
-    uiElements.userNftList.innerHTML = '';
-
-    if (userNfts.length === 0) {
-        uiElements.userNftList.innerHTML = `<p class="empty-list-message">${appState.walletPublicKey ? 'You currently own no unlisted AlphaFox NFTs.' : 'Connect your wallet to see your NFTs.'}</p>`;
-        if (uiElements.nftToSellSelect) uiElements.nftToSellSelect.innerHTML = '<option value="">Select an NFT</option>';
-        return;
-    }
-
-    if (uiElements.nftToSellSelect) {
-        const unlistedNfts = MOCK_DB.nfts.filter(n => n.owner === userAddress && !n.isListed);
-        uiElements.nftToSellSelect.innerHTML = '<option value="">Select an NFT</option>' +
-            unlistedNfts.map(nft => `<option value="${nft.mint}">${nft.name}</option>`).join('');
-    }
-
-    userNfts.forEach(nft => {
-        const card = createNftCard(nft);
-        uiElements.userNftList.appendChild(card);
+async function loadUserNFTs() {
+    if (!appState.walletPublicKey) return;
+    
+    // Запрос к Helius DAS API через ваш прокси или напрямую
+    const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 'my-id',
+            method: 'getAssetsByOwner',
+            params: {
+                ownerAddress: appState.walletPublicKey.toBase58(),
+                page: 1,
+                limit: 100
+            },
+        }),
     });
+    const { result } = await response.json();
+    // Фильтруем только вашу коллекцию по Сreator или Group
+    appState.userNFTs = result.items.filter(asset => asset.grouping.some(g => g.group_value === 'АДРЕС_ВАШЕЙ_КОЛЛЕКЦИИ'));
+    // Далее рендерим карточки...
 }
+
 
 /**
  * MOCK: Load NFTs listed for sale
