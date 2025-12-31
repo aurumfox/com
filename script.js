@@ -1099,6 +1099,9 @@ async function handleClaimRewards() {
 /**
  * ✅ Implemented: Sending unstaking transaction (REAL ANCHOR).
  */
+/**
+ * ✅ REAL MAINNET: Sending unstaking transaction.
+ */
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
         showNotification('Wallet not connected or program IDL missing.', 'warning');
@@ -1107,26 +1110,32 @@ async function handleUnstakeAfox() {
     setLoadingState(true, uiElements.unstakeAfoxBtn);
 
     try {
-        if (appState.userStakingData.stakedAmount === BigInt(0)) { showNotification('No AFOX staked.', 'warning', 3000); return; }
-        
-        // CRITICAL CHECK: Loan lock
+        if (appState.userStakingData.stakedAmount === BigInt(0)) { 
+            showNotification('No AFOX staked.', 'warning', 3000); 
+            setLoadingState(false, uiElements.unstakeAfoxBtn);
+            return; 
+        }
+
+        // ПРОВЕРКА: Заблокировано ли займом (Collateral)
         if (appState.userStakingData.lending > BigInt(0)) {
-            showNotification(`Cannot unstake: ${formatBigInt(appState.userStakingData.lending, AFOX_DECIMALS)} AFOX are locked as collateral for a loan. Repay your loan first.`, 'error', 10000);
+            showNotification(`Cannot unstake: Tokens locked as collateral.`, 'error', 10000);
+            setLoadingState(false, uiElements.unstakeAfoxBtn);
             return;
         }
 
         const now = Date.now() / 1000;
         if (appState.userStakingData.lockupEndTime > now) {
-            const remaining = (appState.userStakingData.lockupEndTime - now) / SECONDS_PER_DAY;
-            showNotification(`Unstaking before lockup ends! ${remaining.toFixed(1)} days remaining. Penalty will be applied.`, 'warning', 7000);
+            if (!confirm("Lockup period not ended. Penalty will be applied. Continue?")) {
+                setLoadingState(false, uiElements.unstakeAfoxBtn);
+                return;
+            }
         }
 
-        showNotification('Preparing transaction for unstaking...', 'info', 5000);
+        showNotification('Preparing unstake transaction...', 'info');
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Calculate staking account PDA
         const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
             [
                 window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
@@ -1135,13 +1144,16 @@ async function handleUnstakeAfox() {
             ],
             STAKING_PROGRAM_ID
         );
-        // 2. User's ATA for AFOX
-        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
+
+        const userAfoxATA = await window.splToken.getAssociatedTokenAddress(
+            AFOX_TOKEN_MINT_ADDRESS, 
+            sender
         );
 
-        // 🔴 CREATE INSTRUCTION (REAL ANCHOR TEMPLATE) 
-         const tx = await program.methods.unstake()
+        // Формирование транзакции с Priority Fee
+        const priorityFeeIx = await getPriorityFeeInstruction();
+
+        const tx = await program.methods.unstake()
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
@@ -1153,24 +1165,25 @@ async function handleUnstakeAfox() {
             })
             .transaction();
 
-        // 🟢 REAL SUBMISSION
-        const signature = await appState.provider.sendAndConfirm(tx, []);
+        tx.add(priorityFeeIx);
+
+        const signature = await appState.provider.sendAndConfirm(tx);
 
         const stakedAmountBigInt = appState.userStakingData.stakedAmount;
         await sendLogToFirebase(sender.toBase58(), 'UNSTAKE', stakedAmountBigInt);
 
-        showNotification(`Successful unstaking! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 7000);
-
+        showNotification(`Unstaked! Tx: ${signature.substring(0, 8)}...`, 'success', 7000);
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        console.error("Unstake transaction failed:", error);
-        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Unstaking failed. Details: ${error.message.substring(0, 100)}`;
+        console.error("Unstake failed:", error);
+        const message = error.message.includes('denied') ? 'Transaction denied.' : `Unstaking failed: ${error.message.substring(0, 60)}`;
         showNotification(message, 'error');
     } finally {
         setLoadingState(false, uiElements.unstakeAfoxBtn);
     }
 }
+
 
 async function loadUserNFTs() {
     if (!appState.walletPublicKey) return;
