@@ -973,60 +973,26 @@ async function handleStakeAfox() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Находим ATA и PDA
-        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
+        // 1. Получаем ATA (используем splToken вместо SolanaWeb3.Token)
+        const userAfoxATA = await window.splToken.getAssociatedTokenAddress(
+            AFOX_TOKEN_MINT_ADDRESS, 
+            sender
         );
+
         const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
-            [window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), sender.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+            [
+                window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
+                sender.toBuffer(), 
+                AFOX_POOL_STATE_PUBKEY.toBuffer()
+            ],
             STAKING_PROGRAM_ID
         );
 
-        // 2. ФОРМИРУЕМ ИНСТРУКЦИИ
-        const priorityFeeIx = await getPriorityFeeInstruction(); // Добавляем комиссию
-        const stakeIx = await program.methods
+        // 2. Формируем инструкции
+        const priorityFeeIx = await getPriorityFeeInstruction();
+        
+        const tx = await program.methods
             .stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
-            .accounts({
-                staker: sender,
-                userStakingAccount: userStakingAccountPDA,
-                tokenFrom: userAfoxATA,
-                poolState: AFOX_POOL_STATE_PUBKEY, 
-                poolVault: AFOX_POOL_VAULT_PUBKEY,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                systemProgram: SYSTEM_PROGRAM_ID,
-            })
-            .instruction(); // Получаем именно инструкцию
-
-        // 3. СОБИРАЕМ ТРАНЗАКЦИЮ
-        const transaction = new window.SolanaWeb3.Transaction()
-            .add(priorityFeeIx)
-            .add(stakeIx);
-
-        // Устанавливаем свежий блокхеш
-        const { blockhash } = await appState.connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = sender;
-
-        // 4. ОТПРАВКА
-        const signature = await appState.provider.sendAndConfirm(transaction);
-        
-        await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt); 
-        showNotification(`Success! Signature: ${signature.substring(0, 8)}...`, 'success');
-        
-        uiElements.stakeAmountInput.value = '';
-        await updateStakingAndBalanceUI();
-
-    } catch (error) {
-        console.error("Mainnet Stake Error:", error);
-        showNotification(`Transaction failed: ${error.message}`, 'error');
-    } finally {
-        setLoadingState(false, uiElements.stakeAfoxBtn);
-    }
-}
-
-
-        // 🔴 CREATE TRANSACTION (REAL ANCHOR TEMPLATE) 
-        const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
             .accounts({
                 staker: sender,
                 userStakingAccount: userStakingAccountPDA,
@@ -1038,21 +1004,23 @@ async function handleStakeAfox() {
             })
             .transaction();
 
-        // 🟢 REAL SUBMISSION
-        const signature = await appState.provider.sendAndConfirm(tx, []);
+        tx.add(priorityFeeIx);
 
-        // 🟢 SECURE LOGGING VIA WORKER
-        await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt); 
+        // 3. Отправка
+        const signature = await appState.provider.sendAndConfirm(tx);
+        
+        // Безопасное логирование (не блокирует UI при ошибке воркера)
+        sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt).catch(console.error); 
 
-        showNotification(`Successful staking! Signature: ${signature.substring(0, 8)}... (Transaction Confirmed)`, 'success', 7000);
-
+        showNotification(`Success! Signature: ${signature.substring(0, 8)}...`, 'success');
+        
         uiElements.stakeAmountInput.value = '';
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        console.error("Stake transaction failed:", error);
-        const message = error.message.includes('denied') ? 'Transaction denied by user.' : `Transaction failed: ${error.message.substring(0, 100)}`;
-        showNotification(message, 'error');
+        console.error("Stake Error:", error);
+        const msg = error.message.includes('denied') ? 'Transaction denied' : error.message;
+        showNotification(`Failed: ${msg.substring(0, 60)}`, 'error');
     } finally {
         setLoadingState(false, uiElements.stakeAfoxBtn);
     }
