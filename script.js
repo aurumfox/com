@@ -960,42 +960,70 @@ async function fetchUserStakingData() {
  */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) {
-        showNotification('Wallet not connected or program IDL missing.', 'warning');
+        showNotification('Wallet not connected', 'warning');
         return;
     }
     const amountStr = uiElements.stakeAmountInput.value;
-    const poolIndexStr = uiElements.poolSelector.value;
+    const poolIndex = parseInt(uiElements.poolSelector.value);
     
     setLoadingState(true, uiElements.stakeAfoxBtn);
 
     try {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-        const poolIndex = parseInt(poolIndexStr);
-
-        if (stakeAmountBigInt === BigInt(0)) throw new Error('Enter a valid amount for staking.');
-        if (appState.userBalances.AFOX < stakeAmountBigInt) throw new Error('Insufficient AFOX for staking.');
-        if (isNaN(poolIndex) || poolIndex < 0 || poolIndex >= POOLS_CONFIG.length) {
-            throw new Error('Invalid staking pool selected.');
-        }
-
-        showNotification(`Preparing transaction to stake ${formatBigInt(stakeAmountBigInt, AFOX_DECIMALS)} AFOX...`, 'info', 5000);
-
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
 
-        // 1. Get user's ATA
+        // 1. Находим ATA и PDA
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
-        // 2. Calculate staking account PDA
         const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
-            [
-                window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
-                sender.toBuffer(),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-            ],
+            [window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), sender.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
             STAKING_PROGRAM_ID
         );
+
+        // 2. ФОРМИРУЕМ ИНСТРУКЦИИ
+        const priorityFeeIx = await getPriorityFeeInstruction(); // Добавляем комиссию
+        const stakeIx = await program.methods
+            .stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
+            .accounts({
+                staker: sender,
+                userStakingAccount: userStakingAccountPDA,
+                tokenFrom: userAfoxATA,
+                poolState: AFOX_POOL_STATE_PUBKEY, 
+                poolVault: AFOX_POOL_VAULT_PUBKEY,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                systemProgram: SYSTEM_PROGRAM_ID,
+            })
+            .instruction(); // Получаем именно инструкцию
+
+        // 3. СОБИРАЕМ ТРАНЗАКЦИЮ
+        const transaction = new window.SolanaWeb3.Transaction()
+            .add(priorityFeeIx)
+            .add(stakeIx);
+
+        // Устанавливаем свежий блокхеш
+        const { blockhash } = await appState.connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = sender;
+
+        // 4. ОТПРАВКА
+        const signature = await appState.provider.sendAndConfirm(transaction);
+        
+        await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt); 
+        showNotification(`Success! Signature: ${signature.substring(0, 8)}...`, 'success');
+        
+        uiElements.stakeAmountInput.value = '';
+        await updateStakingAndBalanceUI();
+
+    } catch (error) {
+        console.error("Mainnet Stake Error:", error);
+        showNotification(`Transaction failed: ${error.message}`, 'error');
+    } finally {
+        setLoadingState(false, uiElements.stakeAfoxBtn);
+    }
+}
+
 
         // 🔴 CREATE TRANSACTION (REAL ANCHOR TEMPLATE) 
         const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
