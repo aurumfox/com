@@ -1188,49 +1188,60 @@ async function handleUnstakeAfox() {
 async function loadUserNFTs() {
     if (!appState.walletPublicKey) return;
     
-    // Запрос к Helius DAS API через ваш прокси или напрямую
-    const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 'my-id',
-            method: 'getAssetsByOwner',
-            params: {
-                ownerAddress: appState.walletPublicKey.toBase58(),
-                page: 1,
-                limit: 100
-            },
-        }),
-    });
-    const { result } = await response.json();
-    // Фильтруем только вашу коллекцию по Сreator или Group
-    appState.userNFTs = result.items.filter(asset => asset.grouping.some(g => g.group_value === 'АДРЕС_ВАШЕЙ_КОЛЛЕКЦИИ'));
-    // Далее рендерим карточки...
+    try {
+        const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 'my-id',
+                method: 'getAssetsByOwner',
+                params: {
+                    ownerAddress: appState.walletPublicKey.toBase58(),
+                    page: 1,
+                    limit: 100,
+                    displayOptions: { showCollectionMetadata: true }
+                },
+            }),
+        });
+
+        const { result } = await response.json();
+        
+        // ВАЖНО: Если у вас есть Verified Collection Address, замените 'ALL' на него
+        // Сейчас код просто берет все NFT пользователя, чтобы список не был пустым
+        appState.userNFTs = result.items.map(asset => ({
+            mint: asset.id,
+            name: asset.content.metadata.name,
+            description: asset.content.metadata.description,
+            owner: asset.ownership.owner,
+            image: asset.content.links.image,
+            attributes: asset.content.metadata.attributes || [],
+            isListed: false, // В реальности нужно проверять листинги на маркетплейсах
+            price: 0
+        }));
+
+        renderUserNFTs(); // Вызываем отрисовку
+    } catch (e) {
+        console.error("Failed to load real NFTs:", e);
+    }
 }
 
-
-/**
- * MOCK: Load NFTs listed for sale
- */
-function loadMarketplaceNFTs() {
-    if (!uiElements.marketplaceNftList) return;
-
-    const connectedOwner = appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null;
-    const marketplaceNfts = MOCK_DB.nfts.filter(n => n.isListed === true && n.owner !== connectedOwner);
-
-    uiElements.marketplaceNftList.innerHTML = '';
-
-    if (marketplaceNfts.length === 0) {
-        uiElements.marketplaceNftList.innerHTML = '<p class="empty-list-message">No NFTs are currently listed for sale.</p>';
+// Добавьте эту функцию для отрисовки, так как в вашем коде загрузка есть, а вывода в DOM нет
+function renderUserNFTs() {
+    if (!uiElements.userNftList) return;
+    uiElements.userNftList.innerHTML = '';
+    
+    if (appState.userNFTs.length === 0) {
+        uiElements.userNftList.innerHTML = '<p class="empty-list-message">No NFTs found in your wallet.</p>';
         return;
     }
 
-    marketplaceNfts.forEach(nft => {
+    appState.userNFTs.forEach(nft => {
         const card = createNftCard(nft);
-        uiElements.marketplaceNftList.appendChild(card);
+        uiElements.userNftList.appendChild(card);
     });
 }
+
 
 /**
  * Creates the HTML element for an NFT card.
