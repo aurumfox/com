@@ -1553,67 +1553,6 @@ async function handleListNftSubmit(event) {
         setLoadingState(false);
     }
 }
-
-
-/**
- * MOCK: Handles listing an NFT for sale.
- */
-function handleListNftSubmit(event) {
-    event.preventDefault();
-
-    if (!appState.walletPublicKey) {
-        showNotification('Please connect your wallet.', 'warning');
-        return;
-    }
-
-    const form = event.target;
-    const mint = form.elements['nft-to-sell'].value;
-    const price = form.elements['list-price'].value;
-
-    if (!mint) {
-        showNotification('Please select an NFT to list.', 'warning');
-        return;
-    }
-
-    const priceRegex = /^\d+(\.\d{1,9})?$/;
-    if (!priceRegex.test(price) || parseFloat(price) <= 0) {
-        showNotification('Please enter a valid listing price (up to 9 decimal places).', 'error');
-        return;
-    }
-
-    const nft = MOCK_DB.nfts.find(n => n.mint === mint);
-    if (!nft || nft.owner !== appState.walletPublicKey.toBase58() || nft.isListed) {
-        showNotification('Invalid NFT or NFT is already listed.', 'error');
-        return;
-    }
-
-    setLoadingState(true);
-    showNotification(`Listing ${nft.name} for ${price} SOL... (Simulation)`, 'info');
-
-    try {
-        setTimeout(() => {
-            nft.isListed = true;
-            nft.price = parseFloat(price);
-            persistMockData();
-
-            if (!MOCK_DB.nftHistory[mint]) {
-                 MOCK_DB.nftHistory[mint] = [];
-            }
-            MOCK_DB.nftHistory[mint].push({ type: 'List', timestamp: new Date().toISOString(), price: nft.price });
-
-            showNotification(`${nft.name} successfully listed for ${price} SOL!`, 'success');
-            form.reset();
-            closeAllPopups();
-            loadUserNFTs();
-            loadMarketplaceNFTs();
-            setLoadingState(false);
-        }, 3000);
-    } catch (e) {
-        showNotification('Listing failed.', 'error');
-        setLoadingState(false);
-    }
-}
-
 /**
  * Helper: Basic Solana Public Key validation.
  */
