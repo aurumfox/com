@@ -636,35 +636,6 @@ function handlePublicKeyChange(newPublicKey) {
     updateWalletDisplay(address);
 
     if (newPublicKey) {
-        // MOCK: Handle initial state for MOCK DB and Balances
-        if (!MOCK_DB.staking[address]) {
-             MOCK_DB.staking[address] = { stakedAmount: '0', rewards: '0', lockupEndTime: Math.floor(Date.now() / 1000), poolIndex: 4, lending: '0', stakeHistory: [] };
-             // --- УДАЛЕНА MOCK ЛОГИКА AFOX/SOL
-             persistMockData();
-        }
-
-        MOCK_DB.nfts.filter(n => n.owner === 'NO_WALLET_CONNECTED').forEach(n => n.owner = address);
-
-        loadUserNFTs();
-        updateStakingAndBalanceUI();
-        
-        fetchUserStakingData(); 
-
-    } else {
-        loadUserNFTs();
-        appState.userBalances.SOL = BigInt(0);
-        appState.userBalances.AFOX = BigInt(0);
-        updateStakingAndBalanceUI();
-        appState.currentOpenNft = null;
-        showNotification('Wallet disconnected.', 'info');
-        
-        if (document.getElementById('user-afox-balance')) document.getElementById('user-afox-balance').textContent = '0 AFOX';
-        if (document.getElementById('user-staked-amount')) document.getElementById('user-staked-amount').textContent = '0 AFOX';
-        if (document.getElementById('user-rewards-amount')) document.getElementById('user-rewards-amount').textContent = '0 AFOX';
-        if (document.getElementById('staking-apr')) document.getElementById('staking-apr').textContent = '—';
-        if (document.getElementById('lockup-period')) document.getElementById('lockup-period').textContent = '—';
-    }
-}
 
 /**
  * Attaches event listeners to the wallet provider.
