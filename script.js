@@ -920,8 +920,10 @@ async function fetchUserStakingData() {
 async function handleStakeAfox() {
     if (!appState.walletPublicKey || !STAKING_IDL.version) return;
 
+    // 1. Получаем индекс из выпадающего списка (уже есть в вашем кеше)
+    const poolIndex = parseInt(uiElements.poolSelector.value); 
     const amountStr = uiElements.stakeAmountInput.value;
-    const poolIndex = parseInt(uiElements.poolSelector.value);
+    
     setLoadingState(true, uiElements.stakeAfoxBtn);
 
     try {
@@ -930,6 +932,8 @@ async function handleStakeAfox() {
         const sender = appState.walletPublicKey;
         
         const userStakingPDA = await getUserStakingAccountPDA(sender);
+        
+        // ATA пользователя (откуда берем токены)
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
@@ -937,10 +941,11 @@ async function handleStakeAfox() {
         let instructions = [];
         const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
 
-        // 1. Инициализация, если аккаунта нет в Mainnet
+        // Если аккаунт стейкинга еще не создан — создаем (передаем выбранный индекс)
         if (!accountInfo) {
+            console.log("Initializing staking account with pool index:", poolIndex);
             instructions.push(
-                await program.methods.initializeUserStake(poolIndex)
+                await program.methods.initializeUserStake(poolIndex) // Передаем 0, 1 или 2
                     .accounts({
                         poolState: AFOX_POOL_STATE_PUBKEY,
                         userStaking: userStakingPDA,
@@ -952,7 +957,7 @@ async function handleStakeAfox() {
             );
         }
 
-        // 2. Депозит (BN для u64)
+        // Добавляем инструкцию депозита
         instructions.push(
             await program.methods.deposit(new window.Anchor.BN(stakeAmountBigInt.toString()))
                 .accounts({
@@ -971,16 +976,17 @@ async function handleStakeAfox() {
         const signature = await appState.provider.sendAndConfirm(transaction);
 
         await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt);
-        showNotification(`Mainnet TX Success: ${signature.substring(0, 8)}`, 'success');
+        showNotification(`Success! TX: ${signature.substring(0, 8)}`, 'success');
         await updateStakingAndBalanceUI();
 
     } catch (error) {
-        console.error("Mainnet Deposit Error:", error);
+        console.error("Stake Error:", error);
         showNotification(`Error: ${error.message}`, 'error');
     } finally {
         setLoadingState(false, uiElements.stakeAfoxBtn);
     }
 }
+
 
 /**
  * ✅ Implemented: Sending claim rewards transaction (REAL ANCHOR).
