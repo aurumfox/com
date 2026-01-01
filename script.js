@@ -624,6 +624,7 @@ function updateWalletDisplay(address) {
 /**
  * Handles changes to the wallet public key (connect/disconnect).
  */
+// --- Исправленный обработчик ключа ---
 function handlePublicKeyChange(newPublicKey) {
     appState.walletPublicKey = newPublicKey;
     const address = newPublicKey ? newPublicKey.toBase58() : null;
@@ -631,6 +632,9 @@ function handlePublicKeyChange(newPublicKey) {
     updateWalletDisplay(address);
 
     if (newPublicKey) {
+        updateStakingAndBalanceUI();
+    }
+}
 
 /**
  * Attaches event listeners to the wallet provider.
@@ -1628,9 +1632,6 @@ function populatePoolSelector() {
 }
 
 // --- MAIN INITIALIZATION FUNCTION ---
-/**
- * Main initialization function.
- */
 async function init() {
     if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined' || typeof window.SolanaWalletAdapterPhantom === 'undefined') {
         setTimeout(init, 100); 
@@ -1639,24 +1640,23 @@ async function init() {
 
     cacheUIElements();
     populatePoolSelector();
-    
     setupHamburgerMenu(); 
-    
     initEventListeners();
     initializeJupiterTerminal();
 
-
     try {
         appState.connection = await getRobustConnection();
+        if (appState.walletPublicKey) {
+            updateStakingAndBalanceUI();
+        }
     } catch (e) {
-        console.warn(e.message);
-        showNotification("Warning: Failed to connect to Solana RPC on startup.", 'warning', 7000);
+        console.warn("RPC Connection issue:", e.message);
     }
     
     updateStakingUI();
-    updateWalletDisplay(null);
-
+    updateWalletDisplay(appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null);
 }
+
 // --------------------------------------------------------
 
 // --- STARTUP AFTER DOM LOAD ---
