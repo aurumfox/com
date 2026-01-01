@@ -215,9 +215,6 @@
                 <p class="tip">Make sure you have enough SOL to cover network fees.</p>
                 <p class="tip"><i>Liquidity pool link will be available soon!</i></p>
                 
-                <a href="#swap-section" class="web3-btn primary-btn" aria-label="Go to AFOX Swap Terminal">
-                    🔄 Go to Swap Terminal
-                </a>
 
                 <button class="web3-btn" aria-label="Trade AFOX on Raydium">Trade AFOX on Raydium</button>
             </div>
@@ -332,12 +329,6 @@
                 <h3>🏦 Lending</h3>
                 <p>Lend or borrow crypto assets.</p>
                 <a href="#lending-section" class="web3-link">Go to Lending</a> 
-            </div>
-             <div class="feature-card">
-                <h3>🔄 Swap</h3>
-                <p>Exchange AFOX for other tokens easily.</p>
-                <a href="#swap-section" class="web3-link">Go to Swap</a>
-            </div>
         </div>
     </div>
 </section>
@@ -517,44 +508,6 @@
                 </div>
             </div>
         </section>
-        <section id="swap-section" class="section web3-section-alt">
-    <div class="container">
-        <h2 class="web3-heading">⚡ Aurum Exchange</h2>
-        <p class="web3-intro">Fast and secure AFOX swaps powered by Jupiter.</p>
-        
-        <div class="feature-card" style="max-width: 440px; margin: 0 auto; border: 1px solid #ffd700; background: rgba(26, 26, 46, 0.8);">
-            <div id="jupiter-swap-widget"></div>
-        </div>
-    </div>
-
-    <script>
-        window.addEventListener('load', function() {
-            if (window.Jupiter) {
-                window.Jupiter.init({
-                    displayMode: "integrated",
-                    integratedTargetId: "jupiter-swap-widget",
-                    endpoint: "https://api.mainnet-beta.solana.com",
-                    widgetStyle: "basic",
-                    containerStyles: { width: '100%' },
-                    formProps: {
-                        initialOutputMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd", // Ваш AFOX
-                    },
-                    theme: "dark",
-                    customTheme: {
-                        widgetBg: "transparent",
-                        mainBg: "#1a1a2e",
-                        secondaryBg: "#2a2a3a",
-                        primary: "#ffd700", // Золотая кнопка
-                        accent: "#ffd700",
-                        onPrimary: "#1a1a2e",
-                        interactiveBg: "#3a3a5e",
-                        text: "#E0E0E0",
-                    }
-                });
-            }
-        });
-    </script>
-</section>
 
         
         </main>
