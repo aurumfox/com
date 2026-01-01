@@ -133,12 +133,12 @@ const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
 
 // Pool Configurations (MUST MATCH RUST) - Used for MOCK
 const POOLS_CONFIG = [
-    { name: '7 Days', duration_days: 7, apr_rate: 100, vote_multiplier: 1 },  // Index 0
-    { name: '30 Days', duration_days: 30, apr_rate: 200, vote_multiplier: 2 }, // Index 1
-    { name: '60 Days', duration_days: 60, apr_rate: 350, vote_multiplier: 3 }, // Index 2
-    { name: '90 Days', duration_days: 90, apr_rate: 500, vote_multiplier: 4 }, // Index 3
-    { name: 'Flexible', duration_days: 0, apr_rate: 100, vote_multiplier: 1 }, // Index 4 (Default)
-]; 
+    // Соответствует вашему [i64; 3] в Rust: 0 - Flexible, 1 - 30 дней, 2 - 90 дней
+const POOLS_CONFIG = [
+    { name: 'Flexible', duration_days: 0, apr_rate: 100 }, // Index 0
+    { name: 'Standard', duration_days: 30, apr_rate: 200 }, // Index 1
+    { name: 'Max Boost', duration_days: 90, apr_rate: 500 }, // Index 2
+];
 
 const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
 const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
