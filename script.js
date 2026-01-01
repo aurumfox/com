@@ -442,15 +442,10 @@ function parseAmountToBigInt(amountStr, decimals) {
     
     return BigInt(paddedFractionalPart);
 }
+const modals = [
+    uiElements.createProposalModal 
+].filter(Boolean);
 
-/**
- * Closes all open modals and the main navigation menu.
- */
-function closeAllPopups() {
-    const modals = [
-        uiElements.nftDetailsModal, uiElements.nftModal, uiElements.mintNftModal, uiElements.createProposalModal, 
-        document.getElementById('sell-nft-modal') 
-    ].filter(Boolean);
 
     let wasModalOpen = false;
 
