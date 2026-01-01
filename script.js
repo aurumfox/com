@@ -1575,30 +1575,41 @@ function initEventListeners() {
 /**
  * Initializes the Jupiter Terminal and adds event listeners.
  */
+/**
+ * Настройка терминала Jupiter: МИНИМАЛИСТИЧНЫЙ ВИД БЕЗ ГРАФИКОВ
+ */
 function initializeJupiterTerminal() {
     if (typeof window.Jupiter === 'undefined') {
+        console.warn('Jupiter SDK not loaded');
         return;
     }
 
     window.Jupiter.init({
-        endpoint: JUPITER_RPC_ENDPOINT,
-        formProps: {
-            fixedOutputMint: true,
-            initialOutputMint: AFOX_MINT,
-            initialInputMint: SOL_MINT,
+        // 'integrated' вставляет виджет прямо в страницу (в ваш div)
+        displayMode: "integrated",
+        integratedTargetId: "jupiter-swap-widget",
+        endpoint: JUPITER_RPC_ENDPOINT, // Используем вашу константу RPC
+        
+        // КЛЮЧЕВАЯ НАСТРОЙКА: widgetStyle: "basic" убирает графики и лишние вкладки
+        widgetStyle: "basic", 
+        
+        // Настройки контейнера для красоты
+        containerStyles: {
+            width: '100%',
+            maxWidth: '420px',
+            margin: '0 auto'
         },
+        
+        // Настройка токенов
+        formProps: {
+            fixedOutputMint: false, // Разрешить менять токен выхода, если нужно
+            initialOutputMint: AFOX_MINT, // Ваш токен AFOX (из константы)
+            initialInputMint: SOL_MINT,   // SOL как начальный токен
+        },
+        strictTokenList: false, // Чтобы ваш токен точно отображался
     });
 }
 
-// Populates the pool selector dropdown
-function populatePoolSelector() {
-    if (uiElements.poolSelector) {
-        uiElements.poolSelector.innerHTML = POOLS_CONFIG.map((p, i) => 
-            `<option value="${i}">${p.name} (${p.duration_days} days, APR: ${p.apr_rate/100}%)</option>`
-        ).join('');
-        uiElements.poolSelector.value = 4;
-    }
-}
 
 // --- MAIN INITIALIZATION FUNCTION ---
 async function init() {
