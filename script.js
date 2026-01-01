@@ -440,12 +440,10 @@ function parseAmountToBigInt(amountStr, decimals) {
         return BigInt(integerPart + paddedFractionalPart);
     } 
     
-    return BigInt(paddedFractionalPart);
-}
-const modals = [
-    uiElements.createProposalModal 
-].filter(Boolean);
-
+function closeAllPopups() {
+    const modals = [
+        uiElements.createProposalModal 
+    ].filter(Boolean);
 
     let wasModalOpen = false;
 
@@ -467,6 +465,7 @@ const modals = [
         toggleScrollLock(false); 
     }
 }
+
 // --------------------------------------------------------
 
 /**
