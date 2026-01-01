@@ -1,83 +1,90 @@
-// script.js - Fully implemented code for interacting with Solana with 100% Anchor integration.
-// Requires SolanaWeb3, Anchor, and Wallet Adapters libraries to be included in the HTML.
-
-// =========================================================================================
-// 🚨 ⚠️ ⚠️ REQUIRED CHANGES (Leave stubs for standalone operation) ⚠️ ⚠️ 🚨
-// =========================================================================================
-
-// 1. INSERT YOUR IDL (JSON schema of the staking program)
-// The IDL structure looks complete based on your transactions, but the 'accounts' definition
-// of 'PoolState' is missing and needed for real account fetches.
-// Assuming your Rust struct 'PoolState' contains no extra fields needed by the client here,
-// we rely on the instruction accounts only.
 const STAKING_IDL = {
     version: "0.1.0",
     name: "alphafox_staking",
     instructions: [
         {
-            name: "stake",
+            name: "initializeUserStake",
             accounts: [
-                { name: "staker", isMut: true, isSigner: true },
-                { name: "userStakingAccount", isMut: true, isSigner: false },
-                { name: "tokenFrom", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false },
-                { name: "poolVault", isMut: true, isSigner: false },
-                { name: "tokenProgram", isMut: false, isSigner: false },
-                { name: "systemProgram", isMut: false, isSigner: false },
+                { name: "poolState", isMut: true },
+                { name: "userStaking", isMut: true },
+                { name: "owner", isMut: true, isSigner: true },
+                { name: "rewardMint", isMut: false },
+                { name: "systemProgram", isMut: false },
+                { name: "clock", isMut: false }
             ],
-            args: [
-                { name: "amount", type: "u64" },
-                { name: "poolIndex", type: "u8" }
+            args: [{ name: "poolIndex", type: "u8" }]
+        },
+        {
+            name: "deposit",
+            accounts: [
+                { name: "poolState", isMut: true },
+                { name: "userStaking", isMut: true },
+                { name: "owner", isMut: true, isSigner: true },
+                { name: "userSourceAta", isMut: true },
+                { name: "vault", isMut: true },
+                { name: "rewardMint", isMut: false },
+                { name: "tokenProgram", isMut: false },
+                { name: "clock", isMut: false }
             ],
+            args: [{ name: "amount", type: "u64" }]
         },
         {
             name: "claimRewards",
             accounts: [
-                { name: "staker", isMut: false, isSigner: true },
-                { name: "userStakingAccount", isMut: true, isSigner: false },
-                { name: "userRewardTokenAccount", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false },
-                { name: "rewardsVault", isMut: true, isSigner: false },
-                { name: "tokenProgram", isMut: false, isSigner: false },
+                { name: "poolState", isMut: true },
+                { name: "userStaking", isMut: true },
+                { name: "owner", isMut: true, isSigner: true },
+                { name: "vault", isMut: true },
+                { name: "adminFeeVault", isMut: true },
+                { name: "userRewardsAta", isMut: true },
+                { name: "rewardMint", isMut: false },
+                { name: "tokenProgram", isMut: false },
+                { name: "clock", isMut: false }
             ],
-            args: [],
+            args: []
         },
         {
             name: "unstake",
             accounts: [
-                { name: "staker", isMut: false, isSigner: true },
-                { name: "userStakingAccount", isMut: true, isSigner: false },
-                { name: "tokenTo", isMut: true, isSigner: false },
-                { name: "poolState", isMut: false, isSigner: false },
-                { name: "poolVault", isMut: true, isSigner: false },
-                { name: "daoTreasuryVault", isMut: true, isSigner: false },
-                { name: "tokenProgram", isMut: false, isSigner: false },
+                { name: "poolState", isMut: true },
+                { name: "userStaking", isMut: true },
+                { name: "owner", isMut: true, isSigner: true },
+                { name: "vault", isMut: true },
+                { name: "daoTreasuryVault", isMut: true },
+                { name: "adminFeeVault", isMut: true },
+                { name: "userRewardsAta", isMut: true },
+                { name: "rewardMint", isMut: false },
+                { name: "tokenProgram", isMut: false },
+                { name: "clock", isMut: false }
             ],
-            args: [],
+            args: [{ name: "amount", type: "u64" }, { name: "isEarlyExit", type: "bool" }]
         }
     ],
     accounts: [
-        // Account structure required for Anchor to deserialize (fetchUserStakingData)
         {
-            name: "userStakingAccount",
+            name: "UserStakingAccount",
             type: {
                 kind: "struct",
                 fields: [
-                    { name: "staker", type: "publicKey" },
-                    { name: "poolId", type: "publicKey" },
-                    { name: "stakedAmount", type: "u64" },
-                    { name: "rewardsAmount", type: "u64" },
-                    { name: "lastStakeTime", type: "i64" },
-                    { name: "lockupEndTime", type: "i64" },
+                    { name: "isInitialized", type: "bool" },
+                    { name: "stakeBump", type: "u8" },
                     { name: "poolIndex", type: "u8" },
+                    { name: "paddingA", type: { array: ["u8", 5] } },
+                    { name: "owner", type: "publicKey" },
+                    { name: "stakedAmount", type: "u64" },
+                    { name: "lockupEndTime", type: "i64" },
+                    { name: "rewardPerShareUser", type: "u128" },
+                    { name: "rewardsToClaim", type: "u64" },
+                    { name: "pendingRewardsDueToLimit", type: "u64" },
                     { name: "lending", type: "u64" },
-                ],
-            },
-        },
-        // IMPORTANT: If you need to fetch PoolState, its definition must be here too.
-        // Assuming fetchUserStakingData is enough for this UI.
+                    { name: "lendingUnlockTime", type: "i64" },
+                    { name: "lastUpdateTime", type: "i64" }
+                ]
+            }
+        }
     ]
 };
+
 
 // 2. INSERT YOUR SEED (Keyword for the staking account PDA from your Rust program)
 // This is used for the User's PDA (UserStakingAccount)
@@ -90,18 +97,29 @@ const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addr
 // PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
 // =========================================================================================
 
-// --- CRITICAL POOL KEYS (ФИНАЛЬНЫЕ, ПОДТВЕРЖДЕННЫЕ АДРЕСА DEVNET) ---
-// 1. Адрес главного PDA пула (PoolState)
+ // --- КРИТИЧЕСКИЕ АДРЕСА MAINNET ---
+const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
+const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd';
+const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
+
+// Эти адреса должны быть созданы тобой (PoolState и Vaults)
 const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
-
-// 2. Хранилище стейка (Pool Vault)
 const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
-
-// 3. Хранилище админ. комиссии (Admin Fee Vault)
 const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
-
-// 4. КАЗНАЧЕЙСТВО DAO (DAO Treasury Vault) - ФИНАЛЬНЫЙ АДРЕС!
 const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
+
+// Функция для получения адреса стейкинга пользователя (синхронно с Rust)
+async function getUserStakingAccountPDA(userPubkey) {
+    const [pda] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
+        [
+            userPubkey.toBuffer(),
+            AFOX_POOL_STATE_PUBKEY.toBuffer()
+        ],
+        STAKING_PROGRAM_ID
+    );
+    return pda;
+}
+
 // -----------------------------------------------------------------------------------------
 
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
@@ -898,43 +916,72 @@ async function fetchUserStakingData() {
  * ✅ Implemented: Sending AFOX staking transaction (REAL ANCHOR).
  */
 async function handleStakeAfox() {
-    if (!appState.walletPublicKey || !STAKING_IDL.version) {
-        showNotification('Wallet not connected or program IDL missing.', 'warning');
-        return;
-    }
+    if (!appState.walletPublicKey || !STAKING_IDL.version) return;
+
     const amountStr = uiElements.stakeAmountInput.value;
-    const poolIndexStr = uiElements.poolSelector.value;
-    
+    const poolIndex = parseInt(uiElements.poolSelector.value);
     setLoadingState(true, uiElements.stakeAfoxBtn);
 
     try {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-        const poolIndex = parseInt(poolIndexStr);
-
-        if (stakeAmountBigInt === BigInt(0)) throw new Error('Enter a valid amount for staking.');
-        if (appState.userBalances.AFOX < stakeAmountBigInt) throw new Error('Insufficient AFOX for staking.');
-        if (isNaN(poolIndex) || poolIndex < 0 || poolIndex >= POOLS_CONFIG.length) {
-            throw new Error('Invalid staking pool selected.');
-        }
-
-        showNotification(`Preparing transaction to stake ${formatBigInt(stakeAmountBigInt, AFOX_DECIMALS)} AFOX...`, 'info', 5000);
-
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
-
-        // 1. Get user's ATA
+        
+        const userStakingPDA = await getUserStakingAccountPDA(sender);
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
-        // 2. Calculate staking account PDA
-        const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
-            [
-                window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED), 
-                sender.toBuffer(),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-            ],
-            STAKING_PROGRAM_ID
+
+        let instructions = [];
+
+        // 1. Проверяем, нужно ли инициализировать аккаунт (если его нет на блокчейне)
+        const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
+        if (!accountInfo) {
+            showNotification('Initializing staking account...', 'info');
+            instructions.push(
+                await program.methods.initializeUserStake(poolIndex)
+                    .accounts({
+                        poolState: AFOX_POOL_STATE_PUBKEY,
+                        userStaking: userStakingPDA,
+                        owner: sender,
+                        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                        systemProgram: SYSTEM_PROGRAM_ID,
+                        clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                    }).instruction()
+            );
+        }
+
+        // 2. Добавляем инструкцию депозита
+        instructions.push(
+            await program.methods.deposit(new window.Anchor.BN(stakeAmountBigInt.toString()))
+                .accounts({
+                    poolState: AFOX_POOL_STATE_PUBKEY,
+                    userStaking: userStakingPDA,
+                    owner: sender,
+                    userSourceAta: userAfoxATA,
+                    vault: AFOX_POOL_VAULT_PUBKEY,
+                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                }).instruction()
         );
+
+        // Создаем и отправляем транзакцию
+        const transaction = new window.SolanaWeb3.Transaction().add(...instructions);
+        const signature = await appState.provider.sendAndConfirm(transaction);
+
+        await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt);
+        showNotification(`Success! TX: ${signature.substring(0, 8)}`, 'success');
+        await updateStakingAndBalanceUI();
+
+    } catch (error) {
+        console.error("Deposit failed:", error);
+        showNotification(`Error: ${error.message}`, 'error');
+    } finally {
+        setLoadingState(false, uiElements.stakeAfoxBtn);
+    }
+}
+
 
         // 🔴 CREATE TRANSACTION (REAL ANCHOR TEMPLATE) 
         const tx = await program.methods.stake(new window.Anchor.BN(stakeAmountBigInt.toString()), poolIndex)
