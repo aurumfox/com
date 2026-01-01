@@ -518,41 +518,44 @@
             </div>
         </section>
         <section id="swap-section" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🔄 AFOX Swap & Live Trading</h2>
-                <p class="web3-intro">
-                    Swap your AFOX tokens for SOL or other SPL tokens directly, and track the live market price!
-                    For exchange, use **Jupiter Terminal** — the best liquidity aggregator on Solana.
-                </p>
+    <div class="container">
+        <h2 class="web3-heading">⚡ Aurum Exchange</h2>
+        <p class="web3-intro">Fast and secure AFOX swaps powered by Jupiter.</p>
+        
+        <div class="feature-card" style="max-width: 440px; margin: 0 auto; border: 1px solid #ffd700; background: rgba(26, 26, 46, 0.8);">
+            <div id="jupiter-swap-widget"></div>
+        </div>
+    </div>
 
-                <div class="swap-interface">
-                    <h3 class="web3-subheading">⚡️ Jupiter Terminal (AFOX Swap)</h3>
-                    <p>Connect your wallet and swap AFOX at the best rate.</p>
-                    
-                    <div id="jupiter-swap-widget" style="width: 100%; max-width: 410px; min-height: 550px; margin: 0 auto;"></div>
+    <script>
+        window.addEventListener('load', function() {
+            if (window.Jupiter) {
+                window.Jupiter.init({
+                    displayMode: "integrated",
+                    integratedTargetId: "jupiter-swap-widget",
+                    endpoint: "https://api.mainnet-beta.solana.com",
+                    widgetStyle: "basic",
+                    containerStyles: { width: '100%' },
+                    formProps: {
+                        initialOutputMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd", // Ваш AFOX
+                    },
+                    theme: "dark",
+                    customTheme: {
+                        widgetBg: "transparent",
+                        mainBg: "#1a1a2e",
+                        secondaryBg: "#2a2a3a",
+                        primary: "#ffd700", // Золотая кнопка
+                        accent: "#ffd700",
+                        onPrimary: "#1a1a2e",
+                        interactiveBg: "#3a3a5e",
+                        text: "#E0E0E0",
+                    }
+                });
+            }
+        });
+    </script>
+</section>
 
-<script>
-    // Ждем полной загрузки страницы, чтобы настройки применились правильно
-    window.addEventListener('load', function() {
-        if (window.Jupiter) {
-            window.Jupiter.init({
-                displayMode: "integrated",
-                integratedTargetId: "jupiter-swap-widget",
-                endpoint: "https://api.mainnet-beta.solana.com",
-                widgetStyle: "basic", // УБИРАЕТ ГРАФИК ВНУТРИ ТЕРМИНАЛА
-                containerStyles: {
-                    width: '100%',
-                },
-                // Автоматически подставляет ваш токен в поле "Получить"
-                initialOutputMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd"
-            });
-        }
-    });
-</script>
-
-                </div>
-            </div>
-        </section>
         
         </main>
      <footer class="footer">
