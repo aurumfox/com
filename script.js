@@ -1459,20 +1459,6 @@ async function disconnectWallet() {
      }
 }
 
-/**
- * Handles click events on NFT lists (delegation).
- */
-function handleNftItemClick(event, isUserNft) {
-    const card = event.target.closest('.nft-card');
-    if (card) {
-        const mint = card.dataset.mint;
-        const nft = MOCK_DB.nfts.find(n => n.mint === mint);
-        if (nft) {
-            showNftDetails(nft, isUserNft);
-        }
-    }
-}
-
 // --- 3. CACHING UI ELEMENTS ---
 /**
  * Caches all necessary UI elements.
@@ -1502,29 +1488,6 @@ function cacheUIElements() {
     uiElements.menuToggle = document.getElementById('menuToggle'); 
     uiElements.closeMenuButton = document.getElementById('closeMainMenuCross');
     uiElements.navOverlay = document.querySelector('.nav-mobile-overlay');
-
-    // NFT Section
-    uiElements.userNftList = document.getElementById('user-nft-list');
-    uiElements.marketplaceNftList = document.getElementById('marketplace-nft-list');
-    uiElements.nftToSellSelect = document.getElementById('nft-to-sell');
-    uiElements.listNftForm = document.getElementById('list-nft-form');
-    uiElements.mintNftForm = document.getElementById('mint-nft-form');
-
-    // NFT Details Modal elements
-    uiElements.nftDetailImage = document.getElementById('nft-detail-image');
-    uiElements.nftDetailName = document.getElementById('nft-detail-name');
-    uiElements.nftDetailDescription = document.getElementById('nft-detail-description');
-    uiElements.nftDetailOwner = document.getElementById('nft-detail-owner');
-    uiElements.nftDetailMint = document.getElementById('nft-detail-mint');
-    uiElements.attributesList = document.getElementById('attributes-list');
-    uiElements.nftDetailBuyBtn = document.getElementById('nft-detail-buy-btn');
-    uiElements.nftDetailSellBtn = document.getElementById('nft-detail-sell-btn');
-    uiElements.nftDetailTransferBtn = document.getElementById('nft-detail-transfer-btn');
-    uiElements.nftDetailHistory = document.getElementById('nft-detail-history');
-
-    // Announcements & Games
-    uiElements.announcementsList = document.getElementById('announcements-list');
-    uiElements.gameList = document.getElementById('game-list');
 
     // Staking Section
     uiElements.userAfoxBalance = document.getElementById('user-afox-balance');
@@ -1573,42 +1536,6 @@ function initEventListeners() {
              simulateConnectButtonUpdate(btn);
         });
     });
-
-    // NFT Marketplace (Delegation)
-    if (uiElements.userNftList) {
-        uiElements.userNftList.addEventListener('click', (e) => handleNftItemClick(e, true));
-    }
-    if (uiElements.marketplaceNftList) {
-        uiElements.marketplaceNftList.addEventListener('click', (e) => handleNftItemClick(e, false));
-    }
-
-    // NFT Forms and Actions
-    if (uiElements.mintNftForm) uiElements.mintNftForm.addEventListener('submit', handleMintNftSubmit);
-    if (uiElements.listNftForm) uiElements.listNftForm.addEventListener('submit', handleListNftSubmit);
-    if (uiElements.nftDetailBuyBtn) uiElements.nftDetailBuyBtn.addEventListener('click', handleBuyNft);
-    if (uiElements.nftDetailSellBtn) {
-        uiElements.nftDetailSellBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (appState.currentOpenNft) {
-                if (appState.currentOpenNft.isListed) {
-                    handleUnlistNft();
-                } else {
-                    const sellModal = document.getElementById('sell-nft-modal'); 
-                    if (sellModal) {
-                        closeAllPopups();
-                        if (uiElements.nftToSellSelect) {
-                            uiElements.nftToSellSelect.value = appState.currentOpenNft.mint;
-                        }
-                        sellModal.style.display = 'flex';
-                        toggleScrollLock(true);
-                    } else {
-                        showNotification('List functionality not fully implemented or missing modal.', 'warning');
-                    }
-                }
-            }
-        });
-    }
-    if (uiElements.nftDetailTransferBtn) uiElements.nftDetailTransferBtn.addEventListener('click', handleTransferNft);
 
     // Staking Actions
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
@@ -1681,15 +1608,6 @@ function initEventListeners() {
         });
     });
 
-    // Contact Form (MOCK)
-    if (uiElements.contactForm) {
-        uiElements.contactForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            showNotification('Thank you! Your message has been sent. (MOCK)', 'success', 5000);
-            uiElements.contactForm.reset();
-        });
-    }
-}
 // --------------------------------------------------------
 
 /**
