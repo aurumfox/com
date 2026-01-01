@@ -486,6 +486,28 @@ li {
 .multimedia-subheading {
     color: var(--color-orange-multimedia);
 }
+/* Обертка для терминала, чтобы он сливался с остальными карточками */
+.terminal-container-wrapper {
+    background-color: var(--color-bg-card); /* Ваш цвет карточки */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);    /* 8px из вашего конфига */
+    box-shadow: var(--shadow-lg);           /* Большая тень для глубины */
+    border: 1px solid rgba(255, 215, 0, 0.2); /* Тонкая золотая рамка */
+    max-width: 440px;
+    margin: var(--spacing-lg) auto;
+    backdrop-filter: blur(10px);            /* Эффект как в вашем мобильном меню */
+}
+
+/* Настройка шрифтов внутри Jupiter, чтобы соответствовали вашим */
+#integrated-terminal * {
+    font-family: var(--font-secondary) !important; /* Poppins */
+}
+
+/* Если хотите сделать заголовок внутри терминала золотым как ваши H3 */
+#integrated-terminal h3 {
+    color: var(--primary-color) !important;
+    font-family: var(--font-primary) !important; /* Montserrat */
+}
 
 /* ==========================================================================
    Buttons
