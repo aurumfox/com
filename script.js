@@ -454,9 +454,12 @@ function parseAmountToBigInt(amountStr, decimals) {
          return BigInt(0);
     }
     
-    if (integerPart !== '0') {
+        if (integerPart !== '0') {
         return BigInt(integerPart + paddedFractionalPart);
-    } 
+    } else {
+        return BigInt(paddedFractionalPart);
+    }
+} 
     
 function closeAllPopups() {
     const modals = [
