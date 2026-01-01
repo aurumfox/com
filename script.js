@@ -1463,12 +1463,6 @@ function cacheUIElements() {
     uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
     uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display, #walletAddress, [data-wallet-control="walletAddress"]'));
 
-
-    // Modals and Close Buttons
-    uiElements.nftDetailsModal = document.getElementById('nft-details-modal');
-    uiElements.nftModal = document.getElementById('nft-modal');
-    uiElements.mintNftModal = document.getElementById('mint-nft-modal');
-    uiElements.createProposalModal = document.getElementById('create-proposal-modal');
     
     // DAO Elements
     uiElements.createProposalForm = document.getElementById('create-proposal-form');
