@@ -368,17 +368,6 @@
                 <div class="wallet-control-box" style="margin: 20px 0; display: flex; flex-direction: column; align-items: flex-start;">
                     <p class="web3-wallet-display">Your Wallet Address: <strong id="walletAddressDisplay">Not Connected</strong></p>
                 </div>
-                <div class="web3-features-grid">
-                    <div class="feature-card">
-                        <h3>🎮 Games</h3>
-                        <p>Explore blockchain games and earn rewards.</p>
-                        <a href="#games-section" class="web3-link">Go to Games</a>
-                    </div>
-                    <div class="feature-card">
-                        <h3>🖼️ NFTs</h3>
-                        <p>Browse your NFT collections, mint new ones, and explore marketplaces.</p>
-                        <a href="#nft-section" class="web3-link">Explore NFTs</a>
-                    </div>
                      <div class="feature-card">
                         <h3>🏛️ DAO</h3>
                         <p>Participate in governance and vote on proposals.</p>
@@ -398,84 +387,6 @@
                         <p>Exchange AFOX for other tokens easily.</p>
                         <a href="#swap-section" class="web3-link">Go to Swap</a>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="games-section" class="section web3-section">
-            <div class="container">
-                <h2 class="web3-heading">🕹️ Games</h2>
-                <p>This section will display user-uploaded games.</p>
-                <button id="uploadGameBtnWeb3" class="web3-btn" aria-label="Upload a new game">Upload New Game</button>
-                <div id="game-list" class="content-area web3-content-area games-grid">
-                    <p class="web3-placeholder">Loading Games...</p>
-                </div>
-                <button id="loadMoreGamesBtn" class="web3-btn" aria-label="Load More Games">Load More Games</button>
-            </div>
-        </section>
-
-        <section id="nft-section" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🖼️ NFT Collections</h2>
-                <p>Manage your NFTs directly from the website! <strong style="color: #f39c12;">Connect your wallet to enable these features.</strong></p>
-
-                <div class="nft-actions">
-                    <button id="viewMyNftsBtn" class="web3-btn" aria-label="View my NFTs">View My NFTs</button>
-                    <button id="mintNftBtn" class="web3-btn" aria-label="Mint a new NFT">Mint New NFT</button>
-                </div>
-
-                <h3 class="web3-subheading">Your NFTs:</h3>
-                <div id="user-nft-list" class="content-area web3-content-area nft-grid">
-                    <p class="placeholder-item web3-placeholder">Connect your wallet to see your NFTs.</p>
-                </div>
-
-                <h3 class="web3-subheading">List your NFT for sale:</h3>
-                <div class="nft-form-container">
-                    <form id="listNftForm" class="web3-form">
-                        <label for="nftToSell">Select NFT to sell:</label>
-                        <select id="nftToSell" name="nftToSell" required aria-required="true">
-                            <option value="">-- Please select an NFT --</option>
-                            </select>
-
-                        <label for="salePrice">Sale Price (SOL):</label>
-                        <input type="number" id="salePrice" name="salePrice" step="0.000001" min="0.000001" placeholder="e.g., 0.5" required aria-required="true">
-
-                        <label for="listingDuration">Listing Duration (Days):</label>
-                        <input type="number" id="listingDuration" name="listingDuration" min="1" max="365" value="7" required aria-required="true">
-
-                        <button type="submit" class="web3-btn" aria-label="List NFT for sale">List NFT</button>
-                    </form>
-                </div>
-
-                <h3 class="web3-subheading">NFTs from Marketplaces:</h3>
-                <div id="marketplace-nft-list" class="content-area web3-content-area nft-grid">
-                    <p class="placeholder-item web3-placeholder">Loading NFTs from Magic Eden...</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="mint-nft-section" class="section web3-section">
-            <div class="container">
-                <h2 class="web3-heading">✨ Create Your Own NFT (Minting)</h2>
-                <p>Unleash your creativity! Upload your artwork and mint it as a unique NFT on the Solana blockchain. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
-
-                <div class="nft-form-container">
-                    <form id="mintNftFormSection" class="web3-form" enctype="multipart/form-data">
-                        <label for="nftFile">Upload Image/Video:</label>
-                        <input type="file" id="nftFile" name="nftFile" accept="image/*,video/*" required aria-required="true">
-
-                        <label for="mintNftName">NFT Name:</label>
-                        <input type="text" id="mintNftName" name="mintNftName" placeholder="e.g., My Masterpiece #1" required aria-required="true">
-
-                        <label for="mintNftDescription">Description:</label>
-                        <textarea id="mintNftDescription" name="mintNftDescription" rows="4" placeholder="Tell us about your NFT..." required aria-required="true"></textarea>
-
-                        <label for="mintNftAttributes">Attributes (e.g., "Background: Blue, Eyes: Green"):</label>
-                        <textarea id="mintNftAttributes" name="mintNftAttributes" rows="3" placeholder="Enter attributes in JSON or plain text, e.g., {'Rarity': 'Rare', 'Type': 'Art'}"></textarea>
-                        <small class="form-help-text">Please use JSON format for attributes for better compatibility.</small>
-
-                        <button type="submit" class="web3-btn" aria-label="Mint NFT">Mint NFT</button>
-                    </form>
                 </div>
             </div>
         </section>
