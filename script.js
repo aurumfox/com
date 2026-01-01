@@ -141,7 +141,6 @@ const POOLS_CONFIG = [
 ]; 
 
 const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
-// 🔑 INTEGRATED PROGRAM ID: ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH
 const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
 const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
 const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
