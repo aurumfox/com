@@ -529,17 +529,27 @@
                     <h3 class="web3-subheading">⚡️ Jupiter Terminal (AFOX Swap)</h3>
                     <p>Connect your wallet and swap AFOX at the best rate.</p>
                     
-                    <div id="afoxChartContainer" style="min-height: 250px; margin: 15px auto;">
-                        <iframe 
-                            src="https://birdeye.so/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?chain=mainnet&amp;theme=dark&amp;chart=true" 
-                            width="100%" 
-                            height="250px" 
-                            style="border:none; border-radius: 8px;">
-                        </iframe>
-                    </div>
-                    
-                    <div id="jupiter-swap-widget" style="min-height: 400px; max-width: 450px; margin: 20px auto; position: relative; z-index: 10000;">
-                    </div>
+                    <div id="jupiter-swap-widget" style="width: 100%; max-width: 410px; min-height: 550px; margin: 0 auto;"></div>
+
+<script>
+    // Ждем полной загрузки страницы, чтобы настройки применились правильно
+    window.addEventListener('load', function() {
+        if (window.Jupiter) {
+            window.Jupiter.init({
+                displayMode: "integrated",
+                integratedTargetId: "jupiter-swap-widget",
+                endpoint: "https://api.mainnet-beta.solana.com",
+                widgetStyle: "basic", // УБИРАЕТ ГРАФИК ВНУТРИ ТЕРМИНАЛА
+                containerStyles: {
+                    width: '100%',
+                },
+                // Автоматически подставляет ваш токен в поле "Получить"
+                initialOutputMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd"
+            });
+        }
+    });
+</script>
+
                 </div>
             </div>
         </section>
