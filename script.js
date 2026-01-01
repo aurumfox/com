@@ -1585,31 +1585,40 @@ function initializeJupiterTerminal() {
     }
 
     window.Jupiter.init({
-        // 'integrated' вставляет виджет прямо в страницу (в ваш div)
+        // Указываем ID контейнера из вашего HTML
         displayMode: "integrated",
-        integratedTargetId: "jupiter-swap-widget",
-        endpoint: JUPITER_RPC_ENDPOINT, // Используем вашу константу RPC
+        integratedTargetId: "jupiter-swap-widget", 
         
-        // КЛЮЧЕВАЯ НАСТРОЙКА: widgetStyle: "basic" убирает графики и лишние вкладки
+        // Используем ваши константы
+        endpoint: JUPITER_RPC_ENDPOINT, 
+        
+        // Облегченный стиль без лишних графиков
         widgetStyle: "basic", 
-        
-        // Настройки контейнера для красоты
-        containerStyles: {
-            width: '100%',
-            maxWidth: '420px',
-            margin: '0 auto'
-        },
-        
+
         // Настройка токенов
         formProps: {
-            fixedOutputMint: false, // Разрешить менять токен выхода, если нужно
-            initialOutputMint: AFOX_MINT, // Ваш токен AFOX (из константы)
-            initialInputMint: SOL_MINT,   // SOL как начальный токен
+            fixedOutputMint: false,
+            initialOutputMint: AFOX_MINT, // Подставляем ваш AFOX
+            initialInputMint: "So11111111111111111111111111111111111111112", // SOL
         },
-        strictTokenList: false, // Чтобы ваш токен точно отображался
+        strictTokenList: false,
+
+        // --- ВИЗУАЛЬНОЕ СЛИЯНИЕ С ВАШИМ CSS ---
+        theme: "dark",
+        customTheme: {
+            widgetBg: "transparent",    // Сливается с фоном сайта
+            mainBg: "#1a1a2e",          // Ваша переменная --color-bg-dark
+            secondaryBg: "#2a2a3a",     // Ваша переменная --color-bg-input
+            primary: "#ffd700",         // Ваше ЗОЛОТО --primary-color
+            accent: "#007bff",          // Синий акцент --accent-color
+            onPrimary: "#1a1a2e",       // Темный текст на золотой кнопке (читабельно)
+            interactiveBg: "#3a3a5e",   // Ваша карточка --color-bg-card
+            tokenRowHover: "#2c2c4d",   // Подсветка при наведении
+            text: "#E0E0E0",            // Светлый текст --text-color-light
+            subText: "#B0B0B0",         // Приглушенный текст
+        },
     });
 }
-
 
 // --- MAIN INITIALIZATION FUNCTION ---
 async function init() {
