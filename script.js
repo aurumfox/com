@@ -1645,10 +1645,6 @@ async function init() {
     initEventListeners();
     initializeJupiterTerminal();
 
-    // Initial data load
-    loadAnnouncements();
-    loadGames();
-    loadUserNFTs();
 
     try {
         appState.connection = await getRobustConnection();
