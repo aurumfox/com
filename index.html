@@ -423,7 +423,22 @@
                         <input type="number" id="unstakeAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX amount to unstake" aria-label="Amount to unstake">
                         <button id="unstakeAfoxBtn" class="web3-btn" aria-label="Unstake AFOX tokens">Unstake Tokens</button>
                     </div>
-                    
+                    <div class="staking-actions">
+    <h3 class="web3-subheading">Stake AFOX</h3>
+
+    <div class="pool-selection-wrapper" style="margin-bottom: 15px;">
+        <label for="pool-selector" style="color: #f39c12; display: block; margin-bottom: 5px;">Choose Plan:</label>
+        <select id="pool-selector" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
+            <option value="0">Flexible (0 days)</option>
+            <option value="1">Standard (30 days)</option>
+            <option value="2">Max Boost (90 days)</option>
+        </select>
+    </div>
+    <div class="input-group">
+        <input type="number" id="stakeAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX amount to stake" aria-label="Amount to stake">
+        <button id="stakeAfoxBtn" class="web3-btn" aria-label="Stake AFOX tokens">Stake</button>
+    </div>
+
                     <h3 class="web3-subheading">Claim Rewards</h3>
                     <button id="claimRewardsBtn" class="web3-btn" aria-label="Claim AFOX staking rewards">Claim Rewards</button>
                 </div>
