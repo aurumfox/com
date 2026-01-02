@@ -282,20 +282,13 @@ function setLoadingState(isLoading, button = null) {
     }
 
     const actionButtons = [
-        uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn,
-        uiElements.getQuoteBtn, uiElements.executeSwapBtn,
-        uiElements.nftDetailBuyBtn, uiElements.nftDetailSellBtn, uiElements.nftDetailTransferBtn
+        uiElements.stakeAfoxBtn, 
+        uiElements.claimRewardsBtn, 
+        uiElements.unstakeAfoxBtn
     ].filter(Boolean);
 
     actionButtons.forEach(btn => {
-        if (btn !== button) {
-            const isConnectBtn = btn.classList.contains('connect-wallet-btn') && !btn.classList.contains('connected');
-            if (isConnectBtn) {
-                 btn.disabled = false;
-            } else {
-                 btn.disabled = isLoading;
-            }
-        }
+        btn.disabled = isLoading;
     });
 
     if (button) {
@@ -309,6 +302,7 @@ function setLoadingState(isLoading, button = null) {
         }
     }
 }
+
 
 /**
  * Utility to run a fetch request with a timeout.
@@ -474,14 +468,13 @@ async function updateStakingAndBalanceUI() {
     try {
         await Promise.all([
             fetchUserBalances(),
-            updateStakingUI(),
-            updateSwapBalances()
+            updateStakingUI()
         ]);
     } catch (error) {
-        console.error("Error refreshing staking/balance UI after transaction:", error);
-        showNotification("Error updating staking and balance displays.", 'error');
+        console.error("Error refreshing UI:", error);
     }
 }
+
 
 /**
  * Returns an Anchor program instance.
@@ -541,23 +534,16 @@ async function checkRpcHealth(connection) {
  */
 async function getRobustConnection() {
     const connectionOptions = { commitment: 'confirmed' };
-    const primaryConnection = new window.SolanaWeb3.Connection(JUPITER_RPC_ENDPOINT, connectionOptions);
+    // Используем BACKUP_RPC_ENDPOINT, так как JUPITER_RPC удален
+    const connection = new window.SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, connectionOptions);
 
-    if (await checkRpcHealth(primaryConnection)) {
-        console.log('Using Primary RPC:', JUPITER_RPC_ENDPOINT);
-        return primaryConnection;
+    if (await checkRpcHealth(connection)) {
+        return connection;
     }
 
-    console.warn('Primary RPC failed check. Using backup endpoint.');
-    const backupConnection = new window.SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, connectionOptions);
-
-    if (await checkRpcHealth(backupConnection)) {
-        console.log('Using Backup RPC:', BACKUP_RPC_ENDPOINT);
-        return backupConnection;
-    }
-
-    throw new Error('Both primary and backup RPC endpoints failed to connect or are unhealthy.');
+    throw new Error('RPC endpoint is unhealthy.');
 }
+
 
 // 🟢 Corrected and simplified function to update wallet UI
 function updateWalletDisplay(address) {
@@ -1215,25 +1201,22 @@ async function init() {
     }
 
     cacheUIElements();
-    if (typeof populatePoolSelector === 'function') populatePoolSelector();
     setupHamburgerMenu(); 
     initEventListeners();
-
-    // БЛОК JUPITER УДАЛЕН
 
     try {
         appState.connection = await getRobustConnection();
         if (appState.walletPublicKey) {
-            // Обновляем только стейкинг и балансы
-            await Promise.all([fetchUserBalances(), updateStakingUI()]);
+            await updateStakingAndBalanceUI();
         }
     } catch (e) {
-        console.warn("RPC Connection issue:", e.message);
+        console.warn("Init error:", e.message);
     }
     
     updateStakingUI();
     updateWalletDisplay(appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null);
 }
+
 
 
 // --------------------------------------------------------
