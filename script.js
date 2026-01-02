@@ -899,22 +899,18 @@ async function fetchUserStakingData() {
  * ✅ Implemented: Sending AFOX staking transaction (REAL ANCHOR).
  */
 async function handleStakeAfox() {
-    if (!appState.walletPublicKey || !STAKING_IDL.version) return;
-
-    // 1. Получаем индекс из выпадающего списка (уже есть в вашем кеше)
+    if (!appState.walletPublicKey) return;
     const poolIndex = parseInt(uiElements.poolSelector.value); 
     const amountStr = uiElements.stakeAmountInput.value;
     
     setLoadingState(true, uiElements.stakeAfoxBtn);
-
     try {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const provider = new window.Anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
+        const program = new window.Anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
         const sender = appState.walletPublicKey;
-        
         const userStakingPDA = await getUserStakingAccountPDA(sender);
         
-        // ATA пользователя (откуда берем токены)
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
@@ -922,11 +918,9 @@ async function handleStakeAfox() {
         let instructions = [];
         const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
 
-        // Если аккаунт стейкинга еще не создан — создаем (передаем выбранный индекс)
         if (!accountInfo) {
-            console.log("Initializing staking account with pool index:", poolIndex);
             instructions.push(
-                await program.methods.initializeUserStake(poolIndex) // Передаем 0, 1 или 2
+                await program.methods.initializeUserStake(poolIndex)
                     .accounts({
                         poolState: AFOX_POOL_STATE_PUBKEY,
                         userStaking: userStakingPDA,
@@ -938,7 +932,6 @@ async function handleStakeAfox() {
             );
         }
 
-        // Добавляем инструкцию депозита
         instructions.push(
             await program.methods.deposit(new window.Anchor.BN(stakeAmountBigInt.toString()))
                 .accounts({
@@ -954,12 +947,11 @@ async function handleStakeAfox() {
         );
 
         const transaction = new window.SolanaWeb3.Transaction().add(...instructions);
-        const signature = await appState.provider.sendAndConfirm(transaction);
+        const signature = await provider.sendAndConfirm(transaction);
 
         await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt);
-        showNotification(`Success! TX: ${signature.substring(0, 8)}`, 'success');
+        showNotification(`Staked Successfully! TX: ${signature.slice(0, 8)}`, 'success');
         await updateStakingAndBalanceUI();
-
     } catch (error) {
         console.error("Stake Error:", error);
         showNotification(`Error: ${error.message}`, 'error');
@@ -1015,123 +1007,41 @@ async function handleClaimRewards() {
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey) return;
     setLoadingState(true, uiElements.unstakeAfoxBtn);
-
     try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const provider = new window.Anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
+        const program = new window.Anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
         const sender = appState.walletPublicKey;
         const userStakingPDA = await getUserStakingAccountPDA(sender);
 
-        const now = Math.floor(Date.now() / 1000);
-        const isEarlyExit = appState.userStakingData.lockupEndTime > now;
+        const isEarlyExit = appState.userStakingData.lockupEndTime > (Date.now() / 1000);
         const amountToUnstake = appState.userStakingData.stakedAmount;
 
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        const tx = await program.methods.unstake(
-            new window.Anchor.BN(amountToUnstake.toString()), 
-            isEarlyExit
-        )
-        .accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: userStakingPDA,
-            owner: sender,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-            userRewardsAta: userAfoxATA,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .transaction();
+        const tx = await program.methods.unstake(new window.Anchor.BN(amountToUnstake.toString()), isEarlyExit)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPDA,
+                owner: sender,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+                userRewardsAta: userAfoxATA,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            }).transaction();
 
-        const signature = await appState.provider.sendAndConfirm(tx);
-        showNotification(`Unstake Success! TX: ${signature.substring(0, 8)}`, 'success');
+        const signature = await provider.sendAndConfirm(tx);
+        showNotification(`Unstaked! TX: ${signature.slice(0, 8)}`, 'success');
         await updateStakingAndBalanceUI();
-
     } catch (error) {
-        console.error("Unstake Error:", error);
         showNotification(`Unstake failed: ${error.message}`, 'error');
     } finally {
         setLoadingState(false, uiElements.unstakeAfoxBtn);
     }
-}
-
-/**
- * Helper: Basic Solana Public Key validation.
- */
-function isValidSolanaAddress(address) {
-    try {
-        new window.SolanaWeb3.PublicKey(address);
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
-
-// =========================================================================================
-// --- SWAP FUNCTIONS (JUPITER API + MOCK TRANSACTION) ---
-// =========================================================================================
-
-/**
- * Updates balances for the "From" token in the swap section.
- */
-async function updateSwapBalances() {
-    if (!appState.walletPublicKey || !appState.provider) {
-        if (uiElements.swapFromBalanceSpan) uiElements.swapFromBalanceSpan.textContent = '0';
-        return;
-    }
-
-    const fromToken = uiElements.swapFromTokenSelect?.value;
-    if (!fromToken) return;
-
-    let displayBalance = '0';
-    const fromTokenMint = TOKEN_MINT_ADDRESSES[fromToken];
-
-    if (fromTokenMint && fromTokenMint.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
-        const solBalance = appState.userBalances.SOL;
-        displayBalance = formatBigInt(solBalance, SOL_DECIMALS);
-    } else if (fromTokenMint && fromTokenMint.equals(TOKEN_MINT_ADDRESSES['AFOX'])) {
-        const afoxBalance = appState.userBalances.AFOX;
-        displayBalance = formatBigInt(afoxBalance, AFOX_DECIMALS);
-    }
-
-    if (uiElements.swapFromBalanceSpan) {
-        uiElements.swapFromBalanceSpan.textContent = `${displayBalance} ${fromToken}`;
-    }
-
-    if (uiElements.swapFromAmountInput && uiElements.swapFromAmountInput.value.trim() !== '' && !appState.currentJupiterQuote) {
-         const debouncedGetQuote = debounce(getQuote, 500);
-         debouncedGetQuote();
-    }
-}
-
-function clearSwapQuote() {
-    appState.currentJupiterQuote = null;
-    if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
-    if (uiElements.priceImpactSpan) uiElements.priceImpactSpan.textContent = '0%';
-    if (uiElements.lpFeeSpan) uiElements.lpFeeSpan.textContent = '0';
-    if (uiElements.minReceivedSpan) uiElements.minReceivedSpan.textContent = '0';
-    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.style.display = 'none';
-}
-
-function handleSwapDirectionChange() {
-    if (!uiElements.swapFromTokenSelect || !uiElements.swapToTokenSelect) return;
-    
-    const fromToken = uiElements.swapFromTokenSelect.value;
-    const toToken = uiElements.swapToTokenSelect.value;
-
-    uiElements.swapFromTokenSelect.value = toToken;
-    uiElements.swapToTokenSelect.value = fromToken;
-
-    if (uiElements.swapFromAmountInput) uiElements.swapFromAmountInput.value = '';
-    if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
-
-    clearSwapQuote();
-    updateSwapBalances();
 }
 
 /**
@@ -1416,35 +1326,6 @@ function initEventListeners() {
         });
     }
 
-    // SWAP Actions
-    const debouncedGetQuote = debounce(getQuote, 500);
-
-    if (uiElements.swapFromTokenSelect) {
-        uiElements.swapFromTokenSelect.addEventListener('change', () => {
-            updateSwapBalances();
-            clearSwapQuote();
-        });
-    }
-    if (uiElements.swapToTokenSelect) {
-        uiElements.swapToTokenSelect.addEventListener('change', () => {
-            clearSwapQuote();
-            if (uiElements.swapFromAmountInput?.value.trim() !== '') debouncedGetQuote();
-        });
-    }
-    if (uiElements.swapFromAmountInput) {
-        uiElements.swapFromAmountInput.addEventListener('input', () => {
-             clearSwapQuote();
-             debouncedGetQuote();
-        });
-    }
-    if (uiElements.getQuoteBtn) uiElements.getQuoteBtn.addEventListener('click', getQuote);
-    if (uiElements.executeSwapBtn) uiElements.executeSwapBtn.addEventListener('click', executeSwap);
-    uiElements.maxAmountBtns.forEach(btn => {
-        btn.addEventListener('click', handleMaxAmount);
-    });
-    if (uiElements.swapDirectionBtn) {
-        uiElements.swapDirectionBtn.addEventListener('click', handleSwapDirectionChange);
-    }
 
     // General Copy Button
     uiElements.copyButtons.forEach(btn => {
