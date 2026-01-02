@@ -818,32 +818,27 @@ async function updateStakingUI() {
  * ✅ Implemented: Reading staking data from the blockchain (REAL ANCHOR).
  */
 async function fetchUserStakingData() {
-    if (!appState.walletPublicKey || !STAKING_IDL.version || !appState.connection) {
-        appState.userStakingData.stakedAmount = BigInt(0);
-        appState.userStakingData.rewards = BigInt(0);
-        appState.userStakingData.lockupEndTime = 0;
-        appState.userStakingData.poolIndex = 4;
-        appState.userStakingData.lending = BigInt(0);
-        return;
+    if (!appState.walletPublicKey || !appState.connection) return;
+
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        
+        const stakingData = await program.account.userStakingAccount.fetch(userStakingPDA);
+        
+        appState.userStakingData = {
+            stakedAmount: stakingData.stakedAmount.toBigInt(),
+            rewards: stakingData.rewardsToClaim.toBigInt(), 
+            lockupEndTime: stakingData.lockupEndTime.toNumber(),
+            poolIndex: stakingData.poolIndex,
+            lending: stakingData.lending.toBigInt()
+        };
+    } catch (e) {
+        console.warn("Аккаунт не найден, сбрасываем данные.");
+        appState.userStakingData = { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n };
     }
-        try {
-            const stakingData = await program.account.userStakingAccount.fetch(userStakingPDA);
-            
-            appState.userStakingData.stakedAmount = stakingData.stakedAmount.toBigInt();
-            // ИСПРАВЛЕНО: используем rewardsToClaim как в IDL
-            appState.userStakingData.rewards = stakingData.rewardsToClaim.toBigInt(); 
-            appState.userStakingData.lockupEndTime = stakingData.lockupEndTime.toNumber();
-            appState.userStakingData.poolIndex = stakingData.poolIndex;
-            appState.userStakingData.lending = stakingData.lending.toBigInt();
+}
 
-        } catch (e) {
-            // Если аккаунт еще не создан
-            resetUserStakingData(); 
-        }
-
-        // 2. Deserialization (REAL ANCHOR FETCH)
-        try {
-            const stakingData = await program.account.userStakingAccount.fetch(userStakingAccountPDA);
             
             // Note: .toBigInt() and .toNumber() are methods on Anchor's BN object
             appState.userStakingData.stakedAmount = stakingData.stakedAmount.toBigInt();
