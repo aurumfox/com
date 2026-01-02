@@ -106,23 +106,47 @@ const STAKING_ACCOUNT_SEED = "alphafox_staking_pda";
 // 3. 🔑 SECURE CHANGES: Helius API Key removed, HELIUS_BASE_URL replaced with your Cloudflare Worker
 const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addresses/';
 
+
 // =========================================================================================
-// PROJECT CONSTANTS (CRITICAL FIXES APPLIED)
+// PROJECT CONSTANTS (UPDATED WITH MAINNET DEPLOY DATA)
 // =========================================================================================
 
- // --- КРИТИЧЕСКИЕ АДРЕСА MAINNET ---
+// --- КРИТИЧЕСКИЕ АДРЕСА MAINNET (АКТУАЛЬНО) ---
 const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
 const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd';
 const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
 
-// Эти адреса должны быть созданы тобой (PoolState и Vaults)
-const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('4tW21V9yK8mC5Jd7eR2H1kY0v6U4X3Z7f9B2g5D8A3G'); 
-const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('9B5E8KkYx7P3Q2M5L4W9v8F6g1D4d3C2x1S0o9n8B7v'); 
-const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F4L2p9B5q3X7r5D0h9Z8m6W4c2T1y0S'); 
+// Адреса из вашего лога "ВЫШИ 4 КЛЮЧА ДЛЯ ФРОНТЕНДА"
+const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ'); 
+const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp'); 
+const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi'); 
+
+// DAO Treasury (Оставляем старый, если он не менялся в скрипте деплоя)
 const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
 
-// Функция для получения адреса стейкинга пользователя (синхронно с Rust)
-// Исправленная функция расчета адреса аккаунта пользователя
+// --- СИСТЕМНЫЕ ПАРАМЕТРЫ ---
+const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
+const SOL_MINT = 'So11111111111111111111111111111111111111112';
+const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+const TXN_FEE_RESERVE_SOL = 0.005;
+const SECONDS_PER_DAY = 86400;
+
+const AFOX_DECIMALS = 6;
+const SOL_DECIMALS = 9;
+
+// --- КОНФИГУРАЦИЯ ПУЛОВ ---
+const POOLS_CONFIG = [
+    { name: 'Flexible', duration_days: 0, apr_rate: 100 },
+    { name: 'Standard', duration_days: 30, apr_rate: 200 },
+    { name: 'Max Boost', duration_days: 90, apr_rate: 500 },
+];
+
+// --- СТАНДАРТНЫЕ ПРОГРАММЫ SOLANA ---
+const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbnPUb4A5L5EyrgFP1G8AtiT');
+const SYSTEM_PROGRAM_ID = window.SolanaWeb3.SystemProgram.programId;
+
+// --- ХЕЛПЕРЫ ДЛЯ PDA ---
 async function getUserStakingAccountPDA(userPubkey) {
     const [pda] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
         [
@@ -134,40 +158,6 @@ async function getUserStakingAccountPDA(userPubkey) {
     return pda;
 }
 
-
-// -----------------------------------------------------------------------------------------
-
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
-const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd';
-const SOL_MINT = 'So11111111111111111111111111111111111111112';
-const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
-const TXN_FEE_RESERVE_SOL = 0.005;
-const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
-
-    // Соответствует вашему [i64; 3] в Rust: 0 - Flexible, 1 - 30 дней, 2 - 90 дней
-const POOLS_CONFIG = [
-    { name: 'Flexible', duration_days: 0, apr_rate: 100 }, // Index 0
-    { name: 'Standard', duration_days: 30, apr_rate: 200 }, // Index 1
-    { name: 'Max Boost', duration_days: 90, apr_rate: 500 }, // Index 2
-];
-
-const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
-const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH'); 
-const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbnPUb4A5L5EyrgFP1G8AtiT');
-const SYSTEM_PROGRAM_ID = window.SolanaWeb3.SystemProgram.programId;
-
-const TOKEN_MINT_ADDRESSES = {
-    'SOL': new window.SolanaWeb3.PublicKey(SOL_MINT),
-    'AFOX': AFOX_TOKEN_MINT_ADDRESS,
-};
-const AFOX_DECIMALS = 6;
-const SOL_DECIMALS = 9;
-const NETWORK = window.SolanaWeb3.WalletAdapterNetwork.Mainnet;
-
-const uiElements = {};
-// Using window.SolanaWalletAdapterPhantom for universality
-const WALLETS = [new window.SolanaWalletAdapterPhantom.PhantomWalletAdapter()];
 
 // =========================================================================================
 // 🟢 NEW FUNCTION: SECURE LOG SENDING VIA PROXY
