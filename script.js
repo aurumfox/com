@@ -155,25 +155,6 @@ const AFOX_DECIMALS = 6;
 const SOL_DECIMALS = 9;
 const NETWORK = window.SolanaWeb3.WalletAdapterNetwork.Mainnet;
 
-// --- GLOBAL APP STATE & WALLET ADAPTERS ---
-const appState = {
-    walletPublicKey: null,
-    provider: null,
-    connection: null,
-    currentJupiterQuote: null,
-    currentOpenNft: null,
-    areProviderListenersAttached: false,
-    userBalances: { SOL: BigInt(0), AFOX: BigInt(0) },
-    userStakingData: { 
-        stakedAmount: BigInt(0), 
-        rewards: BigInt(0), 
-        lockupEndTime: 0,
-        poolIndex: 4,     // Pool Index
-        lending: BigInt(0) // Tokens locked as collateral
-    }, 
-    userNFTs: [],
-    marketplaceNFTs: []
-};
 const uiElements = {};
 // Using window.SolanaWalletAdapterPhantom for universality
 const WALLETS = [new window.SolanaWalletAdapterPhantom.PhantomWalletAdapter()];
@@ -1240,83 +1221,6 @@ async function getQuote() {
 }
 
 /**
- * Executes the swap transaction (REAL TRANSACTION using Jupiter's instructions).
- */
-async function executeSwap() {
-    if (!appState.walletPublicKey || !appState.currentJupiterQuote || !appState.provider || !appState.connection) {
-        showNotification('Missing required connection details.', 'error');
-        return;
-    }
-
-    setLoadingState(true, uiElements.executeSwapBtn);
-    showNotification('Preparing swap transaction...', 'info');
-
-    const fromToken = uiElements.swapFromTokenSelect?.value;
-    const toToken = uiElements.swapToTokenSelect?.value;
-    const inputAmountBigInt = BigInt(appState.currentJupiterQuote.inAmount);
-    const outputAmountBigInt = BigInt(appState.currentJupiterQuote.outAmount);
-
-    try {
-        const response = await fetchWithTimeout(`${JUPITER_API_URL}/swap`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                quoteResponse: appState.currentJupiterQuote,
-                userPublicKey: appState.walletPublicKey.toBase58(),
-                wrapUnwrapSOL: true,
-            }),
-        }, 10000);
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Failed to get swap transaction: ${errorData.error || response.statusText}`);
-        }
-        
-        const { swapTransaction } = await response.json(); 
-        
-        const transaction = window.SolanaWeb3.Transaction.from(Buffer.from(swapTransaction, 'base64'));
-        
-        const signature = await appState.provider.sendAndConfirm(transaction);
-
-        // --- MOCK BALANCE UPDATE (For immediate UI refresh, actual balances will fetch real data on next update) ---
-        // Это остается как МОК, потому что Jupiter не обновляет локальный BigInt напрямую.
-        // Следующий вызов fetchUserBalances() получит реальные данные, но это ускоряет UI.
-        
-        if (fromToken === 'AFOX') {
-            appState.userBalances.AFOX = appState.userBalances.AFOX - inputAmountBigInt;
-        } else if (fromToken === 'SOL') {
-            appState.userBalances.SOL = appState.userBalances.SOL - inputAmountBigInt;
-        }
-        
-        // MOCK: assuming a positive outcome for immediate UI update
-        if (toToken === 'AFOX') {
-            appState.userBalances.AFOX = appState.userBalances.AFOX + outputAmountBigInt;
-        } else if (toToken === 'SOL') {
-            appState.userBalances.SOL = appState.userBalances.SOL + outputAmountBigInt;
-        }
-        
-        appState.userBalances.SOL = appState.userBalances.SOL - parseAmountToBigInt(getSolanaTxnFeeReserve().toString(), SOL_DECIMALS);
-        
-        persistMockData(); 
-        // --- MOCK LOGIC END ---
-
-        showNotification('Swap successfully executed! 🎉', 'success');
-
-        if (uiElements.swapFromAmountInput) uiElements.swapFromAmountInput.value = '';
-        if (uiElements.swapToAmountInput) uiElements.swapToAmountInput.value = '';
-        clearSwapQuote();
-        await updateStakingAndBalanceUI();
-
-    } catch (error) {
-        console.error('Error during swap execution:', error);
-        let errorMessage = error.message.includes('denied') ? 'Transaction denied by user.' : `Swap failed: ${error.message.substring(0, 100)}`;
-        showNotification(errorMessage, 'error');
-    } finally {
-        setLoadingState(false, uiElements.executeSwapBtn);
-    }
-}
-
-/**
  * Handles setting the MAX amount for a swap.
  */
 async function handleMaxAmount(event) {
@@ -1463,20 +1367,6 @@ function cacheUIElements() {
     uiElements.lockupPeriod = document.getElementById('lockup-period');
     uiElements.poolSelector = document.getElementById('pool-selector'); 
 
-    // SWAP Section
-    uiElements.swapFromAmountInput = document.getElementById('swap-from-amount');
-    uiElements.swapFromTokenSelect = document.getElementById('swap-from-token');
-    uiElements.swapFromBalanceSpan = document.getElementById('swap-from-balance');
-    uiElements.swapDirectionBtn = document.getElementById('swap-direction-btn');
-    uiElements.swapToAmountInput = document.getElementById('swap-to-amount');
-    uiElements.swapToTokenSelect = document.getElementById('swap-to-token');
-    uiElements.priceImpactSpan = document.getElementById('price-impact');
-    uiElements.lpFeeSpan = document.getElementById('lp-fee');
-    uiElements.minReceivedSpan = document.getElementById('min-received');
-    uiElements.getQuoteBtn = document.getElementById('get-quote-btn');
-    uiElements.executeSwapBtn = document.getElementById('execute-swap-btn');
-    uiElements.maxAmountBtns = Array.from(document.querySelectorAll('.max-amount-btn'));
-
 
     // Utility
     uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
@@ -1568,75 +1458,27 @@ function initEventListeners() {
                  showNotification('Nothing to copy.', 'warning', 2000);
             }
         });
-    });
-
-// --------------------------------------------------------
-
-/**
- * Initializes the Jupiter Terminal and adds event listeners.
- */
-/**
- * Настройка терминала Jupiter: МИНИМАЛИСТИЧНЫЙ ВИД БЕЗ ГРАФИКОВ
- */
-function initializeJupiterTerminal() {
-    if (typeof window.Jupiter === 'undefined') {
-        console.warn('Jupiter SDK not loaded');
-        return;
     }
-
-    window.Jupiter.init({
-        // Указываем ID контейнера из вашего HTML
-        displayMode: "integrated",
-        integratedTargetId: "jupiter-swap-widget", 
-        
-        // Используем ваши константы
-        endpoint: JUPITER_RPC_ENDPOINT, 
-        
-        // Облегченный стиль без лишних графиков
-        widgetStyle: "basic", 
-
-        // Настройка токенов
-        formProps: {
-            fixedOutputMint: false,
-            initialOutputMint: AFOX_MINT, // Подставляем ваш AFOX
-            initialInputMint: "So11111111111111111111111111111111111111112", // SOL
-        },
-        strictTokenList: false,
-
-        // --- ВИЗУАЛЬНОЕ СЛИЯНИЕ С ВАШИМ CSS ---
-        theme: "dark",
-        customTheme: {
-            widgetBg: "transparent",    // Сливается с фоном сайта
-            mainBg: "#1a1a2e",          // Ваша переменная --color-bg-dark
-            secondaryBg: "#2a2a3a",     // Ваша переменная --color-bg-input
-            primary: "#ffd700",         // Ваше ЗОЛОТО --primary-color
-            accent: "#007bff",          // Синий акцент --accent-color
-            onPrimary: "#1a1a2e",       // Темный текст на золотой кнопке (читабельно)
-            interactiveBg: "#3a3a5e",   // Ваша карточка --color-bg-card
-            tokenRowHover: "#2c2c4d",   // Подсветка при наведении
-            text: "#E0E0E0",            // Светлый текст --text-color-light
-            subText: "#B0B0B0",         // Приглушенный текст
-        },
-    });
-}
 
 // --- MAIN INITIALIZATION FUNCTION ---
 async function init() {
-    if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined' || typeof window.SolanaWalletAdapterPhantom === 'undefined') {
+    if (typeof window.SolanaWeb3 === 'undefined' || typeof window.Anchor === 'undefined') {
         setTimeout(init, 100); 
         return;
     }
 
     cacheUIElements();
-    populatePoolSelector();
+    if (typeof populatePoolSelector === 'function') populatePoolSelector();
     setupHamburgerMenu(); 
     initEventListeners();
-    initializeJupiterTerminal();
+
+    // БЛОК JUPITER УДАЛЕН
 
     try {
         appState.connection = await getRobustConnection();
         if (appState.walletPublicKey) {
-            updateStakingAndBalanceUI();
+            // Обновляем только стейкинг и балансы
+            await Promise.all([fetchUserBalances(), updateStakingUI()]);
         }
     } catch (e) {
         console.warn("RPC Connection issue:", e.message);
@@ -1645,6 +1487,7 @@ async function init() {
     updateStakingUI();
     updateWalletDisplay(appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null);
 }
+
 
 // --------------------------------------------------------
 
