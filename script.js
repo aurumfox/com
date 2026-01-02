@@ -143,8 +143,6 @@ const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const TXN_FEE_RESERVE_SOL = 0.005;
 const SECONDS_PER_DAY = 86400; // Added for Staking UI logic
 
-// Pool Configurations (MUST MATCH RUST) - Used for MOCK
-const POOLS_CONFIG = [
     // Соответствует вашему [i64; 3] в Rust: 0 - Flexible, 1 - 30 дней, 2 - 90 дней
 const POOLS_CONFIG = [
     { name: 'Flexible', duration_days: 0, apr_rate: 100 }, // Index 0
@@ -1192,7 +1190,7 @@ function initEventListeners() {
     }
 
 
-    // General Copy Button
+        // General Copy Button
     uiElements.copyButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const textToCopy = btn.dataset.copyTarget;
@@ -1204,7 +1202,9 @@ function initEventListeners() {
                  showNotification('Nothing to copy.', 'warning', 2000);
             }
         });
-    }
+    }); // <-- Закрыли forEach
+} // <-- Закрыли функцию initEventListeners
+
 
 // --- MAIN INITIALIZATION FUNCTION ---
 async function init() {
