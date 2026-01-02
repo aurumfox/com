@@ -122,6 +122,7 @@ const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('E7J3K0N6g8V1F
 const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
 
 // Функция для получения адреса стейкинга пользователя (синхронно с Rust)
+// Исправленная функция расчета адреса аккаунта пользователя
 async function getUserStakingAccountPDA(userPubkey) {
     const [pda] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
         [
@@ -132,6 +133,7 @@ async function getUserStakingAccountPDA(userPubkey) {
     );
     return pda;
 }
+
 
 // -----------------------------------------------------------------------------------------
 
