@@ -142,14 +142,10 @@ const POOLS_CONFIG = [
 ];
 
 // --- СТАНДАРТНЫЕ ПРОГРАММЫ SOLANA ---
-const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbnPUb4A5L5EyrgFP1G8AtiT');
-const SYSTEM_PROGRAM_ID = window.SolanaWeb3.SystemProgram.programId;
-
-// --- ХЕЛПЕРЫ ДЛЯ PDA ---
 async function getUserStakingAccountPDA(userPubkey) {
     const [pda] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
         [
+            window.Anchor.utils.bytes.utf8.encode("alphafox_staking_pda"), // Добавлено семя
             userPubkey.toBuffer(),
             AFOX_POOL_STATE_PUBKEY.toBuffer()
         ],
@@ -157,6 +153,7 @@ async function getUserStakingAccountPDA(userPubkey) {
     );
     return pda;
 }
+
 
 
 // =========================================================================================
@@ -829,20 +826,20 @@ async function fetchUserStakingData() {
         appState.userStakingData.lending = BigInt(0);
         return;
     }
+        try {
+            const stakingData = await program.account.userStakingAccount.fetch(userStakingPDA);
+            
+            appState.userStakingData.stakedAmount = stakingData.stakedAmount.toBigInt();
+            // ИСПРАВЛЕНО: используем rewardsToClaim как в IDL
+            appState.userStakingData.rewards = stakingData.rewardsToClaim.toBigInt(); 
+            appState.userStakingData.lockupEndTime = stakingData.lockupEndTime.toNumber();
+            appState.userStakingData.poolIndex = stakingData.poolIndex;
+            appState.userStakingData.lending = stakingData.lending.toBigInt();
 
-    try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const sender = appState.walletPublicKey;
-
-        // 1. PDA calculation
-        const [userStakingAccountPDA] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
-            [
-                window.Anchor.utils.bytes.utf8.encode(STAKING_ACCOUNT_SEED),
-                sender.toBuffer(),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(), // Pool ID is part of the seed
-            ],
-            STAKING_PROGRAM_ID
-        );
+        } catch (e) {
+            // Если аккаунт еще не создан
+            resetUserStakingData(); 
+        }
 
         // 2. Deserialization (REAL ANCHOR FETCH)
         try {
@@ -904,7 +901,7 @@ async function handleStakeAfox() {
         let instructions = [];
         const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
 
-        if (!accountInfo) {
+                if (!accountInfo) {
             instructions.push(
                 await program.methods.initializeUserStake(poolIndex)
                     .accounts({
@@ -913,10 +910,12 @@ async function handleStakeAfox() {
                         owner: sender,
                         rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                         systemProgram: SYSTEM_PROGRAM_ID,
-                        clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                        // Убедитесь, что в Rust программе ожидается clock, если нет - удалите
+                        clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY, 
                     }).instruction()
             );
         }
+
 
         instructions.push(
             await program.methods.deposit(new window.Anchor.BN(stakeAmountBigInt.toString()))
@@ -963,19 +962,20 @@ async function handleClaimRewards() {
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        const tx = await program.methods.claimRewards()
+                const tx = await program.methods.claimRewards()
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
                 userStaking: userStakingPDA,
                 owner: sender,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+                vault: AFOX_POOL_VAULT_PUBKEY, // Основной пул
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Кошелек с наградами
                 userRewardsAta: userAfoxATA,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
             })
             .transaction();
+
 
         const signature = await appState.provider.sendAndConfirm(tx);
         showNotification(`Rewards Claimed: ${signature.substring(0, 8)}`, 'success');
