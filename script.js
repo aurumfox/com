@@ -61,29 +61,42 @@ const STAKING_IDL = {
         }
     ],
     accounts: [
-        {
-            name: "UserStakingAccount",
-            type: {
-                kind: "struct",
-                fields: [
-                    { name: "isInitialized", type: "bool" },
-                    { name: "stakeBump", type: "u8" },
-                    { name: "poolIndex", type: "u8" },
-                    { name: "paddingA", type: { array: ["u8", 5] } },
-                    { name: "owner", type: "publicKey" },
-                    { name: "stakedAmount", type: "u64" },
-                    { name: "lockupEndTime", type: "i64" },
-                    { name: "rewardPerShareUser", type: "u128" },
-                    { name: "rewardsToClaim", type: "u64" },
-                    { name: "pendingRewardsDueToLimit", type: "u64" },
-                    { name: "lending", type: "u64" },
-                    { name: "lendingUnlockTime", type: "i64" },
-                    { name: "lastUpdateTime", type: "i64" }
-                ]
-            }
+    {
+        name: "UserStakingAccount",
+        type: {
+            kind: "struct",
+            fields: [
+                { name: "isInitialized", type: "bool" },
+                { name: "stakeBump", type: "u8" },
+                { name: "poolIndex", type: "u8" },
+                { name: "paddingA", type: { array: ["u8", 5] } },
+                { name: "owner", type: "publicKey" },
+                { name: "stakedAmount", type: "u64" },
+                { name: "lockupEndTime", type: "i64" },
+                { name: "rewardPerShareUser", type: "u128" },
+                { name: "rewardsToClaim", type: "u64" },
+                { name: "pendingRewardsDueToLimit", type: "u64" }, // Добавлено
+                { name: "lending", type: "u64" },
+                { name: "lendingUnlockTime", type: "i64" },
+                { name: "lastUpdateTime", type: "i64" },
+                { name: "paddingFinal", type: { array: ["u8", 104] } } // Добавлено для соответствия размеру в Rust
+            ]
         }
-    ]
-};
+    },
+    {
+        name: "PoolState", // Добавь это, чтобы иметь возможность читать состояние пула
+        type: {
+            kind: "struct",
+            fields: [
+                { name: "isInitialized", type: "bool" },
+                { name: "globalPause", type: "bool" },
+                { name: "poolBump", type: "u8" },
+                // ... добавь остальные поля из Rust struct PoolState по аналогии
+            ]
+        }
+    }
+]
+
 
 
 // 2. INSERT YOUR SEED (Keyword for the staking account PDA from your Rust program)
