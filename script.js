@@ -155,6 +155,21 @@ async function getUserStakingAccountPDA(userPubkey) {
 }
 
 
+let appState = {
+    connection: null,
+    provider: null,
+    walletPublicKey: null,
+    userBalances: { SOL: BigInt(0), AFOX: BigInt(0) },
+    userStakingData: {
+        stakedAmount: BigInt(0),
+        rewards: BigInt(0),
+        lockupEndTime: 0,
+        poolIndex: 0,
+        lending: BigInt(0)
+    }
+};
+
+let uiElements = {}; // Кэш для кнопок
 
 // =========================================================================================
 // 🟢 NEW FUNCTION: SECURE LOG SENDING VIA PROXY
