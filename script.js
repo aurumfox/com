@@ -585,6 +585,11 @@ async function fetchUserBalances() {
 async function updateStakingUI() {
     if (!appState.walletPublicKey) {
         const elements = [uiElements.userAfoxBalance, uiElements.userStakedAmount, uiElements.userRewardsAmount];
+const liveAprValue = await getLiveAPR();
+if (uiElements.stakingApr) {
+    uiElements.stakingApr.textContent = liveAprValue;
+}
+
         elements.forEach(el => { if (el) el.textContent = '0 AFOX'; });
         [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn].filter(Boolean).forEach(btn => btn.disabled = true);
         if (uiElements.stakingApr) uiElements.stakingApr.textContent = '—';
@@ -825,6 +830,33 @@ async function handleUnstakeAfox() {
         showNotification(`Unstake failed: ${error.message}`, 'error');
     } finally {
         setLoadingState(false, uiElements.unstakeAfoxBtn);
+    }
+}
+
+async function getLiveAPR() {
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        
+        // 1. Получаем данные о состоянии пула из блокчейна
+        const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+        
+        // 2. Достаем total_staked (сколько всего монет люди уже вложили)
+        const totalStaked = Number(poolAccount.totalStakedAmount) / 1000000; // Делим на 10^6 знаков
+
+        // 3. Твои настройки: 100 единиц в секунду = 0.0001 монеты
+        const rewardsPerSecond = 0.0001; 
+        const secondsInYear = 31536000;
+        const totalRewardsYear = rewardsPerSecond * secondsInYear; // 3,153.6 AFX в год
+
+        if (totalStaked === 0) return "—";
+
+        // 4. Считаем реальный процент
+        const realAPR = (totalRewardsYear / totalStaked) * 100;
+        
+        return realAPR.toFixed(2) + "%";
+    } catch (e) {
+        console.error("Ошибка расчета APR:", e);
+        return "Error";
     }
 }
 
