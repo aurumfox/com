@@ -663,10 +663,6 @@ async function updateStakingUI() {
     }
 }
 
-/**
- * ✅ Implemented: Reading staking data from the blockchain (REAL ANCHOR).
- */
-
 async function fetchUserStakingData() {
     if (!appState.walletPublicKey || !appState.connection) return;
 
