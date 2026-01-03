@@ -680,6 +680,13 @@ if (uiElements.stakingApr) {
         }
     }
 }
+async function getUserStakingAccountPDA(owner) {
+    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        [Buffer.from("user-staking"), owner.toBuffer()],
+        STAKING_PROGRAM_ID
+    );
+    return pda;
+}
 
 async function fetchUserStakingData() {
     if (!appState.walletPublicKey || !appState.connection) return;
