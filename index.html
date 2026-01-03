@@ -18,7 +18,11 @@
 ">
 
     <script src="https://unpkg.com/buffer@6.0.3/index.js"></script>
-<script>window.Buffer = window.Buffer || window.buffer.Buffer;</script>
+<script>
+    // Принудительная инициализация для браузера
+    window.Buffer = window.Buffer || window.buffer.Buffer;
+</script>
+
 
 
     <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
