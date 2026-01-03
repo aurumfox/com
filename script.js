@@ -1003,46 +1003,47 @@ async function handleClaimRewards() {
 /**
  * ✅ Implemented: Sending unstaking transaction (REAL ANCHOR).
  */
-async function handleStakeAfox() {
+async function handleUnstakeAfox() {
     if (!appState.walletPublicKey) return;
-    const amountStr = uiElements.stakeAmountInput.value;
-    const poolIndex = parseInt(uiElements.poolSelector.value);
-    
-    setLoadingState(true, uiElements.stakeAfoxBtn);
+    setLoadingState(true, uiElements.unstakeAfoxBtn);
+
     try {
-        const amount = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const pda = await getUserStakingAccountPDA(appState.walletPublicKey);
-        const userAta = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, appState.walletPublicKey
+        const sender = appState.walletPublicKey;
+        const userStakingPDA = await getUserStakingAccountPDA(sender);
+        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        let tx = new window.SolanaWeb3.Transaction();
-        const accountInfo = await appState.connection.getAccountInfo(pda);
+        // Внимание: берем сумму из текущих данных стейкинга пользователя
+        const amountToUnstake = new window.Anchor.BN(appState.userStakingData.stakedAmount.toString());
 
-        // НОВОЕ: Если юзер стакает первый раз, создаем ему аккаунт автоматически
-        if (!accountInfo) {
-            tx.add(await program.methods.initializeUserStake(poolIndex).accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY, userStaking: pda, owner: appState.walletPublicKey,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS, systemProgram: SYSTEM_PROGRAM_ID, clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY
-            }).instruction());
-        }
-
-        tx.add(await program.methods.deposit(new window.Anchor.BN(amount.toString())).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY, userStaking: pda, owner: appState.walletPublicKey,
-            userSourceAta: userAta, vault: AFOX_POOL_VAULT_PUBKEY, rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID, clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY
-        }).instruction());
+        const tx = await program.methods.unstake(amountToUnstake, false)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPDA,
+                owner: sender,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Исправленный ключ
+                userRewardsAta: userAfoxATA,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .transaction();
 
         const signature = await appState.provider.sendAndConfirm(tx);
-        showNotification("Успешно застейкано!", "success");
+        showNotification(`Unstake success! TX: ${signature.substring(0, 8)}`, 'success');
         await updateStakingAndBalanceUI();
     } catch (error) {
-        showNotification("Ошибка: " + error.message, "error");
+        console.error("Unstake Error:", error);
+        showNotification(`Unstake failed: ${error.message}`, 'error');
     } finally {
-        setLoadingState(false, uiElements.stakeAfoxBtn);
+        setLoadingState(false, uiElements.unstakeAfoxBtn);
     }
 }
+
 
 
 // =========================================================================================
