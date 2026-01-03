@@ -984,7 +984,6 @@ function setupDAO() {
             daoModal.style.display = 'none';
         });
     }
-}
 
 // --- MAIN INITIALIZATION FUNCTION ---
 function init() {
