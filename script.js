@@ -914,7 +914,7 @@ function cacheUIElements() {
     uiElements.pageLoader = document.getElementById('page-loader');
     uiElements.contactForm = document.getElementById('contact-form');
 }
-});
+
 
 
 // --- 4. INITIALIZING EVENT LISTENERS ---
@@ -966,7 +966,7 @@ function initEventListeners() {
             }
         });
     }); 
-} // <--- ВОТ ЭТА СКОБКА БЫЛА ПРОПУЩЕНА
+} 
 
 // ==========================================
 // БЛОК 3: DAO (ГОЛОСОВАНИЕ)
