@@ -666,9 +666,7 @@ async function updateStakingUI() {
 /**
  * ✅ Implemented: Reading staking data from the blockchain (REAL ANCHOR).
  */
-/**
- * ✅ Исправлено: Чтение данных стейкинга из блокчейна (REAL ANCHOR).
- */
+
 async function fetchUserStakingData() {
     if (!appState.walletPublicKey || !appState.connection) return;
 
