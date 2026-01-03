@@ -1,3 +1,16 @@
+// Константы проекта
+const AFOX_DECIMALS = 6; 
+const SOL_DECIMALS = 9;
+const SECONDS_PER_DAY = 86400;
+const FIREBASE_PROXY_URL = 'ВАШ_URL_WORKER'; // Замените на ваш URL
+
+const POOLS_CONFIG = {
+    0: { name: "Flexible", apr_rate: 500 },
+    1: { name: "Standard", apr_rate: 1200 },
+    2: { name: "Max Boost", apr_rate: 2500 },
+    4: { name: "Legacy", apr_rate: 0 }
+};
+
 const STAKING_IDL = {
     version: "0.1.0",
     name: "alphafox_staking",
@@ -10,16 +23,19 @@ const STAKING_IDL = {
     accounts: [{ name: "UserStakingAccount", type: { kind: "struct", fields: [{ name: "isInitialized", type: "bool" }, { name: "stakeBump", type: "u8" }, { name: "poolIndex", type: "u8" }, { name: "paddingA", type: { array: ["u8", 5] } }, { name: "owner", type: "publicKey" }, { name: "stakedAmount", type: "u64" }, { name: "lockupEndTime", type: "i64" }, { name: "rewardPerShareUser", type: "u128" }, { name: "rewardsToClaim", type: "u64" }, { name: "pendingRewardsDueToLimit", type: "u64" }, { name: "lending", type: "u64" }, { name: "lendingUnlockTime", type: "i64" }, { name: "lastUpdateTime", type: "i64" }, { name: "paddingFinal", type: { array: ["u8", 104] } }] } }]
 };
 
-const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd');
-const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ'); 
-const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp'); 
-const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
-const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi'); 
-const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
-const SYSTEM_PROGRAM_ID = window.SolanaWeb3.SystemProgram.programId;
+// Исправленные адреса
+const STAKING_PROGRAM_ID = new window.solanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
+const AFOX_TOKEN_MINT_ADDRESS = new window.solanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
+const AFOX_POOL_STATE_PUBKEY = new window.solanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ'); 
+const AFOX_POOL_VAULT_PUBKEY = new window.solanaWeb3.PublicKey('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp'); 
+const AFOX_REWARDS_VAULT_PUBKEY = new window.solanaWeb3.PublicKey('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
+const DAO_TREASURY_VAULT_PUBKEY = new window.solanaWeb3.PublicKey('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi'); 
+
+const TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+const ASSOCIATED_TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
+const SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+
 
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 let uiElements = {};
