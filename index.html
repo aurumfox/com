@@ -4,21 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aurum Fox: DAO, Staking & Lending on Solana</title>
-<meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdnjs.cloudflare.com https://kit.fontawesome.com; 
-    connect-src 'self' https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com https://*.googleapis.com; 
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ka-f.fontawesome.com; 
-    font-src 'self' https://fonts.gstatic.com https://ka-f.fontawesome.com; 
-    img-src 'self' data: https:; 
-    frame-src https://birdeye.so https://dexscreener.com;
-">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://bundle.run https://cdnjs.cloudflare.com;">
 
-
-    <script src="https://bundle.run/buffer@6.0.3"></script>
+<script src="https://bundle.run/buffer@6.0.3"></script>
 <script>
-  window.Buffer = window.Buffer || buffer.Buffer;
+  window.Buffer = window.buffer.Buffer; 
 </script>
+
 
 <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
 
