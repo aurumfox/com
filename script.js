@@ -928,9 +928,19 @@ function initEventListeners() {
 
 // --- 3. CACHING UI ELEMENTS ---
 function cacheUIElements() {
-    // General Wallet & Display
-    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
-    uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display, #walletAddress, [data-wallet-control="walletAddress"]'));
+    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('#connectWalletBtn'));
+    uiElements.userAfoxBalance = document.getElementById('userAfoxBalance');
+    uiElements.userStakedAmount = document.getElementById('userStakedAmount');
+    uiElements.userRewardsAmount = document.getElementById('userRewardsAmount');
+    uiElements.stakingApr = document.getElementById('stakingApr');
+    uiElements.stakeAmountInput = document.getElementById('stakeAmountInput'); // Исправлено под HTML
+    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
+    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
+    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
+    uiElements.poolSelector = document.getElementById('pool-selector');
+    uiElements.notificationContainer = document.getElementById('notificationContainer');
+}
+
 
     
     // DAO Elements
