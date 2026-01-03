@@ -666,6 +666,9 @@ async function updateStakingUI() {
 /**
  * ✅ Implemented: Reading staking data from the blockchain (REAL ANCHOR).
  */
+/**
+ * ✅ Исправлено: Чтение данных стейкинга из блокчейна (REAL ANCHOR).
+ */
 async function fetchUserStakingData() {
     if (!appState.walletPublicKey || !appState.connection) return;
 
@@ -683,40 +686,19 @@ async function fetchUserStakingData() {
             lending: stakingData.lending.toBigInt()
         };
     } catch (e) {
-        console.warn("Аккаунт не найден, сбрасываем данные.");
-        appState.userStakingData = { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n };
+        console.warn("Аккаунт не найден или ошибка десериализации, сбрасываем данные.");
+        appState.userStakingData = { 
+            stakedAmount: 0n, 
+            rewards: 0n, 
+            lockupEndTime: 0, 
+            poolIndex: 4, 
+            lending: 0n 
+        };
     }
 }
-
-
-        } catch (e) {
-            // Account not found or deserialization failed means user has not staked yet.
-            if (e.message && (e.message.includes('Account does not exist') || e.message.includes('301'))) {
-                // Not staked yet: Reset to zero state
-                appState.userStakingData.stakedAmount = BigInt(0);
-                appState.userStakingData.rewards = BigInt(0);
-                appState.userStakingData.lockupEndTime = 0;
-                appState.userStakingData.poolIndex = 4;
-                appState.userStakingData.lending = BigInt(0);
-            } else {
-                 throw e; // Propagate critical error
-            }
-        }
-
-    } catch (e) {
-        console.error("Failed to fetch staking data:", e);
-        // On error, reset to zero state
-        appState.userStakingData.stakedAmount = BigInt(0);
-        appState.userStakingData.rewards = BigInt(0);
-        appState.userStakingData.lockupEndTime = 0;
-        appState.userStakingData.poolIndex = 4;
-        appState.userStakingData.lending = BigInt(0);
-    }
-}
-
 
 /**
- * ✅ Implemented: Sending AFOX staking transaction (REAL ANCHOR).
+ * ✅ Исправлено: Отправка транзакции стейкинга.
  */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey) {
@@ -738,21 +720,16 @@ async function handleStakeAfox() {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
-        
-        // 1. Находим PDA пользователя
         const userStakingPDA = await getUserStakingAccountPDA(sender);
         
-        // 2. Находим ATA пользователя (откуда списываем)
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
         let tx = new window.SolanaWeb3.Transaction();
 
-        // 3. Проверяем, нужно ли инициализировать аккаунт стейкинга
         const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
         if (!accountInfo) {
-            console.log("Initializing user staking account...");
             const initIx = await program.methods.initializeUserStake(poolIndex)
                 .accounts({
                     poolState: AFOX_POOL_STATE_PUBKEY,
@@ -765,7 +742,6 @@ async function handleStakeAfox() {
             tx.add(initIx);
         }
 
-        // 4. Добавляем инструкцию депозита
         const depositIx = await program.methods.deposit(new window.Anchor.BN(stakeAmountBigInt.toString()))
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
@@ -779,39 +755,28 @@ async function handleStakeAfox() {
             }).instruction();
         tx.add(depositIx);
 
-        // 5. Отправляем транзакцию
         const signature = await appState.provider.sendAndConfirm(tx);
-
         await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt);
         showNotification(`Staked Successfully!`, 'success');
         
-        uiElements.stakeAmountInput.value = ""; // Очистить поле
+        uiElements.stakeAmountInput.value = ""; 
         await updateStakingAndBalanceUI();
 
     } catch (error) {
         console.error("Stake Error:", error);
-        // Выводим более понятную ошибку для пользователя
-        const msg = error.message || "Transaction failed";
-        showNotification(`Error: ${msg.substring(0, 60)}`, 'error');
+        showNotification(`Error: ${error.message.substring(0, 60)}`, 'error');
     } finally {
         setLoadingState(false, uiElements.stakeAfoxBtn);
     }
 }
 
-
-/**
- * ✅ Implemented: Sending claim rewards transaction (REAL ANCHOR).
- */
-
 async function handleClaimRewards() {
     if (!appState.walletPublicKey) return;
     setLoadingState(true, uiElements.claimRewardsBtn);
-
     try {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
         const userStakingPDA = await getUserStakingAccountPDA(sender);
-        
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
@@ -822,33 +787,26 @@ async function handleClaimRewards() {
                 userStaking: userStakingPDA,
                 owner: sender,
                 vault: AFOX_POOL_VAULT_PUBKEY, 
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Твой исправленный ключ BXin...
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
                 userRewardsAta: userAfoxATA,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .transaction();
+            }).transaction();
 
-        const signature = await appState.provider.sendAndConfirm(tx);
-        showNotification(`Rewards Claimed! TX: ${signature.substring(0, 8)}`, 'success');
+        await appState.provider.sendAndConfirm(tx);
+        showNotification(`Rewards Claimed!`, 'success');
         await updateStakingAndBalanceUI();
     } catch (error) {
-        console.error("Claim Error:", error);
         showNotification(`Claim failed: ${error.message}`, 'error');
     } finally {
         setLoadingState(false, uiElements.claimRewardsBtn);
     }
 }
 
-
-/**
- * ✅ Implemented: Sending unstaking transaction (REAL ANCHOR).
- */
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey) return;
     setLoadingState(true, uiElements.unstakeAfoxBtn);
-
     try {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
@@ -856,8 +814,6 @@ async function handleUnstakeAfox() {
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
-
-        // Внимание: берем сумму из текущих данных стейкинга пользователя
         const amountToUnstake = new window.Anchor.BN(appState.userStakingData.stakedAmount.toString());
 
         const tx = await program.methods.unstake(amountToUnstake, false)
@@ -867,90 +823,65 @@ async function handleUnstakeAfox() {
                 owner: sender,
                 vault: AFOX_POOL_VAULT_PUBKEY,
                 daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Исправленный ключ
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
                 userRewardsAta: userAfoxATA,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .transaction();
+            }).transaction();
 
-        const signature = await appState.provider.sendAndConfirm(tx);
-        showNotification(`Unstake success! TX: ${signature.substring(0, 8)}`, 'success');
+        await appState.provider.sendAndConfirm(tx);
+        showNotification(`Unstake success!`, 'success');
         await updateStakingAndBalanceUI();
     } catch (error) {
-        console.error("Unstake Error:", error);
         showNotification(`Unstake failed: ${error.message}`, 'error');
     } finally {
         setLoadingState(false, uiElements.unstakeAfoxBtn);
     }
 }
 
-
-
-// =========================================================================================
-// --- NEW WRAPPER FOR BUTTON 
-// =========================================================================================
-
-/**
- * Simulates the connect button update logic
- * and calls the main connectWallet function.
- * @param {HTMLElement} btn - The HTML button element.
- */
-async function simulateConnectButtonUpdate(btn) {
-    if (!btn) return;
-
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Connecting...';
-    btn.classList.remove('connected');
-    
-    setLoadingState(true);
-
-    try {
-        await connectWallet({ name: 'Phantom' });
-        
-        if (appState.walletPublicKey) {
-            const publicKey = appState.walletPublicKey.toBase58();
-            btn.classList.add('connected');
-            showNotification('Wallet successfully connected! 🦊', 'success');
-        } else {
-             btn.textContent = originalText;
-        }
-
-    } catch (error) {
-        let errorMessage = 'Connection Error';
-
-        if (error.message.includes('Phantom wallet not found')) {
-            errorMessage = 'Please install Phantom Wallet.';
-        } else if (error.message.includes('Connection denied by user')) {
-            errorMessage = 'Connection denied by user.';
-        }
-        
-        btn.textContent = errorMessage;
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.classList.remove('connected');
-        }, 3000);
-
-    } finally {
-        btn.disabled = false;
-        setLoadingState(false); 
-    }
-}
-
 async function disconnectWallet() {
-     if (appState.provider) {
+    if (appState.provider) {
         try {
             await appState.provider.disconnect();
         } catch (error) {
-             console.error("Error during manual disconnect:", error);
-             handlePublicKeyChange(null);
+            console.error("Error during disconnect:", error);
         }
-     } else {
-        handlePublicKeyChange(null);
-     }
+    }
+    handlePublicKeyChange(null);
 }
+
+function cacheUIElements() {
+    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
+    uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display'));
+    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
+    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
+    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
+    uiElements.stakeAmountInput = document.getElementById('stake-amount');
+    uiElements.poolSelector = document.getElementById('pool-selector');
+    uiElements.notificationContainer = document.getElementById('notification-container');
+    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
+}
+
+function initEventListeners() {
+    uiElements.connectWalletButtons.forEach(btn => {
+        btn.addEventListener('click', connectWallet);
+    });
+
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
+    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
+
+    uiElements.copyButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const textToCopy = btn.dataset.copyTarget;
+            if (textToCopy) {
+                navigator.clipboard.writeText(textToCopy).then(() => showNotification('Copied!', 'success'));
+            }
+        });
+    });
+}
+
 
 // --- 3. CACHING UI ELEMENTS ---
 /**
