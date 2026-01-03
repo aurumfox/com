@@ -978,7 +978,7 @@ function setupDAO() {
             daoModal.style.display = 'flex';
         });
     }
-
+}
     if (closeBtn && daoModal) {
         closeBtn.addEventListener('click', () => {
             daoModal.style.display = 'none';
