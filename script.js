@@ -875,9 +875,6 @@ function initEventListeners() {
 
 
 // --- 3. CACHING UI ELEMENTS ---
-/**
- * Caches all necessary UI elements.
- */
 function cacheUIElements() {
     // General Wallet & Display
     uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
@@ -917,7 +914,7 @@ function cacheUIElements() {
     uiElements.pageLoader = document.getElementById('page-loader');
     uiElements.contactForm = document.getElementById('contact-form');
 }
-
+});
 
 
 // --- 4. INITIALIZING EVENT LISTENERS ---
