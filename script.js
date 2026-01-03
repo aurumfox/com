@@ -12,16 +12,62 @@ const POOLS_CONFIG = {
 };
 
 const STAKING_IDL = {
-    version: "0.1.0",
-    name: "alphafox_staking",
-    instructions: [
-        { name: "initializeUserStake", accounts: [{ name: "poolState", isMut: true }, { name: "userStaking", isMut: true }, { name: "owner", isMut: true, isSigner: true }, { name: "rewardMint", isMut: false }, { name: "systemProgram", isMut: false }, { name: "clock", isMut: false }], args: [{ name: "poolIndex", type: "u8" }] },
-        { name: "deposit", accounts: [{ name: "poolState", isMut: true }, { name: "userStaking", isMut: true }, { name: "owner", isMut: true, isSigner: true }, { name: "userSourceAta", isMut: true }, { name: "vault", isMut: true }, { name: "rewardMint", isMut: false }, { name: "tokenProgram", isMut: false }, { name: "clock", isMut: false }], args: [{ name: "amount", type: "u64" }] },
-        { name: "claimRewards", accounts: [{ name: "poolState", isMut: true }, { name: "userStaking", isMut: true }, { name: "owner", isMut: true, isSigner: true }, { name: "vault", isMut: true }, { name: "adminFeeVault", isMut: true }, { name: "userRewardsAta", isMut: true }, { name: "rewardMint", isMut: false }, { name: "tokenProgram", isMut: false }, { name: "clock", isMut: false }], args: [] },
-        { name: "unstake", accounts: [{ name: "poolState", isMut: true }, { name: "userStaking", isMut: true }, { name: "owner", isMut: true, isSigner: true }, { name: "vault", isMut: true }, { name: "daoTreasuryVault", isMut: true }, { name: "adminFeeVault", isMut: true }, { name: "userRewardsAta", isMut: true }, { name: "rewardMint", isMut: false }, { name: "tokenProgram", isMut: false }, { name: "clock", isMut: false }], args: [{ name: "amount", type: "u64" }, { name: "isEarlyExit", type: "bool" }] }
+    "version": "0.1.0",
+    "name": "alphafox_staking",
+    "instructions": [
+        {
+            "name": "initializeUserStake",
+            "accounts": [
+                { "name": "poolState", "isMut": true },
+                { "name": "userStaking", "isMut": true },
+                { "name": "owner", "isMut": true, "isSigner": true },
+                { "name": "rewardMint", "isMut": false },
+                { "name": "systemProgram", "isMut": false },
+                { "name": "clock", "isMut": false }
+            ],
+            "args": [{ "name": "poolIndex", "type": "u8" }]
+        },
+        {
+            "name": "deposit",
+            "accounts": [
+                { "name": "poolState", "isMut": true },
+                { "name": "userStaking", "isMut": true },
+                { "name": "owner", "isMut": true, "isSigner": true },
+                { "name": "userSourceAta", "isMut": true },
+                { "name": "vault", "isMut": true },
+                { "name": "rewardMint", "isMut": false },
+                { "name": "tokenProgram", "isMut": false },
+                { "name": "clock", "isMut": false }
+            ],
+            "args": [{ "name": "amount", "type": "u64" }]
+        }
     ],
-    accounts: [{ name: "UserStakingAccount", type: { kind: "struct", fields: [{ name: "isInitialized", type: "bool" }, { name: "stakeBump", type: "u8" }, { name: "poolIndex", type: "u8" }, { name: "paddingA", type: { array: ["u8", 5] } }, { name: "owner", type: "publicKey" }, { name: "stakedAmount", type: "u64" }, { name: "lockupEndTime", type: "i64" }, { name: "rewardPerShareUser", type: "u128" }, { name: "rewardsToClaim", type: "u64" }, { name: "pendingRewardsDueToLimit", type: "u64" }, { name: "lending", type: "u64" }, { name: "lendingUnlockTime", type: "i64" }, { name: "lastUpdateTime", type: "i64" }, { name: "paddingFinal", type: { array: ["u8", 104] } }] } }]
+    "accounts": [
+        {
+            "name": "UserStakingAccount",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    { "name": "isInitialized", "type": "bool" },
+                    { "name": "stakeBump", "type": "u8" },
+                    { "name": "poolIndex", "type": "u8" },
+                    { "name": "paddingA", "type": { "array": ["u8", 5] } },
+                    { "name": "owner", "type": "publicKey" },
+                    { "name": "stakedAmount", "type": "u64" },
+                    { "name": "lockupEndTime", "type": "i64" },
+                    { "name": "rewardPerShareUser", "type": "u128" },
+                    { "name": "rewardsToClaim", "type": "u64" },
+                    { "name": "pendingRewardsDueToLimit", "type": "u64" },
+                    { "name": "lending", "type": "u64" },
+                    { "name": "lendingUnlockTime", "type": "i64" },
+                    { "name": "lastUpdateTime", "type": "i64" },
+                    { "name": "paddingFinal", "type": { "array": ["u8", 104] } }
+                ]
+            }
+        }
+    ]
 };
+
 
 // Исправленные адреса
 const STAKING_PROGRAM_ID = new window.solanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
