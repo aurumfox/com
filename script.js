@@ -695,11 +695,8 @@ async function fetchUserStakingData() {
             lending: 0n 
         };
     }
-}
+} 
 
-/**
- * ✅ Исправлено: Отправка транзакции стейкинга.
- */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey) {
         showNotification("Please connect your wallet first", "warning");
