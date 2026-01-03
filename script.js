@@ -1075,25 +1075,29 @@ function setupDAO() {
 }
 
 // --- MAIN INITIALIZATION FUNCTION ---
-async function init() {
-    cacheUIElements();
-    setupDAO(); // Активируем DAO
-    
-    // Слушатели кнопок
-    uiElements.connectWalletButtons.forEach(btn => btn.addEventListener('click', connectWallet));
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
-    
-    // Кнопка лендинга (убедись, что в HTML ID именно 'loan-btn')
-    const loanBtn = document.getElementById('loan-btn');
-    if (loanBtn) loanBtn.addEventListener('click', handleLoan);
+function init() {
+    // 1. Кнопка подключения кошелька (ID из твоего HTML)
+    const connectBtn = document.getElementById('connectWalletBtn');
+    if (connectBtn) {
+        connectBtn.addEventListener('click', connectWallet);
+    }
 
-    console.log("AlphaFox Ready with Staking, DAO and Lending.");
+    // 2. Кнопки Стейкинга (ID из твоего HTML)
+    const stakeBtn = document.getElementById('stakeAfoxBtn');
+    if (stakeBtn) stakeBtn.addEventListener('click', handleStake);
+
+    const unstakeBtn = document.getElementById('unstakeAfoxBtn');
+    if (unstakeBtn) unstakeBtn.addEventListener('click', handleUnstake);
+
+    const claimBtn = document.getElementById('claimRewardsBtn');
+    if (claimBtn) claimBtn.addEventListener('click', handleClaim);
+
+    // 3. Кнопка Лендинга (Берем из секции lending-section)
+    const lendBtn = document.getElementById('lendAfoxBtn');
+    if (lendBtn) lendBtn.addEventListener('click', handleLoan); // handleLoan — это функция из прошлого сообщения
+
+    console.log("AlphaFox System Ready. All IDs linked.");
 }
 
 document.addEventListener('DOMContentLoaded', init);
 
-
-// --------------------------------------------------------
-
-// --- STARTUP AFTER DOM LOAD ---
-document.addEventListener('DOMContentLoaded', init);
