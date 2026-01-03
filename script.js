@@ -969,17 +969,18 @@ async function handleClaimRewards() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
         const userStakingPDA = await getUserStakingAccountPDA(sender);
+        
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-                const tx = await program.methods.claimRewards()
+        const tx = await program.methods.claimRewards()
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
                 userStaking: userStakingPDA,
                 owner: sender,
-                vault: AFOX_POOL_VAULT_PUBKEY, // Основной пул
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Кошелек с наградами
+                vault: AFOX_POOL_VAULT_PUBKEY, 
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Твой исправленный ключ BXin...
                 userRewardsAta: userAfoxATA,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 tokenProgram: TOKEN_PROGRAM_ID,
@@ -987,16 +988,17 @@ async function handleClaimRewards() {
             })
             .transaction();
 
-
         const signature = await appState.provider.sendAndConfirm(tx);
-        showNotification(`Rewards Claimed: ${signature.substring(0, 8)}`, 'success');
+        showNotification(`Rewards Claimed! TX: ${signature.substring(0, 8)}`, 'success');
         await updateStakingAndBalanceUI();
     } catch (error) {
+        console.error("Claim Error:", error);
         showNotification(`Claim failed: ${error.message}`, 'error');
     } finally {
         setLoadingState(false, uiElements.claimRewardsBtn);
     }
 }
+
 
 /**
  * ✅ Implemented: Sending unstaking transaction (REAL ANCHOR).
