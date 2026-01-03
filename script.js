@@ -119,7 +119,8 @@ const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
 // Адреса из вашего лога "ВЫШИ 4 КЛЮЧА ДЛЯ ФРОНТЕНДА"
 const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ'); 
 const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp'); 
-const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi'); 
+ const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
+
 
 // DAO Treasury (Оставляем старый, если он не менялся в скрипте деплоя)
 const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
