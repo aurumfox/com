@@ -893,64 +893,80 @@ async function fetchUserStakingData() {
  * ✅ Implemented: Sending AFOX staking transaction (REAL ANCHOR).
  */
 async function handleStakeAfox() {
-    if (!appState.walletPublicKey) return;
+    if (!appState.walletPublicKey) {
+        showNotification("Please connect your wallet first", "warning");
+        return;
+    }
+    
     const poolIndex = parseInt(uiElements.poolSelector.value); 
     const amountStr = uiElements.stakeAmountInput.value;
     
+    if (!amountStr || parseFloat(amountStr) <= 0) {
+        showNotification("Enter a valid amount", "warning");
+        return;
+    }
+
     setLoadingState(true, uiElements.stakeAfoxBtn);
+    
     try {
         const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-        const provider = new window.Anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
-        const program = new window.Anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const sender = appState.walletPublicKey;
+        
+        // 1. Находим PDA пользователя
         const userStakingPDA = await getUserStakingAccountPDA(sender);
         
+        // 2. Находим ATA пользователя (откуда списываем)
         const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
             ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
         );
 
-        let instructions = [];
+        let tx = new window.SolanaWeb3.Transaction();
+
+        // 3. Проверяем, нужно ли инициализировать аккаунт стейкинга
         const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
-
-                if (!accountInfo) {
-            instructions.push(
-                await program.methods.initializeUserStake(poolIndex)
-                    .accounts({
-                        poolState: AFOX_POOL_STATE_PUBKEY,
-                        userStaking: userStakingPDA,
-                        owner: sender,
-                        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                        systemProgram: SYSTEM_PROGRAM_ID,
-                        // Убедитесь, что в Rust программе ожидается clock, если нет - удалите
-                        clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY, 
-                    }).instruction()
-            );
-        }
-
-
-        instructions.push(
-            await program.methods.deposit(new window.Anchor.BN(stakeAmountBigInt.toString()))
+        if (!accountInfo) {
+            console.log("Initializing user staking account...");
+            const initIx = await program.methods.initializeUserStake(poolIndex)
                 .accounts({
                     poolState: AFOX_POOL_STATE_PUBKEY,
                     userStaking: userStakingPDA,
                     owner: sender,
-                    userSourceAta: userAfoxATA,
-                    vault: AFOX_POOL_VAULT_PUBKEY,
                     rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                    tokenProgram: TOKEN_PROGRAM_ID,
+                    systemProgram: SYSTEM_PROGRAM_ID,
                     clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                }).instruction()
-        );
+                }).instruction();
+            tx.add(initIx);
+        }
 
-        const transaction = new window.SolanaWeb3.Transaction().add(...instructions);
-        const signature = await provider.sendAndConfirm(transaction);
+        // 4. Добавляем инструкцию депозита
+        const depositIx = await program.methods.deposit(new window.Anchor.BN(stakeAmountBigInt.toString()))
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPDA,
+                owner: sender,
+                userSourceAta: userAfoxATA,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            }).instruction();
+        tx.add(depositIx);
+
+        // 5. Отправляем транзакцию
+        const signature = await appState.provider.sendAndConfirm(tx);
 
         await sendLogToFirebase(sender.toBase58(), 'STAKE', stakeAmountBigInt);
-        showNotification(`Staked Successfully! TX: ${signature.slice(0, 8)}`, 'success');
+        showNotification(`Staked Successfully!`, 'success');
+        
+        uiElements.stakeAmountInput.value = ""; // Очистить поле
         await updateStakingAndBalanceUI();
+
     } catch (error) {
         console.error("Stake Error:", error);
-        showNotification(`Error: ${error.message}`, 'error');
+        // Выводим более понятную ошибку для пользователя
+        const msg = error.message || "Transaction failed";
+        showNotification(`Error: ${msg.substring(0, 60)}`, 'error');
     } finally {
         setLoadingState(false, uiElements.stakeAfoxBtn);
     }
