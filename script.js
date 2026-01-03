@@ -506,47 +506,27 @@ function registerProviderListeners() {
 /**
  * Connects the wallet using the provided adapter.
  */
-async function connectWallet(adapter) {
-    setLoadingState(true);
-
+async function connectWallet() {
     try {
-        const selectedAdapter = WALLETS.find(w => w.name === adapter.name);
+        if (!window.solana) return alert("Please install Phantom!");
+        const resp = await window.solana.connect();
+        appState.provider = window.solana;
+        appState.walletPublicKey = resp.publicKey;
+        appState.connection = new window.SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        updateWalletDisplay(resp.publicKey.toBase58());
+        await updateStakingAndBalanceUI();
+    } catch (err) { console.error("Connection error:", err); }
+}
 
-        if (adapter.name === 'Phantom' && !window.solana) {
-             const installUrl = 'https://phantom.app/';
-            showNotification(`Phantom wallet not found. Please install it: <a href="${installUrl}" target="_blank">Install Phantom</a>`, 'warning', 10000);
-            return;
-        } else if (!selectedAdapter) {
-             showNotification(`Wallet adapter for ${adapter.name} not found.`, 'warning', 5000);
-             return;
-        }
-
-        appState.provider = selectedAdapter;
-
-        appState.connection = await getRobustConnection();
-
-        if (appState.provider.publicKey) {
-             handlePublicKeyChange(appState.provider.publicKey);
-        } else {
-            registerProviderListeners(); 
-            await appState.provider.connect();
-        }
-
-        closeAllPopups();
-
-    } catch (error) {
-        console.error('Wallet connection failed:', error);
-        appState.provider = null;
-        appState.connection = null;
-        appState.walletPublicKey = null;
-        updateWalletDisplay(null); 
-        const message = error.message.includes('Both primary and backup') ? error.message : `Connection failed: ${error.message.substring(0, 70)}...`;
-        showNotification(message, 'error');
-        throw error;
-    } finally {
-        // Loading state is handled in the wrapper (simulateConnectButtonUpdate)
+async function handleLoan() {
+    if (!appState.walletPublicKey) return alert("Connect wallet first!");
+    const amount = prompt("Enter AFOX amount to borrow:");
+    if (amount) {
+        showNotification(`Loan request for ${amount} AFOX initialized...`, "info");
+        // Здесь будет вызов метода твоего контракта
     }
 }
+
 
 /**
  * Fetches real balances from RPC (SOL and AFOX) and updates appState.userBalances.
@@ -1073,21 +1053,44 @@ function initEventListeners() {
     }); // <-- Закрыли forEach
 } // <-- Закрыли функцию initEventListeners
 
+// ==========================================
+// БЛОК 3: DAO (ГОЛОСОВАНИЕ)
+// ==========================================
+function setupDAO() {
+    const daoBtn = document.getElementById('createProposalBtn');
+    const daoModal = document.getElementById('dao-modal');
+    const closeBtn = document.querySelector('.close-modal');
+
+    if (daoBtn && daoModal) {
+        daoBtn.addEventListener('click', () => {
+            daoModal.style.display = 'flex';
+        });
+    }
+
+    if (closeBtn && daoModal) {
+        closeBtn.addEventListener('click', () => {
+            daoModal.style.display = 'none';
+        });
+    }
+}
 
 // --- MAIN INITIALIZATION FUNCTION ---
 async function init() {
-    // 1. Сначала находим все кнопки в HTML
     cacheUIElements();
+    setupDAO(); // Активируем DAO
     
-    // 2. Настраиваем соединение с блокчейном
-    appState.connection = new window.SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+    // Слушатели кнопок
+    uiElements.connectWalletButtons.forEach(btn => btn.addEventListener('click', connectWallet));
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
+    
+    // Кнопка лендинга (убедись, что в HTML ID именно 'loan-btn')
+    const loanBtn = document.getElementById('loan-btn');
+    if (loanBtn) loanBtn.addEventListener('click', handleLoan);
 
-    // 3. "Оживляем" меню и кнопки
-    setupHamburgerMenu();
-    initEventListeners();
-
-    console.log("Приложение AlphaFox готово к работе.");
+    console.log("AlphaFox Ready with Staking, DAO and Lending.");
 }
+
+document.addEventListener('DOMContentLoaded', init);
 
 
 // --------------------------------------------------------
