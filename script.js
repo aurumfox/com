@@ -917,18 +917,15 @@ function cacheUIElements() {
     uiElements.pageLoader = document.getElementById('page-loader');
     uiElements.contactForm = document.getElementById('contact-form');
 }
-// --------------------------------------------------------
+
 
 
 // --- 4. INITIALIZING EVENT LISTENERS ---
-/**
- * Initializes all event listeners.
- */
 function initEventListeners() {
     // Wallet Connection
     uiElements.connectWalletButtons.forEach(btn => {
         btn.addEventListener('click', () => { 
-             simulateConnectButtonUpdate(btn);
+             connectWallet(); // Исправлено: вызываем реальную функцию вместо симуляции
         });
     });
 
@@ -952,28 +949,27 @@ function initEventListeners() {
     if (uiElements.createProposalForm) {
         uiElements.createProposalForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            console.log("DAO Proposal Form submitted (MOCK)"); 
+            console.log("DAO Proposal Form submitted"); 
             showNotification('Proposal creation simulated!', 'success', 3000);
             e.target.reset();
             closeAllPopups();
         });
     }
 
-
-        // General Copy Button
+    // General Copy Button
     uiElements.copyButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const textToCopy = btn.dataset.copyTarget;
             if (textToCopy) {
                 navigator.clipboard.writeText(textToCopy)
-                    .then(() => showNotification('Address copied to clipboard!', 'success', 2000))
+                    .then(() => showNotification('Address copied!', 'success', 2000))
                     .catch(err => console.error('Could not copy text: ', err));
             } else {
                  showNotification('Nothing to copy.', 'warning', 2000);
             }
         });
-    }); // <-- Закрыли forEach
-} // <-- Закрыли функцию initEventListeners
+    }); 
+} // <--- ВОТ ЭТА СКОБКА БЫЛА ПРОПУЩЕНА
 
 // ==========================================
 // БЛОК 3: DAO (ГОЛОСОВАНИЕ)
@@ -998,28 +994,12 @@ function setupDAO() {
 
 // --- MAIN INITIALIZATION FUNCTION ---
 function init() {
-    // 1. Кнопка подключения кошелька (ID из твоего HTML)
-    const connectBtn = document.getElementById('connectWalletBtn');
-    if (connectBtn) {
-        connectBtn.addEventListener('click', connectWallet);
-    }
-
-    // 2. Кнопки Стейкинга (ID из твоего HTML)
-    const stakeBtn = document.getElementById('stakeAfoxBtn');
-    if (stakeBtn) stakeBtn.addEventListener('click', handleStake);
-
-    const unstakeBtn = document.getElementById('unstakeAfoxBtn');
-    if (unstakeBtn) unstakeBtn.addEventListener('click', handleUnstake);
-
-    const claimBtn = document.getElementById('claimRewardsBtn');
-    if (claimBtn) claimBtn.addEventListener('click', handleClaim);
-
-    // 3. Кнопка Лендинга (Берем из секции lending-section)
-    const lendBtn = document.getElementById('lendAfoxBtn');
-    if (lendBtn) lendBtn.addEventListener('click', handleLoan); // handleLoan — это функция из прошлого сообщения
-
+    cacheUIElements(); // Добавлено: обязательно кэшируем элементы перед использованием
+    initEventListeners();
+    setupDAO();
+    setupHamburgerMenu();
+    
     console.log("AlphaFox System Ready. All IDs linked.");
 }
 
 document.addEventListener('DOMContentLoaded', init);
-
