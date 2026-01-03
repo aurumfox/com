@@ -855,13 +855,6 @@ async function fetchUserStakingData() {
     }
 }
 
-            
-            // Note: .toBigInt() and .toNumber() are methods on Anchor's BN object
-            appState.userStakingData.stakedAmount = stakingData.stakedAmount.toBigInt();
-            appState.userStakingData.rewards = stakingData.rewardsAmount.toBigInt();
-            appState.userStakingData.lockupEndTime = stakingData.lockupEndTime.toNumber();
-            appState.userStakingData.poolIndex = stakingData.poolIndex;
-            appState.userStakingData.lending = stakingData.lending.toBigInt();
 
         } catch (e) {
             // Account not found or deserialization failed means user has not staked yet.
