@@ -123,7 +123,7 @@ const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('328N13YrQyUAfqHE
 
 
 // DAO Treasury (Оставляем старый, если он не менялся в скрипте деплоя)
-const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('3M4Y1R5X6Z9T2C8V7B0N5M4L3K2J1H0G9F8E7D6A5B4C'); 
+const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi'); 
 
 // --- СИСТЕМНЫЕ ПАРАМЕТРЫ ---
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
