@@ -132,9 +132,6 @@ function setupHamburgerMenu() {
     });
 }
 // --- /HAMBURGER MENU LOGIC ---
-
-
-// Added function to lock/unlock scroll
 function toggleScrollLock(lock) {
     document.body.classList.toggle('menu-open', lock);
 }
