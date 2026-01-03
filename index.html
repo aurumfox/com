@@ -13,12 +13,13 @@
     img-src 'self' data: https:; 
     frame-src https://birdeye.so https://dexscreener.com;
     upgrade-insecure-requests;
+    connect-src 'self' https://api.mainnet-beta.solana.com wss://api.mainnet-beta.solana.com ...
+
 ">
 
     <script src="https://unpkg.com/buffer@6.0.3/index.js"></script>
-    <script>
-        window.Buffer = window.Buffer || window.buffer.Buffer;
-    </script>
+<script>window.Buffer = window.Buffer || window.buffer.Buffer;</script>
+
 
     <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/index.js"></script>
