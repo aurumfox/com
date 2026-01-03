@@ -2,188 +2,28 @@ const STAKING_IDL = {
     version: "0.1.0",
     name: "alphafox_staking",
     instructions: [
-        {
-            name: "initializeUserStake",
-            accounts: [
-                { name: "poolState", isMut: true },
-                { name: "userStaking", isMut: true },
-                { name: "owner", isMut: true, isSigner: true },
-                { name: "rewardMint", isMut: false },
-                { name: "systemProgram", isMut: false },
-                { name: "clock", isMut: false }
-            ],
-            args: [{ name: "poolIndex", type: "u8" }]
-        },
-        {
-            name: "deposit",
-            accounts: [
-                { name: "poolState", isMut: true },
-                { name: "userStaking", isMut: true },
-                { name: "owner", isMut: true, isSigner: true },
-                { name: "userSourceAta", isMut: true },
-                { name: "vault", isMut: true },
-                { name: "rewardMint", isMut: false },
-                { name: "tokenProgram", isMut: false },
-                { name: "clock", isMut: false }
-            ],
-            args: [{ name: "amount", type: "u64" }]
-        },
-        {
-            name: "claimRewards",
-            accounts: [
-                { name: "poolState", isMut: true },
-                { name: "userStaking", isMut: true },
-                { name: "owner", isMut: true, isSigner: true },
-                { name: "vault", isMut: true },
-                { name: "adminFeeVault", isMut: true },
-                { name: "userRewardsAta", isMut: true },
-                { name: "rewardMint", isMut: false },
-                { name: "tokenProgram", isMut: false },
-                { name: "clock", isMut: false }
-            ],
-            args: []
-        },
-        {
-            name: "unstake",
-            accounts: [
-                { name: "poolState", isMut: true },
-                { name: "userStaking", isMut: true },
-                { name: "owner", isMut: true, isSigner: true },
-                { name: "vault", isMut: true },
-                { name: "daoTreasuryVault", isMut: true },
-                { name: "adminFeeVault", isMut: true },
-                { name: "userRewardsAta", isMut: true },
-                { name: "rewardMint", isMut: false },
-                { name: "tokenProgram", isMut: false },
-                { name: "clock", isMut: false }
-            ],
-            args: [{ name: "amount", type: "u64" }, { name: "isEarlyExit", type: "bool" }]
-        }
+        { name: "initializeUserStake", accounts: [{ name: "poolState", isMut: true }, { name: "userStaking", isMut: true }, { name: "owner", isMut: true, isSigner: true }, { name: "rewardMint", isMut: false }, { name: "systemProgram", isMut: false }, { name: "clock", isMut: false }], args: [{ name: "poolIndex", type: "u8" }] },
+        { name: "deposit", accounts: [{ name: "poolState", isMut: true }, { name: "userStaking", isMut: true }, { name: "owner", isMut: true, isSigner: true }, { name: "userSourceAta", isMut: true }, { name: "vault", isMut: true }, { name: "rewardMint", isMut: false }, { name: "tokenProgram", isMut: false }, { name: "clock", isMut: false }], args: [{ name: "amount", type: "u64" }] },
+        { name: "claimRewards", accounts: [{ name: "poolState", isMut: true }, { name: "userStaking", isMut: true }, { name: "owner", isMut: true, isSigner: true }, { name: "vault", isMut: true }, { name: "adminFeeVault", isMut: true }, { name: "userRewardsAta", isMut: true }, { name: "rewardMint", isMut: false }, { name: "tokenProgram", isMut: false }, { name: "clock", isMut: false }], args: [] },
+        { name: "unstake", accounts: [{ name: "poolState", isMut: true }, { name: "userStaking", isMut: true }, { name: "owner", isMut: true, isSigner: true }, { name: "vault", isMut: true }, { name: "daoTreasuryVault", isMut: true }, { name: "adminFeeVault", isMut: true }, { name: "userRewardsAta", isMut: true }, { name: "rewardMint", isMut: false }, { name: "tokenProgram", isMut: false }, { name: "clock", isMut: false }], args: [{ name: "amount", type: "u64" }, { name: "isEarlyExit", type: "bool" }] }
     ],
-    accounts: [
-    {
-        name: "UserStakingAccount",
-        type: {
-            kind: "struct",
-            fields: [
-                { name: "isInitialized", type: "bool" },
-                { name: "stakeBump", type: "u8" },
-                { name: "poolIndex", type: "u8" },
-                { name: "paddingA", type: { array: ["u8", 5] } },
-                { name: "owner", type: "publicKey" },
-                { name: "stakedAmount", type: "u64" },
-                { name: "lockupEndTime", type: "i64" },
-                { name: "rewardPerShareUser", type: "u128" },
-                { name: "rewardsToClaim", type: "u64" },
-                { name: "pendingRewardsDueToLimit", type: "u64" }, // Добавлено
-                { name: "lending", type: "u64" },
-                { name: "lendingUnlockTime", type: "i64" },
-                { name: "lastUpdateTime", type: "i64" },
-                { name: "paddingFinal", type: { array: ["u8", 104] } } // Добавлено для соответствия размеру в Rust
-            ]
-        }
-    },
-    {
-        name: "PoolState", // Добавь это, чтобы иметь возможность читать состояние пула
-        type: {
-            kind: "struct",
-            fields: [
-                { name: "isInitialized", type: "bool" },
-                { name: "globalPause", type: "bool" },
-                { name: "poolBump", type: "u8" },
-                // ... добавь остальные поля из Rust struct PoolState по аналогии
-            ]
-        }
-    }
-]
+    accounts: [{ name: "UserStakingAccount", type: { kind: "struct", fields: [{ name: "isInitialized", type: "bool" }, { name: "stakeBump", type: "u8" }, { name: "poolIndex", type: "u8" }, { name: "paddingA", type: { array: ["u8", 5] } }, { name: "owner", type: "publicKey" }, { name: "stakedAmount", type: "u64" }, { name: "lockupEndTime", type: "i64" }, { name: "rewardPerShareUser", type: "u128" }, { name: "rewardsToClaim", type: "u64" }, { name: "pendingRewardsDueToLimit", type: "u64" }, { name: "lending", type: "u64" }, { name: "lendingUnlockTime", type: "i64" }, { name: "lastUpdateTime", type: "i64" }, { name: "paddingFinal", type: { array: ["u8", 104] } }] } }]
+};
 
-
-
-// 2. INSERT YOUR SEED (Keyword for the staking account PDA from your Rust program)
-// This is used for the User's PDA (UserStakingAccount)
-const STAKING_ACCOUNT_SEED = "alphafox_staking_pda";
-
-// 3. 🔑 SECURE CHANGES: Helius API Key removed, HELIUS_BASE_URL replaced with your Cloudflare Worker
-const HELIUS_BASE_URL = 'https://solana-api-proxy.wnikolay28.workers.dev/v0/addresses/';
-
-
-// =========================================================================================
-// PROJECT CONSTANTS (UPDATED WITH MAINNET DEPLOY DATA)
-// =========================================================================================
-
-// --- КРИТИЧЕСКИЕ АДРЕСА MAINNET (АКТУАЛЬНО) ---
 const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd';
-const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
-
-// Адреса из вашего лога "ВЫШИ 4 КЛЮЧА ДЛЯ ФРОНТЕНДА"
+const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd');
 const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ'); 
 const AFOX_POOL_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp'); 
- const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
-
-
-// DAO Treasury (Оставляем старый, если он не менялся в скрипте деплоя)
+const AFOX_REWARDS_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
 const DAO_TREASURY_VAULT_PUBKEY = new window.SolanaWeb3.PublicKey('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi'); 
-
-// ... (тут твои старые константы)
-const STAKING_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-const AFOX_MINT = 'GLkewtq8s2Yr24o5LT5mzzEeccKuPfy8H5RCHaE9uRAd';
-const AFOX_TOKEN_MINT_ADDRESS = new window.SolanaWeb3.PublicKey(AFOX_MINT);
-
-
 const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
 const SYSTEM_PROGRAM_ID = window.SolanaWeb3.SystemProgram.programId;
-
-// ... (дальше идут остальные адреса пулов)
-const AFOX_POOL_STATE_PUBKEY = new window.SolanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ'); 
-
-// --- СИСТЕМНЫЕ ПАРАМЕТРЫ ---
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/api/log-data';
-const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
-const TXN_FEE_RESERVE_SOL = 0.005;
-const SECONDS_PER_DAY = 86400;
 
-const AFOX_DECIMALS = 6;
-const SOL_DECIMALS = 9;
+let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
+let uiElements = {};
 
-// --- КОНФИГУРАЦИЯ ПУЛОВ ---
-const POOLS_CONFIG = [
-    { name: 'Flexible', duration_days: 0, apr_rate: 100 },
-    { name: 'Standard', duration_days: 30, apr_rate: 200 },
-    { name: 'Max Boost', duration_days: 90, apr_rate: 500 },
-];
-
-// --- СТАНДАРТНЫЕ ПРОГРАММЫ SOLANA ---
-async function getUserStakingAccountPDA(userPubkey) {
-    const [pda] = window.SolanaWeb3.PublicKey.findProgramAddressSync(
-        [
-            window.Anchor.utils.bytes.utf8.encode("alphafox_staking_pda"), // Добавлено семя
-            userPubkey.toBuffer(),
-            AFOX_POOL_STATE_PUBKEY.toBuffer()
-        ],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
-
-
-let appState = {
-    connection: null,
-    provider: null,
-    walletPublicKey: null,
-    userBalances: { SOL: BigInt(0), AFOX: BigInt(0) },
-    userStakingData: {
-        stakedAmount: BigInt(0),
-        rewards: BigInt(0),
-        lockupEndTime: 0,
-        poolIndex: 0,
-        lending: BigInt(0)
-    }
-};
-
-let uiElements = {}; // Кэш для кнопок
 
 // =========================================================================================
 // 🟢 NEW FUNCTION: SECURE LOG SENDING VIA PROXY
