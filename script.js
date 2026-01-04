@@ -1,4 +1,3 @@
-// Конфигурация контракта
 const PRG_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
 const MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
 const POOL = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
@@ -16,32 +15,22 @@ const IDL = {
 let wallet, provider, program, userPDA;
 const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-// Проверка загрузки модулей
-window.onload = () => {
-    const checkInterval = setInterval(() => {
-        if (window.solanaWeb3 && window.anchor) {
-            document.getElementById('status').innerText = "Готов к подключению";
-            clearInterval(checkInterval);
-        }
-    }, 500);
-};
-
-// Функция подключения
-async function connectWallet() {
-    const status = document.getElementById('status');
-    const solana = window.phantom?.solana || window.solana;
-
-    if (!solana) {
-        status.innerText = "Перенаправление в Phantom...";
-        window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
-        return;
+// Проверка загрузки библиотек
+const check = setInterval(() => {
+    if (window.solanaWeb3 && window.anchor) {
+        document.getElementById('status').innerText = "Готов к подключению";
+        clearInterval(check);
     }
+}, 500);
+
+async function connect() {
+    const solana = window.phantom?.solana || window.solana;
+    if (!solana) return window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
 
     try {
-        status.innerText = "Установка связи...";
         const resp = await solana.connect();
         wallet = resp.publicKey;
-
+        
         provider = new anchor.AnchorProvider(connection, solana, { commitment: "confirmed" });
         program = new anchor.Program(IDL, new solanaWeb3.PublicKey(PRG_ID), provider);
 
@@ -50,45 +39,44 @@ async function connectWallet() {
             program.programId
         );
 
-        document.getElementById('connect-btn').classList.add('hidden');
-        document.getElementById('staking-ui').classList.remove('hidden');
-        status.innerText = "Кошелек: " + wallet.toString().slice(0, 4) + "..." + wallet.toString().slice(-4);
-        
-        loadBalances();
-    } catch (err) {
-        console.error(err);
-        status.innerText = "Ошибка: попробуйте еще раз";
-    }
+        document.getElementById('connect-section').style.display = 'none';
+        document.getElementById('staking-ui').style.display = 'block';
+        updateStats();
+    } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
 }
 
-async function loadBalances() {
+async function updateStats() {
     try {
-        // Баланс токенов AFOX
+        // 1. Баланс кошелька
         const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
             [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()],
             new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
         );
         const b = await connection.getTokenAccountBalance(ata);
-        document.getElementById('user-bal').innerText = b.value.uiAmount.toFixed(2);
+        document.getElementById('bal-wallet').innerText = b.value.uiAmount.toFixed(2);
 
-        // Баланс в стейкинге
-        const acc = await program.account.userStaking.fetch(userPDA);
-        document.getElementById('staked-bal').innerText = (acc.amount.toNumber() / 1e6).toFixed(2);
-    } catch (e) {
-        document.getElementById('staked-bal').innerText = "0.00";
+        // 2. Данные из программы (стейк и награды)
+        const accountData = await program.account.userStaking.fetch(userPDA);
+        document.getElementById('bal-staked').innerText = (accountData.amount.toNumber() / 1e6).toFixed(2);
+        
+        // Расчет примерной награды (зависит от логики контракта)
+        document.getElementById('status').innerText = "Данные обновлены";
+    } catch (e) { 
+        document.getElementById('bal-staked').innerText = "0.00";
+        document.getElementById('status').innerText = "Аккаунт стейкинга не создан";
     }
 }
 
-async function startStake() {
-    const amt = document.getElementById('amount-input').value;
-    if (!amt || amt <= 0) return alert("Введите сумму");
-    
-    const status = document.getElementById('status');
+async function handleStake() {
+    const amt = document.getElementById('input-amount').value;
+    if (!amt || amt <= 0) return;
+
     try {
-        status.innerText = "Создание транзакции...";
+        document.getElementById('status').innerText = "Подтвердите в кошельке...";
         const tx = new solanaWeb3.Transaction();
-        
-        // 1. Инициализация если нужно
+        const amountBN = new anchor.BN(amt * 1e6);
+
+        // Если аккаунта еще нет — создаем
         const info = await connection.getAccountInfo(userPDA);
         if (!info) {
             tx.add(await program.methods.initializeUserStake(0).accounts({
@@ -101,13 +89,12 @@ async function startStake() {
             }).instruction());
         }
 
-        // 2. Депозит
         const [uAta] = solanaWeb3.PublicKey.findProgramAddressSync(
             [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()],
             new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
         );
 
-        tx.add(await program.methods.deposit(new anchor.BN(amt * 1e6)).accounts({
+        tx.add(await program.methods.deposit(amountBN).accounts({
             poolState: new solanaWeb3.PublicKey(POOL),
             userStaking: userPDA,
             owner: wallet,
@@ -118,17 +105,12 @@ async function startStake() {
             clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
         }).instruction());
 
-        status.innerText = "Подтвердите в кошельке...";
         const { signature } = await window.solana.signAndSendTransaction(tx);
-        status.innerText = "Сеть подтверждает...";
         await connection.confirmTransaction(signature);
-        status.innerText = "Успех! Стейк принят.";
-        loadBalances();
-    } catch (e) {
-        status.innerText = "Транзакция отменена";
-    }
+        document.getElementById('status').innerText = "Стейкинг успешен!";
+        updateStats();
+    } catch (e) { document.getElementById('status').innerText = "Ошибка транзакции"; }
 }
 
-// Привязка кнопок
-document.getElementById('connect-btn').onclick = connectWallet;
-document.getElementById('stake-btn').onclick = startStake;
+document.getElementById('btn-connect').onclick = connect;
+document.getElementById('btn-stake').onclick = handleStake;
