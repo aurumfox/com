@@ -550,8 +550,19 @@
     
     <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 30000;"></div>
 
-    <script src="script.js" defer></script>
-     
+
+     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/0.0.0-6/anchor.min.js"></script>
+
+<div id="staking-ui">
+    <input type="number" id="stake-amount" placeholder="Amount AFOX">
+    <button id="stake-afox-btn">Stake AFOX</button>
+    <button id="claim-rewards-btn">Claim Rewards</button>
+    <button id="unstake-afox-btn">Unstake Everything</button>
+</div>
+
+<div id="notification-container"></div>
+
        <script>
         // Это блок JavaScript внутри твоего HTML
         const connectBtn = document.getElementById('connectWalletBtn');
