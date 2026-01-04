@@ -3,62 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFOX Staking DAO</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AFOX Alpha Staking</title>
+    <style>
+        :root { --primary: #fb923c; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: opacity 0.2s; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-item { background: var(--card); padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #334155; }
+        .notification { position: fixed; bottom: 20px; right: 20px; padding: 15px; border-radius: 8px; z-index: 1000; }
+        .success { background: #16a34a; } .error { background: #dc2626; }
+        #wallet-area { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+    </style>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@project-serum/anchor@latest/dist/browser/anchor.min.js"></script>
+    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser/anchor.min.js"></script>
 </head>
 <body>
-    <div id="page-loader" style="display:none;">Loading...</div>
-    
-    <nav>
-        <div class="logo">AFOX STAKING</div>
-        <button id="connectWalletBtn" class="connect-wallet-btn">Connect Wallet</button>
-        <div id="walletDisplay" class="wallet-display" style="display:none;">
-            <span id="walletAddressDisplay" class="wallet-address-display"></span>
-            <button id="disconnectBtn">Logout</button>
+    <div class="container">
+        <div id="wallet-area">
+            <button id="connectBtn" style="width: auto;">Connect Phantom</button>
+            <div id="userAddr" style="display:none; padding: 10px; background: #1e293b; border-radius: 8px;"></div>
         </div>
-    </nav>
 
-    <main class="container">
-        <section class="stats-grid">
-            <div class="stat-card">
-                <h3>Balance</h3>
-                <p id="userAfoxBalance">0 AFOX</p>
+        <div class="stats">
+            <div class="stat-item">
+                <small>Balance</small>
+                <div id="bal-afox">0 AFOX</div>
             </div>
-            <div class="stat-card">
-                <h3>Staked</h3>
-                <p id="userStakedAmount">0 AFOX</p>
+            <div class="stat-item">
+                <small>Staked</small>
+                <div id="staked-afox">0 AFOX</div>
             </div>
-            <div class="stat-card">
-                <h3>Rewards</h3>
-                <p id="userRewardsAmount">0 AFOX</p>
+            <div class="stat-item">
+                <small>Rewards</small>
+                <div id="reward-afox">0 AFOX</div>
             </div>
-        </section>
+        </div>
 
-        <section class="staking-actions">
-            <h2>Staking Control</h2>
-            <div class="input-group">
-                <select id="poolSelector">
-                    <option value="0">Flexible (0 days)</option>
-                    <option value="1">Standard (30 days)</option>
-                    <option value="2">Max Boost (90 days)</option>
-                </select>
-                <input type="number" id="stakeAmountInput" placeholder="Amount AFOX">
-                <button id="stakeAfoxBtn">Deposit</button>
-            </div>
-            <div class="info-row">
-                <span>Current APR: <strong id="stakingApr">—</strong></span>
-                <span>Lockup: <strong id="lockupPeriod">—</strong></span>
-            </div>
-            <div class="button-group">
-                <button id="claimRewardsBtn">Claim Rewards</button>
-                <button id="unstakeAfoxBtn" class="danger">Unstake</button>
-            </div>
-        </section>
-    </main>
+        <div class="card">
+            <h3>Stake AFOX</h3>
+            <select id="poolIdx">
+                <option value="0">Flexible (0 days) - 5% APR</option>
+                <option value="1">Standard (30 days) - 12% APR</option>
+                <option value="2">Max Boost (90 days) - 25% APR</option>
+            </select>
+            <input type="number" id="stakeAmount" placeholder="0.00">
+            <button id="btnStake">Deposit & Stake</button>
+        </div>
 
-    <div id="notificationContainer"></div>
+        <div class="card">
+            <h3>Management</h3>
+            <p>Lock Ends: <span id="lock-timer">No Stake</span></p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button id="btnClaim" style="background: #2563eb;">Claim Rewards</button>
+                <button id="btnUnstake" style="background: #475569;">Unstake All</button>
+            </div>
+        </div>
+    </div>
+    <div id="notify"></div>
+
     <script src="script.js"></script>
 </body>
 </html>
