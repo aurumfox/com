@@ -14,17 +14,21 @@ const IDL = {
 let wallet, provider, program, userPDA;
 const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-// Проверка готовности библиотек
-const timer = setInterval(() => {
+// 1. ПРОВЕРКА ЗАГРУЗКИ БИБЛИОТЕК
+const check = setInterval(() => {
     if (window.solanaWeb3 && window.anchor) {
-        document.getElementById('status').innerText = "Готов";
-        clearInterval(timer);
+        document.getElementById('status').innerText = "Готов к работе";
+        clearInterval(check);
     }
 }, 500);
 
+// 2. ПОДКЛЮЧЕНИЕ
 async function connect() {
     const solana = window.phantom?.solana || window.solana;
-    if (!solana) return window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
+    if (!solana) {
+        window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
+        return;
+    }
 
     try {
         const resp = await solana.connect();
@@ -41,12 +45,13 @@ async function connect() {
         document.getElementById('btn-connect').style.display = 'none';
         document.getElementById('ui-staking').style.display = 'block';
         document.getElementById('btn-stake').style.display = 'block';
-        document.getElementById('status').innerText = "Кошелек: " + wallet.toString().slice(0, 6);
+        document.getElementById('status').innerText = "Кошелек подключен";
         
         updateBalances();
     } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
 }
 
+// 3. ОБНОВЛЕНИЕ БАЛАНСА
 async function updateBalances() {
     try {
         const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
@@ -55,19 +60,19 @@ async function updateBalances() {
         );
         const b = await connection.getTokenAccountBalance(ata);
         document.getElementById('user-bal').innerText = b.value.uiAmount.toFixed(2);
-    } catch (e) { console.log("Баланс 0"); }
+    } catch (e) { console.log("Токены не найдены"); }
 }
 
+// 4. ФУНКЦИЯ СТЕЙКИНГА
 async function stake() {
     const amount = document.getElementById('stake-amount').value;
     if (!amount || amount <= 0) return alert("Введите сумму");
 
     try {
-        document.getElementById('status').innerText = "Подтвердите транзакцию...";
+        document.getElementById('status').innerText = "Ожидание подтверждения...";
         const tx = new solanaWeb3.Transaction();
-        const amountBN = new anchor.BN(amount * 1e6); // 6 знаков после запятой для токена
+        const amountBN = new anchor.BN(amount * 1e6);
 
-        // Проверяем, создан ли аккаунт стейкинга
         const info = await connection.getAccountInfo(userPDA);
         if (!info) {
             tx.add(await program.methods.initializeUserStake(0).accounts({
@@ -97,13 +102,11 @@ async function stake() {
         }).instruction());
 
         const { signature } = await window.solana.signAndSendTransaction(tx);
-        document.getElementById('status').innerText = "Транзакция отправлена...";
+        document.getElementById('status').innerText = "Транзакция в сети...";
         await connection.confirmTransaction(signature);
-        document.getElementById('status').innerText = "Успех! Стейк принят.";
+        document.getElementById('status').innerText = "Стейкинг успешно завершен!";
         updateBalances();
-    } catch (e) { 
-        document.getElementById('status').innerText = "Ошибка: недостаточно средств или отказ";
-    }
+    } catch (e) { document.getElementById('status').innerText = "Ошибка транзакции"; }
 }
 
 document.getElementById('btn-connect').onclick = connect;
