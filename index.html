@@ -555,10 +555,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/0.0.0-6/anchor.min.js"></script>
 
 <div id="staking-ui">
-    <input type="number" id="stake-amount" placeholder="Amount AFOX">
-    <button id="stake-afox-btn">Stake AFOX</button>
-    <button id="claim-rewards-btn">Claim Rewards</button>
-    <button id="unstake-afox-btn">Unstake Everything</button>
+    <input type="number" id="stake-amount" step="0.1">
+
+<button id="stake-afox-btn">Stake</button>
+<button id="claim-rewards-btn">Claim</button>
+<button id="unstake-afox-btn">Unstake</button>
+
+<span id="user-afox-balance">0 AFOX</span>
+<span id="user-staked-amount">0 AFOX</span>
+<span id="user-rewards-amount">0 AFOX</span>
+
 </div>
 
 <div id="notification-container"></div>
