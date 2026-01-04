@@ -1,5 +1,4 @@
 // Константы проекта
-const AFOX_DECIMALS = 6; 
 const SOL_DECIMALS = 9;
 const SECONDS_PER_DAY = 86400;
 const FIREBASE_PROXY_URL = 'ВАШ_URL_WORKER'; // Замените на ваш URL
@@ -1071,11 +1070,15 @@ function setupDAO() {
         });
     }
 }
-    if (closeBtn && daoModal) {
-        closeBtn.addEventListener('click', () => {
-            daoModal.style.display = 'none';
-        });
-    }
+    // Нужно сначала объявить переменную через документ
+const closeBtn = document.getElementById('close-dao-modal'); // Убедитесь, что ID совпадает с HTML
+
+if (closeBtn && daoModal) {
+    closeBtn.addEventListener('click', () => {
+        daoModal.style.display = 'none';
+    });
+}
+
 
 // --- MAIN INITIALIZATION FUNCTION ---
 function init() {
