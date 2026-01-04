@@ -12,29 +12,26 @@ const IDL = {
 };
 
 let wallet, provider, program, userPDA;
+// Используем публичный RPC узел, который реже блокируют
 const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-// 1. ПРОВЕРКА ЗАГРУЗКИ БИБЛИОТЕК
+// Проверка загрузки
 const check = setInterval(() => {
-    if (window.solanaWeb3 && window.anchor) {
-        document.getElementById('status').innerText = "Готов к работе";
+    if (typeof solanaWeb3 !== 'undefined' && typeof anchor !== 'undefined') {
+        document.getElementById('status').innerText = "Готов";
         clearInterval(check);
     }
 }, 500);
 
-// 2. ПОДКЛЮЧЕНИЕ
 async function connect() {
-    const solana = window.phantom?.solana || window.solana;
-    if (!solana) {
-        window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
-        return;
-    }
+    const provider_wallet = window.phantom?.solana || window.solana;
+    if (!provider_wallet) return window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
 
     try {
-        const resp = await solana.connect();
+        const resp = await provider_wallet.connect();
         wallet = resp.publicKey;
         
-        provider = new anchor.AnchorProvider(connection, solana, { commitment: "confirmed" });
+        provider = new anchor.AnchorProvider(connection, provider_wallet, { commitment: "confirmed" });
         program = new anchor.Program(IDL, new solanaWeb3.PublicKey(PRG_ID), provider);
 
         [userPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
@@ -43,16 +40,15 @@ async function connect() {
         );
 
         document.getElementById('btn-connect').style.display = 'none';
-        document.getElementById('ui-staking').style.display = 'block';
+        document.getElementById('ui').style.display = 'block';
         document.getElementById('btn-stake').style.display = 'block';
-        document.getElementById('status').innerText = "Кошелек подключен";
+        document.getElementById('status').innerText = "Подключено";
         
-        updateBalances();
-    } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
+        updateBal();
+    } catch (e) { document.getElementById('status').innerText = "Ошибка"; }
 }
 
-// 3. ОБНОВЛЕНИЕ БАЛАНСА
-async function updateBalances() {
+async function updateBal() {
     try {
         const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
             [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()],
@@ -60,16 +56,15 @@ async function updateBalances() {
         );
         const b = await connection.getTokenAccountBalance(ata);
         document.getElementById('user-bal').innerText = b.value.uiAmount.toFixed(2);
-    } catch (e) { console.log("Токены не найдены"); }
+    } catch (e) {}
 }
 
-// 4. ФУНКЦИЯ СТЕЙКИНГА
 async function stake() {
-    const amount = document.getElementById('stake-amount').value;
-    if (!amount || amount <= 0) return alert("Введите сумму");
+    const amount = document.getElementById('amt').value;
+    if (!amount || amount <= 0) return;
 
     try {
-        document.getElementById('status').innerText = "Ожидание подтверждения...";
+        document.getElementById('status').innerText = "Транзакция...";
         const tx = new solanaWeb3.Transaction();
         const amountBN = new anchor.BN(amount * 1e6);
 
@@ -102,11 +97,10 @@ async function stake() {
         }).instruction());
 
         const { signature } = await window.solana.signAndSendTransaction(tx);
-        document.getElementById('status').innerText = "Транзакция в сети...";
         await connection.confirmTransaction(signature);
-        document.getElementById('status').innerText = "Стейкинг успешно завершен!";
-        updateBalances();
-    } catch (e) { document.getElementById('status').innerText = "Ошибка транзакции"; }
+        document.getElementById('status').innerText = "Успех!";
+        updateBal();
+    } catch (e) { document.getElementById('status').innerText = "Ошибка"; }
 }
 
 document.getElementById('btn-connect').onclick = connect;
