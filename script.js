@@ -990,35 +990,30 @@ function initEventListeners() {
 // ==========================================
 function setupDAO() {
     const daoBtn = document.getElementById('createProposalBtn');
-    const daoModal = document.getElementById('dao-modal');
-    const closeBtn = document.querySelector('.close-modal');
+    const closeDaoBtn = document.getElementById('closeProposalModal'); 
+    const modal = document.getElementById('createProposalModal');
 
-    const closeDaoBtn = document.getElementById('closeProposalModal'); // В твоем HTML ID именно такой
-if (closeDaoBtn) {
-    closeDaoBtn.addEventListener('click', () => {
-        const modal = document.getElementById('createProposalModal');
-        if (modal) modal.style.display = 'none';
-    });
-  }
+    if (daoBtn && modal) {
+        daoBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+    }
+
+    if (closeDaoBtn && modal) {
+        closeDaoBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
 }
-    // Нужно сначала объявить переменную через документ
-const closeBtn = document.getElementById('close-dao-modal'); // Убедитесь, что ID совпадает с HTML
-
-if (closeBtn && daoModal) {
-    closeBtn.addEventListener('click', () => {
-        daoModal.style.display = 'none';
-    });
-}
-
 
 // --- MAIN INITIALIZATION FUNCTION ---
 function init() {
-    cacheUIElements(); // Добавлено: обязательно кэшируем элементы перед использованием
+    cacheUIElements(); 
     initEventListeners();
-    setupDAO();
-
+    setupDAO(); // Вызываем один раз
     
     console.log("AlphaFox System Ready. All IDs linked.");
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
