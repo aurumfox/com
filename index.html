@@ -2,24 +2,48 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Staking AFOX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFOX Staking Full</title>
     <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+    <script src="https://bundle.run/@project-serum/anchor@0.26.0"></script>
     <style>
-        body { background: #0b101d; color: #fff; font-family: -apple-system, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .container { background: #1a2035; padding: 30px; border-radius: 20px; width: 85%; max-width: 300px; text-align: center; border: 1px solid #2d344b; }
-        button { background: #fb923c; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        #status { margin-top: 15px; font-size: 12px; color: #9ca3af; }
-        .hidden { display: none; }
+        body { background: #0b101d; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #1a2035; padding: 25px; border-radius: 20px; width: 90%; max-width: 320px; text-align: center; border: 1px solid #2d344b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #fb923c; margin: 0 0 20px 0; }
+        .stats { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; text-align: left; }
+        .stats div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #2d344b; background: #0b101d; color: #fff; box-sizing: border-box; text-align: center; font-size: 16px; }
+        button { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 8px; transition: 0.2s; }
+        .btn-main { background: #fb923c; color: white; }
+        .btn-claim { background: #22c55e; color: white; }
+        .btn-unstake { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
+        #status { margin-top: 15px; font-size: 11px; color: #9ca3af; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 style="margin-top:0">AFOX</h2>
-        <button id="btn-connect">ПОДКЛЮЧИТЬ</button>
-        <div id="status">Запуск...</div>
+    <div class="card">
+        <h2>AFOX STAKING</h2>
+        
+        <div id="connect-section">
+            <button id="btn-connect" class="btn-main">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
+        </div>
+
+        <div id="staking-ui" style="display: none;">
+            <div class="stats">
+                <div><span>В кошельке:</span> <b id="bal-wallet">0.00</b></div>
+                <div><span>В стейкинге:</span> <b id="bal-staked" style="color: #fb923c;">0.00</b></div>
+                <div><span>Награда:</span> <b id="bal-reward" style="color: #22c55e;">0.00</b></div>
+            </div>
+
+            <input type="number" id="input-amount" placeholder="0.00">
+            
+            <button id="btn-stake" class="btn-main">STAKE NOW</button>
+            <button id="btn-claim" class="btn-claim">CLAIM REWARDS</button>
+            <button id="btn-unstake" class="btn-unstake">WITHDRAW ALL</button>
+        </div>
+
+        <div id="status">Ожидание...</div>
     </div>
     <script src="script.js"></script>
 </body>
 </html>
-
