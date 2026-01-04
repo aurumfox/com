@@ -7,19 +7,18 @@ const IDL = {
     "version": "0.1.0", "name": "alphafox_staking",
     "instructions": [
         { "name": "initializeUserStake", "accounts": [{"name":"poolState","isMut":true},{"name":"userStaking","isMut":true},{"name":"owner","isMut":true},{"name":"rewardMint","isMut":false},{"name":"systemProgram","isMut":false},{"name":"clock","isMut":false}], "args": [{"name":"poolIndex","type":"u8"}] },
-        { "name": "deposit", "accounts": [{"name":"poolState","isMut":true},{"name":"userStaking","isMut":true},{"name":"owner","isMut":true},{"name":"userSourceAta","isMut":true},{"name":"vault","isMut":true},{"name":"rewardMint","isMut":false},{"name":"tokenProgram","isMut":false},{"name":"clock","isMut":false}], "args": [{"name":"amount","type":"u64"}] },
-        { "name": "withdraw", "accounts": [{"name":"poolState","isMut":true},{"name":"userStaking","isMut":true},{"name":"owner","isMut":true},{"name":"userRewardAta","isMut":true},{"name":"vault","isMut":true},{"name":"rewardMint","isMut":false},{"name":"tokenProgram","isMut":false},{"name":"clock","isMut":false}], "args": [] }
+        { "name": "deposit", "accounts": [{"name":"poolState","isMut":true},{"name":"userStaking","isMut":true},{"name":"owner","isMut":true},{"name":"userSourceAta","isMut":true},{"name":"vault","isMut":true},{"name":"rewardMint","isMut":false},{"name":"tokenProgram","isMut":false},{"name":"clock","isMut":false}], "args": [{"name":"amount","type":"u64"}] }
     ]
 };
 
 let wallet, provider, program, userPDA;
 const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-// Проверка загрузки библиотек
-const check = setInterval(() => {
+// Проверка готовности библиотек
+const timer = setInterval(() => {
     if (window.solanaWeb3 && window.anchor) {
-        document.getElementById('status').innerText = "Готов к подключению";
-        clearInterval(check);
+        document.getElementById('status').innerText = "Готов";
+        clearInterval(timer);
     }
 }, 500);
 
@@ -39,44 +38,36 @@ async function connect() {
             program.programId
         );
 
-        document.getElementById('connect-section').style.display = 'none';
-        document.getElementById('staking-ui').style.display = 'block';
-        updateStats();
+        document.getElementById('btn-connect').style.display = 'none';
+        document.getElementById('ui-staking').style.display = 'block';
+        document.getElementById('btn-stake').style.display = 'block';
+        document.getElementById('status').innerText = "Кошелек: " + wallet.toString().slice(0, 6);
+        
+        updateBalances();
     } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
 }
 
-async function updateStats() {
+async function updateBalances() {
     try {
-        // 1. Баланс кошелька
         const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
             [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()],
             new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
         );
         const b = await connection.getTokenAccountBalance(ata);
-        document.getElementById('bal-wallet').innerText = b.value.uiAmount.toFixed(2);
-
-        // 2. Данные из программы (стейк и награды)
-        const accountData = await program.account.userStaking.fetch(userPDA);
-        document.getElementById('bal-staked').innerText = (accountData.amount.toNumber() / 1e6).toFixed(2);
-        
-        // Расчет примерной награды (зависит от логики контракта)
-        document.getElementById('status').innerText = "Данные обновлены";
-    } catch (e) { 
-        document.getElementById('bal-staked').innerText = "0.00";
-        document.getElementById('status').innerText = "Аккаунт стейкинга не создан";
-    }
+        document.getElementById('user-bal').innerText = b.value.uiAmount.toFixed(2);
+    } catch (e) { console.log("Баланс 0"); }
 }
 
-async function handleStake() {
-    const amt = document.getElementById('input-amount').value;
-    if (!amt || amt <= 0) return;
+async function stake() {
+    const amount = document.getElementById('stake-amount').value;
+    if (!amount || amount <= 0) return alert("Введите сумму");
 
     try {
-        document.getElementById('status').innerText = "Подтвердите в кошельке...";
+        document.getElementById('status').innerText = "Подтвердите транзакцию...";
         const tx = new solanaWeb3.Transaction();
-        const amountBN = new anchor.BN(amt * 1e6);
+        const amountBN = new anchor.BN(amount * 1e6); // 6 знаков после запятой для токена
 
-        // Если аккаунта еще нет — создаем
+        // Проверяем, создан ли аккаунт стейкинга
         const info = await connection.getAccountInfo(userPDA);
         if (!info) {
             tx.add(await program.methods.initializeUserStake(0).accounts({
@@ -106,11 +97,14 @@ async function handleStake() {
         }).instruction());
 
         const { signature } = await window.solana.signAndSendTransaction(tx);
+        document.getElementById('status').innerText = "Транзакция отправлена...";
         await connection.confirmTransaction(signature);
-        document.getElementById('status').innerText = "Стейкинг успешен!";
-        updateStats();
-    } catch (e) { document.getElementById('status').innerText = "Ошибка транзакции"; }
+        document.getElementById('status').innerText = "Успех! Стейк принят.";
+        updateBalances();
+    } catch (e) { 
+        document.getElementById('status').innerText = "Ошибка: недостаточно средств или отказ";
+    }
 }
 
 document.getElementById('btn-connect').onclick = connect;
-document.getElementById('btn-stake').onclick = handleStake;
+document.getElementById('btn-stake').onclick = stake;
