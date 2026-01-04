@@ -1,4 +1,3 @@
-// Настройки контракта
 const PROGRAM_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
 const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
 const POOL_PDA = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
@@ -15,27 +14,25 @@ const IDL = {
 let wallet, provider, program, userPDA;
 const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-// Функция поиска провайдера (Phantom)
-const getProvider = () => {
-    if ('phantom' in window) {
-        const provider = window.phantom?.solana;
-        if (provider?.isPhantom) return provider;
-    }
-    return window.solana;
+// Проверка готовности библиотек
+window.onload = () => {
+    document.getElementById("status").innerText = "Готов к подключению";
 };
 
 async function connect() {
-    const solana = getProvider();
+    // Проверка, загрузился ли Anchor
+    if (typeof anchor === 'undefined') {
+        return alert("Библиотека Anchor еще грузится. Подождите 5 секунд и попробуйте снова.");
+    }
+
+    const solana = window.phantom?.solana || window.solana;
 
     if (!solana) {
-        document.getElementById("status").innerText = "Phantom не найден! Открой в приложении.";
-        // Если это мобильный браузер, пробуем вызвать приложение
         window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
         return;
     }
 
     try {
-        document.getElementById("status").innerText = "Подключение...";
         const resp = await solana.connect();
         wallet = resp.publicKey;
 
@@ -50,36 +47,20 @@ async function connect() {
         document.getElementById("connectBtn").style.display = "none";
         document.getElementById("ui").style.display = "block";
         document.getElementById("stakeBtn").style.display = "block";
-        document.getElementById("status").innerText = "Подключен: " + wallet.toBase58().slice(0, 6) + "...";
-        
-        updateBalance();
+        document.getElementById("status").innerText = "Кошелек: " + wallet.toBase58().slice(0, 6) + "...";
     } catch (err) {
         document.getElementById("status").innerText = "Ошибка: " + err.message;
     }
 }
 
-async function updateBalance() {
-    try {
-        const mint = new solanaWeb3.PublicKey(AFOX_MINT);
-        const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
-            [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), mint.toBuffer()],
-            new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
-        );
-        const bal = await connection.getTokenAccountBalance(ata);
-        document.getElementById("user-bal").innerText = bal.value.uiAmount.toFixed(2);
-    } catch (e) { console.log("Баланс не найден"); }
-}
-
 async function stake() {
     const amt = document.getElementById("stakeAmt").value;
-    if (!amt || amt <= 0) return alert("Введите сумму");
+    if (!amt) return;
 
     try {
-        document.getElementById("status").innerText = "Подтвердите в Phantom...";
         const tx = new solanaWeb3.Transaction();
         const amountBN = new anchor.BN(amt * 1e6);
 
-        // Проверка аккаунта стейкинга
         const info = await connection.getAccountInfo(userPDA);
         if (!info) {
             tx.add(await program.methods.initializeUserStake(0).accounts({
@@ -108,16 +89,15 @@ async function stake() {
             clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
         }).instruction());
 
-        const solana = getProvider();
+        const solana = window.phantom?.solana || window.solana;
         const { signature } = await solana.signAndSendTransaction(tx);
-        document.getElementById("status").innerText = "Ждем подтверждения...";
+        document.getElementById("status").innerText = "Транзакция отправлена...";
         await connection.confirmTransaction(signature);
-        document.getElementById("status").innerText = "Успех! Монеты в стейке.";
-        updateBalance();
+        document.getElementById("status").innerText = "Стейкинг успешен!";
     } catch (err) {
         document.getElementById("status").innerText = "Ошибка транзакции";
     }
 }
 
-document.getElementById("connectBtn").addEventListener("click", connect);
-document.getElementById("stakeBtn").addEventListener("click", stake);
+document.getElementById("connectBtn").onclick = connect;
+document.getElementById("stakeBtn").onclick = stake;
