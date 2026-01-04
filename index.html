@@ -3,154 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AFOX TEST STAKING</title>
+    <title>AFOX Staking 2.1</title>
     <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
     <style>
         body { background: #0b101d; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #1a2035; padding: 25px; border-radius: 20px; width: 300px; text-align: center; border: 1px solid #2d344b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .stats { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; text-align: left; border: 1px solid #334155; }
-        .stats div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .card { background: #1a2035; padding: 25px; border-radius: 24px; width: 300px; text-align: center; border: 1px solid #2d344b; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .stats { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 16px; margin-bottom: 20px; text-align: left; font-size: 14px; }
+        .stats div { display: flex; justify-content: space-between; margin-bottom: 8px; }
         .stats b { color: #fb923c; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #2d344b; background: #0b101d; color: #fff; box-sizing: border-box; text-align: center; font-size: 18px; }
-        button { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 8px; transition: 0.2s; }
+        input { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 18px; text-align: center; box-sizing: border-box; }
+        button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 15px; }
         .btn-connect { background: #fb923c; color: #fff; }
-        .btn-stake { background: #2563eb; color: #fff; }
-        .btn-claim { background: #22c55e; color: #fff; }
-        .btn-withdraw { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
-        #status { margin-top: 15px; font-size: 11px; color: #9ca3af; min-height: 14px; }
+        .btn-stake { background: #2563eb; color: #fff; margin-top: 10px; }
+        .btn-withdraw { background: transparent; color: #94a3b8; margin-top: 15px; font-size: 12px; text-decoration: underline; }
+        #status { margin-top: 15px; font-size: 11px; color: #64748b; min-height: 1.2em; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
+
     <div class="card">
-        <h2 style="color: #fb923c; margin: 0 0 20px 0;">AFOX STAKING</h2>
+        <h2 style="margin: 0 0 20px 0; font-size: 22px;">AFOX <span style="color:#fb923c">STAKE</span></h2>
         
-        <div id="ui-staking" style="display: none;">
+        <div id="staking-ui" class="hidden">
             <div class="stats">
-                <div><span>В кошельке:</span> <b id="user-bal">0.00</b></div>
-                <div><span>Застейкано:</span> <b id="staked-bal">0.00</b></div>
+                <div>Кошелек: <b id="user-bal">0.00</b></div>
+                <div>В стейке: <b id="staked-bal">0.00</b></div>
             </div>
-            
-            <input type="number" id="stake-amount" placeholder="Количество AFOX">
-            
-            <button id="btn-stake" class="btn-stake">STAKE NOW</button>
-            <button id="btn-claim" class="btn-claim">CLAIM REWARDS</button>
-            <button id="btn-withdraw" class="btn-withdraw">WITHDRAW ALL</button>
+            <input type="number" id="amount-input" placeholder="0.00" inputmode="decimal">
+            <button id="stake-btn" class="btn-stake">ЗАСТЕЙКАТЬ</button>
+            <button id="withdraw-btn" class="btn-withdraw">Вывести всё (Unstake)</button>
         </div>
 
-        <button id="btn-connect" class="btn-connect">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
-        <div id="status">Загрузка библиотек...</div>
+        <button id="connect-btn" class="btn-connect">ПОДКЛЮЧИТЬ PHANTOM</button>
+        
+        <div id="status">Ожидание...</div>
     </div>
 
-    <script>
-        const PRG_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
-        const MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
-        const POOL = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
-        const VAULT = "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp";
-
-        const IDL = {
-            "version": "0.1.0", "name": "alphafox_staking",
-            "instructions": [
-                { "name": "initializeUserStake", "accounts": [{"name":"poolState","isMut":true},{"name":"userStaking","isMut":true},{"name":"owner","isMut":true},{"name":"rewardMint","isMut":false},{"name":"systemProgram","isMut":false},{"name":"clock","isMut":false}], "args": [{"name":"poolIndex","type":"u8"}] },
-                { "name": "deposit", "accounts": [{"name":"poolState","isMut":true},{"name":"userStaking","isMut":true},{"name":"owner","isMut":true},{"name":"userSourceAta","isMut":true},{"name":"vault","isMut":true},{"name":"rewardMint","isMut":false},{"name":"tokenProgram","isMut":false},{"name":"clock","isMut":false}], "args": [{"name":"amount","type":"u64"}] },
-                { "name": "withdraw", "accounts": [{"name":"poolState","isMut":true},{"name":"userStaking","isMut":true},{"name":"owner","isMut":true},{"name":"userRewardAta","isMut":true},{"name":"vault","isMut":true},{"name":"rewardMint","isMut":false},{"name":"tokenProgram","isMut":false},{"name":"clock","isMut":false}], "args": [] }
-            ]
-        };
-
-        let wallet, provider, program, userPDA;
-        const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
-
-        const timer = setInterval(() => {
-            if (window.solanaWeb3 && window.anchor) {
-                document.getElementById('status').innerText = "Готов к тесту";
-                clearInterval(timer);
-            }
-        }, 500);
-
-        async function connect() {
-            const solana = window.phantom?.solana || window.solana;
-            if (!solana) return window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
-
-            try {
-                const resp = await solana.connect();
-                wallet = resp.publicKey;
-                provider = new anchor.AnchorProvider(connection, solana, { commitment: "confirmed" });
-                program = new anchor.Program(IDL, new solanaWeb3.PublicKey(PRG_ID), provider);
-
-                [userPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
-                    [wallet.toBuffer(), new solanaWeb3.PublicKey(POOL).toBuffer()],
-                    program.programId
-                );
-
-                document.getElementById('btn-connect').style.display = 'none';
-                document.getElementById('ui-staking').style.display = 'block';
-                document.getElementById('status').innerText = "Подключено: " + wallet.toString().slice(0, 6);
-                updateStats();
-            } catch (e) { document.getElementById('status').innerText = "Ошибка входа"; }
-        }
-
-        async function updateStats() {
-            try {
-                // Баланс в кошельке
-                const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
-                    [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()],
-                    new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
-                );
-                const b = await connection.getTokenAccountBalance(ata);
-                document.getElementById('user-bal').innerText = b.value.uiAmount.toFixed(2);
-
-                // Баланс в стейкинге
-                const accountData = await program.account.userStaking.fetch(userPDA);
-                document.getElementById('staked-bal').innerText = (accountData.amount.toNumber() / 1e6).toFixed(2);
-            } catch (e) { document.getElementById('staked-bal').innerText = "0.00"; }
-        }
-
-        async function handleStake() {
-            const amount = document.getElementById('stake-amount').value;
-            if (!amount || amount <= 0) return alert("Введите сумму");
-            try {
-                document.getElementById('status').innerText = "Запрос в Phantom...";
-                const tx = new solanaWeb3.Transaction();
-                const info = await connection.getAccountInfo(userPDA);
-                if (!info) {
-                    tx.add(await program.methods.initializeUserStake(0).accounts({
-                        poolState: new solanaWeb3.PublicKey(POOL), userStaking: userPDA, owner: wallet, rewardMint: new solanaWeb3.PublicKey(MINT),
-                        systemProgram: solanaWeb3.SystemProgram.programId, clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                    }).instruction());
-                }
-                const [uAta] = solanaWeb3.PublicKey.findProgramAddressSync([wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()], new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25"));
-                tx.add(await program.methods.deposit(new anchor.BN(amount * 1e6)).accounts({
-                    poolState: new solanaWeb3.PublicKey(POOL), userStaking: userPDA, owner: wallet, userSourceAta: uAta,
-                    vault: new solanaWeb3.PublicKey(VAULT), rewardMint: new solanaWeb3.PublicKey(MINT),
-                    tokenProgram: new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                }).instruction());
-                const { signature } = await window.solana.signAndSendTransaction(tx);
-                await connection.confirmTransaction(signature);
-                document.getElementById('status').innerText = "Успешно застейкано!";
-                updateStats();
-            } catch (e) { document.getElementById('status').innerText = "Ошибка транзакции"; }
-        }
-
-        async function handleWithdraw() {
-            try {
-                document.getElementById('status').innerText = "Вывод средств...";
-                const [uAta] = solanaWeb3.PublicKey.findProgramAddressSync([wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()], new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25"));
-                const tx = await program.methods.withdraw().accounts({
-                    poolState: new solanaWeb3.PublicKey(POOL), userStaking: userPDA, owner: wallet, userRewardAta: uAta,
-                    vault: new solanaWeb3.PublicKey(VAULT), rewardMint: new solanaWeb3.PublicKey(MINT),
-                    tokenProgram: new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                }).transaction();
-                const { signature } = await window.solana.signAndSendTransaction(tx);
-                await connection.confirmTransaction(signature);
-                document.getElementById('status').innerText = "Все монеты выведены!";
-                updateStats();
-            } catch (e) { document.getElementById('status').innerText = "Ошибка вывода"; }
-        }
-
-        document.getElementById('btn-connect').onclick = connect;
-        document.getElementById('btn-stake').onclick = handleStake;
-        document.getElementById('btn-withdraw').onclick = handleWithdraw;
-        document.getElementById('btn-claim').onclick = () => alert("Награды выплачиваются автоматически при Withdraw или Stake!");
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
