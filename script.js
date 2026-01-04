@@ -1,8 +1,11 @@
-// Константы проекта
+// ==========================================
+// 1. КОНСТАНТЫ И СОСТОЯНИЕ (БЕЗ ДУБЛИКАТОВ)
+// ==========================================
 const SOL_DECIMALS = 9;
-const AFOX_DECIMALS = 6; // Обязательно добавь это!
+const AFOX_DECIMALS = 6;
 const SECONDS_PER_DAY = 86400;
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/'; // Замените на ваш URL
+const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
+const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 
 const POOLS_CONFIG = {
     0: { name: "Flexible", apr_rate: 500 },
@@ -11,65 +14,19 @@ const POOLS_CONFIG = {
     4: { name: "Legacy", apr_rate: 0 }
 };
 
-const STAKING_IDL = {
-    "version": "0.1.0",
-    "name": "alphafox_staking",
-    "instructions": [
-        {
-            "name": "initializeUserStake",
-            "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "systemProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
-            ],
-            "args": [{ "name": "poolIndex", "type": "u8" }]
-        },
-        {
-            "name": "deposit",
-            "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "userSourceAta", "isMut": true },
-                { "name": "vault", "isMut": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "tokenProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
-            ],
-            "args": [{ "name": "amount", "type": "u64" }]
-        }
-    ],
-    "accounts": [
-        {
-            "name": "UserStakingAccount",
-            "type": {
-                "kind": "struct",
-                "fields": [
-                    { "name": "isInitialized", "type": "bool" },
-                    { "name": "stakeBump", "type": "u8" },
-                    { "name": "poolIndex", "type": "u8" },
-                    { "name": "paddingA", "type": { "array": ["u8", 5] } },
-                    { "name": "owner", "type": "publicKey" },
-                    { "name": "stakedAmount", "type": "u64" },
-                    { "name": "lockupEndTime", "type": "i64" },
-                    { "name": "rewardPerShareUser", "type": "u128" },
-                    { "name": "rewardsToClaim", "type": "u64" },
-                    { "name": "pendingRewardsDueToLimit", "type": "u64" },
-                    { "name": "lending", "type": "u64" },
-                    { "name": "lendingUnlockTime", "type": "i64" },
-                    { "name": "lastUpdateTime", "type": "i64" },
-                    { "name": "paddingFinal", "type": { "array": ["u8", 104] } }
-                ]
-            }
-        }
-    ]
+// Объявляем ОДИН РАЗ
+let appState = { 
+    connection: new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed'), 
+    provider: null, 
+    walletPublicKey: null, 
+    userBalances: { SOL: 0n, AFOX: 0n }, 
+    userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n },
+    areProviderListenersAttached: false
 };
 
+// Объявляем ОДИН РАЗ
+let uiElements = {}; 
 
-// Исправленные адреса
 const STAKING_PROGRAM_ID = new window.solanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
 const AFOX_TOKEN_MINT_ADDRESS = new window.solanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
 const AFOX_POOL_STATE_PUBKEY = new window.solanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ'); 
@@ -80,7 +37,7 @@ const DAO_TREASURY_VAULT_PUBKEY = new window.solanaWeb3.PublicKey('6BzRqaLD7CiGv
 const TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ASSOCIATED_TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
 const SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
-const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+
 
 
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
@@ -881,45 +838,37 @@ function initEventListeners() {
 
 // --- 3. CACHING UI ELEMENTS ---
 function cacheUIElements() {
-    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('#connectWalletBtn'));
-    uiElements.userAfoxBalance = document.getElementById('userAfoxBalance');
-    uiElements.userStakedAmount = document.getElementById('userStakedAmount');
-    uiElements.userRewardsAmount = document.getElementById('userRewardsAmount');
-    uiElements.stakingApr = document.getElementById('stakingApr');
-    uiElements.stakeAmountInput = document.getElementById('stakeAmountInput'); // Исправлено под HTML
-    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
-    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
-    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
-    uiElements.poolSelector = document.getElementById('pool-selector');
-    uiElements.notificationContainer = document.getElementById('notificationContainer');
+    uiElements = {
+        // Кнопки кошелька
+        connectWalletButtons: Array.from(document.querySelectorAll('#connectWalletBtn')),
+        walletAddressDisplays: Array.from(document.querySelectorAll('#walletAddressSpan, #walletAddressDisplay')),
+        
+        // Стейкинг (ID строго по твоему HTML)
+        userAfoxBalance: document.getElementById('userAfoxBalance'),
+        userStakedAmount: document.getElementById('userStakedAmount'),
+        userRewardsAmount: document.getElementById('userRewardsAmount'),
+        stakingApr: document.getElementById('stakingApr'),
+        stakeAmountInput: document.getElementById('stakeAmountInput'),
+        stakeAfoxBtn: document.getElementById('stakeAfoxBtn'),
+        unstakeAmountInput: document.getElementById('unstakeAmountInput'),
+        unstakeAfoxBtn: document.getElementById('unstakeAfoxBtn'),
+        claimRewardsBtn: document.getElementById('claimRewardsBtn'),
+        poolSelector: document.getElementById('pool-selector'),
+        lockupPeriod: document.getElementById('lockupPeriod'),
 
-
-    
-    // DAO Elements
-    uiElements.createProposalForm = document.getElementById('create-proposal-form');
-    uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
-    
-    Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
-        btn.addEventListener('click', closeAllPopups);
-    });
-
-    // Staking Section
-    uiElements.userAfoxBalance = document.getElementById('user-afox-balance');
-    uiElements.userStakedAmount = document.getElementById('user-staked-amount');
-    uiElements.userRewardsAmount = document.getElementById('user-rewards-amount');
-    uiElements.stakingApr = document.getElementById('staking-apr');
-    uiElements.stakeAmountInput = document.getElementById('stake-amount');
-    uiElements.stakeAfoxBtn = document.getElementById('stake-afox-btn');
-    uiElements.claimRewardsBtn = document.getElementById('claim-rewards-btn');
-    uiElements.unstakeAfoxBtn = document.getElementById('unstake-afox-btn');
-    uiElements.lockupPeriod = document.getElementById('lockup-period');
-    uiElements.poolSelector = document.getElementById('pool-selector'); 
-
-
-    // Utility
-    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
-    uiElements.notificationContainer = document.getElementById('notification-container');
-    uiElements.pageLoader = document.getElementById('page-loader');
-    uiElements.contactForm = document.getElementById('contact-form');
+        // Утилиты
+        notificationContainer: document.getElementById('notificationContainer'),
+        copyButtons: Array.from(document.querySelectorAll('.copy-btn')),
+        pageLoader: document.getElementById('page-loader'),
+        
+        // DAO
+        createProposalModal: document.getElementById('createProposalModal'),
+        openDaoBtn: document.getElementById('createProposalBtn')
+    };
+    console.log("UI elements cached successfully");
 }
-
+document.addEventListener('DOMContentLoaded', () => {
+    cacheUIElements();
+    initEventListeners();
+    console.log("Aurum Fox App Initialized");
+});
