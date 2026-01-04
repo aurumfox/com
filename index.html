@@ -2,44 +2,35 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaFox Staking</title>
-    <link rel="stylesheet" href="style.css"> <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://bundle.run/@project-serum/anchor@0.26.0"></script>
+    <title>AFOX Staking Page</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-browser/0.29.0/index.iife.min.js"></script>
+    <link rel="stylesheet" href="style.css"> <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; padding: 50px; text-align: center; }
+        .stake-card { background: #1e293b; padding: 20px; border-radius: 15px; display: inline-block; width: 320px; }
+        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; }
+        #connectBtn { background: #fb923c; color: white; }
+        #stakeBtn { background: #2563eb; color: white; display: none; }
+        .info { margin: 15px 0; font-size: 14px; }
+    </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <h1>AFOX STAKING</h1>
-        <div id="wallet-status">Кошелек: <span id="addr">Отключен</span></div>
+    <div class="stake-card">
+        <h2>AFOX STAKING</h2>
         
-        <button id="connectBtn">CONNECT PHANTOM</button>
+        <button id="connectBtn">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
 
-        <div id="interface" style="display: none;">
-            <div class="stats">
-                <p>Баланс: <span id="bal-afox">0</span> AFOX</p>
-                <p>Стейк: <span id="staked-afox">0</span> AFOX</p>
-                <p>Награды: <span id="rewards-afox">0</span> AFOX</p>
-            </div>
-
-            <hr>
-
-            <label>Сумма стейкинга:</label>
-            <input type="number" id="stakeAmount" placeholder="0.00">
+        <div id="ui" style="display: none;">
+            <div class="info">Баланс: <span id="user-bal">0</span> AFOX</div>
+            <div class="info">В стейке: <span id="staked-bal">0</span> AFOX</div>
             
-            <label>Пул:</label>
-            <select id="poolSelect">
-                <option value="0">Flexible</option>
-                <option value="1">Standard (30d)</option>
-                <option value="2">Max (90d)</option>
-            </select>
-
-            <button id="stakeBtn">STAKE</button>
-            <button id="claimBtn">CLAIM REWARDS</button>
-            <button id="unstakeBtn">UNSTAKE</button>
+            <input type="number" id="stakeAmount" placeholder="Кол-во монет">
+            <button id="stakeBtn">STAKE AFOX</button>
         </div>
 
-        <div id="log" style="margin-top:20px; color: #fb923c;"></div>
+        <p id="status" style="font-size: 12px; color: #94a3b8; margin-top: 15px;"></p>
     </div>
 
     <script src="script.js"></script>
