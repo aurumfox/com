@@ -120,78 +120,6 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
     }
 }
 
-// =========================================================================================
-// --- HELPER UTILITIES (Fully implemented) ---
-// =========================================================================================
-
-// --- 1. Global function for menu state management ---
-function toggleMenuState(forceClose = false) {
-    const menuToggle = document.getElementById('menuToggle');
-    const navOverlay = document.querySelector('.nav-mobile-overlay');
-    const mainNav = document.getElementById('mainNav');
-    const body = document.body; 
-
-    if (!menuToggle || !navOverlay || !mainNav) {
-        return;
-    }
-
-    const isCurrentlyOpen = menuToggle.classList.contains('open');
-    const newState = forceClose ? false : !isCurrentlyOpen;
-
-    navOverlay.classList.toggle('active', newState);
-    menuToggle.classList.toggle('open', newState); 
-    mainNav.classList.toggle('is-open', newState);
-    
-    menuToggle.setAttribute('aria-expanded', String(newState));
-    mainNav.setAttribute('aria-hidden', String(!newState));
-    
-    body.classList.toggle('menu-open', newState);
-}
-
-// --- 2. Hamburger menu logic ---
-function setupHamburgerMenu() {
-    const menuToggle = document.getElementById('menuToggle');
-    const closeMenuCross = document.getElementById('closeMainMenuCross');
-    const mainNavLinks = document.querySelectorAll('.main-nav a'); 
-
-    if (!menuToggle) {
-        console.warn('Hamburger Menu button (menuToggle) not found. Check HTML ID.');
-        return;
-    }
-    
-    if (!closeMenuCross) {
-        console.warn('Close Menu button (closeMainMenuCross) not found. Menu can only be closed via the toggle button or link click.');
-    }
-
-    const handleToggle = (e) => {
-        if (e && e.preventDefault && e.target.tagName !== 'A') {
-            e.preventDefault();
-        }
-        toggleMenuState();
-    };
-
-    menuToggle.addEventListener('click', handleToggle);
-    menuToggle.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            handleToggle(e);
-        }
-    });
-
-    if (closeMenuCross) {
-        closeMenuCross.addEventListener('click', handleToggle);
-        closeMenuCross.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                handleToggle(e);
-            }
-        });
-    }
-
-    mainNavLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            toggleMenuState(true); // Force close
-        });
-    });
-}
 // --- /HAMBURGER MENU LOGIC ---
 function toggleScrollLock(lock) {
     document.body.classList.toggle('menu-open', lock);
@@ -978,12 +906,6 @@ function cacheUIElements() {
         btn.addEventListener('click', closeAllPopups);
     });
 
-    // Menu Elements
-    uiElements.mainNav = document.getElementById('mainNav');
-    uiElements.menuToggle = document.getElementById('menuToggle'); 
-    uiElements.closeMenuButton = document.getElementById('closeMainMenuCross');
-    uiElements.navOverlay = document.querySelector('.nav-mobile-overlay');
-
     // Staking Section
     uiElements.userAfoxBalance = document.getElementById('user-afox-balance');
     uiElements.userStakedAmount = document.getElementById('user-staked-amount');
@@ -1085,7 +1007,7 @@ function init() {
     cacheUIElements(); // Добавлено: обязательно кэшируем элементы перед использованием
     initEventListeners();
     setupDAO();
-    setupHamburgerMenu();
+
     
     console.log("AlphaFox System Ready. All IDs linked.");
 }
