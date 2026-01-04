@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFOX Staking Fix</title>
+    <title>AFOX Staking</title>
     <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
     <script src="https://bundle.run/@project-serum/anchor@0.26.0"></script>
-
     <style>
         body { background: #0b101d; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: #1a2035; padding: 25px; border-radius: 20px; width: 90%; max-width: 320px; text-align: center; border: 1px solid #2d344b; }
-        button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; background: #fb923c; color: #fff; margin-top: 10px; }
+        h2 { color: #fb923c; font-size: 20px; margin-bottom: 20px; }
+        button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; background: #fb923c; color: #fff; }
         button:disabled { background: #4b5563; cursor: not-allowed; }
+        .ui-box { display: none; }
         input { width: 100%; padding: 14px; margin: 15px 0; border-radius: 10px; border: 1px solid #2d344b; background: #0b101d; color: #fff; box-sizing: border-box; text-align: center; }
         #status { font-size: 12px; color: #9ca3af; margin-top: 15px; }
     </style>
@@ -19,77 +20,18 @@
 <body>
 
 <div class="card">
-    <h2 style="color: #fb923c;">AFOX STAKING</h2>
+    <h2>AFOX STAKING</h2>
     
-    <div id="ui" style="display: none;">
+    <div id="ui" class="ui-box">
         <p>Баланс: <span id="bal">0.00</span> AFOX</p>
         <input type="number" id="amount" placeholder="0.00">
         <button id="stakeBtn">ЗАСТЕЙКАТЬ</button>
     </div>
 
-    <button id="connectBtn" disabled>ЗАГРУЗКА...</button>
-    <div id="status">Ждем загрузки библиотек Solana...</div>
+    <button id="connectBtn">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
+    <div id="status">Загрузка библиотек...</div>
 </div>
 
-<script>
-    const PRG_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
-    const MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
-    const POOL = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
-    const VAULT = "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp";
-
-    let wallet, provider, program;
-    const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
-
-    // Проверка библиотек каждые полсекунды
-    const check = setInterval(() => {
-        if (typeof solanaWeb3 !== 'undefined') {
-            const btn = document.getElementById('connectBtn');
-            btn.innerText = "ПОДКЛЮЧИТЬ КОШЕЛЕК";
-            btn.disabled = false;
-            document.getElementById('status').innerText = "Готов к подключению";
-            clearInterval(check);
-        }
-    }, 500);
-
-    async function connect() {
-        // Пытаемся найти провайдер Phantom
-        const solana = window.phantom?.solana || window.solana;
-        
-        if (!solana) {
-            alert("Откройте сайт через встроенный браузер Phantom!");
-            window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
-            return;
-        }
-
-        try {
-            const resp = await solana.connect();
-            wallet = resp.publicKey;
-            
-            // Если Anchor не подгрузился как объект, используем глобальное обращение
-            const anchorLib = window.anchor || (window.anchorModule); 
-            
-            document.getElementById('connectBtn').style.display = 'none';
-            document.getElementById('ui').style.display = 'block';
-            document.getElementById('status').innerText = "Подключено!";
-            updateBal();
-        } catch (err) {
-            document.getElementById('status').innerText = "Ошибка: " + err.message;
-        }
-    }
-
-    async function updateBal() {
-        try {
-            const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
-                [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()],
-                new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
-            );
-            const b = await connection.getTokenAccountBalance(ata);
-            document.getElementById('bal').innerText = b.value.uiAmount.toFixed(2);
-        } catch (e) {}
-    }
-
-    document.getElementById('connectBtn').onclick = connect;
-</script>
-
+<script src="script.js"></script>
 </body>
 </html>
