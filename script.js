@@ -927,12 +927,7 @@ function cacheUIElements() {
 const RPC_URL = "https://api.mainnet-beta.solana.com";
 const AFOX_MINT_ADDRESS = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
 
-// Состояние приложения
-let appState = {
-    walletPublicKey: null,
-    connection: new window.solanaWeb3.Connection(RPC_URL, 'confirmed'),
-    provider: null
-};
+
 
 // Объект для хранения ссылок на элементы интерфейса
 let uiElements = {};
