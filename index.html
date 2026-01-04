@@ -2,35 +2,35 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AFOX Staking Page</title>
+    <title>AFOX Staking App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-browser/0.29.0/index.iife.min.js"></script>
-    <link rel="stylesheet" href="style.css"> <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; padding: 50px; text-align: center; }
-        .stake-card { background: #1e293b; padding: 20px; border-radius: 15px; display: inline-block; width: 320px; }
-        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
-        button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; }
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 30px; border-radius: 20px; width: 100%; max-width: 350px; text-align: center; border: 1px solid #334155; }
+        button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; }
         #connectBtn { background: #fb923c; color: white; }
         #stakeBtn { background: #2563eb; color: white; display: none; }
-        .info { margin: 15px 0; font-size: 14px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        .status { font-size: 13px; color: #94a3b8; margin-top: 15px; min-height: 1.5em; }
     </style>
 </head>
 <body>
 
-    <div class="stake-card">
-        <h2>AFOX STAKING</h2>
+    <div class="card">
+        <h2 style="color: #fb923c;">AFOX STAKING</h2>
         
-        <button id="connectBtn">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
+        <button id="connectBtn">ПОДКЛЮЧИТЬ PHANTOM</button>
 
-        <div id="ui" style="display: none;">
-            <div class="info">Баланс: <span id="user-bal">0</span> AFOX</div>
-            <div class="info">В стейке: <span id="staked-bal">0</span> AFOX</div>
-            
-            <input type="number" id="stakeAmount" placeholder="Кол-во монет">
-            <button id="stakeBtn">STAKE AFOX</button>
+        <div id="stakingUI" style="display: none;">
+            <p>Баланс: <span id="user-bal">0.00</span> AFOX</p>
+            <p>В стейке: <span id="staked-bal">0.00</span> AFOX</p>
+            <input type="number" id="stakeAmount" placeholder="Количество AFOX">
+            <button id="stakeBtn">ЗАСТЕЙКАТЬ</button>
         </div>
 
-        <p id="status" style="font-size: 12px; color: #94a3b8; margin-top: 15px;"></p>
+        <div id="status" class="status">Ожидание...</div>
     </div>
 
     <script src="script.js"></script>
