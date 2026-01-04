@@ -691,90 +691,126 @@ async function getUserStakingAccountPDA(owner) {
     return pda;
 }
 
-// Логика депозита
+// --- КОНСТАНТЫ ИЗ ВАШЕГО КОНТРАКТА ---
+const AFOX_DECIMALS = 6; // Убедитесь, что у вашего токена 6 знаков
+const STAKING_PROGRAM_ID = new solanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
+const AFOX_TOKEN_MINT = new solanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
+const POOL_STATE_PDA = new solanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
+const POOL_VAULT = new solanaWeb3.PublicKey('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp');
+const ADMIN_FEE_VAULT = new solanaWeb3.PublicKey('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
+
+/**
+ * ГЛАВНАЯ ФУНКЦИЯ: СТЕЙКИНГ
+ */
 async function handleStakeAfox() {
-    if (!appState.walletPublicKey) return;
-    
-    const amountStr = uiElements.stakeAmountInput.value;
-    const stakeAmountBigInt = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
+    if (!window.solana.isPhantom) return alert("Install Phantom!");
     
     try {
-        const provider = new window.anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
-        const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
-        const pda = await getUserStakingAccountPDA(appState.walletPublicKey);
-        
-        const userAfoxATA = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        ).then(res => res[0]);
+        const provider = new anchor.AnchorProvider(
+            new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed"),
+            window.solana,
+            { commitment: "confirmed" }
+        );
+        const program = new anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
+        const wallet = provider.wallet.publicKey;
 
-        let tx = new window.solanaWeb3.Transaction();
-
-        // Проверяем, нужно ли инициализировать аккаунт
-        const accountInfo = await appState.connection.getAccountInfo(pda);
-        if (!accountInfo) {
-            tx.add(await program.methods.initializeUserStake(0).accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: pda,
-                owner: appState.walletPublicKey,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                systemProgram: SYSTEM_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            }).instruction());
-        }
-
-        // Добавляем инструкцию депозита
-        tx.add(await program.methods.deposit(new window.anchor.BN(stakeAmountBigInt.toString())).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: pda,
-            owner: appState.walletPublicKey,
-            userSourceAta: userAfoxATA,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).instruction());
-
-        const signature = await window.solana.sendAndConfirm(tx);
-        console.log("Успех!", signature);
-    } catch (error) {
-        console.error("Ошибка стейкинга:", error);
-    }
-}
-
-async function handleClaimRewards() {
-    if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.claimRewardsBtn);
-    try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const sender = appState.walletPublicKey;
-        const userStakingPDA = await getUserStakingAccountPDA(sender);
-        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
+        // 1. Находим PDA аккаунта стейкинга пользователя (seeds: [wallet, pool_state])
+        const [userStakingPDA] = await solanaWeb3.PublicKey.findProgramAddress(
+            [wallet.toBuffer(), POOL_STATE_PDA.toBuffer()],
+            STAKING_PROGRAM_ID
         );
 
-        const tx = await program.methods.claimRewards()
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPDA,
-                owner: sender,
-                vault: AFOX_POOL_VAULT_PUBKEY, 
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardsAta: userAfoxATA,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            }).transaction();
+        // 2. Находим ATA (кошелек с токенами) пользователя
+        const userAfoxATA = await anchor.utils.token.associatedAddress({
+            mint: AFOX_TOKEN_MINT,
+            owner: wallet
+        });
 
-        await appState.provider.sendAndConfirm(tx);
-        showNotification(`Rewards Claimed!`, 'success');
+        const amountInput = document.getElementById('stake-amount').value;
+        const amountBN = new anchor.BN(parseFloat(amountInput) * Math.pow(10, AFOX_DECIMALS));
+
+        let tx = new solanaWeb3.Transaction();
+
+        // 3. ПРОВЕРКА: Если аккаунт стейкинга еще не создан — добавляем инструкцию инициализации
+        const accountInfo = await provider.connection.getAccountInfo(userStakingPDA);
+        if (!accountInfo) {
+            console.log("Initializing first-time stake account...");
+            tx.add(
+                await program.methods
+                    .initializeUserStake(0) // Индекс пула (0, 1 или 2)
+                    .accounts({
+                        poolState: POOL_STATE_PDA,
+                        userStaking: userStakingPDA,
+                        owner: wallet,
+                        rewardMint: AFOX_TOKEN_MINT,
+                        systemProgram: solanaWeb3.SystemProgram.programId,
+                        clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                    })
+                    .instruction()
+            );
+        }
+
+        // 4. Добавляем саму инструкцию Депозита
+        tx.add(
+            await program.methods
+                .deposit(amountBN)
+                .accounts({
+                    poolState: POOL_STATE_PDA,
+                    userStaking: userStakingPDA,
+                    owner: wallet,
+                    userSourceAta: userAfoxATA,
+                    vault: POOL_VAULT,
+                    rewardMint: AFOX_TOKEN_MINT,
+                    tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+                    clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                })
+                .instruction()
+        );
+
+        const signature = await provider.sendAndConfirm(tx);
+        showNotification("Success! Tokens Staked.", "success");
         await updateStakingAndBalanceUI();
-    } catch (error) {
-        showNotification(`Claim failed: ${error.message}`, 'error');
-    } finally {
-        setLoadingState(false, uiElements.claimRewardsBtn);
+
+    } catch (err) {
+        console.error("Stake error:", err);
+        showNotification("Error: " + err.message, "error");
     }
 }
+
+/**
+ * ФУНКЦИЯ: СНЯТИЕ НАГРАД
+ */
+async function handleClaimRewards() {
+    try {
+        const provider = new anchor.AnchorProvider(new solanaWeb3.Connection(BACKUP_RPC_ENDPOINT), window.solana, {commitment: "confirmed"});
+        const program = new anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
+        const wallet = provider.wallet.publicKey;
+
+        const [userStakingPDA] = await solanaWeb3.PublicKey.findProgramAddress([wallet.toBuffer(), POOL_STATE_PDA.toBuffer()], STAKING_PROGRAM_ID);
+        const userAfoxATA = await anchor.utils.token.associatedAddress({ mint: AFOX_TOKEN_MINT, owner: wallet });
+
+        await program.methods
+            .claimRewards()
+            .accounts({
+                poolState: POOL_STATE_PDA,
+                userStaking: userStakingPDA,
+                owner: wallet,
+                vault: POOL_VAULT,
+                adminFeeVault: ADMIN_FEE_VAULT,
+                userRewardsAta: userAfoxATA,
+                rewardMint: AFOX_TOKEN_MINT,
+                tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+                clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        showNotification("Rewards claimed successfully!", "success");
+        updateStakingAndBalanceUI();
+    } catch (err) {
+        showNotification("Claim failed: " + err.message, "error");
+    }
+}
+
 
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey) return;
