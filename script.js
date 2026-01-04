@@ -10,7 +10,7 @@ const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 const POOLS_CONFIG = {
     0: { name: "Flexible", apr_rate: 500 },
     1: { name: "Standard", apr_rate: 1200 },
-    2: { name: "Max Boost", apr_rate: 2500 },
+    2: { name: "Max Boost", apr_rate: 2500 }, 
     4: { name: "Legacy", apr_rate: 0 }
 };
 
