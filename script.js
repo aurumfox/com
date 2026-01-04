@@ -858,17 +858,6 @@ async function disconnectWallet() {
     handlePublicKeyChange(null);
 }
 
-function cacheUIElements() {
-    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
-    uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display'));
-    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
-    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
-    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
-    uiElements.stakeAmountInput = document.getElementById('stake-amount');
-    uiElements.poolSelector = document.getElementById('pool-selector');
-    uiElements.notificationContainer = document.getElementById('notification-container');
-    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
-}
 
 function initEventListeners() {
     uiElements.connectWalletButtons.forEach(btn => {
