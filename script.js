@@ -928,10 +928,6 @@ const RPC_URL = "https://api.mainnet-beta.solana.com";
 const AFOX_MINT_ADDRESS = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
 
 
-
-// Объект для хранения ссылок на элементы интерфейса
-let uiElements = {};
-
 // --- 2. ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА ---
 function cacheUIElements() {
     uiElements = {
