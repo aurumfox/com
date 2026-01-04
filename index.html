@@ -3,217 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaFox Staking - Single File Version</title>
-    
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <title>AlphaFox Staking</title>
+    <link rel="stylesheet" href="style.css"> <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://bundle.run/@project-serum/anchor@0.26.0"></script>
-
-    <style>
-        :root { --orange: #fb923c; --dark: #0f172a; --card: #1e293b; }
-        body { background: var(--dark); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .app-container { width: 100%; max-width: 500px; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
-        .header { text-align: center; margin-bottom: 25px; }
-        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; margin-top: 10px; }
-        .btn-main { background: var(--orange); color: white; }
-        .btn-main:hover { background: #f97316; }
-        .btn-secondary { background: #334155; color: #cbd5e1; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .stat-box { background: #0f172a; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #1e293b; }
-        .stat-box span { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 5px; }
-        .stat-box b { font-size: 18px; color: var(--orange); }
-        input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; }
-        #status { text-align: center; font-size: 14px; margin-top: 15px; padding: 10px; border-radius: 8px; }
-        .success { color: #4ade80; background: rgba(74, 222, 128, 0.1); }
-        .error { color: #f87171; background: rgba(248, 113, 113, 0.1); }
-    </style>
 </head>
 <body>
 
-<div class="app-container">
-    <div class="header">
+    <div class="app-container">
         <h1>AFOX STAKING</h1>
-        <p id="wallet-display">Кошелек не подключен</p>
+        <div id="wallet-status">Кошелек: <span id="addr">Отключен</span></div>
+        
+        <button id="connectBtn">CONNECT PHANTOM</button>
+
+        <div id="interface" style="display: none;">
+            <div class="stats">
+                <p>Баланс: <span id="bal-afox">0</span> AFOX</p>
+                <p>Стейк: <span id="staked-afox">0</span> AFOX</p>
+                <p>Награды: <span id="rewards-afox">0</span> AFOX</p>
+            </div>
+
+            <hr>
+
+            <label>Сумма стейкинга:</label>
+            <input type="number" id="stakeAmount" placeholder="0.00">
+            
+            <label>Пул:</label>
+            <select id="poolSelect">
+                <option value="0">Flexible</option>
+                <option value="1">Standard (30d)</option>
+                <option value="2">Max (90d)</option>
+            </select>
+
+            <button id="stakeBtn">STAKE</button>
+            <button id="claimBtn">CLAIM REWARDS</button>
+            <button id="unstakeBtn">UNSTAKE</button>
+        </div>
+
+        <div id="log" style="margin-top:20px; color: #fb923c;"></div>
     </div>
 
-    <button id="connectBtn" class="btn btn-main">ПОДКЛЮЧИТЬ PHANTOM</button>
-
-    <div id="main-interface" style="display: none; margin-top: 20px;">
-        <div class="stat-grid">
-            <div class="stat-box"><span>Баланс AFOX</span><b id="user-bal">0.00</b></div>
-            <div class="stat-box"><span>В стейкинге</span><b id="staked-bal">0.00</b></div>
-        </div>
-        
-        <div class="stat-box" style="width: 100%; margin-bottom: 20px; box-sizing: border-box;">
-            <span>Награды к получению</span><b id="rewards-bal">0.00</b>
-        </div>
-
-        <label>Выберите пул:</label>
-        <select id="pool-idx">
-            <option value="0">Flexible (0 дней) - 5% APR</option>
-            <option value="1">Standard (30 дней) - 12% APR</option>
-            <option value="2">Max Boost (90 дней) - 25% APR</option>
-        </select>
-
-        <input type="number" id="amount-input" placeholder="Количество AFOX">
-        <button id="stakeBtn" class="btn btn-main">STAKE NOW</button>
-        
-        <div style="display: flex; gap: 10px;">
-            <button id="claimBtn" class="btn btn-secondary">CLAIM</button>
-            <button id="unstakeBtn" class="btn btn-secondary" style="background: #7f1d1d;">UNSTAKE</button>
-        </div>
-    </div>
-
-    <div id="status"></div>
-</div>
-
-<script>
-// --- КОНФИГУРАЦИЯ ---
-const PROGRAM_ID_STR = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
-const AFOX_MINT_STR = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
-const POOL_STATE_STR = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
-const VAULT_STR = "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp";
-const FIREBASE_PROXY = "https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/";
-
-// Глобальные переменные
-let provider, program, walletPubKey, userPDA;
-const connection = new window.solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
-
-// IDL твоего Rust контракта
-const IDL = {
-    "version": "0.1.0", "name": "alphafox_staking",
-    "instructions": [
-        { "name": "initializeUserStake", "accounts": [{ "name": "poolState", "isMut": true }, { "name": "userStaking", "isMut": true }, { "name": "owner", "isMut": true }, { "name": "rewardMint", "isMut": false }, { "name": "systemProgram", "isMut": false }, { "name": "clock", "isMut": false }], "args": [{ "name": "poolIndex", "type": "u8" }] },
-        { "name": "deposit", "accounts": [{ "name": "poolState", "isMut": true }, { "name": "userStaking", "isMut": true }, { "name": "owner", "isMut": true }, { "name": "userSourceAta", "isMut": true }, { "name": "vault", "isMut": true }, { "name": "rewardMint", "isMut": false }, { "name": "tokenProgram", "isMut": false }, { "name": "clock", "isMut": false }], "args": [{ "name": "amount", "type": "u64" }] },
-        { "name": "claimRewards", "accounts": [{ "name": "poolState", "isMut": true }, { "name": "userStaking", "isMut": true }, { "name": "owner", "isMut": true }, { "name": "vault", "isMut": true }, { "name": "adminFeeVault", "isMut": true }, { "name": "userRewardsAta", "isMut": true }, { "name": "rewardMint", "isMut": false }, { "name": "tokenProgram", "isMut": false }, { "name": "clock", "isMut": false }], "args": [] }
-    ],
-    "accounts": [{ "name": "UserStakingAccount", "type": { "kind": "struct", "fields": [{ "name": "stakedAmount", "type": "u64" }, { "name": "rewardsToClaim", "type": "u64" }] } }]
-};
-
-// Функция вывода статуса
-function log(msg, isError = false) {
-    const s = document.getElementById("status");
-    s.innerText = msg;
-    s.className = isError ? "error" : "success";
-}
-
-// 1. ПОДКЛЮЧЕНИЕ КОШЕЛЬКА
-async function connect() {
-    try {
-        if (!window.solana || !window.solana.isPhantom) {
-            return log("Установите Phantom кошелек!", true);
-        }
-
-        const resp = await window.solana.connect();
-        walletPubKey = resp.publicKey;
-        
-        // Настройка Anchor
-        provider = new anchor.AnchorProvider(connection, window.solana, { commitment: "confirmed" });
-        program = new anchor.Program(IDL, new window.solanaWeb3.PublicKey(PROGRAM_ID_STR), provider);
-
-        // Расчет PDA
-        [userPDA] = window.solanaWeb3.PublicKey.findProgramAddressSync(
-            [walletPubKey.toBuffer(), new window.solanaWeb3.PublicKey(POOL_STATE_STR).toBuffer()],
-            program.programId
-        );
-
-        document.getElementById("connectBtn").style.display = "none";
-        document.getElementById("main-interface").style.display = "block";
-        document.getElementById("wallet-display").innerText = "ID: " + walletPubKey.toBase58().slice(0,8) + "...";
-
-        log("Кошелек подключен успешно!");
-        updateBalances();
-    } catch (err) {
-        log("Ошибка подключения: " + err.message, true);
-    }
-}
-
-// 2. ОБНОВЛЕНИЕ ДАННЫХ
-async function updateBalances() {
-    if (!walletPubKey) return;
-    try {
-        // Баланс AFOX
-        const mint = new window.solanaWeb3.PublicKey(AFOX_MINT_STR);
-        const [ata] = window.solanaWeb3.PublicKey.findProgramAddressSync(
-            [walletPubKey.toBuffer(), new window.solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), mint.toBuffer()],
-            new window.solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
-        );
-
-        try {
-            const tokenAcc = await connection.getTokenAccountBalance(ata);
-            document.getElementById("user-bal").innerText = tokenAcc.value.uiAmount;
-        } catch (e) { document.getElementById("user-bal").innerText = "0"; }
-
-        // Данные стейкинга
-        const stakeAcc = await program.account.userStakingAccount.fetch(userPDA);
-        document.getElementById("staked-bal").innerText = (stakeAcc.stakedAmount / 1e6).toFixed(2);
-        document.getElementById("rewards-bal").innerText = (stakeAcc.rewardsToClaim / 1e6).toFixed(2);
-    } catch (e) { console.log("Stake account not found yet"); }
-}
-
-// 3. ДЕПОЗИТ (STAKE)
-async function startStake() {
-    const amount = document.getElementById("amount-input").value;
-    if (!amount || amount <= 0) return log("Введите сумму", true);
-
-    try {
-        log("Подготовка транзакции...");
-        const amountBN = new anchor.BN(amount * 1e6);
-        const tx = new window.solanaWeb3.Transaction();
-
-        // Проверка аккаунта
-        const accountInfo = await connection.getAccountInfo(userPDA);
-        if (!accountInfo) {
-            log("Инициализация аккаунта...");
-            tx.add(await program.methods.initializeUserStake(parseInt(document.getElementById("pool-idx").value))
-                .accounts({
-                    poolState: new window.solanaWeb3.PublicKey(POOL_STATE_STR),
-                    userStaking: userPDA,
-                    owner: walletPubKey,
-                    rewardMint: new window.solanaWeb3.PublicKey(AFOX_MINT_STR),
-                    systemProgram: window.solanaWeb3.SystemProgram.programId,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                }).instruction());
-        }
-
-        // Инструкция депозита
-        const mint = new window.solanaWeb3.PublicKey(AFOX_MINT_STR);
-        const [userAta] = window.solanaWeb3.PublicKey.findProgramAddressSync(
-            [walletPubKey.toBuffer(), new window.solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), mint.toBuffer()],
-            new window.solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
-        );
-
-        tx.add(await program.methods.deposit(amountBN).accounts({
-            poolState: new window.solanaWeb3.PublicKey(POOL_STATE_STR),
-            userStaking: userPDA,
-            owner: walletPubKey,
-            userSourceAta: userAta,
-            vault: new window.solanaWeb3.PublicKey(VAULT_STR),
-            rewardMint: mint,
-            tokenProgram: new window.solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-        }).instruction());
-
-        const sig = await window.solana.signAndSendTransaction(tx);
-        log("Транзакция отправлена! Ждите подтверждения...");
-        await connection.confirmTransaction(sig.signature);
-        
-        // Firebase Log
-        fetch(FIREBASE_PROXY, { method: 'POST', body: JSON.stringify({ wallet: walletPubKey.toBase58(), action: "STAKE", amount }) });
-
-        log("Успешно застейкано!");
-        updateBalances();
-    } catch (err) { log("Ошибка: " + err.message, true); }
-}
-
-// Привязка кнопок
-window.onload = () => {
-    document.getElementById("connectBtn").onclick = connect;
-    document.getElementById("stakeBtn").onclick = startStake;
-    document.getElementById("claimBtn").onclick = async () => {
-        log("Функция Claim в разработке...");
-    };
-};
-</script>
-
+    <script src="script.js"></script>
 </body>
 </html>
