@@ -494,24 +494,31 @@ function registerProviderListeners() {
  */
 async function connectWallet() {
     try {
-        if (!window.solana) return alert("Please install Phantom!");
-        const resp = await window.solana.connect();
-        appState.provider = window.solana;
-        appState.walletPublicKey = resp.publicKey;
-        appState.connection = new window.SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        updateWalletDisplay(resp.publicKey.toBase58());
-        await updateStakingAndBalanceUI();
-    } catch (err) { console.error("Connection error:", err); }
-}
-
-async function handleLoan() {
-    if (!appState.walletPublicKey) return alert("Connect wallet first!");
-    const amount = prompt("Enter AFOX amount to borrow:");
-    if (amount) {
-        showNotification(`Loan request for ${amount} AFOX initialized...`, "info");
-        // Здесь будет вызов метода твоего контракта
+        // Проверяем наличие провайдера (Phantom)
+        if (window.solana && window.solana.isPhantom) {
+            const resp = await window.solana.connect();
+            appState.provider = window.solana;
+            appState.walletPublicKey = resp.publicKey;
+            appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+            
+            updateWalletDisplay(resp.publicKey.toBase58());
+            await updateStakingAndBalanceUI();
+            
+            // Регистрируем слушателей событий (disconnect и т.д.)
+            registerProviderListeners();
+        } else {
+            // --- ТВОЙ БЛОК ЗДЕСЬ ---
+            // Если Phantom не обнаружен (мобильный браузер), используем Deep Link
+            const mySite = "https://aurumfox.github.io/com/";
+            const url = encodeURIComponent(mySite);
+            window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
+        }
+    } catch (err) { 
+        console.error("Connection error:", err); 
+        showNotification("Failed to connect wallet", "error");
     }
 }
+
 
 
 /**
