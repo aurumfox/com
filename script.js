@@ -923,102 +923,101 @@ function cacheUIElements() {
     uiElements.contactForm = document.getElementById('contact-form');
 }
 
+// --- КОНФИГУРАЦИЯ ---
+const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
+const RPC_URL = "https://api.mainnet-beta.solana.com";
 
-// --- 4. INITIALIZING EVENT LISTENERS ---
+let walletAddress = null;
 let uiElements = {};
 
+// --- 1. КЭШИРОВАНИЕ ЭЛЕМЕНТОВ ---
 function cacheUIElements() {
-    // --- WALLET ---
-    uiElements.connectWalletBtn = document.getElementById('connectWalletBtn');
-    uiElements.walletAddressDisplay = document.getElementById('walletAddressDisplay');
-    uiElements.notificationContainer = document.getElementById('notificationContainer');
+    // Кошелек
+    uiElements.connectBtn = document.getElementById('connectWalletBtn');
+    uiElements.addressDisplay = document.getElementById('walletAddressDisplay');
 
-    // --- STAKING ---
+    // Стейкинг
     uiElements.userAfoxBalance = document.getElementById('userAfoxBalance');
     uiElements.userStakedAmount = document.getElementById('userStakedAmount');
     uiElements.userRewardsAmount = document.getElementById('userRewardsAmount');
-    uiElements.stakingApr = document.getElementById('stakingApr');
-    uiElements.lockupPeriod = document.getElementById('lockupPeriod'); // для инфо о блокировке
-    
-    uiElements.stakeAmountInput = document.getElementById('stakeAmountInput');
-    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
-    uiElements.unstakeAmountInput = document.getElementById('unstakeAmountInput');
-    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
-    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
-    uiElements.poolSelector = document.getElementById('pool-selector');
+    uiElements.stakeBtn = document.getElementById('stakeAfoxBtn');
+    uiElements.stakeInput = document.getElementById('stakeAmountInput');
 
-    // --- DAO ---
-    uiElements.createProposalBtn = document.getElementById('createProposalBtn');
-    uiElements.createProposalModal = document.getElementById('createProposalModal');
-    uiElements.closeProposalModal = document.getElementById('closeProposalModal');
-    uiElements.newProposalForm = document.getElementById('newProposalForm');
-
-    // --- LENDING (Лендинг и Займы) ---
-    // Данные рынка
-    uiElements.afoxLendApr = document.getElementById('afoxLendApr');
-    uiElements.solBorrowRate = document.getElementById('solBorrowRate');
-    
-    // Личные данные пользователя в лендинге
+    // Лендинг (Lending)
     uiElements.userLentAmount = document.getElementById('userLentAmount');
     uiElements.userBorrowedAmount = document.getElementById('userBorrowedAmount');
-    
-    // Поля ввода и кнопки
-    uiElements.lendAmountInput = document.getElementById('lendAmountInput');
-    uiElements.lendAfoxBtn = document.getElementById('lendAfoxBtn');
-    
-    uiElements.withdrawLendAmountInput = document.getElementById('withdrawLendAmountInput');
-    uiElements.withdrawLendBtn = document.getElementById('withdrawLendBtn');
-    
-    uiElements.borrowAmountInput = document.getElementById('borrowAmountInput');
-    uiElements.borrowSolBtn = document.getElementById('borrowSolBtn');
-    
-    uiElements.repayAmountInput = document.getElementById('repayAmountInput');
-    uiElements.repaySolBtn = document.getElementById('repaySolBtn');
+    uiElements.lendBtn = document.getElementById('lendAfoxBtn');
+    uiElements.borrowBtn = document.getElementById('borrowSolBtn');
+    uiElements.lendInput = document.getElementById('lendAmountInput');
+    uiElements.borrowInput = document.getElementById('borrowAmountInput');
+
+    // DAO
+    uiElements.createProposalBtn = document.getElementById('createProposalBtn');
+    uiElements.modal = document.getElementById('createProposalModal');
 }
 
+// --- 2. ЛОГИКА КОШЕЛЬКА (PC + Mobile) ---
+async function connectWallet() {
+    const isPhantomInstalled = window.solana && window.solana.isPhantom;
 
-// ==========================================
-// БЛОК 3: DAO (ГОЛОСОВАНИЕ)
-// ==========================================
-function setupDAO() {
-    const daoBtn = document.getElementById('createProposalBtn');
-    const closeDaoBtn = document.getElementById('closeProposalModal'); 
-    const modal = document.getElementById('createProposalModal');
-
-    if (daoBtn && modal) {
-        daoBtn.addEventListener('click', () => {
-            modal.style.display = 'flex';
-        });
-    }
-
-    if (closeDaoBtn && modal) {
-        closeDaoBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
+    if (isPhantomInstalled) {
+        try {
+            const resp = await window.solana.connect();
+            walletAddress = resp.publicKey.toString();
+            updateUIAfterConnect();
+        } catch (err) {
+            console.error("Ошибка входа:", err);
+        }
+    } else {
+        // Редирект для мобильных устройств в приложение Phantom
+        const url = encodeURIComponent(window.location.href);
+        window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
     }
 }
 
-// --- MAIN INITIALIZATION FUNCTION ---
+function updateUIAfterConnect() {
+    if (walletAddress) {
+        const shortAddr = walletAddress.substring(0, 4) + "..." + walletAddress.slice(-4);
+        if (uiElements.connectBtn) uiElements.connectBtn.innerText = shortAddr;
+        if (uiElements.addressDisplay) uiElements.addressDisplay.innerText = walletAddress;
+        
+        // Здесь можно вызвать функции загрузки балансов из блокчейна
+        loadBlockchainData();
+    }
+}
+
+async function loadBlockchainData() {
+    console.log("Загрузка данных для:", walletAddress);
+    // Имитация загрузки для проверки UI
+    if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.innerText = "Checking...";
+}
+
+// --- 3. ИНИЦИАЛИЗАЦИЯ ---
 function init() {
-    console.log("System initialization...");
-    cacheUIElements(); 
-    
-    // Вешаем клик на главную кнопку кошелька
-    if (uiElements.connectWalletBtn) {
-        uiElements.connectWalletBtn.onclick = connectWallet;
+    cacheUIElements();
+
+    // Слушатели событий
+    if (uiElements.connectBtn) uiElements.connectBtn.onclick = connectWallet;
+
+    if (uiElements.lendBtn) {
+        uiElements.lendBtn.onclick = () => alert("Lending feature coming soon!");
     }
 
-    // Логика открытия DAO модалки
-    const daoBtn = document.getElementById('createProposalBtn');
-    if (daoBtn) {
-        daoBtn.onclick = () => {
-            uiElements.createProposalModal.style.display = 'flex';
+    if (uiElements.createProposalBtn) {
+        uiElements.createProposalBtn.onclick = () => {
+            uiElements.modal.style.display = 'flex';
         };
     }
 
-    console.log("AlphaFox System Ready. All buttons linked.");
+    // Закрытие модалки кликом вне её
+    window.onclick = (event) => {
+        if (event.target == uiElements.modal) {
+            uiElements.modal.style.display = "none";
+        }
+    };
+
+    console.log("AlphaFox System Started");
 }
 
-// Запуск при загрузке страницы
+// Запуск после загрузки страницы
 document.addEventListener('DOMContentLoaded', init);
-
