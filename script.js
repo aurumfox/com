@@ -968,7 +968,6 @@ function cacheUIElements() {
     uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
     uiElements.poolSelector = document.getElementById('pool-selector');
     uiElements.notificationContainer = document.getElementById('notificationContainer');
-}
 
 
     
