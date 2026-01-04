@@ -2,37 +2,33 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFOX Staking</title>
-    <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
-    <script src="https://bundle.run/@project-serum/anchor@0.26.0"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AFOX</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/solana-web3.js/1.95.3/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@project-serum/anchor@0.26.0/dist/browser.anchor.min.js"></script>
+    
     <style>
-        body { background: #0b101d; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #1a2035; padding: 25px; border-radius: 20px; width: 90%; max-width: 320px; text-align: center; border: 1px solid #2d344b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { color: #fb923c; margin: 0 0 20px 0; }
-        .stats { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; text-align: left; }
-        .stats div { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #2d344b; background: #0b101d; color: #fff; box-sizing: border-box; text-align: center; font-size: 18px; outline: none; }
-        button { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        #btn-connect { background: #fb923c; color: #fff; }
-        #btn-stake { background: #2563eb; color: #fff; display: none; }
-        #status { margin-top: 15px; font-size: 11px; color: #9ca3af; }
+        body { background: #0b101d; color: #fff; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #1a2035; padding: 25px; border-radius: 20px; width: 280px; text-align: center; border: 1px solid #2d344b; }
+        .btn { background: #fb923c; color: #fff; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        .btn-stake { background: #2563eb; display: none; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #2d344b; background: #0b101d; color: #fff; box-sizing: border-box; text-align: center; }
+        #status { margin-top: 15px; font-size: 12px; color: #9ca3af; }
+        .bal { font-size: 14px; margin-bottom: 10px; color: #fb923c; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2 style="color: #fb923c; margin-top: 0;">AFOX STAKING</h2>
+        <h2 style="margin: 0 0 15px 0;">AFOX STAKING</h2>
         
-        <div id="ui-staking" style="display: none;">
-            <div class="stats">
-                <div><span>Доступно:</span> <b id="user-bal">0.00</b></div>
-            </div>
-            <input type="number" id="stake-amount" placeholder="0.00" inputmode="decimal">
-            <button id="btn-stake">ЗАСТЕЙКАТЬ</button>
+        <div id="ui" style="display: none;">
+            <div class="bal">Баланс: <span id="user-bal">0.00</span></div>
+            <input type="number" id="amt" placeholder="0.00">
+            <button id="btn-stake" class="btn btn-stake">СТАВИТЬ</button>
         </div>
 
-        <button id="btn-connect">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
-        <div id="status">Загрузка модулей...</div>
+        <button id="btn-connect" class="btn">ПОДКЛЮЧИТЬ</button>
+        <div id="status">Загрузка...</div>
     </div>
     <script src="script.js"></script>
 </body>
