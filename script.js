@@ -930,7 +930,7 @@ const AFOX_MINT_ADDRESS = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
 
 // --- 2. ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА ---
 function cacheUIElements() {
-    uiElements = {
+    
         // Кошелек
         connectBtn: document.getElementById('connectWalletBtn'),
         addressSpan: document.getElementById('walletAddressSpan'),
@@ -949,7 +949,7 @@ function cacheUIElements() {
         daoModal: document.getElementById('createProposalModal'),
         openDaoBtn: document.getElementById('createProposalBtn')
     };
-}
+
 
 // --- 3. ЛОГИКА КОШЕЛЬКА ---
 async function connectWallet() {
