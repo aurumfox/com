@@ -1,9 +1,8 @@
-// --- КОНФИГУРАЦИЯ ПРОГРАММЫ ---
-const PROGRAM_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
+// Настройки контракта
+const PRG_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
 const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
 const POOL_STATE = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
 const VAULT = "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp";
-const PROXY_URL = "https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/";
 
 const IDL = {
     "version": "0.1.0", "name": "alphafox_staking",
@@ -17,22 +16,15 @@ const IDL = {
 let wallet, provider, program, userPDA;
 const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-function updateLog(msg, isErr = false) {
-    const logDiv = document.getElementById("status-log");
-    logDiv.innerText = msg;
-    logDiv.className = isErr ? "err" : "ok";
-    logDiv.style.display = "block";
-}
-
-// 1. ПОДКЛЮЧЕНИЕ
-async function connect() {
+// 1. Подключение Phantom
+async function connectWallet() {
     try {
-        if (!window.solana) return alert("Phantom не найден!");
+        if (!window.solana) return alert("Установите Phantom!");
         const resp = await window.solana.connect();
         wallet = resp.publicKey;
 
         provider = new anchor.AnchorProvider(connection, window.solana, { commitment: "confirmed" });
-        program = new anchor.Program(IDL, new solanaWeb3.PublicKey(PROGRAM_ID), provider);
+        program = new anchor.Program(IDL, new solanaWeb3.PublicKey(PRG_ID), provider);
 
         [userPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [wallet.toBuffer(), new solanaWeb3.PublicKey(POOL_STATE).toBuffer()],
@@ -40,58 +32,56 @@ async function connect() {
         );
 
         document.getElementById("connectBtn").style.display = "none";
-        document.getElementById("staking-ui").style.display = "block";
-        document.getElementById("wallet-addr").innerText = "Wallet: " + wallet.toBase58().slice(0, 8) + "...";
+        document.getElementById("ui").style.display = "block";
+        document.getElementById("stakeBtn").style.display = "block";
+        document.getElementById("status").innerText = "Кошелек подключен";
         
-        updateLog("Кошелек подключен!");
-        refresh();
-    } catch (e) { updateLog("Ошибка входа: " + e.message, true); }
+        fetchBalances();
+    } catch (err) {
+        document.getElementById("status").innerText = "Ошибка: " + err.message;
+    }
 }
 
-// 2. ОБНОВЛЕНИЕ ДАННЫХ
-async function refresh() {
-    if (!wallet) return;
+// 2. Получение данных
+async function fetchBalances() {
     try {
-        const mint = new solanaWeb3.PublicKey(AFOX_MINT);
+        const mintPub = new solanaWeb3.PublicKey(AFOX_MINT);
         const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
-            [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), mint.toBuffer()],
+            [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), mintPub.toBuffer()],
             new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
         );
 
-        try {
-            const b = await connection.getTokenAccountBalance(ata);
-            document.getElementById("ui-bal").innerText = b.value.uiAmount.toFixed(2);
-        } catch { document.getElementById("ui-bal").innerText = "0.00"; }
+        const bal = await connection.getTokenAccountBalance(ata);
+        document.getElementById("user-bal").innerText = bal.value.uiAmount.toFixed(2);
 
-        const acc = await program.account.userStakingAccount.fetch(userPDA);
-        document.getElementById("ui-staked").innerText = (acc.stakedAmount / 1e6).toFixed(2);
-    } catch (e) { console.warn("Stake account not active"); }
+        const stakeData = await program.account.userStakingAccount.fetch(userPDA);
+        document.getElementById("staked-bal").innerText = (stakeData.stakedAmount / 1e6).toFixed(2);
+    } catch (e) { console.log("Account check..."); }
 }
 
-// 3. ДЕПОЗИТ
-async function doStake() {
-    const amount = document.getElementById("stake-amount").value;
-    if (!amount || amount <= 0) return updateLog("Введите сумму", true);
+// 3. Функция стейкинга
+async function runStake() {
+    const amount = document.getElementById("stakeAmount").value;
+    if (!amount) return;
 
     try {
-        updateLog("Создание транзакции...");
+        document.getElementById("status").innerText = "Транзакция...";
         const amountBN = new anchor.BN(amount * 1e6);
         const tx = new solanaWeb3.Transaction();
 
         const info = await connection.getAccountInfo(userPDA);
         if (!info) {
-            tx.add(await program.methods.initializeUserStake(parseInt(document.getElementById("pool-select").value))
-                .accounts({
-                    poolState: new solanaWeb3.PublicKey(POOL_STATE),
-                    userStaking: userPDA,
-                    owner: wallet,
-                    rewardMint: new solanaWeb3.PublicKey(AFOX_MINT),
-                    systemProgram: solanaWeb3.SystemProgram.programId,
-                    clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                }).instruction());
+            tx.add(await program.methods.initializeUserStake(0).accounts({
+                poolState: new solanaWeb3.PublicKey(POOL_STATE),
+                userStaking: userPDA,
+                owner: wallet,
+                rewardMint: new solanaWeb3.PublicKey(AFOX_MINT),
+                systemProgram: solanaWeb3.SystemProgram.programId,
+                clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
+            }).instruction());
         }
 
-        const [userAta] = solanaWeb3.PublicKey.findProgramAddressSync(
+        const [uAta] = solanaWeb3.PublicKey.findProgramAddressSync(
             [wallet.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(AFOX_MINT).toBuffer()],
             new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
         );
@@ -100,7 +90,7 @@ async function doStake() {
             poolState: new solanaWeb3.PublicKey(POOL_STATE),
             userStaking: userPDA,
             owner: wallet,
-            userSourceAta: userAta,
+            userSourceAta: uAta,
             vault: new solanaWeb3.PublicKey(VAULT),
             rewardMint: new solanaWeb3.PublicKey(AFOX_MINT),
             tokenProgram: new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
@@ -108,16 +98,14 @@ async function doStake() {
         }).instruction());
 
         const { signature } = await window.solana.signAndSendTransaction(tx);
-        updateLog("Подтверждение...");
         await connection.confirmTransaction(signature);
-        
-        fetch(PROXY_URL, { method: 'POST', body: JSON.stringify({ wallet: wallet.toBase58(), action: "STAKE", amount }) });
-        updateLog("Стейкинг успешен!");
-        refresh();
-    } catch (e) { updateLog(e.message, true); }
+        document.getElementById("status").innerText = "Успех!";
+        fetchBalances();
+    } catch (err) {
+        document.getElementById("status").innerText = "Ошибка стейкинга";
+    }
 }
 
-// Слушатели
-document.getElementById("connectBtn").onclick = connect;
-document.getElementById("stakeBtn").onclick = doStake;
-
+// Привязка действий
+document.getElementById("connectBtn").onclick = connectWallet;
+document.getElementById("stakeBtn").onclick = runStake;
