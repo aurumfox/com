@@ -1,7 +1,7 @@
 // Константы проекта
 const SOL_DECIMALS = 9;
 const SECONDS_PER_DAY = 86400;
-const FIREBASE_PROXY_URL = 'ВАШ_URL_WORKER'; // Замените на ваш URL
+const FIREBASE_PROXY_URL = https://aurumfox.github.io/com/
 
 const POOLS_CONFIG = {
     0: { name: "Flexible", apr_rate: 500 },
@@ -509,7 +509,7 @@ async function connectWallet() {
         } else {
             // --- ТВОЙ БЛОК ЗДЕСЬ ---
             // Если Phantom не обнаружен (мобильный браузер), используем Deep Link
-            const mySite = "https://aurumfox.github.io/com.git";
+            const mySite = "https://aurumfox.github.io/com/";
             const url = encodeURIComponent(mySite);
             window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
         }
