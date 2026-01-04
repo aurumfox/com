@@ -509,7 +509,7 @@ async function connectWallet() {
         } else {
             // --- ТВОЙ БЛОК ЗДЕСЬ ---
             // Если Phantom не обнаружен (мобильный браузер), используем Deep Link
-            const mySite = "https://aurumfox.github.io/com/";
+            const mySite = "https://aurumfox.github.io/com.git";
             const url = encodeURIComponent(mySite);
             window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
         }
