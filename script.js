@@ -1,6 +1,6 @@
 const PRG_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
 const MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
-const STATE = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
+const POOL = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
 const VAULT = "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp";
 
 const IDL = {
@@ -14,26 +14,19 @@ const IDL = {
 let wallet, provider, program, userPDA;
 const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-// Проверка загрузки библиотек перед работой
-function checkLibs() {
-    if (typeof solanaWeb3 !== 'undefined' && typeof anchor !== 'undefined') {
-        document.getElementById("status").innerText = "Готов к работе";
-        return true;
+// Ждем пока загрузятся скрипты
+const checkInterval = setInterval(() => {
+    if (typeof anchor !== 'undefined' && typeof solanaWeb3 !== 'undefined') {
+        document.getElementById("status").innerText = "Библиотеки готовы";
+        clearInterval(checkInterval);
     }
-    return false;
-}
-
-const timer = setInterval(() => {
-    if (checkLibs()) clearInterval(timer);
 }, 500);
 
 async function connect() {
-    if (!checkLibs()) return alert("Библиотеки еще грузятся, подождите...");
+    if (typeof anchor === 'undefined') return alert("Подождите загрузки скриптов...");
 
     const solana = window.phantom?.solana || window.solana;
-
     if (!solana) {
-        // Deep Link для открытия в Phantom Browser
         window.location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(window.location.href);
         return;
     }
@@ -46,14 +39,14 @@ async function connect() {
         program = new anchor.Program(IDL, new solanaWeb3.PublicKey(PRG_ID), provider);
 
         [userPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
-            [wallet.toBuffer(), new solanaWeb3.PublicKey(STATE).toBuffer()],
+            [wallet.toBuffer(), new solanaWeb3.PublicKey(POOL).toBuffer()],
             program.programId
         );
 
         document.getElementById("connectBtn").style.display = "none";
         document.getElementById("ui").style.display = "block";
         document.getElementById("stakeBtn").style.display = "block";
-        document.getElementById("status").innerText = "Кошелек подключен";
+        document.getElementById("status").innerText = "Кошелек: " + wallet.toBase58().slice(0,6) + "...";
         
         updateBal();
     } catch (err) {
@@ -69,7 +62,7 @@ async function updateBal() {
         );
         const b = await connection.getTokenAccountBalance(ata);
         document.getElementById("user-bal").innerText = b.value.uiAmount.toFixed(2);
-    } catch (e) { console.log("Bal error"); }
+    } catch (e) { console.log("Баланс не найден"); }
 }
 
 async function stake() {
@@ -77,14 +70,14 @@ async function stake() {
     if (!amt || amt <= 0) return;
 
     try {
-        document.getElementById("status").innerText = "Создание транзакции...";
+        document.getElementById("status").innerText = "Создаем транзакцию...";
         const tx = new solanaWeb3.Transaction();
         const amountBN = new anchor.BN(amt * 1e6);
 
         const info = await connection.getAccountInfo(userPDA);
         if (!info) {
             tx.add(await program.methods.initializeUserStake(0).accounts({
-                poolState: new solanaWeb3.PublicKey(STATE),
+                poolState: new solanaWeb3.PublicKey(POOL),
                 userStaking: userPDA,
                 owner: wallet,
                 rewardMint: new solanaWeb3.PublicKey(MINT),
@@ -99,7 +92,7 @@ async function stake() {
         );
 
         tx.add(await program.methods.deposit(amountBN).accounts({
-            poolState: new solanaWeb3.PublicKey(STATE),
+            poolState: new solanaWeb3.PublicKey(POOL),
             userStaking: userPDA,
             owner: wallet,
             userSourceAta: uAta,
@@ -116,7 +109,7 @@ async function stake() {
         document.getElementById("status").innerText = "Успех!";
         updateBal();
     } catch (err) {
-        document.getElementById("status").innerText = "Ошибка стейкинга";
+        document.getElementById("status").innerText = "Ошибка транзакции";
     }
 }
 
