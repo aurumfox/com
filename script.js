@@ -84,7 +84,7 @@ const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 
 
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
-let uiElements = {};
+
 
 
 // =========================================================================================
