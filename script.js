@@ -925,55 +925,57 @@ function cacheUIElements() {
 
 
 // --- 4. INITIALIZING EVENT LISTENERS ---
-function initEventListeners() {
-    // Wallet Connection
-    uiElements.connectWalletButtons.forEach(btn => {
-        btn.addEventListener('click', () => { 
-             connectWallet(); // Исправлено: вызываем реальную функцию вместо симуляции
-        });
-    });
+let uiElements = {};
 
-    // Staking Actions
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
-    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
-    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
+function cacheUIElements() {
+    // --- WALLET ---
+    uiElements.connectWalletBtn = document.getElementById('connectWalletBtn');
+    uiElements.walletAddressDisplay = document.getElementById('walletAddressDisplay');
+    uiElements.notificationContainer = document.getElementById('notificationContainer');
+
+    // --- STAKING ---
+    uiElements.userAfoxBalance = document.getElementById('userAfoxBalance');
+    uiElements.userStakedAmount = document.getElementById('userStakedAmount');
+    uiElements.userRewardsAmount = document.getElementById('userRewardsAmount');
+    uiElements.stakingApr = document.getElementById('stakingApr');
+    uiElements.lockupPeriod = document.getElementById('lockupPeriod'); // для инфо о блокировке
     
-    // DAO Actions
-    if (uiElements.createProposalBtn) {
-        uiElements.createProposalBtn.addEventListener('click', () => {
-            if (uiElements.createProposalModal) {
-                closeAllPopups();
-                uiElements.createProposalModal.style.display = 'flex';
-                uiElements.createProposalModal.classList.add('is-open');
-                toggleScrollLock(true);
-            }
-        });
-    }
+    uiElements.stakeAmountInput = document.getElementById('stakeAmountInput');
+    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
+    uiElements.unstakeAmountInput = document.getElementById('unstakeAmountInput');
+    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
+    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
+    uiElements.poolSelector = document.getElementById('pool-selector');
 
-    if (uiElements.createProposalForm) {
-        uiElements.createProposalForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            console.log("DAO Proposal Form submitted"); 
-            showNotification('Proposal creation simulated!', 'success', 3000);
-            e.target.reset();
-            closeAllPopups();
-        });
-    }
+    // --- DAO ---
+    uiElements.createProposalBtn = document.getElementById('createProposalBtn');
+    uiElements.createProposalModal = document.getElementById('createProposalModal');
+    uiElements.closeProposalModal = document.getElementById('closeProposalModal');
+    uiElements.newProposalForm = document.getElementById('newProposalForm');
 
-    // General Copy Button
-    uiElements.copyButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const textToCopy = btn.dataset.copyTarget;
-            if (textToCopy) {
-                navigator.clipboard.writeText(textToCopy)
-                    .then(() => showNotification('Address copied!', 'success', 2000))
-                    .catch(err => console.error('Could not copy text: ', err));
-            } else {
-                 showNotification('Nothing to copy.', 'warning', 2000);
-            }
-        });
-    }); 
-} 
+    // --- LENDING (Лендинг и Займы) ---
+    // Данные рынка
+    uiElements.afoxLendApr = document.getElementById('afoxLendApr');
+    uiElements.solBorrowRate = document.getElementById('solBorrowRate');
+    
+    // Личные данные пользователя в лендинге
+    uiElements.userLentAmount = document.getElementById('userLentAmount');
+    uiElements.userBorrowedAmount = document.getElementById('userBorrowedAmount');
+    
+    // Поля ввода и кнопки
+    uiElements.lendAmountInput = document.getElementById('lendAmountInput');
+    uiElements.lendAfoxBtn = document.getElementById('lendAfoxBtn');
+    
+    uiElements.withdrawLendAmountInput = document.getElementById('withdrawLendAmountInput');
+    uiElements.withdrawLendBtn = document.getElementById('withdrawLendBtn');
+    
+    uiElements.borrowAmountInput = document.getElementById('borrowAmountInput');
+    uiElements.borrowSolBtn = document.getElementById('borrowSolBtn');
+    
+    uiElements.repayAmountInput = document.getElementById('repayAmountInput');
+    uiElements.repaySolBtn = document.getElementById('repaySolBtn');
+}
+
 
 // ==========================================
 // БЛОК 3: DAO (ГОЛОСОВАНИЕ)
