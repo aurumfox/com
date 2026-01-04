@@ -1004,7 +1004,7 @@ function cacheUIElements() {
     uiElements.notificationContainer = document.getElementById('notification-container');
     uiElements.pageLoader = document.getElementById('page-loader');
     uiElements.contactForm = document.getElementById('contact-form');
-{
+}
 
 
 // --- 4. INITIALIZING EVENT LISTENERS ---
