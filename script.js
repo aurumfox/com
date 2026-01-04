@@ -2,6 +2,8 @@
 const SOL_DECIMALS = 9;
 const AFOX_DECIMALS = 6; // Обязательно добавь это!
 const SECONDS_PER_DAY = 86400;
+const FIREBASE_PROXY_URL = 'https://aurumfox.github.io/com/'; // Замените на ваш URL
+
 const POOLS_CONFIG = {
     0: { name: "Flexible", apr_rate: 500 },
     1: { name: "Standard", apr_rate: 1200 },
