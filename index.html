@@ -3,28 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staking</title>
+    <title>Staking Fix</title>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-browser/0.29.0/index.iife.min.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .card { background: #111; padding: 20px; border: 1px solid #333; border-radius: 12px; }
-        button { width: 100%; padding: 15px; background: #fb923c; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #stakeBtn { background: #2563eb; display: none; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; background: #222; color: #fff; border: 1px solid #444; box-sizing: border-box; }
-        .log { font-size: 12px; color: #888; margin-top: 15px; }
+        body { background: #000; color: #fff; text-align: center; padding: 20px; font-family: sans-serif; }
+        .card { border: 1px solid #333; padding: 20px; border-radius: 10px; background: #111; }
+        button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-conn { background: #fb923c; color: #fff; }
+        .btn-stake { background: #2563eb; color: #fff; display: none; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; }
+        #status { color: #888; font-size: 12px; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>AFOX STAKE</h2>
-        <button id="connectBtn">CONNECT WALLET</button>
+        <h3>AFOX STAKING</h3>
+        <button id="connectBtn" class="btn-conn">CONNECT WALLET</button>
+        
         <div id="ui" style="display:none">
-            <p>Баланс: <span id="bal">0</span></p>
-            <input type="number" id="amt" placeholder="Сумма AFOX">
-            <button id="stakeBtn">STAKE NOW</button>
+            <p>Баланс: <span id="balance">0</span> AFOX</p>
+            <input type="number" id="amount" placeholder="Кол-во">
+            <button id="stakeBtn" class="btn-stake">STAKE</button>
         </div>
-        <div id="status" class="log">Скопируйте ссылку в браузер Phantom</div>
+        
+        <div id="status">Статус: Ждем подключения</div>
     </div>
     <script src="script.js"></script>
 </body>
