@@ -986,11 +986,13 @@ function setupDAO() {
     const daoModal = document.getElementById('dao-modal');
     const closeBtn = document.querySelector('.close-modal');
 
-    if (daoBtn && daoModal) {
-        daoBtn.addEventListener('click', () => {
-            daoModal.style.display = 'flex';
-        });
-    }
+    const closeDaoBtn = document.getElementById('closeProposalModal'); // В твоем HTML ID именно такой
+if (closeDaoBtn) {
+    closeDaoBtn.addEventListener('click', () => {
+        const modal = document.getElementById('createProposalModal');
+        if (modal) modal.style.display = 'none';
+    });
+  }
 }
     // Нужно сначала объявить переменную через документ
 const closeBtn = document.getElementById('close-dao-modal'); // Убедитесь, что ID совпадает с HTML
