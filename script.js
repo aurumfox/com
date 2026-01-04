@@ -1,7 +1,8 @@
-const P_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
-const MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
-const POOL = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
-const VAULT = "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp";
+// Константы
+const PROGRAM_ID = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
+const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
+const POOL_PDA = "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ";
+const VAULT_PDA = "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp";
 
 const IDL = {
     "version": "0.1.0", "name": "alphafox_staking",
@@ -12,76 +13,67 @@ const IDL = {
     "accounts": [{ "name": "UserStakingAccount", "type": { "kind": "struct", "fields": [{ "name": "stakedAmount", "type": "u64" }, { "name": "rewardsToClaim", "type": "u64" }] } }]
 };
 
-let wal, prj, prog, pda;
-const conn = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
+let provider, program, walletPubKey, userPDA;
+const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
+// 1. Коннект
 async function connect() {
-    const sol = window.solana || window.phantom?.solana;
-    if (!sol) return alert("ОТКРОЙТЕ ВНУТРИ PHANTOM APP!");
+    const phantom = window.solana || window.phantom?.solana;
+    if (!phantom) return alert("ОТКРОЙ ВНУТРИ PHANTOM!");
 
     try {
-        const r = await sol.connect();
-        wal = r.publicKey;
-        prj = new anchor.AnchorProvider(conn, sol, { commitment: "confirmed" });
-        prog = new anchor.Program(IDL, new solanaWeb3.PublicKey(P_ID), prj);
+        const resp = await phantom.connect();
+        walletPubKey = resp.publicKey;
+        
+        provider = new anchor.AnchorProvider(connection, phantom, { commitment: "confirmed" });
+        program = new anchor.Program(IDL, new solanaWeb3.PublicKey(PROGRAM_ID), provider);
 
-        [pda] = solanaWeb3.PublicKey.findProgramAddressSync(
-            [wal.toBuffer(), new solanaWeb3.PublicKey(POOL).toBuffer()],
-            prog.programId
+        [userPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
+            [walletPubKey.toBuffer(), new solanaWeb3.PublicKey(POOL_PDA).toBuffer()],
+            program.programId
         );
 
         document.getElementById("connectBtn").style.display = "none";
         document.getElementById("ui").style.display = "block";
         document.getElementById("stakeBtn").style.display = "block";
-        document.getElementById("status").innerText = "OK: " + wal.toBase58().slice(0,4);
-        update();
-    } catch (e) { alert("Ошибка: " + e.message); }
+        document.getElementById("status").innerText = "Подключено: " + walletPubKey.toBase58().slice(0,4);
+    } catch (e) { alert("Ошибка коннекта"); }
 }
 
-async function update() {
-    try {
-        const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
-            [wal.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()],
-            new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
-        );
-        const b = await conn.getTokenAccountBalance(ata);
-        document.getElementById("bal").innerText = b.value.uiAmount;
-    } catch (e) {}
-}
-
+// 2. Стейк
 async function stake() {
-    const v = document.getElementById("amt").value;
-    if (!v) return;
+    const val = document.getElementById("amount").value;
+    if (!val) return;
+    
     try {
-        document.getElementById("status").innerText = "Подтвердите...";
+        document.getElementById("status").innerText = "Подтвердите транзакцию...";
         const tx = new solanaWeb3.Transaction();
-        const info = await conn.getAccountInfo(pda);
+        const info = await connection.getAccountInfo(userPDA);
         
         if (!info) {
-            tx.add(await prog.methods.initializeUserStake(0).accounts({
-                poolState: new solanaWeb3.PublicKey(POOL), userStaking: pda, owner: wal,
-                rewardMint: new solanaWeb3.PublicKey(MINT), systemProgram: solanaWeb3.SystemProgram.programId,
+            tx.add(await program.methods.initializeUserStake(0).accounts({
+                poolState: new solanaWeb3.PublicKey(POOL_PDA), userStaking: userPDA, owner: walletPubKey,
+                rewardMint: new solanaWeb3.PublicKey(AFOX_MINT), systemProgram: solanaWeb3.SystemProgram.programId,
                 clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
             }).instruction());
         }
 
         const [uAta] = solanaWeb3.PublicKey.findProgramAddressSync(
-            [wal.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(MINT).toBuffer()],
+            [walletPubKey.toBuffer(), new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBuffer(), new solanaWeb3.PublicKey(AFOX_MINT).toBuffer()],
             new solanaWeb3.PublicKey("ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25")
         );
 
-        tx.add(await prog.methods.deposit(new anchor.BN(v * 1e6)).accounts({
-            poolState: new solanaWeb3.PublicKey(POOL), userStaking: pda, owner: wal, userSourceAta: uAta,
-            vault: new solanaWeb3.PublicKey(VAULT), rewardMint: new solanaWeb3.PublicKey(MINT),
+        tx.add(await program.methods.deposit(new anchor.BN(val * 1e6)).accounts({
+            poolState: new solanaWeb3.PublicKey(POOL_PDA), userStaking: userPDA, owner: walletPubKey, userSourceAta: uAta,
+            vault: new solanaWeb3.PublicKey(VAULT_PDA), rewardMint: new solanaWeb3.PublicKey(AFOX_MINT),
             tokenProgram: new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
             clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
         }).instruction());
 
-        const sol = window.solana || window.phantom?.solana;
-        const { signature } = await sol.signAndSendTransaction(tx);
-        await conn.confirmTransaction(signature);
-        document.getElementById("status").innerText = "ГОТОВО!";
-        update();
+        const phantom = window.solana || window.phantom?.solana;
+        const { signature } = await phantom.signAndSendTransaction(tx);
+        await connection.confirmTransaction(signature);
+        document.getElementById("status").innerText = "УСПЕХ!";
     } catch (e) { document.getElementById("status").innerText = "Ошибка"; }
 }
 
