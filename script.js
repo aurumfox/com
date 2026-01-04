@@ -1,5 +1,6 @@
 // Константы проекта
 const SOL_DECIMALS = 9;
+const AFOX_DECIMALS = 6; // Обязательно добавь это!
 const SECONDS_PER_DAY = 86400;
 const FIREBASE_PROXY_URL = https://aurumfox.github.io/com/
 
