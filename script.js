@@ -998,12 +998,25 @@ function setupDAO() {
 
 // --- MAIN INITIALIZATION FUNCTION ---
 function init() {
+    console.log("System initialization...");
     cacheUIElements(); 
-    initEventListeners();
-    setupDAO(); // Вызываем один раз
     
-    console.log("AlphaFox System Ready. All IDs linked.");
+    // Вешаем клик на главную кнопку кошелька
+    if (uiElements.connectWalletBtn) {
+        uiElements.connectWalletBtn.onclick = connectWallet;
+    }
+
+    // Логика открытия DAO модалки
+    const daoBtn = document.getElementById('createProposalBtn');
+    if (daoBtn) {
+        daoBtn.onclick = () => {
+            uiElements.createProposalModal.style.display = 'flex';
+        };
+    }
+
+    console.log("AlphaFox System Ready. All buttons linked.");
 }
 
+// Запуск при загрузке страницы
 document.addEventListener('DOMContentLoaded', init);
 
