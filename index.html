@@ -9,34 +9,30 @@
     <style>
         body { background: #0b101d; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: #1a2035; padding: 25px; border-radius: 20px; width: 90%; max-width: 320px; text-align: center; border: 1px solid #2d344b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { color: #fb923c; margin: 0 0 20px 0; letter-spacing: 1px; }
+        h2 { color: #fb923c; margin: 0 0 20px 0; }
         .stats { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; text-align: left; }
         .stats div { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .stats b { color: #fff; }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #2d344b; background: #0b101d; color: #fff; box-sizing: border-box; text-align: center; font-size: 18px; outline: none; }
-        button { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; margin-top: 10px; }
+        button { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
         #btn-connect { background: #fb923c; color: #fff; }
         #btn-stake { background: #2563eb; color: #fff; display: none; }
-        .btn-claim { background: #22c55e; color: #fff; display: none; }
-        #status { margin-top: 15px; font-size: 11px; color: #9ca3af; min-height: 14px; }
+        #status { margin-top: 15px; font-size: 11px; color: #9ca3af; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>AFOX STAKING</h2>
+        <h2 style="color: #fb923c; margin-top: 0;">AFOX STAKING</h2>
         
         <div id="ui-staking" style="display: none;">
             <div class="stats">
                 <div><span>Доступно:</span> <b id="user-bal">0.00</b></div>
-                <div><span>В стейке:</span> <b id="staked-bal" style="color:#fb923c">0.00</b></div>
             </div>
-            <input type="number" id="stake-amount" placeholder="Количество">
+            <input type="number" id="stake-amount" placeholder="0.00" inputmode="decimal">
             <button id="btn-stake">ЗАСТЕЙКАТЬ</button>
-            <button id="btn-claim" class="btn-claim">ЗАБРАТЬ НАГРАДУ</button>
         </div>
 
-        <button id="btn-connect">ПОДКЛЮЧИТЬ</button>
-        <div id="status">Загрузка...</div>
+        <button id="btn-connect">ПОДКЛЮЧИТЬ КОШЕЛЕК</button>
+        <div id="status">Загрузка модулей...</div>
     </div>
     <script src="script.js"></script>
 </body>
