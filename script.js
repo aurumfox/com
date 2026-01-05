@@ -1,7 +1,13 @@
-// Константы проекта
+// РЕШЕНИЕ ОШИБКИ BUFFER (Должно быть в самом верху!)
+import { Buffer } from 'buffer';
+window.Buffer = Buffer;
+
 const SOL_DECIMALS = 9;
+const AFOX_DECIMALS = 6;
 const SECONDS_PER_DAY = 86400;
-const FIREBASE_PROXY_URL = 'ВАШ_URL_WORKER'; // Замените на ваш URL
+const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
+const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+
 
 const POOLS_CONFIG = {
     0: { name: "Flexible", apr_rate: 500 },
