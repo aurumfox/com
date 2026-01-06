@@ -87,7 +87,6 @@ const DAO_TREASURY_VAULT_PUBKEY = new window.solanaWeb3.PublicKey('6BzRqaLD7CiGv
 const TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ASSOCIATED_TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
 const SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
-const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 
 
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
