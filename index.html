@@ -28,13 +28,18 @@
 <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
 
 <script>
-    // Оживляем Buffer для браузера
+    // Это активирует библиотеку Buffer в браузере
     window.Buffer = window.Buffer || buffer.Buffer;
-    
-    // Твой Program ID, который мы нашли в Anchor.toml
+
+    // Твой живой ID из Mainnet
     const programId = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
-    console.log("Сайт подключен к контракту:", programId);
+    
+    if (window.solanaWeb3) {
+        console.log("Библиотека Solana успешно открыта!");
+        console.log("Сайт подключен к контракту:", programId);
+    }
 </script>
+
 
 
     
