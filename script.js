@@ -980,10 +980,6 @@ function cacheUIElements() {
     uiElements.pageLoader = document.getElementById('page-loader');
     uiElements.contactForm = document.getElementById('contact-form');
 }
-
-
-// --- 4. INITIALIZING EVENT LISTENERS ---
-function initEventListeners() {
     // Wallet Connection
     uiElements.connectWalletButtons.forEach(btn => {
         btn.addEventListener('click', () => { 
