@@ -934,9 +934,6 @@ function initEventListeners() {
     });
 }
 
-
-// --- 3. CACHING UI ELEMENTS ---
-function cacheUIElements() {
     uiElements.connectWalletButtons = Array.from(document.querySelectorAll('#connectWalletBtn'));
     uiElements.userAfoxBalance = document.getElementById('userAfoxBalance');
     uiElements.userStakedAmount = document.getElementById('userStakedAmount');
