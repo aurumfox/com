@@ -1,4 +1,3 @@
-// ПРАВИЛЬНОЕ РЕШЕНИЕ ДЛЯ БРАУЗЕРА (без сборщика)
 if (window.buffer) {
     window.Buffer = window.buffer.Buffer;
 }
