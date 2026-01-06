@@ -698,14 +698,6 @@ async function getUserStakingAccountPDA(owner) {
     return pda;
 }
 
-// --- КОНСТАНТЫ ИЗ ТВОЕГО КОНТРАКТА ---
-const STAKING_PROGRAM_ID = new window.solanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-const AFOX_TOKEN_MINT = new window.solanaWeb3.PublicKey('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
-const AFOX_POOL_STATE_PDA = new window.solanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
-const AFOX_POOL_VAULT = new window.solanaWeb3.PublicKey('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp');
-const AFOX_ADMIN_FEE_VAULT = new window.solanaWeb3.PublicKey('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
-const DAO_TREASURY_VAULT = new window.solanaWeb3.PublicKey('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi');
-
 async function getUserStakingPDA(owner) {
     // ВАЖНО: Seeds должны быть точно как в Rust [owner, pool_state]
     const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
