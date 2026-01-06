@@ -24,21 +24,18 @@
     ">
 
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
+    <script src="https://bundle.run/buffer@6.0.3"></script>
 <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.global.min.js"></script>
 
 <script>
-    // Это активирует библиотеку Buffer в браузере
-    window.Buffer = window.Buffer || buffer.Buffer;
-
-    // Твой живой ID из Mainnet
-    const programId = "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH";
-    
-    if (window.solanaWeb3) {
-        console.log("Библиотека Solana успешно открыта!");
-        console.log("Сайт подключен к контракту:", programId);
-    }
+    // Помощь браузеру опознать Buffer
+    window.onload = function() {
+        window.Buffer = window.buffer.Buffer;
+        console.log("AlphaFox: Все библиотеки загружены!");
+    };
 </script>
+
 
 
 
