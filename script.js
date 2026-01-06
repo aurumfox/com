@@ -1,6 +1,9 @@
-// РЕШЕНИЕ ОШИБКИ BUFFER (Должно быть в самом верху!)
-import { Buffer } from 'buffer';
-window.Buffer = Buffer;
+// ПРАВИЛЬНОЕ РЕШЕНИЕ ДЛЯ БРАУЗЕРА (без сборщика)
+if (window.buffer) {
+    window.Buffer = window.buffer.Buffer;
+}
+// Если библиотека загружена через <script>, она будет доступна как window.buffer
+
 
 const SOL_DECIMALS = 9;
 const AFOX_DECIMALS = 6;
