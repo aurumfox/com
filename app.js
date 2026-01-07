@@ -824,7 +824,6 @@ async function handleClaimRewards() {
         // Используем твой метод для получения ATA
         const userAfoxATA = await window.anchor.utils.token.associatedAddress({ 
             mint: AFOX_TOKEN_MINT_ADDRESS, GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd
-            owner: wallet 
         });
 
         await program.methods
