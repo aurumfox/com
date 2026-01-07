@@ -1,3 +1,13 @@
+// Диагностика библиотек
+console.log("--- Library Check ---");
+console.log("Buffer status:", typeof window.Buffer !== 'undefined' ? "✅ OK" : "❌ MISSING");
+console.log("Solana Web3 status:", (window.solanaWeb3 || window.SolanaWeb3) ? "✅ OK" : "❌ MISSING");
+console.log("Anchor status:", (window.anchor || window.Anchor) ? "✅ OK" : "❌ MISSING");
+
+// Исправление путей, если они загрузились под другими именами
+if (!window.solanaWeb3 && window.SolanaWeb3) window.solanaWeb3 = window.SolanaWeb3;
+if (!window.Buffer && window.buffer) window.Buffer = window.buffer.Buffer;
+
 if (window.buffer) {
     window.Buffer = window.buffer.Buffer;
 }
