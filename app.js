@@ -414,14 +414,15 @@ async function checkRpcHealth(connection) {
  */
 async function getRobustConnection() {
     const connectionOptions = { commitment: 'confirmed' };
-    // Используем BACKUP_RPC_ENDPOINT, так как JUPITER_RPC удален
-    const connection = new window.SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, connectionOptions);
-
-    if (await checkRpcHealth(connection)) {
+    try {
+        const connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, connectionOptions);
+        const slot = await connection.getSlot();
+        console.log("RPC Connected, slot:", slot);
         return connection;
+    } catch (error) {
+        console.error('RPC Error:', error);
+        throw new Error('RPC endpoint is unhealthy.');
     }
-
-    throw new Error('RPC endpoint is unhealthy.');
 }
 
 
@@ -732,76 +733,62 @@ async function getUserStakingPDA(owner) {
  */
 async function handleStakeAfox() {
     if (!appState.walletPublicKey) return showNotification("Connect Wallet first!", "warning");
-    
     setLoadingState(true, uiElements.stakeAfoxBtn);
-    
     try {
-        // Инициализируем провайдер Anchor
-        const connection = appState.connection;
-        const provider = new window.anchor.AnchorProvider(connection, window.solana, { commitment: "confirmed" });
+        const provider = new window.anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
         const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
-        
-        const wallet = appState.walletPublicKey;
-        const userStakingPDA = await getUserStakingPDA(wallet);
-        
-        // Находим ATA (кошелек токенов) пользователя
-        const userAfoxATA = await window.anchor.utils.token.associatedAddress({
-    mint: AFOX_TOKEN_MINT_ADDRESS, GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd
-});
-
-
         const amountInput = uiElements.stakeAmountInput.value;
-        if (!amountInput || amountInput <= 0) throw new Error("Enter valid amount");
-        
-        // Превращаем число в BigInt (с учетом 6 знаков AFOX)
         const amountBN = new window.anchor.BN(parseAmountToBigInt(amountInput, AFOX_DECIMALS).toString());
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        const userAfoxATA = await getATA(appState.walletPublicKey);
 
-        let transaction = new window.solanaWeb3.Transaction();
+        await program.methods.deposit(amountBN).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDA,
+            owner: appState.walletPublicKey,
+            userSourceAta: userAfoxATA,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
 
-        // Проверка: нужно ли создавать аккаунт пользователя (Init)
-        const accountInfo = await connection.getAccountInfo(userStakingPDA);
-        if (!accountInfo) {
-            transaction.add(
-                await program.methods
-                    .initializeUserStake(0) // 0 - Flexible
-                    .accounts({
-                        poolState: AFOX_POOL_STATE_PUBKEY,
-                        userStaking: userStakingPDA,
-                        owner: wallet,
-                        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                        systemProgram: window.solanaWeb3.SystemProgram.programId,
-                        clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                    })
-                    .instruction()
-            );
-        }
-
-        // Добавляем саму транзакцию депозита
-        transaction.add(
-            await program.methods
-                .deposit(amountBN)
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    userStaking: userStakingPDA,
-                    owner: wallet,
-                    userSourceAta: userAfoxATA,
-                    vault: AFOX_POOL_VAULT_PUBKEY,
-                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                })
-                .instruction()
-        );
-
-        const sig = await provider.sendAndConfirm(transaction);
-        showNotification(`Stake Success!`, "success");
+        showNotification("Stake Success!", "success");
         await updateStakingAndBalanceUI();
-
     } catch (err) {
-        console.error("Stake Error:", err);
         showNotification("Error: " + err.message, "error");
     } finally {
         setLoadingState(false, uiElements.stakeAfoxBtn);
+    }
+}
+
+async function handleClaimRewards() {
+    if (!appState.walletPublicKey) return;
+    setLoadingState(true, uiElements.claimRewardsBtn);
+    try {
+        const provider = new window.anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
+        const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        const userAfoxATA = await getATA(appState.walletPublicKey);
+
+        await program.methods.claimRewards().accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDA,
+            owner: appState.walletPublicKey,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+            userRewardsAta: userAfoxATA,
+            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+
+        showNotification("Rewards claimed!", "success");
+        await updateStakingAndBalanceUI();
+    } catch (err) {
+        showNotification("Claim failed: " + err.message, "error");
+    } finally {
+        setLoadingState(false, uiElements.claimRewardsBtn);
     }
 }
 
@@ -1063,31 +1050,26 @@ function setupDAO() {
         });
     }
 }
-
+// Единая функция инициализации (без дублей)
 function init() {
     console.log("Starting AlphaFox Initialization...");
-
-    // 1. Кэшируем основные элементы
+    
+    // 1. Кэшируем элементы
     cacheUIElements(); 
     
-    // 2. Дозаполняем UI элементы (проверьте, чтобы ID в HTML совпадали!)
-    uiElements.pageLoader = document.getElementById('page-loader');
-    uiElements.userAfoxBalance = document.getElementById('user-afox-balance');
-    uiElements.userStakedAmount = document.getElementById('user-staked-amount');
-    uiElements.userRewardsAmount = document.getElementById('user-rewards-amount');
-    uiElements.stakingApr = document.getElementById('staking-apr');
-    uiElements.lockupPeriod = document.getElementById('lockup-period');
-    uiElements.createProposalModal = document.getElementById('dao-modal');
-    
+    // 2. Назначаем события один раз
+    if (uiElements.connectWalletButtons) {
+        uiElements.connectWalletButtons.forEach(btn => btn.addEventListener('click', connectWallet));
+    }
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
+    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
 
-    // 3. Запускаем функции прослушивания событий
-    EventListeners();
+    // 3. Доп. логика
     setupDAO();
 
-    // Финальная проверка года и статуса
-    const currentYear = new Date().getFullYear();
-    console.log(`AlphaFox System Ready. Status: OK. Version Year: ${currentYear}`);
+    console.log("AlphaFox System Ready. Version 2026.");
 }
 
-// Запуск при загрузке страницы
+// Запуск
 document.addEventListener('DOMContentLoaded', init);
