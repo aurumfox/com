@@ -746,9 +746,10 @@ async function handleStakeAfox() {
         
         // Находим ATA (кошелек токенов) пользователя
         const userAfoxATA = await window.anchor.utils.token.associatedAddress({
-            mint: AFOX_TOKEN_MINT_ADDRESS, // Используем правильное имя константы
-            owner: wallet
-        });
+    mint: AFOX_TOKEN_MINT_ADDRESS, GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd
+    owner: wallet
+});
+
 
         const amountInput = uiElements.stakeAmountInput.value;
         if (!amountInput || amountInput <= 0) throw new Error("Enter valid amount");
@@ -813,38 +814,38 @@ async function handleClaimRewards() {
     if (!appState.walletPublicKey) return;
     setLoadingState(true, uiElements.claimRewardsBtn);
     
-    try {
-        const connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, "confirmed");
+        try {
+        const connection = appState.connection;
         const provider = new window.anchor.AnchorProvider(connection, window.solana, { commitment: "confirmed" });
         const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
         
         const wallet = appState.walletPublicKey;
         const userStakingPDA = await getUserStakingPDA(wallet);
-        const userAfoxATA = await window.anchor.utils.token.associatedAddress({ mint: AFOX_TOKEN_MINT, owner: wallet });
+        
+        // Используем твой метод для получения ATA
+        const userAfoxATA = await window.anchor.utils.token.associatedAddress({ 
+            mint: AFOX_TOKEN_MINT_ADDRESS, GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd
+            owner: wallet 
+        });
 
         await program.methods
             .claimRewards()
             .accounts({
-                poolState: AFOX_POOL_STATE_PDA,
+                poolState: AFOX_POOL_STATE_PUBKEY, // Твоя константа
                 userStaking: userStakingPDA,
                 owner: wallet,
-                vault: AFOX_POOL_VAULT,
-                adminFeeVault: AFOX_ADMIN_FEE_VAULT,
+                vault: AFOX_POOL_VAULT_PUBKEY, // Твоя константа
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Твоя константа
                 userRewardsAta: userAfoxATA,
-                rewardMint: AFOX_TOKEN_MINT,
-                tokenProgram: window.anchor.utils.token.TOKEN_PROGRAM_ID,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
                 clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
             })
             .rpc();
 
         showNotification("Rewards claimed!", "success");
         await updateStakingAndBalanceUI();
-    } catch (err) {
-        showNotification("Claim Error: " + err.message, "error");
-    } finally {
-        setLoadingState(false, uiElements.claimRewardsBtn);
-    }
-}
+
 
 
 
