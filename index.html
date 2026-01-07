@@ -552,21 +552,30 @@
             connectBtn.onclick = handleConnect;
         }
              
-
     <script src="./js/buffer.js"></script>
     <script src="./js/solana.js"></script>
     <script src="./js/anchor.js"></script>
 
     <script>
-        if (window.buffer) {
-            window.Buffer = window.buffer.Buffer;
-        }
-        window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
-        window.anchor = window.anchor || window.Anchor;
-        
-        console.log("Библиотеки успешно инициализированы из локальных файлов");
+        (function() {
+            // Привязка Buffer (важно для транзакций)
+            if (window.buffer) {
+                window.Buffer = window.buffer.Buffer;
+            } else if (window.solanaWeb3 && window.solanaWeb3.Buffer) {
+                window.Buffer = window.solanaWeb3.Buffer;
+            }
+
+            // Стандартизация имен для Anchor и Solana
+            window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
+            window.anchor = window.anchor || window.Anchor;
+
+            console.log("AlphaFox: Системные библиотеки проверены.");
+        })();
     </script>
 
     <script type="module" src="app.js"></script>
 
-</body>   </html>                                                                                                                                                                                  </htm
+</body>
+</html>
+
+                                                                                                                                                                           </htm
