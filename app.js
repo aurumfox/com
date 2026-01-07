@@ -762,36 +762,6 @@ async function handleStakeAfox() {
     }
 }
 
-async function handleClaimRewards() {
-    if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.claimRewardsBtn);
-    try {
-        const provider = new window.anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
-        const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        const userAfoxATA = await getATA(appState.walletPublicKey);
-
-        await program.methods.claimRewards().accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: userStakingPDA,
-            owner: appState.walletPublicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-            userRewardsAta: userAfoxATA,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-
-        showNotification("Rewards claimed!", "success");
-        await updateStakingAndBalanceUI();
-    } catch (err) {
-        showNotification("Claim failed: " + err.message, "error");
-    } finally {
-        setLoadingState(false, uiElements.claimRewardsBtn);
-    }
-}
-
 
 /**
  * ФУНКЦИЯ: ЗАБРАТЬ НАГРАДЫ (CLAIM)
