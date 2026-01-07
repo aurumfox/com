@@ -1066,7 +1066,7 @@ function init() {
     uiElements.createProposalModal = document.getElementById('dao-modal');
 
     // 3. Запускаем функции прослушивания событий
-    initEventListeners();
+    EventListeners();
     setupDAO();
 
     // Финальная проверка года и статуса
