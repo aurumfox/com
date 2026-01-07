@@ -424,18 +424,19 @@
                     </div>
                 </div>
 
-                <div class="staking-actions" style="margin-top: 30px;">
-                    <h3 class="web3-subheading">Lend AFOX</h3>
-                    <div class="input-group">
-                        <input type="number" id="lendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to lend" aria-label="Amount to lend">
-                        <button id="lendAfoxBtn" class="web3-btn" aria-label="Lend AFOX tokens">Lend</button>
-                    </div>
-                    <h3 class="web3-subheading">Withdraw Lent AFOX</h3>
-                    <div class="input-group">
-                        <input type="number" id="withdrawLendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to withdraw" aria-label="Amount to withdraw from lending">
-                        <button id="withdrawLendBtn" class="web3-btn" aria-label="Withdraw lent AFOX tokens">Withdraw</button>
-                    </div>
-                </div>
+                <div class="staking-actions" style="max-width: 600px; margin: 0 auto;">
+    <h3 class="web3-subheading">Manage Stake</h3>
+    <div class="input-group" style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <input type="number" id="stake-amount" placeholder="Amount" style="flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #f39c12; background: #1a1a1a; color: white;">
+        <button id="stake-afox-btn" class="web3-btn">Stake</button>
+    </div>
+    
+    <div class="management-buttons" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button id="claim-rewards-btn" class="web3-btn">Claim Rewards</button>
+        <button id="unstake-afox-btn" class="web3-btn">Unstake All</button>
+    </div>
+</div>
+
                 
                 <div class="staking-details">
                     <h3 class="web3-subheading">Lending Terms</h3>
