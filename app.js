@@ -1,3 +1,11 @@
+// Принудительно вытаскиваем Buffer и Anchor наружу
+if (window.buffer) {
+    window.Buffer = window.buffer.Buffer;
+}
+if (window.anchor && !window.Anchor) {
+    window.Anchor = window.anchor;
+}
+
 // Диагностика библиотек
 console.log("--- Library Check ---");
 console.log("Buffer status:", typeof window.Buffer !== 'undefined' ? "✅ OK" : "❌ MISSING");
