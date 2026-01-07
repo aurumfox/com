@@ -1070,6 +1070,7 @@ function init() {
     uiElements.stakingApr = document.getElementById('staking-apr');
     uiElements.lockupPeriod = document.getElementById('lockup-period');
     uiElements.createProposalModal = document.getElementById('dao-modal');
+    
 
     // 3. Запускаем функции прослушивания событий
     initEventListeners();
