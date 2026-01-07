@@ -424,25 +424,59 @@ async function getRobustConnection() {
         throw new Error('RPC endpoint is unhealthy.');
     }
 }
-
-
-// 🟢 Corrected and simplified function to update wallet UI
+// ИСПРАВЛЕННЫЙ КУСОК (найди и замени)
 function updateWalletDisplay(address) {
-    const connectBtns = uiElements.connectWalletButtons;
+    const connectBtns = uiElements.connectWalletButtons || [];
     const walletDisplays = Array.from(document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]'));
-    const walletAddresses = uiElements.walletAddressDisplays;
-    const copyBtns = uiElements.copyButtons; 
+    const walletAddresses = uiElements.walletAddressDisplays || [];
+    const copyBtns = uiElements.copyButtons || []; 
     
     const fullAddressDisplay = document.getElementById('walletAddressDisplay');
-
 
     if (address) {
         const shortAddress = `${address.substring(0, 4)}...${address.slice(-4)}`;
         
+        connectBtns.forEach(btn => {
+             btn.style.display = 'none';
+             btn.classList.add('connected'); 
+        });
+        walletDisplays.forEach(display => {
+            display.style.display = 'flex';
+        });
+        walletAddresses.forEach(span => span.textContent = shortAddress);
 
-/**
- * Handles changes to the wallet public key (connect/disconnect).
- */
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = address;
+            fullAddressDisplay.classList.add('connected');
+        }
+        
+        copyBtns.forEach(copyBtn => {
+             copyBtn.dataset.copyTarget = address; 
+             copyBtn.style.display = 'block';
+        });
+    } else {
+        connectBtns.forEach(btn => {
+             btn.style.display = 'block';
+             btn.classList.remove('connected');
+        });
+        walletDisplays.forEach(display => {
+            display.style.display = 'none';
+        });
+        
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = 'Not Connected';
+            fullAddressDisplay.classList.remove('connected');
+        }
+
+        copyBtns.forEach(copyBtn => {
+            delete copyBtn.dataset.copyTarget;
+            copyBtn.style.display = 'none';
+        });
+    }
+} // <--- ВОТ ЭТА СКОБКА БЫЛА ПОТЕРЯНА
+
+
+
 // --- Исправленный обработчик ключа ---
 function handlePublicKeyChange(newPublicKey) {
     appState.walletPublicKey = newPublicKey;
