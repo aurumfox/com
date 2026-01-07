@@ -1,23 +1,18 @@
-// Настройка библиотек
+// Финальная привязка библиотек
 window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
 
-// Если Anchor загрузился, убедимся что он доступен под обоими именами
+// Объединяем Anchor в один стандартный объект
 if (window.anchor) {
     window.Anchor = window.anchor;
 } else if (window.Anchor) {
     window.anchor = window.Anchor;
 }
 
-// Принудительно связываем библиотеки с окном браузера
-if (window.buffer && !window.Buffer) window.Buffer = window.buffer.Buffer;
-if (window.SolanaWeb3 && !window.solanaWeb3) window.solanaWeb3 = window.SolanaWeb3;
-if (window.anchor && !window.Anchor) window.Anchor = window.anchor;
+console.log("Buffer:", window.Buffer ? "✅" : "❌");
+console.log("Solana:", window.solanaWeb3 ? "✅" : "❌");
+console.log("Anchor:", (window.anchor || window.Anchor) ? "✅" : "❌");
 
-// Проверка в консоли (то, что ты запускал)
-console.log("Buffer status:", window.Buffer ? "✅ OK" : "❌ MISSING");
-console.log("Solana Web3 status:", window.solanaWeb3 ? "✅ OK" : "❌ MISSING");
-console.log("Anchor status:", window.anchor ? "✅ OK" : "❌ MISSING");
 
 
 
