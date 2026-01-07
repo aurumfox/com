@@ -146,43 +146,6 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
     }
 }
 
-// --- /HAMBURGER MENU LOGIC ---
-function toggleScrollLock(lock) {
-    document.body.classList.toggle('menu-open', lock);
-}
-
-/**
- * Manages the global loading state and button disabling.
- * @param {boolean} isLoading
- * @param {HTMLElement} [button] - Specific button to disable/enable.
- */
-function setLoadingState(isLoading, button = null) {
-    if (uiElements.pageLoader) {
-        uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
-    }
-
-    const actionButtons = [
-        uiElements.stakeAfoxBtn, 
-        uiElements.claimRewardsBtn, 
-        uiElements.unstakeAfoxBtn
-    ].filter(Boolean);
-
-    actionButtons.forEach(btn => {
-        btn.disabled = isLoading;
-    });
-
-    if (button) {
-        button.disabled = isLoading;
-        if (isLoading && !button.originalText) {
-            button.originalText = button.textContent;
-            button.textContent = '...Loading';
-        } else if (!isLoading && button.originalText) {
-            button.textContent = button.originalText;
-            delete button.originalText;
-        }
-    }
-}
-
 
 /**
  * Utility to run a fetch request with a timeout.
@@ -1026,42 +989,99 @@ function setupDAO() {
     }
 }
 
-// ОСНОВНОЙ БЛОК УПРАВЛЕНИЯ КНОПКАМИ (вместо старого init)
-function refreshButtons() {
-    console.log("--- Проверка кнопок Aurum Fox ---");
+// ============================================================
+// ЕДИНЫЙ КОНТРОЛЛЕР ИНТЕРФЕЙСА (ALL-IN-ONE)
+// ============================================================
 
-    const actions = [
-        { id: 'connectWalletBtn', func: typeof handleConnect !== 'undefined' ? handleConnect : null },
-        { id: 'stake-afox-btn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
-        { id: 'claim-rewards-btn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
-        { id: 'unstake-afox-btn', func: typeof handleUnstakeAllAfox !== 'undefined' ? handleUnstakeAllAfox : null }
+/**
+ * Главная функция инициализации приложения
+ */
+function initializeAurumFoxApp() {
+    console.log("🛠 Запуск полной инициализации...");
+
+    // 1. КЭШИРОВАНИЕ ЭЛЕМЕНТОВ (Собираем всё в одном месте)
+    uiElements = {
+        // Кнопки действий
+        connectWalletBtn: document.getElementById('connectWalletBtn'),
+        stakeAfoxBtn: document.getElementById('stake-afox-btn') || document.getElementById('stakeAfoxBtn'),
+        claimRewardsBtn: document.getElementById('claim-rewards-btn') || document.getElementById('claimRewardsBtn'),
+        unstakeAfoxBtn: document.getElementById('unstake-afox-btn') || document.getElementById('unstakeAfoxBtn'),
+        
+        // Поля ввода и вывода
+        stakeAmountInput: document.getElementById('stake-amount'),
+        userAfoxBalance: document.getElementById('user-afox-balance'),
+        userStakedAmount: document.getElementById('user-staked-amount'),
+        userRewardsAmount: document.getElementById('user-rewards-amount'),
+        stakingApr: document.getElementById('staking-apr'),
+        lockupPeriod: document.getElementById('lockup-period'),
+        
+        // Контейнеры
+        notificationContainer: document.getElementById('notification-container'),
+        pageLoader: document.getElementById('page-loader'),
+        
+        // DAO
+        createProposalBtn: document.getElementById('createProposalBtn'),
+        createProposalModal: document.getElementById('dao-modal')
+    };
+
+    // 2. ПРИВЯЗКА ЛОГИКИ К КНОПКАМ (Через onclick для исключения дублей)
+    const actionsMap = [
+        { btn: uiElements.connectWalletBtn, func: typeof connectWallet !== 'undefined' ? connectWallet : null },
+        { btn: uiElements.stakeAfoxBtn, func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
+        { btn: uiElements.claimRewardsBtn, func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
+        { btn: uiElements.unstakeAfoxBtn, func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null }
     ];
 
-    actions.forEach(action => {
-        const btn = document.getElementById(action.id);
-        if (btn) {
-            btn.onclick = null; // УДАЛЯЕМ ДУБЛИКАТЫ (очистка)
-            
-            if (action.func) {
-                btn.onclick = (e) => {
+    actionsMap.forEach(item => {
+        if (item.btn) {
+            item.btn.onclick = null; // Полная очистка старых событий
+            if (item.func) {
+                item.btn.onclick = async (e) => {
                     e.preventDefault();
-                    console.log(`Нажата кнопка: ${action.id}`);
-                    action.func();
+                    console.log(`[UI] Выполнение действия для: ${item.btn.id}`);
+                    await item.func();
                 };
-                console.log(`✅ Кнопка [${action.id}] успешно привязана.`);
+                console.log(`✅ Кнопка [${item.btn.id}] активирована.`);
             } else {
-                console.error(`❌ Ошибка: Функция для кнопки [${action.id}] не найдена в коде!`);
+                console.warn(`⚠️ Функция для кнопки [${item.btn.id}] не найдена.`);
             }
-        } else {
-            // Это нормально, если кнопки нет на текущей странице
-            console.warn(`⚠️ Кнопка [${action.id}] не найдена в HTML.`);
         }
     });
+
+    // 3. ПРИВЯЗКА КНОПОК КОПИРОВАНИЯ
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const text = btn.dataset.copyTarget;
+            if (text) {
+                navigator.clipboard.writeText(text);
+                if (typeof showNotification === 'function') {
+                    showNotification('Copied to clipboard!', 'success');
+                }
+            }
+        };
+    });
+
+    // 4. ИНИЦИАЛИЗАЦИЯ DAO
+    if (uiElements.createProposalBtn && uiElements.createProposalModal) {
+        uiElements.createProposalBtn.onclick = () => {
+            uiElements.createProposalModal.style.display = 'flex';
+        };
+        // Кнопка закрытия внутри модалки
+        const closeBtn = uiElements.createProposalModal.querySelector('.close-btn') || document.getElementById('close-dao-modal');
+        if (closeBtn) closeBtn.onclick = () => uiElements.createProposalModal.style.display = 'none';
+    }
+
+    // 5. ПРОВЕРКА СОСТОЯНИЯ КОШЕЛЬКА ПРИ ЗАГРУЗКЕ
+    if (window.solana && window.solana.isConnected) {
+        handlePublicKeyChange(window.solana.publicKey);
+    }
+
+    console.log("🚀 Все системы Aurum Fox готовы.");
 }
 
-// Запуск привязки сразу после загрузки страницы
+// ТОЧКА ВХОДА: Срабатывает строго один раз при загрузке
 if (document.readyState === 'complete') {
-    refreshButtons();
+    initializeAurumFoxApp();
 } else {
-    window.addEventListener('load', refreshButtons);
+    window.addEventListener('load', initializeAurumFoxApp);
 }
