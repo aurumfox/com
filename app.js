@@ -935,37 +935,6 @@ async function disconnectWallet() {
     handlePublicKeyChange(null);
 }
 
-function cacheUIElements() {
-    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn'));
-    uiElements.walletAddressDisplays = Array.from(document.querySelectorAll('.wallet-address-display'));
-    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
-    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
-    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
-    uiElements.stakeAmountInput = document.getElementById('stake-amount');
-    uiElements.poolSelector = document.getElementById('pool-selector');
-    uiElements.notificationContainer = document.getElementById('notification-container');
-    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
-}
-
-function initEventListeners() {
-    uiElements.connectWalletButtons.forEach(btn => {
-        btn.addEventListener('click', connectWallet);
-    });
-
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
-    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
-    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
-
-    uiElements.copyButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const textToCopy = btn.dataset.copyTarget;
-            if (textToCopy) {
-                navigator.clipboard.writeText(textToCopy).then(() => showNotification('Copied!', 'success'));
-            }
-        });
-    });
-}
-
     function cacheUIElements() {
     // Buttons
     uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn'));
