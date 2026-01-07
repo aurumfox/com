@@ -1,19 +1,21 @@
-// Финальная привязка библиотек
+// Настройка библиотек с проверкой на существование
 window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
-window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
 
-// Объединяем Anchor в один стандартный объект
-if (window.anchor) {
-    window.Anchor = window.anchor;
-} else if (window.Anchor) {
-    window.anchor = window.Anchor;
+// Принудительное назначение, если загрузились разные версии
+const solLib = window.solanaWeb3 || window.SolanaWeb3;
+if (solLib) {
+    window.solanaWeb3 = solLib;
+}
+
+const anchorLib = window.anchor || window.Anchor || window.anchorjs;
+if (anchorLib) {
+    window.anchor = anchorLib;
+    window.Anchor = anchorLib;
 }
 
 console.log("Buffer:", window.Buffer ? "✅" : "❌");
-console.log("Solana:", window.solanaWeb3 ? "✅" : "❌");
-console.log("Anchor:", (window.anchor || window.Anchor) ? "✅" : "❌");
-
-
+console.log("Solana Web3:", window.solanaWeb3 ? "✅" : "❌");
+console.log("Anchor:", window.anchor ? "✅" : "❌");
 
 
 const SOL_DECIMALS = 9;
