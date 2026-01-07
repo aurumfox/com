@@ -799,39 +799,66 @@ async function handleClaimRewards() {
 async function handleClaimRewards() {
     if (!appState.walletPublicKey) return;
     setLoadingState(true, uiElements.claimRewardsBtn);
-    
-        try {
-        const connection = appState.connection;
-        const provider = new window.anchor.AnchorProvider(connection, window.solana, { commitment: "confirmed" });
+    try {
+        const provider = new window.anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
         const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
         
-        const wallet = appState.walletPublicKey;
-        const userStakingPDA = await getUserStakingPDA(wallet);
-        
-        // Используем твой метод для получения ATA
-        const userAfoxATA = await window.anchor.utils.token.associatedAddress({ 
-            mint: AFOX_TOKEN_MINT_ADDRESS, GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd
-        });
+        // Получаем ATA (Associated Token Account)
+        const userAfoxATA = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        ).then(res => res[0]);
 
-        await program.methods
-            .claimRewards()
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY, // Твоя константа
-                userStaking: userStakingPDA,
-                owner: wallet,
-                vault: AFOX_POOL_VAULT_PUBKEY, // Твоя константа
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Твоя константа
-                userRewardsAta: userAfoxATA,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .rpc();
+        await program.methods.claimRewards().accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDA,
+            owner: appState.walletPublicKey,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+            userRewardsAta: userAfoxATA,
+            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
 
         showNotification("Rewards claimed!", "success");
         await updateStakingAndBalanceUI();
+    } catch (err) {
+        showNotification("Claim failed: " + err.message, "error");
+    } finally {
+        setLoadingState(false, uiElements.claimRewardsBtn);
+    }
+}
 
+async function handleUnstakeAfox() {
+    if (!appState.walletPublicKey) return;
+    setLoadingState(true, uiElements.unstakeAfoxBtn);
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        const amountToUnstake = new window.anchor.BN(appState.userStakingData.stakedAmount.toString());
 
+        await program.methods.unstake(amountToUnstake, false).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDA,
+            owner: appState.walletPublicKey,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+
+        showNotification("Unstake success!", "success");
+        await updateStakingAndBalanceUI();
+    } catch (err) {
+        showNotification("Unstake failed: " + err.message, "error");
+    } finally {
+        setLoadingState(false, uiElements.unstakeAfoxBtn);
+    }
+}
 
 
 async function handleUnstakeAfox() {
@@ -939,27 +966,31 @@ function initEventListeners() {
     });
 }
 
-    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('#connectWalletBtn'));
-    uiElements.userAfoxBalance = document.getElementById('userAfoxBalance');
-    uiElements.userStakedAmount = document.getElementById('userStakedAmount');
-    uiElements.userRewardsAmount = document.getElementById('userRewardsAmount');
-    uiElements.stakingApr = document.getElementById('stakingApr');
-    uiElements.stakeAmountInput = document.getElementById('stakeAmountInput'); // Исправлено под HTML
-    uiElements.stakeAfoxBtn = document.getElementById('stakeAfoxBtn');
-    uiElements.claimRewardsBtn = document.getElementById('claimRewardsBtn');
-    uiElements.unstakeAfoxBtn = document.getElementById('unstakeAfoxBtn');
-    uiElements.poolSelector = document.getElementById('pool-selector');
-    uiElements.notificationContainer = document.getElementById('notificationContainer');
-
-
+    function cacheUIElements() {
+    // Buttons
+    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn'));
+    uiElements.stakeAfoxBtn = document.getElementById('stake-afox-btn') || document.getElementById('stakeAfoxBtn');
+    uiElements.claimRewardsBtn = document.getElementById('claim-rewards-btn') || document.getElementById('claimRewardsBtn');
+    uiElements.unstakeAfoxBtn = document.getElementById('unstake-afox-btn') || document.getElementById('unstakeAfoxBtn');
     
-    // DAO Elements
-    uiElements.createProposalForm = document.getElementById('create-proposal-form');
-    uiElements.createProposalBtn = document.getElementById('createProposalBtn'); 
+    // Inputs & Display
+    uiElements.stakeAmountInput = document.getElementById('stake-amount') || document.getElementById('stakeAmountInput');
+    uiElements.userAfoxBalance = document.getElementById('user-afox-balance') || document.getElementById('userAfoxBalance');
+    uiElements.userStakedAmount = document.getElementById('user-staked-amount') || document.getElementById('userStakedAmount');
+    uiElements.userRewardsAmount = document.getElementById('user-rewards-amount') || document.getElementById('userRewardsAmount');
+    uiElements.stakingApr = document.getElementById('staking-apr') || document.getElementById('stakingApr');
+    uiElements.lockupPeriod = document.getElementById('lockup-period');
     
-    Array.from(document.querySelectorAll('.close-modal')).forEach(btn => {
-        btn.addEventListener('click', closeAllPopups);
-    });
+    // Global Elements
+    uiElements.notificationContainer = document.getElementById('notification-container') || document.getElementById('notificationContainer');
+    uiElements.pageLoader = document.getElementById('page-loader');
+    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
+    
+    // DAO
+    uiElements.createProposalBtn = document.getElementById('createProposalBtn');
+    uiElements.createProposalModal = document.getElementById('dao-modal');
+}
+
 
     // Staking Section
     uiElements.userAfoxBalance = document.getElementById('user-afox-balance');
@@ -1031,45 +1062,45 @@ function initEventListeners() {
 
 // ==========================================
 // БЛОК 3: DAO (ГОЛОСОВАНИЕ)
-// ==========================================
-
+// ==============================
 function setupDAO() {
-    const daoBtn = document.getElementById('createProposalBtn');
-    const daoModal = document.getElementById('dao-modal');
-    const closeBtn = document.getElementById('close-dao-modal');
-
-    if (daoBtn && daoModal) {
-        daoBtn.addEventListener('click', () => {
-            daoModal.style.display = 'flex';
+    if (uiElements.createProposalBtn && uiElements.createProposalModal) {
+        uiElements.createProposalBtn.addEventListener('click', () => {
+            uiElements.createProposalModal.style.display = 'flex';
         });
-    }
-
-    if (closeBtn && daoModal) {
-        closeBtn.addEventListener('click', () => {
-            daoModal.style.display = 'none';
-        });
+        
+        const closeBtn = document.getElementById('closeProposalModal') || document.getElementById('close-dao-modal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                uiElements.createProposalModal.style.display = 'none';
+            });
+        }
     }
 }
-// Единая функция инициализации (без дублей)
+
 function init() {
-    console.log("Starting AlphaFox Initialization...");
+    console.log("AlphaFox: Initializing System...");
+    cacheUIElements();
     
-    // 1. Кэшируем элементы
-    cacheUIElements(); 
-    
-    // 2. Назначаем события один раз
-    if (uiElements.connectWalletButtons) {
-        uiElements.connectWalletButtons.forEach(btn => btn.addEventListener('click', connectWallet));
-    }
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
-    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
-    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
+    // Регистрация кликов
+    uiElements.connectWalletButtons.forEach(btn => btn.onclick = connectWallet);
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.onclick = handleStakeAfox;
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.onclick = handleClaimRewards;
+    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.onclick = handleUnstakeAfox;
 
-    // 3. Доп. логика
+    uiElements.copyButtons.forEach(btn => {
+        btn.onclick = () => {
+            const text = btn.dataset.copyTarget;
+            if (text) {
+                navigator.clipboard.writeText(text);
+                showNotification("Copied!", "success");
+            }
+        };
+    });
+
     setupDAO();
-
-    console.log("AlphaFox System Ready. Version 2026.");
+    console.log("AlphaFox: Ready. 2026 Live.");
 }
 
-// Запуск
 document.addEventListener('DOMContentLoaded', init);
+
