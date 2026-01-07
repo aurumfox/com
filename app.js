@@ -1,7 +1,7 @@
-// ПРИНУДИТЕЛЬНАЯ ПРИВЯЗКА БИБЛИОТЕК
-window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
-window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
-window.anchor = window.anchor || window.Anchor;
+// Принудительно связываем библиотеки с окном браузера
+if (window.buffer && !window.Buffer) window.Buffer = window.buffer.Buffer;
+if (window.SolanaWeb3 && !window.solanaWeb3) window.solanaWeb3 = window.SolanaWeb3;
+if (window.anchor && !window.Anchor) window.Anchor = window.anchor;
 
 // Проверка в консоли (то, что ты запускал)
 console.log("Buffer status:", window.Buffer ? "✅ OK" : "❌ MISSING");
