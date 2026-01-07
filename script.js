@@ -506,7 +506,7 @@ async function connectWallet() {
         const resp = await window.solana.connect();
         appState.provider = window.solana;
         appState.walletPublicKey = resp.publicKey;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        appState.connection = new window.SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
         updateWalletDisplay(resp.publicKey.toBase58());
         await updateStakingAndBalanceUI();
     } catch (err) { console.error("Connection error:", err); }
@@ -1031,35 +1031,49 @@ function cacheUIElements() {
 // ==========================================
 // БЛОК 3: DAO (ГОЛОСОВАНИЕ)
 // ==========================================
+
 function setupDAO() {
     const daoBtn = document.getElementById('createProposalBtn');
     const daoModal = document.getElementById('dao-modal');
-    const closeBtn = document.querySelector('.close-modal');
+    const closeBtn = document.getElementById('close-dao-modal');
 
     if (daoBtn && daoModal) {
         daoBtn.addEventListener('click', () => {
             daoModal.style.display = 'flex';
         });
     }
-}
-    // Нужно сначала объявить переменную через документ
-const closeBtn = document.getElementById('close-dao-modal'); // Убедитесь, что ID совпадает с HTML
 
-if (closeBtn && daoModal) {
-    closeBtn.addEventListener('click', () => {
-        daoModal.style.display = 'none';
-    });
+    if (closeBtn && daoModal) {
+        closeBtn.addEventListener('click', () => {
+            daoModal.style.display = 'none';
+        });
+    }
 }
 
-
-// --- MAIN INITIALIZATION FUNCTION ---
 function init() {
-    cacheUIElements(); // Добавлено: обязательно кэшируем элементы перед использованием
+    console.log("Starting AlphaFox Initialization...");
+
+    // 1. Кэшируем основные элементы
+    cacheUIElements(); 
+    
+    // 2. Дозаполняем UI элементы (проверьте, чтобы ID в HTML совпадали!)
+    uiElements.pageLoader = document.getElementById('page-loader');
+    uiElements.userAfoxBalance = document.getElementById('user-afox-balance');
+    uiElements.userStakedAmount = document.getElementById('user-staked-amount');
+    uiElements.userRewardsAmount = document.getElementById('user-rewards-amount');
+    uiElements.stakingApr = document.getElementById('staking-apr');
+    uiElements.lockupPeriod = document.getElementById('lockup-period');
+    uiElements.createProposalModal = document.getElementById('dao-modal');
+
+    // 3. Запускаем функции прослушивания событий
     initEventListeners();
     setupDAO();
 
-    
-    console.log("AlphaFox System Ready. All IDs linked.");
+    // Финальная проверка года и статуса
+    const currentYear = new Date().getFullYear();
+    console.log(`AlphaFox System Ready. Status: OK. Version Year: ${currentYear}`);
 }
 
+// Запуск при загрузке страницы
 document.addEventListener('DOMContentLoaded', init);
+
