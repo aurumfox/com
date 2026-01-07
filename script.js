@@ -986,7 +986,7 @@ function cacheUIElements() {
              connectWallet(); // Исправлено: вызываем реальную функцию вместо симуляции
         });
     });
-
+}
     // Staking Actions
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
     if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
