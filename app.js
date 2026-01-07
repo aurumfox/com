@@ -1,20 +1,13 @@
-// Принудительно вытаскиваем Buffer и Anchor наружу
-if (window.buffer) {
-    window.Buffer = window.buffer.Buffer;
-}
-if (window.anchor && !window.Anchor) {
-    window.Anchor = window.anchor;
-}
+// ПРИНУДИТЕЛЬНАЯ ПРИВЯЗКА БИБЛИОТЕК
+window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
+window.anchor = window.anchor || window.Anchor;
 
-// Диагностика библиотек
-console.log("--- Library Check ---");
-console.log("Buffer status:", typeof window.Buffer !== 'undefined' ? "✅ OK" : "❌ MISSING");
-console.log("Solana Web3 status:", (window.solanaWeb3 || window.SolanaWeb3) ? "✅ OK" : "❌ MISSING");
-console.log("Anchor status:", (window.anchor || window.Anchor) ? "✅ OK" : "❌ MISSING");
+// Проверка в консоли (то, что ты запускал)
+console.log("Buffer status:", window.Buffer ? "✅ OK" : "❌ MISSING");
+console.log("Solana Web3 status:", window.solanaWeb3 ? "✅ OK" : "❌ MISSING");
+console.log("Anchor status:", window.anchor ? "✅ OK" : "❌ MISSING");
 
-
-}
-// Если библиотека загружена через <script>, она будет доступна как window.buffer
 
 
 const SOL_DECIMALS = 9;
