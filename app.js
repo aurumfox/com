@@ -1081,7 +1081,7 @@ function init() {
     
 
     // 3. Запускаем функции прослушивания событий
-    initEventListeners();
+    EventListeners();
     setupDAO();
 
     // Финальная проверка года и статуса
