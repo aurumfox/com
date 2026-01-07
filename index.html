@@ -19,7 +19,6 @@
 
     </script>
 
-    <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png" type="image/png">
 </head>
 
@@ -548,34 +547,31 @@
         }
 
         // Привязываем нажатие на кнопку к этой функции
-        if (connectBtn) {
+                if (connectBtn) {
             connectBtn.onclick = handleConnect;
         }
+    </script> <script src="./js/buffer.js"></script>
+    <script src="./js/solana.js"></script>
+    <script src="./js/anchor.js"></script>
+
              
+        <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
+
+    <div id="page-loader" style="display:none; ..."> ... </div>
+
     <script src="./js/buffer.js"></script>
     <script src="./js/solana.js"></script>
     <script src="./js/anchor.js"></script>
 
     <script>
         (function() {
-            // Привязка Buffer (важно для транзакций)
-            if (window.buffer) {
-                window.Buffer = window.buffer.Buffer;
-            } else if (window.solanaWeb3 && window.solanaWeb3.Buffer) {
-                window.Buffer = window.solanaWeb3.Buffer;
-            }
-
-            // Стандартизация имен для Anchor и Solana
+            window.Buffer = (window.buffer && window.buffer.Buffer) || (window.solanaWeb3 && window.solanaWeb3.Buffer);
             window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
             window.anchor = window.anchor || window.Anchor;
-
-            console.log("AlphaFox: Системные библиотеки проверены.");
         })();
     </script>
 
     <script type="module" src="app.js"></script>
 
-</body>
-</html>
 
                                                                                                                                                                            </htm
