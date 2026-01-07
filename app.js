@@ -1,3 +1,8 @@
+// Гарантируем наличие Buffer глобально
+if (typeof window !== 'undefined' && window.buffer) {
+    window.Buffer = window.buffer.Buffer;
+}
+
 // Настройка библиотек с проверкой на существование
 window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
