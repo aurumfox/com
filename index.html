@@ -569,7 +569,22 @@
         if (connectBtn) {
             connectBtn.onclick = handleConnect;
         }
+               <script src="https://bundle.run/buffer@6.0.3"></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.global.min.js"></script>
+
+    <script>
+        // Жесткая привязка Buffer для Anchor
+        if (window.buffer) {
+            window.Buffer = window.buffer.Buffer;
+            console.log("Buffer адаптирован");
+        }
+        // Унификация имен библиотек
+        window.anchor = window.anchor || window.Anchor;
+        window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
     </script>
+
+    <script type="module" src="app.js"></script> 
 </body>
-                           
+    
                                                                                                                                                                                          </html>
