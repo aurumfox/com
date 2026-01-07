@@ -1,3 +1,14 @@
+// Настройка библиотек
+window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
+
+// Если Anchor загрузился, убедимся что он доступен под обоими именами
+if (window.anchor) {
+    window.Anchor = window.anchor;
+} else if (window.Anchor) {
+    window.anchor = window.Anchor;
+}
+
 // Принудительно связываем библиотеки с окном браузера
 if (window.buffer && !window.Buffer) window.Buffer = window.buffer.Buffer;
 if (window.SolanaWeb3 && !window.solanaWeb3) window.solanaWeb3 = window.SolanaWeb3;
