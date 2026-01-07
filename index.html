@@ -569,9 +569,26 @@
         if (connectBtn) {
             connectBtn.onclick = handleConnect;
         }
-            
+             </footer>
+
+    <script src="./js/buffer.js"></script>
+    <script src="./js/solana.js"></script>
+    <script src="./js/anchor.js"></script>
+
+    <script>
+        if (window.buffer) {
+            window.Buffer = window.buffer.Buffer;
+        }
+        window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
+        window.anchor = window.anchor || window.Anchor;
+        
+        console.log("Библиотеки успешно инициализированы из локальных файлов");
     </script>
 
-</body>
+    <script type="module" src="app.js"></script>
+
+</body> </html>
+   
+    
     
                                                                                                                                                                                          </html>
