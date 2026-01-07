@@ -988,29 +988,42 @@ function setupDAO() {
     }
 }
 
-function init() {
-    console.log("AlphaFox: Initializing System...");
-    cacheUIElements();
-    
-    // Регистрация кликов
-    uiElements.connectWalletButtons.forEach(btn => btn.onclick = connectWallet);
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.onclick = handleStakeAfox;
-    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.onclick = handleClaimRewards;
-    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.onclick = handleUnstakeAfox;
+// ОСНОВНОЙ БЛОК УПРАВЛЕНИЯ КНОПКАМИ (вместо старого init)
+function refreshButtons() {
+    console.log("--- Проверка кнопок Aurum Fox ---");
 
-    uiElements.copyButtons.forEach(btn => {
-        btn.onclick = () => {
-            const text = btn.dataset.copyTarget;
-            if (text) {
-                navigator.clipboard.writeText(text);
-                showNotification("Copied!", "success");
+    const actions = [
+        { id: 'connectWalletBtn', func: typeof handleConnect !== 'undefined' ? handleConnect : null },
+        { id: 'stake-afox-btn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
+        { id: 'claim-rewards-btn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
+        { id: 'unstake-afox-btn', func: typeof handleUnstakeAllAfox !== 'undefined' ? handleUnstakeAllAfox : null }
+    ];
+
+    actions.forEach(action => {
+        const btn = document.getElementById(action.id);
+        if (btn) {
+            btn.onclick = null; // УДАЛЯЕМ ДУБЛИКАТЫ (очистка)
+            
+            if (action.func) {
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    console.log(`Нажата кнопка: ${action.id}`);
+                    action.func();
+                };
+                console.log(`✅ Кнопка [${action.id}] успешно привязана.`);
+            } else {
+                console.error(`❌ Ошибка: Функция для кнопки [${action.id}] не найдена в коде!`);
             }
-        };
+        } else {
+            // Это нормально, если кнопки нет на текущей странице
+            console.warn(`⚠️ Кнопка [${action.id}] не найдена в HTML.`);
+        }
     });
-
-    setupDAO();
-    console.log("AlphaFox: Ready. 2026 Live.");
 }
 
-document.addEventListener('DOMContentLoaded', init);
-
+// Запуск привязки сразу после загрузки страницы
+if (document.readyState === 'complete') {
+    refreshButtons();
+} else {
+    window.addEventListener('load', refreshButtons);
+}
