@@ -801,35 +801,6 @@ async function handleClaimRewards() {
     }
 }
 
-async function handleUnstakeAfox() {
-    if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.unstakeAfoxBtn);
-    try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        const amountToUnstake = new window.anchor.BN(appState.userStakingData.stakedAmount.toString());
-
-        await program.methods.unstake(amountToUnstake, false).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: userStakingPDA,
-            owner: appState.walletPublicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-
-        showNotification("Unstake success!", "success");
-        await updateStakingAndBalanceUI();
-    } catch (err) {
-        showNotification("Unstake failed: " + err.message, "error");
-    } finally {
-        setLoadingState(false, uiElements.unstakeAfoxBtn);
-    }
-}
-
 
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey) return;
