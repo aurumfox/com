@@ -514,8 +514,18 @@
             </div>
     </footer>
             
+    <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
+
+<div id="page-loader" style="display:none; position:fixed; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; justify-content:center; align-items:center; color:#f39c12; font-family: sans-serif;">
+    <div style="text-align:center;">
+        <div class="spinner" style="border: 4px solid rgba(255,255,255,0.1); border-left-color: #f39c12; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
+        <p>Processing Transaction...</p>
+    </div>
+</div>
+
+<style> @keyframes spin { to { transform: rotate(360deg); } } </style>
+
     
-    <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 30000;"></div>
 
  <script type="module" src="app.js"></script> 
 
