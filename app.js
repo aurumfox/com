@@ -439,52 +439,6 @@ function updateWalletDisplay(address) {
     if (address) {
         const shortAddress = `${address.substring(0, 4)}...${address.slice(-4)}`;
         
-        // 2. STATE: CONNECTED
-        connectBtns.forEach(btn => {
-             btn.style.display = 'none';
-             btn.classList.add('connected'); 
-        });
-        walletDisplays.forEach(display => {
-            display.style.display = 'flex';
-            display.removeEventListener('click', disconnectWallet);
-            display.addEventListener('click', disconnectWallet);
-        });
-        walletAddresses.forEach(span => span.textContent = shortAddress);
-
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = address;
-            fullAddressDisplay.classList.add('connected');
-        }
-        
-        copyBtns.forEach(copyBtn => {
-             copyBtn.dataset.copyTarget = address; 
-             copyBtn.style.display = 'block';
-        });
-
-    } else {
-        // 3. STATE: DISCONNECTED
-        
-        connectBtns.forEach(btn => {
-             btn.style.display = 'block';
-             btn.classList.remove('connected');
-        });
-        walletDisplays.forEach(display => {
-            display.style.display = 'none';
-            display.removeEventListener('click', disconnectWallet);
-        });
-        
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = 'Not Connected';
-            fullAddressDisplay.classList.remove('connected');
-        }
-
-        copyBtns.forEach(copyBtn => {
-            delete copyBtn.dataset.copyTarget;
-            copyBtn.style.display = 'none';
-        });
-    }
-}
-
 
 /**
  * Handles changes to the wallet public key (connect/disconnect).
@@ -922,12 +876,6 @@ async function disconnectWallet() {
     uiElements.contactForm = document.getElementById('contact-form');
 
 
-    // Wallet Connection
-    uiElements.connectWalletButtons.forEach(btn => {
-        btn.addEventListener('click', () => { 
-             connectWallet(); // Исправлено: вызываем реальную функцию вместо симуляции
-        });
-    });
 
     // Staking Actions
     if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
@@ -956,19 +904,75 @@ async function disconnectWallet() {
         });
     }
 
-    // General Copy Button
-    uiElements.copyButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const textToCopy = btn.dataset.copyTarget;
-            if (textToCopy) {
-                navigator.clipboard.writeText(textToCopy)
-                    .then(() => showNotification('Address copied!', 'success', 2000))
-                    .catch(err => console.error('Could not copy text: ', err));
-            } else {
-                 showNotification('Nothing to copy.', 'warning', 2000);
-            }
+    // ==========================================
+// ГЛАВНЫЙ КОНТРОЛЛЕР ИНТЕРФЕЙСА (БЕЗ ДУБЛИКАТОВ)
+// ==========================================
+
+function syncInterface() {
+    console.log("🔄 Синхронизация интерфейса...");
+
+    // 1. Привязка главных кнопок через onclick (стирает старые дубли)
+    const mainActions = [
+        { id: 'connectWalletBtn', func: connectWallet },
+        { id: 'stake-afox-btn', func: handleStakeAfox },
+        { id: 'claim-rewards-btn', func: handleClaimRewards },
+        { id: 'unstake-afox-btn', func: handleUnstakeAfox }
+    ];
+
+    mainActions.forEach(item => {
+        const btn = document.getElementById(item.id);
+        if (btn) {
+            btn.onclick = null; // Чистим старый дубль
+            btn.onclick = async (e) => {
+                e.preventDefault();
+                if (typeof item.func === 'function') await item.func();
+            };
+        }
+    });
+
+    // 2. Логика кнопок копирования (forEach один раз)
+    if (uiElements.copyButtons) {
+        uiElements.copyButtons.forEach(btn => {
+            btn.onclick = null; // Чистим
+            btn.onclick = (e) => {
+                const text = btn.dataset.copyTarget;
+                if (text) {
+                    navigator.clipboard.writeText(text);
+                    showNotification('Copied!', 'success', 2000);
+                }
+            };
         });
-    }); 
+    }
+
+    // 3. Логика "Wallet Display" (вместо addEventListener в updateWalletDisplay)
+    const walletDisplays = document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]');
+    walletDisplays.forEach(display => {
+        display.onclick = null;
+        if (appState.walletPublicKey) {
+            display.onclick = disconnectWallet; // Клик по адресу отключает кошелек
+        }
+    });
+}
+
+// 🟢 ИСПРАВЛЕННАЯ функция setLoadingState (чтобы не ломать кнопки)
+function setLoadingState(isLoading, button = null) {
+    if (uiElements.pageLoader) uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
+
+    // Список всех кнопок действий
+    const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
+    btns.forEach(btn => { if (btn) btn.disabled = isLoading; });
+
+    if (button) {
+        button.disabled = isLoading;
+        if (isLoading) {
+            button.dataset.oldText = button.textContent;
+            button.textContent = '...Wait';
+        } else if (button.dataset.oldText) {
+            button.textContent = button.dataset.oldText;
+        }
+    }
+}
+
 
 // ==========================================
 // БЛОК 3: DAO (ГОЛОСОВАНИЕ)
