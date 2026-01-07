@@ -505,7 +505,7 @@ async function connectWallet() {
         const resp = await window.solana.connect();
         appState.provider = window.solana;
         appState.walletPublicKey = resp.publicKey;
-        appState.connection = new window.SolanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
         updateWalletDisplay(resp.publicKey.toBase58());
         await updateStakingAndBalanceUI();
     } catch (err) { console.error("Connection error:", err); }
