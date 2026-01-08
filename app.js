@@ -57,7 +57,9 @@ const SECONDS_PER_DAY = 86400;
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
 
 
-const BACKUP_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+
+const BACKUP_RPC_ENDPOINT = 'https://solana-mainnet.g.allnodes.com'; 
+
 
 
 
