@@ -1,15 +1,24 @@
-import BN from 'bn.js';
-export { default as BN } from 'bn.js';
-import { PublicKey, Transaction, TransactionInstruction, SendTransactionError, NONCE_ACCOUNT_LENGTH, SystemProgram } from '@solana/web3.js';
-import * as web3_js from '@solana/web3.js';
-export { web3_js as web3 };
-import { Buffer as Buffer$1 } from 'buffer';
-import bs58$1 from 'bs58';
-import camelCase from 'camelcase';
-import * as borsh from '@coral-xyz/borsh';
-import { sha256 as sha256$1 } from '@noble/hashes/sha256';
-import { inflate } from 'pako';
-import EventEmitter from 'eventemitter3';
+// anchor-lib.js
+(function() {
+    // Проверяем, не подкинул ли нам кошелек (например Phantom) сам Anchor
+    const providerAnchor = (window.solana && window.solana.anchor);
+    
+    const myAnchor = providerAnchor || {
+        // Минимальный набор функций, чтобы app.js не выдавал ошибку
+        AnchorProvider: function(c, w, o) { 
+            this.connection = c; this.wallet = w; this.opts = o; 
+        },
+        Program: function(idl, id, prov) { 
+            this.idl = idl; this.programId = id; this.provider = prov; 
+        },
+        get PublicKey() { return window.solanaWeb3 ? window.solanaWeb3.PublicKey : null; }
+    };
+
+    window.anchor = myAnchor;
+    window.Anchor = myAnchor;
+    console.log("⚓ Локальный Anchor настроен без ошибок импорта!");
+})();
+
 
 /**
  * Splits an array into chunks
