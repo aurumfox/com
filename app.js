@@ -387,57 +387,6 @@ async function getRobustConnection() {
         throw new Error('RPC endpoint is unhealthy.');
     }
 }
-// ИСПРАВЛЕННЫЙ КУСОК (найди и замени)
-function updateWalletDisplay(address) {
-    const connectBtns = uiElements.connectWalletButtons || [];
-    const walletDisplays = Array.from(document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]'));
-    const walletAddresses = uiElements.walletAddressDisplays || [];
-    const copyBtns = uiElements.copyButtons || []; 
-    
-    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
-
-    if (address) {
-        const shortAddress = `${address.substring(0, 4)}...${address.slice(-4)}`;
-        
-        connectBtns.forEach(btn => {
-             btn.style.display = 'none';
-             btn.classList.add('connected'); 
-        });
-        walletDisplays.forEach(display => {
-            display.style.display = 'flex';
-        });
-        walletAddresses.forEach(span => span.textContent = shortAddress);
-
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = address;
-            fullAddressDisplay.classList.add('connected');
-        }
-        
-        copyBtns.forEach(copyBtn => {
-             copyBtn.dataset.copyTarget = address; 
-             copyBtn.style.display = 'block';
-        });
-    } else {
-        connectBtns.forEach(btn => {
-             btn.style.display = 'block';
-             btn.classList.remove('connected');
-        });
-        walletDisplays.forEach(display => {
-            display.style.display = 'none';
-        });
-        
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = 'Not Connected';
-            fullAddressDisplay.classList.remove('connected');
-        }
-
-        copyBtns.forEach(copyBtn => {
-            delete copyBtn.dataset.copyTarget;
-            copyBtn.style.display = 'none';
-        });
-    }
-} // <--- ВОТ ЭТА СКОБКА БЫЛА ПОТЕРЯНА
-
 
 
 // --- Исправленный обработчик ключа ---
@@ -990,96 +939,114 @@ function setupDAO() {
 }
 
 // ============================================================
-// ЕДИНЫЙ КОНТРОЛЛЕР ИНТЕРФЕЙСА (ALL-IN-ONE)
+// ЕДИНЫЙ КОНТРОЛЛЕР ИНТЕРФЕЙСА (ALL-IN-ONE BLOCK)
 // ============================================================
 
 /**
- * Главная функция инициализации приложения
+ * Обновление визуального состояния кошелька (адрес, кнопки подключения)
+ */
+function updateWalletDisplay(address) {
+    const connectBtns = uiElements.connectWalletButtons || [];
+    const walletDisplays = Array.from(document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]'));
+    const walletAddresses = uiElements.walletAddressDisplays || [];
+    const copyBtns = uiElements.copyButtons || []; 
+    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
+
+    if (address) {
+        const shortAddress = `${address.substring(0, 4)}...${address.slice(-4)}`;
+        connectBtns.forEach(btn => { btn.style.display = 'none'; btn.classList.add('connected'); });
+        walletDisplays.forEach(display => { display.style.display = 'flex'; });
+        walletAddresses.forEach(span => span.textContent = shortAddress);
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = address;
+            fullAddressDisplay.classList.add('connected');
+        }
+        copyBtns.forEach(copyBtn => { copyBtn.dataset.copyTarget = address; copyBtn.style.display = 'block'; });
+    } else {
+        connectBtns.forEach(btn => { btn.style.display = 'block'; btn.classList.remove('connected'); });
+        walletDisplays.forEach(display => { display.style.display = 'none'; });
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = 'Not Connected';
+            fullAddressDisplay.classList.remove('connected');
+        }
+        copyBtns.forEach(copyBtn => { delete copyBtn.dataset.copyTarget; copyBtn.style.display = 'none'; });
+    }
+}
+
+/**
+ * Главная функция инициализации: поиск элементов и привязка логики
  */
 function initializeAurumFoxApp() {
-    console.log("🛠 Запуск полной инициализации...");
+    console.log("🛠 Запуск полной инициализации интерфейса...");
 
-    // 1. КЭШИРОВАНИЕ ЭЛЕМЕНТОВ (Собираем всё в одном месте)
+    // 1. Поиск и кэширование элементов
     uiElements = {
-        // Кнопки действий
-        connectWalletBtn: document.getElementById('connectWalletBtn'),
+        connectWalletButtons: Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn')),
+        walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display')),
+        copyButtons: Array.from(document.querySelectorAll('.copy-btn')),
         stakeAfoxBtn: document.getElementById('stake-afox-btn') || document.getElementById('stakeAfoxBtn'),
         claimRewardsBtn: document.getElementById('claim-rewards-btn') || document.getElementById('claimRewardsBtn'),
         unstakeAfoxBtn: document.getElementById('unstake-afox-btn') || document.getElementById('unstakeAfoxBtn'),
-        
-        // Поля ввода и вывода
         stakeAmountInput: document.getElementById('stake-amount'),
         userAfoxBalance: document.getElementById('user-afox-balance'),
         userStakedAmount: document.getElementById('user-staked-amount'),
         userRewardsAmount: document.getElementById('user-rewards-amount'),
         stakingApr: document.getElementById('staking-apr'),
         lockupPeriod: document.getElementById('lockup-period'),
-        
-        // Контейнеры
         notificationContainer: document.getElementById('notification-container'),
         pageLoader: document.getElementById('page-loader'),
-        
-        // DAO
         createProposalBtn: document.getElementById('createProposalBtn'),
         createProposalModal: document.getElementById('dao-modal')
     };
 
-    // 2. ПРИВЯЗКА ЛОГИКИ К КНОПКАМ (Через onclick для исключения дублей)
+    // 2. Привязка функций к кнопкам (onclick гарантирует 1 выполнение)
     const actionsMap = [
-        { btn: uiElements.connectWalletBtn, func: typeof connectWallet !== 'undefined' ? connectWallet : null },
-        { btn: uiElements.stakeAfoxBtn, func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
-        { btn: uiElements.claimRewardsBtn, func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
-        { btn: uiElements.unstakeAfoxBtn, func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null }
+        { id: 'connectWalletBtn', func: typeof connectWallet !== 'undefined' ? connectWallet : null },
+        { id: 'stake-afox-btn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
+        { id: 'claim-rewards-btn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
+        { id: 'unstake-afox-btn', func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null }
     ];
 
     actionsMap.forEach(item => {
-        if (item.btn) {
-            item.btn.onclick = null; // Полная очистка старых событий
+        const btn = document.getElementById(item.id) || uiElements[item.id.replace(/-./g, x => x[1].toUpperCase())];
+        if (btn) {
+            btn.onclick = null; // Сброс старых обработчиков
             if (item.func) {
-                item.btn.onclick = async (e) => {
+                btn.onclick = async (e) => {
                     e.preventDefault();
-                    console.log(`[UI] Выполнение действия для: ${item.btn.id}`);
                     await item.func();
                 };
-                console.log(`✅ Кнопка [${item.btn.id}] активирована.`);
-            } else {
-                console.warn(`⚠️ Функция для кнопки [${item.btn.id}] не найдена.`);
             }
         }
     });
 
-    // 3. ПРИВЯЗКА КНОПОК КОПИРОВАНИЯ
-    document.querySelectorAll('.copy-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            const text = btn.dataset.copyTarget;
-            if (text) {
-                navigator.clipboard.writeText(text);
-                if (typeof showNotification === 'function') {
-                    showNotification('Copied to clipboard!', 'success');
-                }
+    // 3. Логика кнопок копирования и DAO
+    uiElements.copyButtons.forEach(btn => {
+        btn.onclick = () => {
+            if (btn.dataset.copyTarget) {
+                navigator.clipboard.writeText(btn.dataset.copyTarget);
+                showNotification('Copied!', 'success');
             }
         };
     });
 
-    // 4. ИНИЦИАЛИЗАЦИЯ DAO
     if (uiElements.createProposalBtn && uiElements.createProposalModal) {
         uiElements.createProposalBtn.onclick = () => {
             uiElements.createProposalModal.style.display = 'flex';
         };
-        // Кнопка закрытия внутри модалки
-        const closeBtn = uiElements.createProposalModal.querySelector('.close-btn') || document.getElementById('close-dao-modal');
-        if (closeBtn) closeBtn.onclick = () => uiElements.createProposalModal.style.display = 'none';
+        const closeBtn = document.getElementById('close-dao-modal');
+        if (closeBtn) closeBtn.onclick = () => { uiElements.createProposalModal.style.display = 'none'; };
     }
 
-    // 5. ПРОВЕРКА СОСТОЯНИЯ КОШЕЛЬКА ПРИ ЗАГРУЗКЕ
+    // 4. Проверка состояния кошелька при старте
     if (window.solana && window.solana.isConnected) {
         handlePublicKeyChange(window.solana.publicKey);
     }
 
-    console.log("🚀 Все системы Aurum Fox готовы.");
+    console.log("🚀 Приложение Aurum Fox успешно инициализировано.");
 }
 
-// ТОЧКА ВХОДА: Срабатывает строго один раз при загрузке
+// ТОЧКА ВХОДА
 if (document.readyState === 'complete') {
     initializeAurumFoxApp();
 } else {
