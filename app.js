@@ -788,50 +788,91 @@ function setupDAO() {
 }
 
 /**
- * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
+ * ============================================================
+ * AURUM FOX - ОБЪЕДИНЕННЫЙ БЛОК УПРАВЛЕНИЯ (CORE)
+ * ============================================================
  */
-function initializeAurumFoxApp() {
-    console.log("🛠 Инициализация системы Aurum Fox...");
 
-    // 1. Фикс Buffer для работы с Solana Web3.js в браузере
-    if (!window.Buffer) {
-        window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+// 1. Функции кошелька (логика из твоего первого куска)
+async function connectWallet() {
+    try {
+        if (!window.solana || !window.solana.isPhantom) {
+            showNotification("Phantom wallet not found!", "error");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+        const resp = await window.solana.connect();
+        appState.provider = window.solana;
+        appState.walletPublicKey = resp.publicKey;
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { commitment: 'confirmed' });
+        
+        handlePublicKeyChange(resp.publicKey); // Эта функция должна быть определена выше в коде
+        showNotification("Wallet Connected!", "success");
+    } catch (err) {
+        console.error("Connection Error:", err);
+        showNotification("Failed to connect wallet.", "error");
     }
+}
 
-    // 2. Кэширование элементов (Сбор всех ID и классов из твоего HTML)
-    uiElements = {
-        connectWalletButtons: Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn')),
-        walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display, #walletAddressDisplay, #walletAddressSpan')),
-        copyButtons: Array.from(document.querySelectorAll('.copy-btn, #copyWalletBtn')),
-        // Кнопки стейкинга
-        stakeAfoxBtn: document.getElementById('stakeAfoxBtn') || document.getElementById('stake-afox-btn'),
-        claimRewardsBtn: document.getElementById('claimRewardsBtn') || document.getElementById('claim-rewards-btn'),
-        unstakeAfoxBtn: document.getElementById('unstakeAfoxBtn') || document.getElementById('unstake-afox-btn'),
-        // Поля ввода
-        stakeAmountInput: document.getElementById('stakeAmountInput') || document.getElementById('stake-amount'),
-        // Технические элементы
-        notificationContainer: document.getElementById('notification-container') || document.getElementById('notificationContainer')
-    };
+async function disconnectWallet() {
+    try {
+        if (window.solana) await window.solana.disconnect();
+        appState.provider = null;
+        appState.walletPublicKey = null;
+        handlePublicKeyChange(null);
+        showNotification("Disconnected", "info");
+    } catch (err) {
+        console.error("Disconnect Error:", err);
+    }
+}
 
-    // 3. Динамическая привязка обработчиков событий (защита от дублирования)
-    const buttonMap = [
-        { id: 'connectWalletBtn', func: typeof connectWallet !== 'undefined' ? connectWallet : null },
+// 2. Обновление UI (логика из твоего первого куска)
+function updateWalletDisplay(address) {
+    const short = address ? `${address.substring(0, 4)}...${address.slice(-4)}` : 'Not Connected';
+    
+    // Обновляем все кнопки подключения
+    document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn').forEach(btn => {
+        btn.style.display = address ? 'none' : 'block';
+    });
+
+    // Обновляем блоки отображения адреса
+    document.querySelectorAll('.wallet-display, #walletDisplay').forEach(div => {
+        div.style.display = address ? 'flex' : 'none';
+        div.onclick = address ? disconnectWallet : null;
+    });
+
+    // Заполняем текстовые поля адреса
+    document.querySelectorAll('.wallet-address-display, #walletAddressDisplay, #walletAddressSpan').forEach(span => {
+        span.textContent = short;
+        if (address) span.classList.add('connected');
+        else span.classList.remove('connected');
+    });
+}
+
+// 3. Главная инициализация (Тот самый "Один блок")
+function initializeAurumFoxApp() {
+    console.log("🛠 Инициализация системы...");
+
+    // Фикс Buffer
+    window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+
+    // Привязка всех кнопок через массив действий
+    const actions = [
+        { id: 'connectWalletBtn', func: connectWallet },
         { id: 'stakeAfoxBtn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
         { id: 'claimRewardsBtn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
         { id: 'unstakeAfoxBtn', func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null },
         { id: 'copyWalletBtn', func: () => {
-            const addr = uiElements.walletAddressDisplays[0]?.textContent;
-            if (addr && addr !== 'Not Connected') {
-                navigator.clipboard.writeText(appState.walletPublicKey?.toBase58() || "");
-                showNotification('Address Copied!', 'success');
-            }
+             if (appState.walletPublicKey) {
+                 navigator.clipboard.writeText(appState.walletPublicKey.toBase58());
+                 showNotification('Copied!', 'success');
+             }
         }}
     ];
 
-    buttonMap.forEach(item => {
+    actions.forEach(item => {
         const btn = document.getElementById(item.id);
         if (btn && item.func) {
-            btn.onclick = null; // Очистка предыдущих привязок
             btn.onclick = async (e) => {
                 e.preventDefault();
                 await item.func();
@@ -839,30 +880,13 @@ function initializeAurumFoxApp() {
         }
     });
 
-    // 4. Настройка кнопок копирования (если их несколько)
-    uiElements.copyButtons.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const targetText = btn.dataset.copyTarget || (appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null);
-            if (targetText) {
-                navigator.clipboard.writeText(targetText);
-                showNotification('Copied to clipboard!', 'success');
-            }
-        };
-    });
-
-    // 5. Авто-подключение (если сессия Phantom уже активна)
-    if (window.solana && window.solana.isConnected) {
-        console.log("♻️ Восстановление активной сессии кошелька...");
+    // Проверка активной сессии
+    if (window.solana?.isConnected) {
         connectWallet(); 
     }
 
     console.log("🚀 Aurum Fox Core Ready.");
 }
 
-// Запуск инициализации
-if (document.readyState === 'complete') {
-    initializeAurumFoxApp();
-} else {
-    window.addEventListener('load', initializeAurumFoxApp);
-}
+// Запуск
+window.addEventListener('load', initializeAurumFoxApp);
