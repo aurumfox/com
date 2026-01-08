@@ -648,8 +648,8 @@ async function fetchUserBalances() {
  * Определяет количество знаков после запятой для токена.
  */
 function getTokenDecimals(mintAddress) {
-    if (mintAddress.equals(AFOX_TOKEN_MINT_ADDRESS)) return AFOX_DECIMALS;
-    return 9; // По умолчанию для SOL и других
+    if (mintAddress.equals(GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd)) return AFOX_DECIMALS;
+    return 6; // По умолчанию для SOL и других
 }
 
 /**
