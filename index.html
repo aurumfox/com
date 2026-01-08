@@ -1,5 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,46 +5,22 @@
     
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' https://api.mainnet-beta.solana.com;
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://bundle.run https://unpkg.com https://cdnjs.cloudflare.com https://kit.fontawesome.com; 
-        connect-src 'self' wss://api.mainnet-beta.solana.com https://*.sentry.io https://*.googleapis.com https://auth.firebase.com; 
+        script-src 'self' https://bundle.run https://unpkg.com https://cdn.jsdelivr.net; 
+        connect-src 'self' wss://api.mainnet-beta.solana.com https://*.sentry.io https://*.googleapis.com https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/; 
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ka-f.fontawesome.com; 
         font-src 'self' https://fonts.gstatic.com https://ka-f.fontawesome.com; 
         img-src 'self' https://via.placeholder.com https://www.geckoterminal.com data: https:; 
         frame-src https://birdeye.so https://dexscreener.com;
-        upgrade-insecure-requests;
     ">
 
-
- <script src="https://bundle.run/buffer@6.0.3"></script>
+    <script src="https://bundle.run/buffer@6.0.3"></script>
     <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
-
-
-    
-<script src="solana-web3.js"></script>
-<script src="app.js"></script>
-
-
-
-    
-    
-
-
-
-
-
-    <script>
-        // Активация Buffer сразу после загрузки
-        window.addEventListener('load', function() {
-            if (window.buffer) {
-                window.Buffer = window.buffer.Buffer;
-                console.log("AlphaFox: Buffer и библиотеки готовы!");
-            }
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@coral-xyz/anchor@0.29.0/dist/browser.global.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png" type="image/png">
 </head>
+
 
 <body>
 
