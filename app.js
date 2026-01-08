@@ -1,71 +1,28 @@
-// ============================================================
-// МЕГА-ИНИЦИАЛИЗАЦИЯ: BUFFER + SOLANA + ANCHOR (20+ КАНАЛОВ)
-// ============================================================
-(function() {
-    // 1. Принудительная настройка Buffer
-    window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
-    // 2. Универсальная функция поиска и связки
-    function syncAllSystems() {
-        // Ищем Solana Web3
-        const solana = window.solanaWeb3;
-        
-        // Ищем Anchor во всех возможных местах (маленькая/большая буква, дочерние объекты)
-        const anchorObj = window.anchor || 
-                         window.Anchor || 
-                         (window.solana && window.solana.anchor) ||
-                         (window.coral && window.coral.anchor) ||
-                         window.anchorJs;
+// 1. Пытаемся найти библиотеку в любом из возможных имен
+const solLib = window.solanaWeb3;
+const anchorLib = window.anchor || window.Anchor; 
 
-        // Если нашли — принудительно фиксируем в глобальном окне
-        if (solana) window.solanaWeb3 = solana;
-        
-        if (anchorObj) {
-            window.anchor = anchorObj;
-            window.Anchor = anchorObj;
-        }
+// 2. Если нашли, принудительно записываем в window.anchor, 
+// чтобы весь остальной код (app.js) работал корректно
+if (solLib) {
+    window.solanaWeb3 = solLib;
+}
 
-        // Проверка готовности (наличие методов Provider или AnchorProvider)
-        const isSolReady = !!window.solanaWeb3;
-        const isAnchorReady = !!(window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider));
+if (anchorLib) {
+    window.anchor = anchorLib;
+    window.Anchor = anchorLib; // на всякий случай для совместимости
+}
 
-        console.log("--- Отчет по системам ---");
-        console.log("Buffer:", window.Buffer ? "✅" : "❌");
-        console.log("Solana Web3:", isSolReady ? "✅" : "❌");
-        console.log("Anchor (Real):", isAnchorReady ? "✅" : "❌");
-
-        return isSolReady && isAnchorReady;
-    }
-
-    // 3. Цикл поиска (пробуем сразу, а затем каждые 500мс в течение 5 секунд)
-    let ready = syncAllSystems();
-    
-    if (!ready) {
-        console.warn("Библиотеки не найдены. Запуск глубокого сканирования...");
-        let attempts = 0;
-        const maxAttempts = 10; // 5 секунд ожидания
-
-        const retryInterval = setInterval(() => {
-            attempts++;
-            if (syncAllSystems()) {
-                console.log("✅ Все библиотеки успешно найдены после ожидания!");
-                clearInterval(retryInterval);
-                // Запускаем обновление интерфейса, если кошелек уже был в памяти
-                if (typeof updateStakingUI === 'function' && window.appState && appState.walletPublicKey) {
-                    updateStakingUI();
-                }
-            } else if (attempts >= maxAttempts) {
-                console.error("❌ КРИТИЧЕСКИЙ СБОЙ: Библиотека Anchor не обнаружена. Проверь Network (404)!");
-                clearInterval(retryInterval);
-            }
-        }, 500);
-    } else {
-        console.log("🚀 Системы запущены мгновенно.");
-    }
-})();
-// ============================================================
+// 3. Твои логи теперь покажут правду
+console.log("Solana Web3:", window.solanaWeb3 ? "✅" : "❌");
+console.log("Anchor (Real):", (window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider)) ? "✅" : "❌");
 
 
+if (!window.Buffer || !window.solanaWeb3 || !window.anchor) {
+    console.error("Критическая ошибка: Проверь порядок подключения в HTML!");
+}
 
 
 const SOL_DECIMALS = 9;
@@ -996,4 +953,4 @@ if (document.readyState === 'complete') {
     initializeAurumFoxApp();
 } else {
     window.addEventListener('load', initializeAurumFoxApp);
-}
+        }
