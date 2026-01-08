@@ -848,11 +848,13 @@ async function connectWallet() {
 /**
  * Получает реальные балансы SOL и AFOX из блокчейна.
  */
+
 async function fetchUserBalances() {
-    if (!appState.walletPublicKey || !appState.connection) {
-        appState.userBalances.SOL = 0n;
-        appState.userBalances.AFOX = 0n;
-        return;
+    if (!appState.walletPublicKey) return;
+
+    // Гарантируем наличие соединения, если его вдруг нет
+    if (!appState.connection) {
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
     }
 
     const sender = appState.walletPublicKey;
@@ -862,7 +864,7 @@ async function fetchUserBalances() {
         const solBalance = await appState.connection.getBalance(sender, 'confirmed');
         appState.userBalances.SOL = BigInt(solBalance);
 
-        // 2. Баланс AFOX (через системный метод Web3.js, чтобы избежать ошибок версий)
+        // 2. Баланс AFOX
         const tokenAccounts = await appState.connection.getParsedTokenAccountsByOwner(sender, {
             mint: AFOX_TOKEN_MINT_ADDRESS
         });
@@ -874,31 +876,17 @@ async function fetchUserBalances() {
             appState.userBalances.AFOX = 0n;
         }
 
-        console.log("Balances updated:", {
-            SOL: appState.userBalances.SOL.toString(),
-            AFOX: appState.userBalances.AFOX.toString()
-        });
+        console.log("✅ Balances updated!");
+    } catch (error) {
+        console.error("❌ Ошибка RPC при получении баланса:", error);
+        // Если заблокировали — пробуем переключиться на Ankr
+        appState.connection = new window.solanaWeb3.Connection(RPC_ENDPOINTS[1], 'confirmed');
+    }
+}
 
-    } catch (error) {
-        console.error("Critical error fetching balances:", error);
-    }
-}
-async function getWalletBalance(publicKey) {
-    try {
-        // Используем соединение через наш рабочий RPC (индекс 1)
-        const connection = new solanaWeb3.Connection(RPC_ENDPOINTS[1], 'confirmed');
-        const balance = await connection.getBalance(new solanaWeb3.PublicKey(publicKey));
-        
-        // Переводим из лампортов в SOL
-        return balance / solanaWeb3.LAMPORTS_PER_SOL;
-    } catch (error) {
-        console.warn("Ошибка при получении баланса через основной RPC, пробуем резервный...");
-        // Если не вышло, пробуем еще один адрес из списка
-        const fallbackConnection = new solanaWeb3.Connection(RPC_ENDPOINTS[2], 'confirmed');
-        const balance = await fallbackConnection.getBalance(new solanaWeb3.PublicKey(publicKey));
-        return balance / solanaWeb3.LAMPORTS_PER_SOL;
-    }
-}
+
+
+
 
 async function disconnectWallet() {
     try {
