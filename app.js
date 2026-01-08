@@ -1,18 +1,10 @@
-// Гарантируем наличие Buffer глобально
-if (typeof window !== 'undefined' && window.buffer) {
-    window.Buffer = window.buffer.Buffer;
-}
-
-// Настройка библиотек с проверкой на существование
+// В самом верху app.js
 window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
-// Принудительное назначение, если загрузились разные версии
 const solLib = window.solanaWeb3 || window.SolanaWeb3;
-if (solLib) {
-    window.solanaWeb3 = solLib;
-}
-
 const anchorLib = window.anchor || window.Anchor || window.anchorjs;
+
+if (solLib) window.solanaWeb3 = solLib;
 if (anchorLib) {
     window.anchor = anchorLib;
     window.Anchor = anchorLib;
@@ -21,6 +13,10 @@ if (anchorLib) {
 console.log("Buffer:", window.Buffer ? "✅" : "❌");
 console.log("Solana Web3:", window.solanaWeb3 ? "✅" : "❌");
 console.log("Anchor:", window.anchor ? "✅" : "❌");
+
+if (!window.Buffer || !window.solanaWeb3 || !window.anchor) {
+    console.error("Критическая ошибка: Библиотеки не найдены!");
+}
 
 
 const SOL_DECIMALS = 9;
@@ -820,19 +816,38 @@ function setLoadingState(isLoading, button = null) {
  */
 async function connectWallet() {
     try {
-        if (!window.solana) return showNotification("Install Phantom!", "error");
+        // 1. Проверяем, есть ли расширение Phantom в браузере
+        if (!window.solana || !window.solana.isPhantom) {
+            showNotification("Phantom wallet not found! Please install it.", "error");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+
+        // 2. Запрашиваем подключение
         const resp = await window.solana.connect();
         appState.provider = window.solana;
         appState.walletPublicKey = resp.publicKey;
-        appState.connection = await getRobustConnection();
         
+        // 3. Создаем соединение с блокчейном (RPC)
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, {
+            commitment: 'confirmed'
+        });
+        
+        // 4. Обновляем интерфейс
         handlePublicKeyChange(resp.publicKey);
-        showNotification("Connected!", "success");
+        showNotification("Wallet Connected!", "success");
+        
+        console.log("Connected to wallet:", resp.publicKey.toBase58());
     } catch (err) {
-        console.error("Conn Error:", err);
-        showNotification("Failed to connect", "error");
+        console.error("Connection Error:", err);
+        if (err.code === 4001) {
+            showNotification("Connection rejected by user.", "warning");
+        } else {
+            showNotification("Failed to connect wallet.", "error");
+        }
     }
 }
+
 
 async function disconnectWallet() {
     try {
