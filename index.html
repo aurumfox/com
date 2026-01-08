@@ -11,12 +11,10 @@
                 https://api.mainnet-beta.solana.com 
                 https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev 
                 https://*.solana.com 
+                https://*.helius-rpc.com
                 wss://api.mainnet-beta.solana.com 
-                https://*.sentry.io 
-                https://*.googleapis.com 
-                https://auth.firebase.com;
+                https://*.googleapis.com;
     script-src 'self' 'unsafe-inline' 'unsafe-eval' 
-                https://bundle.run 
                 https://unpkg.com 
                 https://cdnjs.cloudflare.com 
                 https://kit.fontawesome.com; 
@@ -26,16 +24,11 @@
     font-src 'self' 
                 https://fonts.gstatic.com 
                 https://ka-f.fontawesome.com; 
-    img-src 'self' 
-                https://via.placeholder.com 
-                https://www.geckoterminal.com 
-                data: 
-                https:; 
-    frame-src 'self'
-                https://birdeye.so 
-                https://dexscreener.com;
+    img-src 'self' data: https:; 
+    frame-src 'self' https://birdeye.so https://dexscreener.com;
     upgrade-insecure-requests;
 ">
+
 
 
 
@@ -536,14 +529,16 @@
 
 <style> @keyframes spin { to { transform: rotate(360deg); } } </style>
 
-    <script src="https://bundle.run/buffer@6.0.3"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
     <script>
-        // Инициализация Buffer для работы транзакций
-        window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+        window.Buffer = window.buffer.Buffer;
     </script>
+
     <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+
     <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.global.min.js"></script>
-     <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/5.0.0/anchor.min.js"></script>
+
+    <script src="app.js"></script>
 
     <script>
         (function() {
