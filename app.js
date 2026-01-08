@@ -355,76 +355,6 @@ function getSolanaTxnFeeReserve() {
     return TXN_FEE_RESERVE_SOL;
 }
 
-// =========================================================================================
-// --- WALLET & CONNECTION FUNCTIONS (Fully implemented) ---
-// =========================================================================================
-
-/**
- * Checks RPC connection status.
- */
-async function checkRpcHealth(connection) {
-    try {
-        await connection.getSlot('confirmed');
-        return true;
-    } catch (rpcError) {
-        console.error('RPC endpoint failed health check:', rpcError);
-        return false;
-    }
-}
-
-/**
- * Robust function to get a working RPC connection.
- */
-async function getRobustConnection() {
-    const connectionOptions = { commitment: 'confirmed' };
-    try {
-        const connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, connectionOptions);
-        const slot = await connection.getSlot();
-        console.log("RPC Connected, slot:", slot);
-        return connection;
-    } catch (error) {
-        console.error('RPC Error:', error);
-        throw new Error('RPC endpoint is unhealthy.');
-    }
-}
-
-
-// --- Исправленный обработчик ключа ---
-function handlePublicKeyChange(newPublicKey) {
-    appState.walletPublicKey = newPublicKey;
-    const address = newPublicKey ? newPublicKey.toBase58() : null;
-
-    updateWalletDisplay(address);
-
-    if (newPublicKey) {
-        updateStakingAndBalanceUI();
-    }
-}
-
-/**
- * Attaches event listeners to the wallet provider.
- */
-function registerProviderListeners() {
-    if (appState.provider && !appState.areProviderListenersAttached) {
-        appState.provider.on('connect', () => {
-            if (appState.provider.publicKey) {
-                handlePublicKeyChange(appState.provider.publicKey);
-            }
-        });
-        appState.provider.on('disconnect', () => handlePublicKeyChange(null));
-        appState.areProviderListenersAttached = true;
-    }
-}
-
-async function handleLoan() {
-    if (!appState.walletPublicKey) return alert("Connect wallet first!");
-    const amount = prompt("Enter AFOX amount to borrow:");
-    if (amount) {
-        showNotification(`Loan request for ${amount} AFOX initialized...`, "info");
-        // Здесь будет вызов метода твоего контракта
-    }
-}
-
 
 /**
  * Fetches real balances from RPC (SOL and AFOX) and updates appState.userBalances.
@@ -854,20 +784,35 @@ function setupDAO() {
     }
 }
 
-
 // ============================================================
-// ГЛОБАЛЬНЫЙ МОДУЛЬ УПРАВЛЕНИЯ ИНТЕРФЕЙСОМ (ALL-IN-ONE)
+// ЕДИНЫЙ МОДУЛЬ УПРАВЛЕНИЯ КОШЕЛЬКОМ И ИНТЕРФЕЙСОМ
 // ============================================================
 
 /**
- * 1. Состояние загрузки (блокировка кнопок)
+ * 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (RPC И СОСТОЯНИЕ)
  */
+async function getRobustConnection() {
+    try {
+        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { commitment: 'confirmed' });
+        await conn.getSlot();
+        return conn;
+    } catch (e) {
+        console.error('RPC Error:', e);
+        throw new Error('RPC endpoint is unhealthy.');
+    }
+}
+
+function handlePublicKeyChange(newPublicKey) {
+    appState.walletPublicKey = newPublicKey;
+    const address = newPublicKey ? newPublicKey.toBase58() : null;
+    updateWalletDisplay(address);
+    if (newPublicKey) updateStakingAndBalanceUI();
+}
+
 function setLoadingState(isLoading, button = null) {
     if (uiElements.pageLoader) uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
-    
     const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
     btns.forEach(btn => { if (btn) btn.disabled = isLoading; });
-
     if (button) {
         button.disabled = isLoading;
         if (isLoading) {
@@ -880,7 +825,7 @@ function setLoadingState(isLoading, button = null) {
 }
 
 /**
- * 2. Обновление визуального состояния кошелька
+ * 2. ОБНОВЛЕНИЕ UI КОШЕЛЬКА
  */
 function updateWalletDisplay(address) {
     const connectBtns = uiElements.connectWalletButtons || [];
@@ -897,10 +842,7 @@ function updateWalletDisplay(address) {
             fullAddressDisplay.textContent = address;
             fullAddressDisplay.classList.add('connected');
         }
-        uiElements.copyButtons?.forEach(btn => { 
-            btn.dataset.copyTarget = address; 
-            btn.style.display = 'block'; 
-        });
+        uiElements.copyButtons?.forEach(btn => { btn.dataset.copyTarget = address; btn.style.display = 'block'; });
     } else {
         connectBtns.forEach(btn => { btn.style.display = 'block'; btn.classList.remove('connected'); });
         walletDisplays.forEach(div => { div.style.display = 'none'; div.onclick = null; });
@@ -913,7 +855,7 @@ function updateWalletDisplay(address) {
 }
 
 /**
- * 3. Логика подключения кошелька
+ * 3. ЛОГИКА ПОДКЛЮЧЕНИЯ (CONNECT / DISCONNECT)
  */
 async function connectWallet() {
     try {
@@ -921,10 +863,9 @@ async function connectWallet() {
         const resp = await window.solana.connect();
         appState.provider = window.solana;
         appState.walletPublicKey = resp.publicKey;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        appState.connection = await getRobustConnection();
         
-        updateWalletDisplay(resp.publicKey.toBase58());
-        await updateStakingAndBalanceUI();
+        handlePublicKeyChange(resp.publicKey);
         showNotification("Connected!", "success");
     } catch (err) {
         console.error("Conn Error:", err);
@@ -932,13 +873,18 @@ async function connectWallet() {
     }
 }
 
+async function disconnectWallet() {
+    if (window.solana) await window.solana.disconnect();
+    handlePublicKeyChange(null);
+}
+
 /**
- * 4. Главная инициализация приложения
+ * 4. ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
  */
 function initializeAurumFoxApp() {
-    console.log("🛠 Начало инициализации...");
+    console.log("🛠 Инициализация системы...");
 
-    // А. Кэширование всех элементов
+    // А. Кэширование элементов
     uiElements = {
         connectWalletButtons: Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn')),
         walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display')),
@@ -950,7 +896,7 @@ function initializeAurumFoxApp() {
         notificationContainer: document.getElementById('notification-container')
     };
 
-    // Б. Привязка действий (onclick исключает дубликаты)
+    // Б. Привязка действий (onclick чистит дубликаты)
     const actions = [
         { id: 'connectWalletBtn', func: connectWallet },
         { id: 'stake-afox-btn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
@@ -969,7 +915,7 @@ function initializeAurumFoxApp() {
         }
     });
 
-    // В. Логика кнопок копирования
+    // В. Логика копирования
     uiElements.copyButtons.forEach(btn => {
         btn.onclick = () => {
             if (btn.dataset.copyTarget) {
@@ -979,17 +925,18 @@ function initializeAurumFoxApp() {
         };
     });
 
-    // Г. Проверка существующего сеанса
+    // Г. Авто-подключение сессии
     if (window.solana?.isConnected && window.solana?.publicKey) {
         handlePublicKeyChange(window.solana.publicKey);
     }
 
-    console.log("🚀 Приложение Aurum Fox готово.");
+    console.log("🚀 Aurum Fox Core Ready.");
 }
 
-// 5. Запуск
+// 5. ЗАПУСК ПРИ ЗАГРУЗКЕ
 if (document.readyState === 'complete') {
     initializeAurumFoxApp();
 } else {
     window.addEventListener('load', initializeAurumFoxApp);
 }
+
