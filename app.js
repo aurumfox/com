@@ -886,40 +886,42 @@ async function disconnectWallet() {
 }
 
 /**
- * 3. ОБНОВЛЕНИЕ UI
+ * ЕДИНЫЙ ЦЕНТР ОТОБРАЖЕНИЯ КОШЕЛЬКА (Заменяет все старые блоки UI)
  */
 function updateWalletDisplay(address) {
-    const connectBtns = uiElements.connectWalletButtons || [];
-    const walletDisplays = document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]');
-    const walletAddresses = uiElements.walletAddressDisplays || [];
-    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
+    // Ищем контейнер, куда вставим кнопку (убедись, что в HTML есть класс .wallet-control)
+    const containers = document.querySelectorAll('.wallet-control, #wallet-header-area');
 
-    if (address) {
-        const short = `${address.substring(0, 4)}...${address.slice(-4)}`;
-        connectBtns.forEach(btn => { btn.style.display = 'none'; btn.classList.add('connected'); });
-        walletDisplays.forEach(div => { 
-            div.style.display = 'flex'; 
-            div.onclick = disconnectWallet; // Клик по кошельку для отключения
-        });
-        walletAddresses.forEach(span => span.textContent = short);
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = address;
-            fullAddressDisplay.classList.add('connected');
+    containers.forEach(container => {
+        if (address) {
+            // Если подключен — создаем HTML адреса и кнопку выхода
+            const short = `${address.substring(0, 4)}...${address.slice(-4)}`;
+            container.innerHTML = `
+                <div class="wallet-info-box">
+                    <span class="addr">${short}</span>
+                    <button id="copyBtn" title="Copy"><i class="fas fa-copy"></i></button>
+                    <button id="exitBtn" title="Disconnect"><i class="fas fa-times"></i></button>
+                </div>
+            `;
+            // Привязываем действия сразу к новым кнопкам
+            container.querySelector('#copyBtn').onclick = () => {
+                navigator.clipboard.writeText(address);
+                showNotification("Copied!", "success");
+            };
+            container.querySelector('#exitBtn').onclick = disconnectWallet;
+
+        } else {
+            // Если не подключен — создаем чистую кнопку входа
+            container.innerHTML = `
+                <button id="mainConnectBtn" class="connect-wallet-btn">
+                    Connect Wallet
+                </button>
+            `;
+            container.querySelector('#mainConnectBtn').onclick = connectWallet;
         }
-        uiElements.copyButtons?.forEach(btn => { 
-            btn.dataset.copyTarget = address; 
-            btn.style.display = 'block'; 
-        });
-    } else {
-        connectBtns.forEach(btn => { btn.style.display = 'block'; btn.classList.remove('connected'); });
-        walletDisplays.forEach(div => { div.style.display = 'none'; div.onclick = null; });
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = 'Not Connected';
-            fullAddressDisplay.classList.remove('connected');
-        }
-        uiElements.copyButtons?.forEach(btn => { btn.style.display = 'none'; });
-    }
+    });
 }
+
 
 /**
  * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
