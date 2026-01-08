@@ -58,8 +58,16 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-const BACKUP_RPC_ENDPOINT = '
-https://solana-mainnet.rpc.extrnode.com'
+// Попробуй эти адреса по очереди, если первый выдает ошибку в консоли
+const RPC_ENDPOINTS = [
+    'https://api.mainnet-beta.solana.com',
+    'https://solana-mainnet.rpc.extrnode.com',
+    'https://rpc.ankr.com/solana'
+];
+
+// Используем первый из списка
+const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[0]; 
+
 
 
 
