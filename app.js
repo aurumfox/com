@@ -884,6 +884,22 @@ async function connectWallet() {
     }
 }
 
+async function getWalletBalance(publicKey) {
+    try {
+        // Используем соединение через наш рабочий RPC (индекс 1)
+        const connection = new solanaWeb3.Connection(RPC_ENDPOINTS[1], 'confirmed');
+        const balance = await connection.getBalance(new solanaWeb3.PublicKey(publicKey));
+        
+        // Переводим из лампортов в SOL
+        return balance / solanaWeb3.LAMPORTS_PER_SOL;
+    } catch (error) {
+        console.warn("Ошибка при получении баланса через основной RPC, пробуем резервный...");
+        // Если не вышло, пробуем еще один адрес из списка
+        const fallbackConnection = new solanaWeb3.Connection(RPC_ENDPOINTS[2], 'confirmed');
+        const balance = await fallbackConnection.getBalance(new solanaWeb3.PublicKey(publicKey));
+        return balance / solanaWeb3.LAMPORTS_PER_SOL;
+    }
+}
 
 async function disconnectWallet() {
     try {
