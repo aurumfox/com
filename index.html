@@ -572,26 +572,23 @@
                 if (connectBtn) {
             connectBtn.onclick = handleConnect;
         }
-    </script> <script src="./js/buffer.js"></script>
-    <script src="./js/solana.js"></script>
-    <script src="./js/anchor.js"></script>
-
-             
+    
         <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
-
-    <div id="page-loader" style="display:none; ..."> ... </div>
-
+    
+    <script src="https://bundle.run/buffer@6.0.3"></script>
     <script>
-        (function() {
-            window.Buffer = (window.buffer && window.buffer.Buffer) || (window.solanaWeb3 && window.solanaWeb3.Buffer);
-            window.solanaWeb3 = window.solanaWeb3 || window.SolanaWeb3;
-            window.anchor = window.anchor || window.Anchor;
-        })();
+      window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
     </script>
 
-    <script type="module" src="app.js"></script>
-    </script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/5.0.0/anchor.min.js"></script>
+
+    <script src="app.js"></script>
+
 </body>
+</html>
+
                         
                                                                                                                                                                            
                                                                                                                                                                            
