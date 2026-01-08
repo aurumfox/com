@@ -1,28 +1,57 @@
-window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+// ============================================================
+// ГЛОБАЛЬНАЯ ИНИЦИАЛИЗАЦИЯ БИБЛИОТЕК (Единый блок)
+// ============================================================
+(function() {
+    // 1. Настройка Buffer (Критично для транзакций)
+    window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
-// 1. Пытаемся найти библиотеку в любом из возможных имен
-const solLib = window.solanaWeb3;
-const anchorLib = window.anchor || window.Anchor; 
+    // 2. Функция поиска библиотек (проверяет все возможные имена)
+    function syncLibraries() {
+        const solLib = window.solanaWeb3;
+        // Ищем Anchor под любым именем (маленькая или большая буква)
+        const anchorLib = window.anchor || window.Anchor || (window.solana && window.solana.anchor);
 
-// 2. Если нашли, принудительно записываем в window.anchor, 
-// чтобы весь остальной код (app.js) работал корректно
-if (solLib) {
-    window.solanaWeb3 = solLib;
-}
+        if (solLib) {
+            window.solanaWeb3 = solLib;
+        }
 
-if (anchorLib) {
-    window.anchor = anchorLib;
-    window.Anchor = anchorLib; // на всякий случай для совместимости
-}
+        if (anchorLib) {
+            window.anchor = anchorLib;
+            window.Anchor = anchorLib;
+        }
 
-// 3. Твои логи теперь покажут правду
-console.log("Solana Web3:", window.solanaWeb3 ? "✅" : "❌");
-console.log("Anchor (Real):", (window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider)) ? "✅" : "❌");
+        const isSolReady = !!window.solanaWeb3;
+        const isAnchorReady = !!(window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider));
 
+        console.log("--- Проверка систем ---");
+        console.log("Buffer:", window.Buffer ? "✅" : "❌");
+        console.log("Solana Web3:", isSolReady ? "✅" : "❌");
+        console.log("Anchor (Real):", isAnchorReady ? "✅" : "❌");
 
-if (!window.Buffer || !window.solanaWeb3 || !window.anchor) {
-    console.error("Критическая ошибка: Проверь порядок подключения в HTML!");
-}
+        return isSolReady && isAnchorReady;
+    }
+
+    // 3. Первый запуск поиска
+    const success = syncLibraries();
+
+    // 4. Если не нашли сразу, пробуем еще раз через 1 секунду (автоматически)
+    if (!success) {
+        console.warn("Библиотеки не найдены сразу. Ожидание загрузки...");
+        setTimeout(() => {
+            if (syncLibraries()) {
+                console.log("✅ Библиотеки успешно инициализированы с задержкой!");
+                // Если кошелек уже был подключен, обновляем данные
+                if (typeof updateStakingUI === 'function' && appState.walletPublicKey) {
+                    updateStakingUI();
+                }
+            } else {
+                console.error("❌ Критическая ошибка: Проверь ссылки в HTML или сеть!");
+            }
+        }, 1000);
+    }
+})();
+// ============================================================
+
 
 
 const SOL_DECIMALS = 9;
