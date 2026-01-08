@@ -655,44 +655,6 @@ function getAnchorProgram(programId, idl) {
     return new (window.anchor.Program || window.Anchor.Program)(idl, programId, provider);
 }
 
-/**
- * Получает реальные балансы SOL и AFOX из блокчейна.
- */
-async function fetchUserBalances() {
-    if (!appState.walletPublicKey || !appState.connection) {
-        appState.userBalances.SOL = 0n;
-        appState.userBalances.AFOX = 0n;
-        return;
-    }
-
-    const sender = appState.walletPublicKey;
-
-    try {
-        // 1. Баланс SOL
-        const solBalance = await appState.connection.getBalance(sender, 'confirmed');
-        appState.userBalances.SOL = BigInt(solBalance);
-
-        // 2. Баланс AFOX (через системный метод Web3.js, чтобы избежать ошибок версий)
-        const tokenAccounts = await appState.connection.getParsedTokenAccountsByOwner(sender, {
-            mint: AFOX_TOKEN_MINT_ADDRESS
-        });
-
-        if (tokenAccounts.value.length > 0) {
-            const amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
-            appState.userBalances.AFOX = BigInt(amount);
-        } else {
-            appState.userBalances.AFOX = 0n;
-        }
-
-        console.log("Balances updated:", {
-            SOL: appState.userBalances.SOL.toString(),
-            AFOX: appState.userBalances.AFOX.toString()
-        });
-
-    } catch (error) {
-        console.error("Critical error fetching balances:", error);
-    }
-}
 
 /**
  * Определяет количество знаков после запятой для токена.
@@ -883,7 +845,44 @@ async function connectWallet() {
         }
     }
 }
+/**
+ * Получает реальные балансы SOL и AFOX из блокчейна.
+ */
+async function fetchUserBalances() {
+    if (!appState.walletPublicKey || !appState.connection) {
+        appState.userBalances.SOL = 0n;
+        appState.userBalances.AFOX = 0n;
+        return;
+    }
 
+    const sender = appState.walletPublicKey;
+
+    try {
+        // 1. Баланс SOL
+        const solBalance = await appState.connection.getBalance(sender, 'confirmed');
+        appState.userBalances.SOL = BigInt(solBalance);
+
+        // 2. Баланс AFOX (через системный метод Web3.js, чтобы избежать ошибок версий)
+        const tokenAccounts = await appState.connection.getParsedTokenAccountsByOwner(sender, {
+            mint: AFOX_TOKEN_MINT_ADDRESS
+        });
+
+        if (tokenAccounts.value.length > 0) {
+            const amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
+            appState.userBalances.AFOX = BigInt(amount);
+        } else {
+            appState.userBalances.AFOX = 0n;
+        }
+
+        console.log("Balances updated:", {
+            SOL: appState.userBalances.SOL.toString(),
+            AFOX: appState.userBalances.AFOX.toString()
+        });
+
+    } catch (error) {
+        console.error("Critical error fetching balances:", error);
+    }
+}
 async function getWalletBalance(publicKey) {
     try {
         // Используем соединение через наш рабочий RPC (индекс 1)
