@@ -515,17 +515,36 @@
     window.Buffer = window.Buffer || buffer.Buffer;
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/@project-serum/anchor@0.26.0/dist/browser.global.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.8/lib/index.iife.min.js"></script>
 
+<script>
+    (function() {
+        // Привязка Buffer
+        window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+        
+        // Принудительная связка Anchor и Solana
+        const checkLibs = setInterval(() => {
+            const solana = window.solanaWeb3;
+            const anchor = window.anchor || window.Anchor;
 
+            if (solana && anchor) {
+                console.log("✅ Все библиотеки обнаружены и связаны!");
+                window.anchor = anchor;
+                window.solanaWeb3 = solana;
+                clearInterval(checkLibs);
+            }
+        }, 100);
 
+        // Тайм-аут остановки поиска (10 секунд)
+        setTimeout(() => clearInterval(checkLibs), 10000);
+    })();
 
-
-    <script>
         (function() {
             const connectBtn = document.getElementById('connectWalletBtn');
             const addressDisplay = document.getElementById('walletAddressDisplay');
