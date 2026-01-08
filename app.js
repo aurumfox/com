@@ -21,7 +21,7 @@ const SOL_DECIMALS = 9;
 const AFOX_DECIMALS = 6;
 const SECONDS_PER_DAY = 86400;
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
-const BACKUP_RPC_ENDPOINT = 'https://api.mainnet.solana.com'; // Попробуйте этот или возьмите бесплатный ключ на Helius.xyz
+const BACKUP_RPC_ENDPOINT = 'https://api.mainnet.solana.com'2ed0cb0f-85fc-410d-98da-59729966ec05';
 
 
 
