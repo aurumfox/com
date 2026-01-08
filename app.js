@@ -508,50 +508,6 @@ async function getUserStakingPDA(owner) {
 
 
 /**
- * ГЛАВНАЯ ФУНКЦИЯ: СТЕЙКИНГ (STAKE)
- */
-async function handleUnstakeAfox() {
-    if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.unstakeAfoxBtn);
-    try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const sender = appState.walletPublicKey;
-        const userStakingPDA = await getUserStakingAccountPDA(sender);
-        
-        // Правильный способ получения ATA
-        const [userAfoxATA] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [sender.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-
-        const amountToUnstake = new window.anchor.BN(appState.userStakingData.stakedAmount.toString());
-
-        await program.methods.unstake(amountToUnstake, false)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPDA,
-                owner: sender,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardsAta: userAfoxATA,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            }).rpc();
-
-        showNotification(`Unstake success!`, 'success');
-        await updateStakingAndBalanceUI();
-    } catch (error) {
-        showNotification(`Unstake failed: ${error.message}`, 'error');
-    } finally {
-        setLoadingState(false, uiElements.unstakeAfoxBtn);
-    }
-}
-
-
-
-/**
  * ФУНКЦИЯ: ЗАБРАТЬ НАГРАДЫ (CLAIM)
  */
 async function handleClaimRewards() {
