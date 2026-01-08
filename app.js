@@ -616,26 +616,45 @@ async function handleUnstakeAfox() {
 /**
  * Получает динамический APR на основе общего стейкинга в пуле.
  */
+
 async function getLiveAPR() {
     try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
-        
-        // totalStakedAmount из блокчейна (с учетом 6 знаков AFOX)
-        const totalStaked = Number(poolAccount.totalStakedAmount) / Math.pow(10, AFOX_DECIMALS);
+        // 1. ПРОВЕРКА: Если нет связи с блокчейном, не пытаемся считать
+        if (!appState.connection) {
+            return "Connect Wallet";
+        }
 
-        // Настройки наград: 100 единиц (0.0001 AFOX) в секунду
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        
+        // 2. ПОЛУЧЕНИЕ ДАННЫХ: Ждем ответа от контракта
+        const poolAccount = await program.account.userStakingAccount.fetch(AFOX_POOL_STATE_PUBKEY);
+        
+        // 3. КОНВЕРТАЦИЯ: В блокчейне числа целые (BigInt), переводим в обычные для расчета
+        // Используем 10 в степени AFOX_DECIMALS (обычно 6)
+        const totalStaked = Number(poolAccount.stakedAmount) / Math.pow(10, AFOX_DECIMALS);
+
+        // Настройки наград: 0.0001 AFOX в секунду
         const rewardsPerSecond = 0.0001; 
         const secondsInYear = 31536000;
         const totalRewardsYear = rewardsPerSecond * secondsInYear; 
 
-        if (totalStaked <= 0) return "100% (Genesis)";
+        // 4. ЗАЩИТА: Если в пуле еще никто не стейкает, показываем базовый высокий процент
+        if (totalStaked <= 0.01) {
+            return "100% (Genesis)";
+        }
 
+        // 5. РАСЧЕТ: Годовая доходность
         const realAPR = (totalRewardsYear / totalStaked) * 100;
+        
+        // Ограничиваем разумными цифрами, чтобы не пугать пользователей
+        if (realAPR > 1000) return "999%+";
+
         return realAPR.toFixed(2) + "%";
+        
     } catch (e) {
-        console.error("Ошибка расчета APR:", e);
-        return "Connect Wallet";
+        // Если ошибка — значит, контракт еще не инициализирован или нет сети
+        console.warn("APR пока недоступен (ждем инициализацию пула)");
+        return "Calculating...";
     }
 }
 
