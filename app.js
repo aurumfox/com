@@ -1,4 +1,4 @@
-// В самом верху app.js
+
 window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
 const solLib = window.solanaWeb3 || window.SolanaWeb3;
