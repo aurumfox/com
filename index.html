@@ -556,41 +556,7 @@
 <div id="notification-container"></div>
 
        <script>
-        // Это блок JavaScript внутри твоего HTML
-        const connectBtn = document.getElementById('connectWalletBtn');
         
-        async function handleConnect() {
-            // Проверяем, есть ли кошелек (работает на ПК или внутри браузера Phantom)
-            const isPhantomInstalled = window.solana && window.solana.isPhantom;
-
-            if (isPhantomInstalled) {
-                try {
-                    const resp = await window.solana.connect();
-                    const pubKey = resp.publicKey.toString();
-                    
-                    // Обновляем текст кнопки
-                    connectBtn.innerText = pubKey.substring(0, 4) + "..." + pubKey.slice(-4);
-                    
-                    // Обновляем адрес в поле под кнопкой (если оно есть)
-                    const addressDisplay = document.getElementById('walletAddressDisplay');
-                    if (addressDisplay) addressDisplay.innerText = pubKey;
-                    
-                } catch (err) {
-                    console.error("Ошибка подключения:", err);
-                }
-            } else {
-                // ВОТ ТА САМАЯ СТРОКА ДЛЯ ANDROID
-                // Она сработает, если юзер нажал кнопку в обычном Chrome
-                const url = encodeURIComponent(window.location.href);
-                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
-            }
-        }
-
-        // Привязываем нажатие на кнопку к этой функции
-        if (connectBtn) {
-            connectBtn.onclick = handleConnect;
-        }
-    </script>
-</body>
-                           
+    <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+                       
     
