@@ -569,15 +569,44 @@
         }
 
         // Привязываем нажатие на кнопку к этой функции
-                if (connectBtn) {
+                <script>
+        const connectBtn = document.getElementById('connectWalletBtn');
+        
+        async function handleConnect() {
+            const isPhantomInstalled = window.solana && window.solana.isPhantom;
+
+            if (isPhantomInstalled) {
+                try {
+                    const resp = await window.solana.connect();
+                    const pubKey = resp.publicKey.toString();
+                    connectBtn.innerText = pubKey.substring(0, 4) + "..." + pubKey.slice(-4);
+                    
+                    const addressDisplay = document.getElementById('walletAddressDisplay');
+                    if (addressDisplay) addressDisplay.innerText = pubKey;
+                } catch (err) {
+                    console.error("Ошибка подключения:", err);
+                }
+            } else {
+                const url = encodeURIComponent(window.location.href);
+                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
+            }
+        }
+
+        if (connectBtn) {
             connectBtn.onclick = handleConnect;
         }
+    </script> <script src="https://bundle.run/buffer@6.0.3"></script>
+    <script>
+        // Принудительно задаем Buffer в глобальную область видимости
+        window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+    </script>
     
-        <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000;"></div>
-    
-    <script src="https://bundle.run/buffer@6.0.3"></script>
     <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.global.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/5.0.0/anchor.min.js"></script>
+    
+    <script src="app.js"></script>
+
 
 
 </body>
