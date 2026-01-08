@@ -680,23 +680,7 @@ async function getLiveAPR() {
     }
 }
 
-async function disconnectWallet() {
-    if (appState.provider) {
-        try {
-            await appState.provider.disconnect();
-        } catch (error) {
-            console.error("Error during disconnect:", error);
-        }
-    }
-    handlePublicKeyChange(null);
-}
-
     function cacheUIElements() {
-    // Buttons
-    uiElements.connectWalletButtons = Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn'));
-    uiElements.stakeAfoxBtn = document.getElementById('stake-afox-btn') || document.getElementById('stakeAfoxBtn');
-    uiElements.claimRewardsBtn = document.getElementById('claim-rewards-btn') || document.getElementById('claimRewardsBtn');
-    uiElements.unstakeAfoxBtn = document.getElementById('unstake-afox-btn') || document.getElementById('unstakeAfoxBtn');
     
     // Inputs & Display
     uiElements.stakeAmountInput = document.getElementById('stake-amount') || document.getElementById('stakeAmountInput');
@@ -785,11 +769,11 @@ function setupDAO() {
 }
 
 // ============================================================
-// ЕДИНЫЙ МОДУЛЬ УПРАВЛЕНИЯ КОШЕЛЬКОМ И ИНТЕРФЕЙСОМ
+// ЕДИНЫЙ МОДУЛЬ УПРАВЛЕНИЯ КОШЕЛЬКОМ И ИНТЕРФЕЙСОМ (FINAL)
 // ============================================================
 
 /**
- * 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (RPC И СОСТОЯНИЕ)
+ * 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И RPC
  */
 async function getRobustConnection() {
     try {
@@ -825,37 +809,7 @@ function setLoadingState(isLoading, button = null) {
 }
 
 /**
- * 2. ОБНОВЛЕНИЕ UI КОШЕЛЬКА
- */
-function updateWalletDisplay(address) {
-    const connectBtns = uiElements.connectWalletButtons || [];
-    const walletDisplays = document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]');
-    const walletAddresses = uiElements.walletAddressDisplays || [];
-    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
-
-    if (address) {
-        const short = `${address.substring(0, 4)}...${address.slice(-4)}`;
-        connectBtns.forEach(btn => { btn.style.display = 'none'; btn.classList.add('connected'); });
-        walletDisplays.forEach(div => { div.style.display = 'flex'; div.onclick = disconnectWallet; });
-        walletAddresses.forEach(span => span.textContent = short);
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = address;
-            fullAddressDisplay.classList.add('connected');
-        }
-        uiElements.copyButtons?.forEach(btn => { btn.dataset.copyTarget = address; btn.style.display = 'block'; });
-    } else {
-        connectBtns.forEach(btn => { btn.style.display = 'block'; btn.classList.remove('connected'); });
-        walletDisplays.forEach(div => { div.style.display = 'none'; div.onclick = null; });
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = 'Not Connected';
-            fullAddressDisplay.classList.remove('connected');
-        }
-        uiElements.copyButtons?.forEach(btn => { btn.style.display = 'none'; });
-    }
-}
-
-/**
- * 3. ЛОГИКА ПОДКЛЮЧЕНИЯ (CONNECT / DISCONNECT)
+ * 2. ЛОГИКА КОШЕЛЬКА (CONNECT / DISCONNECT)
  */
 async function connectWallet() {
     try {
@@ -874,8 +828,50 @@ async function connectWallet() {
 }
 
 async function disconnectWallet() {
-    if (window.solana) await window.solana.disconnect();
+    try {
+        if (window.solana) await window.solana.disconnect();
+        if (appState.provider) appState.provider = null;
+    } catch (err) {
+        console.error("Disconnect Error:", err);
+    }
     handlePublicKeyChange(null);
+    showNotification("Disconnected", "info");
+}
+
+/**
+ * 3. ОБНОВЛЕНИЕ UI
+ */
+function updateWalletDisplay(address) {
+    const connectBtns = uiElements.connectWalletButtons || [];
+    const walletDisplays = document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]');
+    const walletAddresses = uiElements.walletAddressDisplays || [];
+    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
+
+    if (address) {
+        const short = `${address.substring(0, 4)}...${address.slice(-4)}`;
+        connectBtns.forEach(btn => { btn.style.display = 'none'; btn.classList.add('connected'); });
+        walletDisplays.forEach(div => { 
+            div.style.display = 'flex'; 
+            div.onclick = disconnectWallet; // Клик по кошельку для отключения
+        });
+        walletAddresses.forEach(span => span.textContent = short);
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = address;
+            fullAddressDisplay.classList.add('connected');
+        }
+        uiElements.copyButtons?.forEach(btn => { 
+            btn.dataset.copyTarget = address; 
+            btn.style.display = 'block'; 
+        });
+    } else {
+        connectBtns.forEach(btn => { btn.style.display = 'block'; btn.classList.remove('connected'); });
+        walletDisplays.forEach(div => { div.style.display = 'none'; div.onclick = null; });
+        if (fullAddressDisplay) {
+            fullAddressDisplay.textContent = 'Not Connected';
+            fullAddressDisplay.classList.remove('connected');
+        }
+        uiElements.copyButtons?.forEach(btn => { btn.style.display = 'none'; });
+    }
 }
 
 /**
@@ -884,19 +880,19 @@ async function disconnectWallet() {
 function initializeAurumFoxApp() {
     console.log("🛠 Инициализация системы...");
 
-    // А. Кэширование элементов
+    // А. Кэширование элементов (Поиск всех нужных ID)
     uiElements = {
         connectWalletButtons: Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn')),
-        walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display')),
+        walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display, #walletAddressDisplay')),
         copyButtons: Array.from(document.querySelectorAll('.copy-btn')),
-        stakeAfoxBtn: document.getElementById('stake-afox-btn'),
-        claimRewardsBtn: document.getElementById('claim-rewards-btn'),
-        unstakeAfoxBtn: document.getElementById('unstake-afox-btn'),
+        stakeAfoxBtn: document.getElementById('stake-afox-btn') || document.getElementById('stakeAfoxBtn'),
+        claimRewardsBtn: document.getElementById('claim-rewards-btn') || document.getElementById('claimRewardsBtn'),
+        unstakeAfoxBtn: document.getElementById('unstake-afox-btn') || document.getElementById('unstakeAfoxBtn'),
         pageLoader: document.getElementById('page-loader'),
         notificationContainer: document.getElementById('notification-container')
     };
 
-    // Б. Привязка действий (onclick чистит дубликаты)
+    // Б. Привязка действий (onclick исключает дублирование слушателей)
     const actions = [
         { id: 'connectWalletBtn', func: connectWallet },
         { id: 'stake-afox-btn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
@@ -907,7 +903,7 @@ function initializeAurumFoxApp() {
     actions.forEach(item => {
         const btn = document.getElementById(item.id);
         if (btn && item.func) {
-            btn.onclick = null;
+            btn.onclick = null; // Сброс старых обработчиков
             btn.onclick = async (e) => {
                 e.preventDefault();
                 await item.func();
@@ -915,9 +911,10 @@ function initializeAurumFoxApp() {
         }
     });
 
-    // В. Логика копирования
+    // В. Настройка кнопок копирования
     uiElements.copyButtons.forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = (e) => {
+            e.stopPropagation(); // Чтобы не срабатывал клик по родителю
             if (btn.dataset.copyTarget) {
                 navigator.clipboard.writeText(btn.dataset.copyTarget);
                 showNotification('Copied!', 'success');
@@ -925,18 +922,18 @@ function initializeAurumFoxApp() {
         };
     });
 
-    // Г. Авто-подключение сессии
+    // Г. Проверка активной сессии Phantom
     if (window.solana?.isConnected && window.solana?.publicKey) {
+        appState.provider = window.solana;
         handlePublicKeyChange(window.solana.publicKey);
     }
 
     console.log("🚀 Aurum Fox Core Ready.");
 }
 
-// 5. ЗАПУСК ПРИ ЗАГРУЗКЕ
+// 5. ЗАПУСК ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
 if (document.readyState === 'complete') {
     initializeAurumFoxApp();
 } else {
     window.addEventListener('load', initializeAurumFoxApp);
 }
-
