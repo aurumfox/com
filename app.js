@@ -777,14 +777,21 @@ function setupDAO() {
  */
 async function getRobustConnection() {
     try {
-        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { commitment: 'confirmed' });
-        await conn.getSlot();
+        // Use a more reliable RPC if possible, mainnet-beta is often rate-limited
+        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { 
+            commitment: 'confirmed',
+            disableRetryOnRateLimit: false 
+        });
+        await conn.getSlot(); 
         return conn;
     } catch (e) {
-        console.error('RPC Error:', e);
-        throw new Error('RPC endpoint is unhealthy.');
+        if (e.message.includes('fetch')) {
+            showNotification("Connection blocked by browser (CSP/CORS). Check console.", "error");
+        }
+        throw new Error('RPC endpoint unreachable.');
     }
 }
+
 
 function handlePublicKeyChange(newPublicKey) {
     appState.walletPublicKey = newPublicKey;
