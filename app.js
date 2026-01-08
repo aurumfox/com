@@ -1,28 +1,54 @@
-window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+// ============================================================
+// ЕДИНЫЙ БЛОК ИНИЦИАЛИЗАЦИИ: BUFFER + SOLANA + ANCHOR
+// ============================================================
+(function() {
+    // 1. Настройка Buffer (обязательно для транзакций)
+    window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
-// 1. Пытаемся найти библиотеку в любом из возможных имен
-const solLib = window.solanaWeb3;
-const anchorLib = window.anchor || window.Anchor; 
+    function syncLibraries() {
+        // Ищем Solana Web3
+        const solLib = window.solanaWeb3;
+        
+        // Ищем Anchor (проверяем все имена из локального файла node_modules)
+        const anchorLib = window.anchor || window.Anchor || (window.solana && window.solana.anchor);
 
-// 2. Если нашли, принудительно записываем в window.anchor, 
-// чтобы весь остальной код (app.js) работал корректно
-if (solLib) {
-    window.solanaWeb3 = solLib;
-}
+        // Принудительная привязка к глобальному объекту
+        if (solLib) window.solanaWeb3 = solLib;
+        if (anchorLib) {
+            window.anchor = anchorLib;
+            window.Anchor = anchorLib;
+        }
 
-if (anchorLib) {
-    window.anchor = anchorLib;
-    window.Anchor = anchorLib; // на всякий случай для совместимости
-}
+        // Проверка статуса готовности
+        const isSolReady = !!window.solanaWeb3;
+        const isAnchorReady = !!(window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider));
 
-// 3. Твои логи теперь покажут правду
-console.log("Solana Web3:", window.solanaWeb3 ? "✅" : "❌");
-console.log("Anchor (Real):", (window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider)) ? "✅" : "❌");
+        console.log("--- Проверка систем ---");
+        console.log("Buffer:", window.Buffer ? "✅" : "❌");
+        console.log("Solana Web3:", isSolReady ? "✅" : "❌");
+        console.log("Anchor (Real):", isAnchorReady ? "✅" : "❌");
 
+        return isSolReady && isAnchorReady;
+    }
 
-if (!window.Buffer || !window.solanaWeb3 || !window.anchor) {
-    console.error("Критическая ошибка: Проверь порядок подключения в HTML!");
-}
+    // Первый запуск
+    if (!syncLibraries()) {
+        console.warn("Библиотеки не найдены сразу. Ожидание загрузки локальных файлов...");
+        
+        // Повторная попытка через 1 секунду (если файл anchor-lib.js еще грузится)
+        setTimeout(() => {
+            if (syncLibraries()) {
+                console.log("✅ Библиотеки успешно инициализированы!");
+                // Вызов обновления интерфейса, если функции уже объявлены ниже
+                if (typeof updateStakingUI === 'function') updateStakingUI();
+            } else {
+                console.error("❌ КРИТИЧЕСКАЯ ОШИБКА: Anchor не найден! Проверь вкладку Network (ошибка 404).");
+            }
+        }, 1000);
+    }
+})();
+// ============================================================
+
 
 
 const SOL_DECIMALS = 9;
