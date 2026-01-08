@@ -1,16 +1,24 @@
 window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
-// 2. Привязка библиотек (строго!)
+// 1. Пытаемся найти библиотеку в любом из возможных имен
 const solLib = window.solanaWeb3;
-const anchorLib = window.anchor; // Берем из того, что загрузил CDN
+const anchorLib = window.anchor || window.Anchor; 
 
-// Присваиваем обратно в window для глобального доступа
-if (solLib) window.solanaWeb3 = solLib;
-if (anchorLib) window.anchor = anchorLib;
+// 2. Если нашли, принудительно записываем в window.anchor, 
+// чтобы весь остальной код (app.js) работал корректно
+if (solLib) {
+    window.solanaWeb3 = solLib;
+}
 
-console.log("Buffer:", window.Buffer ? "✅" : "❌");
+if (anchorLib) {
+    window.anchor = anchorLib;
+    window.Anchor = anchorLib; // на всякий случай для совместимости
+}
+
+// 3. Твои логи теперь покажут правду
 console.log("Solana Web3:", window.solanaWeb3 ? "✅" : "❌");
-console.log("Anchor (Real):", (window.anchor && window.anchor.AnchorProvider) ? "✅" : "❌");
+console.log("Anchor (Real):", (window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider)) ? "✅" : "❌");
+
 
 if (!window.Buffer || !window.solanaWeb3 || !window.anchor) {
     console.error("Критическая ошибка: Проверь порядок подключения в HTML!");
