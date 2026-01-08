@@ -16,28 +16,22 @@
         upgrade-insecure-requests;
     ">
 
-<script src="https://cdn.jsdelivr.net/npm/@coral-xyz/anchor@0.29.0/dist/browser.global.min.js"></script>
+    <script src="https://bundle.run/buffer@6.0.3"></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@coral-xyz/anchor@0.29.0/dist/browser.global.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@project-serum/anchor@0.26.0/dist/browser.global.min.js"></script>
+
+<script src="https://unpkg.com/@project-serum/anchor@0.26.0/dist/browser.global.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.1.1/anchor.min.js"></script>
 
-<script>
-    (function() {
-        const check = setInterval(() => {
-            const a = window.anchor || window.Anchor || (window.solana && window.solana.anchor);
-            if (a) {
-                window.anchor = a;
-                window.Anchor = a;
-                console.log("⚓ Anchor успешно загружен и привязан!");
-                clearInterval(check);
-            }
-        }, 100);
-        setTimeout(() => clearInterval(check), 5000);
-    })();
-</script>
 
 
 
-    
+
+    <script>
         // Активация Buffer сразу после загрузки
         window.addEventListener('load', function() {
             if (window.buffer) {
