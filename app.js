@@ -313,94 +313,6 @@ async function updateStakingAndBalanceUI() {
     }
 }
 
-
-/**
- * Returns an Anchor program instance.
- */
-function getAnchorProgram(programId, idl) {
-    if (!appState.connection || !appState.provider) {
-        throw new Error("Wallet not connected or connection unavailable for Anchor.");
-    }
-    // Using window.Anchor for universality
-    const anchorProvider = new window.Anchor.AnchorProvider(
-        appState.connection,
-        appState.provider,
-        { commitment: "confirmed" }
-    );
-    if (!idl || !idl.version) {
-        throw new Error("STAKING_IDL is missing or empty. Cannot interact with the program.");
-    }
-    return new window.Anchor.Program(idl, programId, anchorProvider);
-}
-
-/**
- * Gets the decimal count for a given token mint address.
- */
-function getTokenDecimals(mintAddress) {
-    if (mintAddress.equals(TOKEN_MINT_ADDRESSES['SOL'])) {
-        return SOL_DECIMALS;
-    }
-    if (mintAddress.equals(TOKEN_MINT_ADDRESSES['AFOX'])) {
-        return AFOX_DECIMALS;
-    }
-    return 9;
-}
-
-function getSolanaTxnFeeReserve() {
-    return TXN_FEE_RESERVE_SOL;
-}
-
-
-/**
- * Fetches real balances from RPC (SOL and AFOX) and updates appState.userBalances.
- * 🟢 ИСПРАВЛЕНО: УДАЛЕНА ВСЯ MOCK-ЛОГИКА ДЛЯ AFOX И SOL.
- */
-async function fetchUserBalances() {
-    if (!appState.walletPublicKey || !appState.connection) {
-        appState.userBalances.SOL = BigInt(0);
-        appState.userBalances.AFOX = BigInt(0);
-        return;
-    }
-
-    const sender = appState.walletPublicKey;
-
-    // --- 1. ФЕТЧ БАЛАНСА SOL ---
-    try {
-        const solBalance = await appState.connection.getBalance(sender, 'confirmed');
-        appState.userBalances.SOL = BigInt(solBalance);
-    } catch (error) {
-        console.error("Failed to fetch SOL balance:", error);
-        appState.userBalances.SOL = BigInt(0); 
-        showNotification("Warning: Could not fetch real SOL balance.", 'warning');
-    }
-
-    // --- 2. ФЕТЧ БАЛАНСА AFOX (РЕАЛИЗАЦИЯ) ---
-    try {
-        // 2a. Получаем адрес Associated Token Account (ATA) пользователя для токена AFOX
-        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, 
-            TOKEN_PROGRAM_ID, 
-            AFOX_TOKEN_MINT_ADDRESS, 
-            sender
-        );
-        
-        // 2b. Запрашиваем баланс этого токен-аккаунта
-        const accountInfo = await appState.connection.getTokenAccountBalance(userAfoxATA);
-        
-        if (accountInfo.value && accountInfo.value.amount) {
-            appState.userBalances.AFOX = BigInt(accountInfo.value.amount);
-        } else {
-            // Если ATA не существует или не имеет баланса (пользователь не владеет AFOX)
-            appState.userBalances.AFOX = BigInt(0);
-        }
-        
-    } catch (tokenError) {
-        console.warn("Failed to fetch AFOX token balance, setting to 0:", tokenError);
-        appState.userBalances.AFOX = BigInt(0); 
-    }
-}
-
-
 // =========================================================================================
 // --- STAKING FUNCTIONS (ANCHOR TEMPLATES + REAL LOGIC) ---
 // =========================================================================================
@@ -648,32 +560,106 @@ async function handleUnstakeAfox() {
     }
 }
 
+// ============================================================
+// БЛОК ЛОГИКИ: APR, БАЛАНСЫ И ПОДКЛЮЧЕНИЕ ПРОГРАММЫ
+// ============================================================
+
+/**
+ * Получает динамический APR на основе общего стейкинга в пуле.
+ */
 async function getLiveAPR() {
     try {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        
-        // 1. Получаем данные о состоянии пула из блокчейна
         const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
         
-        // 2. Достаем total_staked (сколько всего монет люди уже вложили)
-        const totalStaked = Number(poolAccount.totalStakedAmount) / 1000000; // Делим на 10^6 знаков
+        // totalStakedAmount из блокчейна (с учетом 6 знаков AFOX)
+        const totalStaked = Number(poolAccount.totalStakedAmount) / Math.pow(10, AFOX_DECIMALS);
 
-        // 3. Твои настройки: 100 единиц в секунду = 0.0001 монеты
+        // Настройки наград: 100 единиц (0.0001 AFOX) в секунду
         const rewardsPerSecond = 0.0001; 
         const secondsInYear = 31536000;
-        const totalRewardsYear = rewardsPerSecond * secondsInYear; // 3,153.6 AFX в год
+        const totalRewardsYear = rewardsPerSecond * secondsInYear; 
 
-        if (totalStaked === 0) return "—";
+        if (totalStaked <= 0) return "100% (Genesis)";
 
-        // 4. Считаем реальный процент
         const realAPR = (totalRewardsYear / totalStaked) * 100;
-        
         return realAPR.toFixed(2) + "%";
     } catch (e) {
         console.error("Ошибка расчета APR:", e);
-        return "Error";
+        return "Connect Wallet";
     }
 }
+
+/**
+ * Создает экземпляр программы Anchor для взаимодействия со смарт-контрактом.
+ */
+function getAnchorProgram(programId, idl) {
+    if (!appState.connection || !appState.provider) {
+        throw new Error("Wallet not connected");
+    }
+    // Используем window.anchor (маленькая 'a'), так как это стандарт для браузерного билда
+    const provider = new (window.anchor.AnchorProvider || window.Anchor.AnchorProvider)(
+        appState.connection,
+        appState.provider,
+        { commitment: "confirmed" }
+    );
+    return new (window.anchor.Program || window.Anchor.Program)(idl, programId, provider);
+}
+
+/**
+ * Получает реальные балансы SOL и AFOX из блокчейна.
+ */
+async function fetchUserBalances() {
+    if (!appState.walletPublicKey || !appState.connection) {
+        appState.userBalances.SOL = 0n;
+        appState.userBalances.AFOX = 0n;
+        return;
+    }
+
+    const sender = appState.walletPublicKey;
+
+    try {
+        // 1. Баланс SOL
+        const solBalance = await appState.connection.getBalance(sender, 'confirmed');
+        appState.userBalances.SOL = BigInt(solBalance);
+
+        // 2. Баланс AFOX (через системный метод Web3.js, чтобы избежать ошибок версий)
+        const tokenAccounts = await appState.connection.getParsedTokenAccountsByOwner(sender, {
+            mint: AFOX_TOKEN_MINT_ADDRESS
+        });
+
+        if (tokenAccounts.value.length > 0) {
+            const amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
+            appState.userBalances.AFOX = BigInt(amount);
+        } else {
+            appState.userBalances.AFOX = 0n;
+        }
+
+        console.log("Balances updated:", {
+            SOL: appState.userBalances.SOL.toString(),
+            AFOX: appState.userBalances.AFOX.toString()
+        });
+
+    } catch (error) {
+        console.error("Critical error fetching balances:", error);
+    }
+}
+
+/**
+ * Определяет количество знаков после запятой для токена.
+ */
+function getTokenDecimals(mintAddress) {
+    if (mintAddress.equals(AFOX_TOKEN_MINT_ADDRESS)) return AFOX_DECIMALS;
+    return 9; // По умолчанию для SOL и других
+}
+
+/**
+ * Запас SOL на комиссии (0.005 SOL)
+ */
+function getSolanaTxnFeeReserve() {
+    return 5000000n; // 0.005 * 10^9
+}
+
 
     function cacheUIElements() {
     
