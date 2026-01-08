@@ -1,21 +1,20 @@
-
+// 1. Инициализация Buffer
 window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
-const solLib = window.solanaWeb3 || window.SolanaWeb3;
-const anchorLib = window.anchor || window.Anchor || window.anchorjs;
+// 2. Привязка библиотек (строго!)
+const solLib = window.solanaWeb3;
+const anchorLib = window.anchor; // Берем из того, что загрузил CDN
 
+// Присваиваем обратно в window для глобального доступа
 if (solLib) window.solanaWeb3 = solLib;
-if (anchorLib) {
-    window.anchor = anchorLib;
-    window.Anchor = anchorLib;
-}
+if (anchorLib) window.anchor = anchorLib;
 
 console.log("Buffer:", window.Buffer ? "✅" : "❌");
 console.log("Solana Web3:", window.solanaWeb3 ? "✅" : "❌");
-console.log("Anchor:", window.anchor ? "✅" : "❌");
+console.log("Anchor (Real):", (window.anchor && window.anchor.AnchorProvider) ? "✅" : "❌");
 
 if (!window.Buffer || !window.solanaWeb3 || !window.anchor) {
-    console.error("Критическая ошибка: Библиотеки не найдены!");
+    console.error("Критическая ошибка: Проверь порядок подключения в HTML!");
 }
 
 
