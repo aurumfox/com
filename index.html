@@ -34,8 +34,21 @@
                 </ul>
         </nav>
 
-      <div id="wallet-header-area"></div>
-  
+        <div class="wallet-controls">
+    <button 
+        id="connectWalletBtn" 
+        class="web3-button connect-fox-btn wallet-connect-btn"
+        aria-label="Подключить криптовалютный кошелек"
+    >
+        <i class="fox-icon">🦊</i> 
+        Connect Wallet
+    </button>
+    
+    <div id="walletDisplay" class="wallet-display" style="display:none;">
+        <span id="walletAddressSpan" class="wallet-address-text"></span>
+        <button id="copyWalletBtn" class="copy-btn" aria-label="Копировать адрес кошелька"><i class="fas fa-copy"></i></button>
+    </div>
+</div>
         
 </header>
 
@@ -263,10 +276,10 @@
             Access decentralized finance tools: participate in <strong>governance</strong>, 
             stake your <strong>AFOX</strong>, and explore <strong>lending</strong> opportunities. 
         </p>
-
-<div class="wallet-control-box" style="margin: 20px 0; padding: 15px; border: 1px dashed #f39c12; border-radius: 8px;">
-    <p class="web3-wallet-display">Connected Wallet: <strong id="walletAddressDisplay" style="color: #f39c12;">Not Connected</strong></p>
-</div>
+        
+        <div class="wallet-control-box" style="margin: 20px 0; padding: 15px; border: 1px dashed #f39c12; border-radius: 8px;">
+            <p class="web3-wallet-display">Connected Wallet: <strong id="walletAddressDisplay" style="color: #f39c12;">Not Connected</strong></p>
+        </div> 
 
         <div class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
              <div class="feature-card">
@@ -530,3 +543,8 @@
 </html>
 
     
+
+
+
+
+
