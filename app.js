@@ -927,45 +927,41 @@ function updateWalletDisplay(address) {
 function initializeAurumFoxApp() {
     console.log("🛠 Инициализация системы Aurum Fox...");
 
-    // 1. Фикс Buffer для работы с Solana Web3.js в браузере
+    // 1. Сначала подгружаем адреса (КРИТИЧЕСКИ ВАЖНО)
+    // Это создаст все PublicKey, необходимые для работы
+    if (!setupAddresses()) {
+        console.error("❌ Остановка: Адреса не инициализированы.");
+        return; 
+    }
+
+    // 2. Фикс Buffer для работы с Solana Web3.js в браузере
     if (!window.Buffer) {
         window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
     }
 
-    // 2. Кэширование элементов (Сбор всех ID и классов из твоего HTML)
+    // 3. Кэширование элементов (Сбор всех ID и классов из твоего HTML)
     uiElements = {
         connectWalletButtons: Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn')),
         walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display, #walletAddressDisplay, #walletAddressSpan')),
         copyButtons: Array.from(document.querySelectorAll('.copy-btn, #copyWalletBtn')),
-        // Кнопки стейкинга
         stakeAfoxBtn: document.getElementById('stakeAfoxBtn') || document.getElementById('stake-afox-btn'),
         claimRewardsBtn: document.getElementById('claimRewardsBtn') || document.getElementById('claim-rewards-btn'),
         unstakeAfoxBtn: document.getElementById('unstakeAfoxBtn') || document.getElementById('unstake-afox-btn'),
-        // Поля ввода
         stakeAmountInput: document.getElementById('stakeAmountInput') || document.getElementById('stake-amount'),
-        // Технические элементы
         notificationContainer: document.getElementById('notification-container') || document.getElementById('notificationContainer')
     };
 
-    // 3. Динамическая привязка обработчиков событий (защита от дублирования)
+    // 4. Привязка функций к кнопкам
     const buttonMap = [
         { id: 'connectWalletBtn', func: typeof connectWallet !== 'undefined' ? connectWallet : null },
         { id: 'stakeAfoxBtn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
         { id: 'claimRewardsBtn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
-        { id: 'unstakeAfoxBtn', func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null },
-        { id: 'copyWalletBtn', func: () => {
-            const addr = uiElements.walletAddressDisplays[0]?.textContent;
-            if (addr && addr !== 'Not Connected') {
-                navigator.clipboard.writeText(appState.walletPublicKey?.toBase58() || "");
-                showNotification('Address Copied!', 'success');
-            }
-        }}
+        { id: 'unstakeAfoxBtn', func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null }
     ];
 
     buttonMap.forEach(item => {
-        const btn = document.getElementById(item.id);
+        const btn = document.getElementById(item.id) || document.getElementById(item.id.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)); 
         if (btn && item.func) {
-            btn.onclick = null; // Очистка предыдущих привязок
             btn.onclick = async (e) => {
                 e.preventDefault();
                 await item.func();
@@ -973,19 +969,7 @@ function initializeAurumFoxApp() {
         }
     });
 
-    // 4. Настройка кнопок копирования (если их несколько)
-    uiElements.copyButtons.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const targetText = btn.dataset.copyTarget || (appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null);
-            if (targetText) {
-                navigator.clipboard.writeText(targetText);
-                showNotification('Copied to clipboard!', 'success');
-            }
-        };
-    });
-
-    // 5. Авто-подключение (если сессия Phantom уже активна)
+    // 5. Авто-подключение сессии
     if (window.solana && window.solana.isConnected) {
         console.log("♻️ Восстановление активной сессии кошелька...");
         connectWallet(); 
@@ -993,6 +977,9 @@ function initializeAurumFoxApp() {
 
     console.log("🚀 Aurum Fox Core Ready.");
 }
+
+
+
 
 // Запуск инициализации
 if (document.readyState === 'complete') {
