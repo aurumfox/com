@@ -1,4 +1,3 @@
-// 1. Инициализация Buffer
 window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
 // 2. Привязка библиотек (строго!)
