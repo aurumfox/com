@@ -58,7 +58,12 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-const BACKUP_RPC_ENDPOINT = 'https://solana-mainnet.g.allnodes.com'; 
+const BACKUP_RPC_ENDPOINT = '
+https://solana-mainnet.rpc.extrnode.com'
+
+
+
+
 
 
 
