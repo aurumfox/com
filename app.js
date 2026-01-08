@@ -901,29 +901,47 @@ async function disconnectWallet() {
  */
 
 function updateWalletDisplay() {
-    // Находим ВСЕ блоки с нашим новым классом
+    // Ищем все места в HTML, где должна быть кнопка или адрес
     const containers = document.querySelectorAll('.wallet-control');
     
     containers.forEach(container => {
-        if (!window.solana || !window.solana.isConnected) {
-            // Если кошелек НЕ подключен — рисуем кнопку с лисой
+        if (window.solana && window.solana.isConnected) {
+            // Если кошелек ПОДКЛЮЧЕН
+            const pubKey = window.solana.publicKey.toString();
             container.innerHTML = `
-                <button id="connectWalletBtn" class="web3-button connect-fox-btn">
-                    <i class="fox-icon">🦊</i> Connect Wallet
-                </button>`;
-            
-            // Сразу вешаем событие клика на новую кнопку
-            container.querySelector('#connectWalletBtn').onclick = () => connectWallet();
+                <div class="wallet-display" style="display: flex; align-items: center; gap: 10px;">
+                    <span class="wallet-address-text" style="color: #f39c12;">
+                        ${pubKey.slice(0, 4)}...${pubKey.slice(-4)}
+                    </span>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${pubKey}')" title="Copy Address">
+                        <i class="fas fa-copy"></i> 📋
+                    </button>
+                </div>
+            `;
         } else {
-            // Если ПОДКЛЮЧЕН — показываем адрес
-            const addr = window.solana.publicKey.toString();
+            // Если кошелек НЕ ПОДКЛЮЧЕН — создаем кнопку с лисой
             container.innerHTML = `
-                <div class="wallet-status-active">
-                    <span>${addr.slice(0, 4)}...${addr.slice(-4)}</span>
-                </div>`;
+                <button class="web3-button connect-fox-btn wallet-connect-btn" style="cursor: pointer;">
+                    <i class="fox-icon">🦊</i> Connect Wallet
+                </button>
+            `;
+            
+            // Находим только что созданную кнопку и вешаем на неё функцию подключения
+            const btn = container.querySelector('.connect-fox-btn');
+            btn.addEventListener('click', async () => {
+                try {
+                    await connectWallet(); // Вызываем твою основную функцию подключения
+                } catch (err) {
+                    console.error("Connection failed", err);
+                }
+            });
         }
     });
 }
+
+// Вызываем эту функцию сразу при загрузке скрипта, чтобы кнопка отрисовалась
+updateWalletDisplay();
+
 
 /**
  * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
