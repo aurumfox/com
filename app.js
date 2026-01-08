@@ -899,40 +899,31 @@ async function disconnectWallet() {
 /**
  * ЕДИНЫЙ ЦЕНТР ОТОБРАЖЕНИЯ КОШЕЛЬКА (Заменяет все старые блоки UI)
  */
-function updateWalletDisplay(address) {
-    // Ищем контейнер, куда вставим кнопку (убедись, что в HTML есть класс .wallet-control)
-    const containers = document.querySelectorAll('.wallet-control, #wallet-header-area');
 
+function updateWalletDisplay() {
+    // Находим ВСЕ блоки с нашим новым классом
+    const containers = document.querySelectorAll('.wallet-control');
+    
     containers.forEach(container => {
-        if (address) {
-            // Если подключен — создаем HTML адреса и кнопку выхода
-            const short = `${address.substring(0, 4)}...${address.slice(-4)}`;
+        if (!window.solana || !window.solana.isConnected) {
+            // Если кошелек НЕ подключен — рисуем кнопку с лисой
             container.innerHTML = `
-                <div class="wallet-info-box">
-                    <span class="addr">${short}</span>
-                    <button id="copyBtn" title="Copy"><i class="fas fa-copy"></i></button>
-                    <button id="exitBtn" title="Disconnect"><i class="fas fa-times"></i></button>
-                </div>
-            `;
-            // Привязываем действия сразу к новым кнопкам
-            container.querySelector('#copyBtn').onclick = () => {
-                navigator.clipboard.writeText(address);
-                showNotification("Copied!", "success");
-            };
-            container.querySelector('#exitBtn').onclick = disconnectWallet;
-
+                <button id="connectWalletBtn" class="web3-button connect-fox-btn">
+                    <i class="fox-icon">🦊</i> Connect Wallet
+                </button>`;
+            
+            // Сразу вешаем событие клика на новую кнопку
+            container.querySelector('#connectWalletBtn').onclick = () => connectWallet();
         } else {
-            // Если не подключен — создаем чистую кнопку входа
+            // Если ПОДКЛЮЧЕН — показываем адрес
+            const addr = window.solana.publicKey.toString();
             container.innerHTML = `
-                <button id="mainConnectBtn" class="connect-wallet-btn">
-                    Connect Wallet
-                </button>
-            `;
-            container.querySelector('#mainConnectBtn').onclick = connectWallet;
+                <div class="wallet-status-active">
+                    <span>${addr.slice(0, 4)}...${addr.slice(-4)}</span>
+                </div>`;
         }
     });
 }
-
 
 /**
  * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
