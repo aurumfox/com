@@ -787,168 +787,51 @@ function setupDAO() {
     }
 }
 
-// ============================================================
-// ЕДИНЫЙ МОДУЛЬ УПРАВЛЕНИЯ КОШЕЛЬКОМ И ИНТЕРФЕЙСОМ (FINAL)
-// ============================================================
-
 /**
- * 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И RPC
- */
-async function getRobustConnection() {
-    try {
-        // Use a more reliable RPC if possible, mainnet-beta is often rate-limited
-        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { 
-            commitment: 'confirmed',
-            disableRetryOnRateLimit: false 
-        });
-        await conn.getSlot(); 
-        return conn;
-    } catch (e) {
-        if (e.message.includes('fetch')) {
-            showNotification("Connection blocked by browser (CSP/CORS). Check console.", "error");
-        }
-        throw new Error('RPC endpoint unreachable.');
-    }
-}
-
-
-function handlePublicKeyChange(newPublicKey) {
-    appState.walletPublicKey = newPublicKey;
-    const address = newPublicKey ? newPublicKey.toBase58() : null;
-    updateWalletDisplay(address);
-    if (newPublicKey) updateStakingAndBalanceUI();
-}
-
-function setLoadingState(isLoading, button = null) {
-    if (uiElements.pageLoader) uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
-    const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
-    btns.forEach(btn => { if (btn) btn.disabled = isLoading; });
-    if (button) {
-        button.disabled = isLoading;
-        if (isLoading) {
-            button.dataset.oldText = button.textContent;
-            button.textContent = '...Wait';
-        } else if (button.dataset.oldText) {
-            button.textContent = button.dataset.oldText;
-        }
-    }
-}
-
-/**
- * 2. ЛОГИКА КОШЕЛЬКА (CONNECT / DISCONNECT)
- */
-async function connectWallet() {
-    try {
-        // 1. Проверяем, есть ли расширение Phantom в браузере
-        if (!window.solana || !window.solana.isPhantom) {
-            showNotification("Phantom wallet not found! Please install it.", "error");
-            window.open("https://phantom.app/", "_blank");
-            return;
-        }
-
-        // 2. Запрашиваем подключение
-        const resp = await window.solana.connect();
-        appState.provider = window.solana;
-        appState.walletPublicKey = resp.publicKey;
-        
-        // 3. Создаем соединение с блокчейном (RPC)
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, {
-            commitment: 'confirmed'
-        });
-        
-        // 4. Обновляем интерфейс
-        handlePublicKeyChange(resp.publicKey);
-        showNotification("Wallet Connected!", "success");
-        
-        console.log("Connected to wallet:", resp.publicKey.toBase58());
-    } catch (err) {
-        console.error("Connection Error:", err);
-        if (err.code === 4001) {
-            showNotification("Connection rejected by user.", "warning");
-        } else {
-            showNotification("Failed to connect wallet.", "error");
-        }
-    }
-}
-
-
-async function disconnectWallet() {
-    try {
-        if (window.solana) await window.solana.disconnect();
-        if (appState.provider) appState.provider = null;
-    } catch (err) {
-        console.error("Disconnect Error:", err);
-    }
-    handlePublicKeyChange(null);
-    showNotification("Disconnected", "info");
-}
-
-/**
- * 3. ОБНОВЛЕНИЕ UI
- */
-function updateWalletDisplay(address) {
-    const connectBtns = uiElements.connectWalletButtons || [];
-    const walletDisplays = document.querySelectorAll('.wallet-display, [data-wallet-control="walletDisplay"]');
-    const walletAddresses = uiElements.walletAddressDisplays || [];
-    const fullAddressDisplay = document.getElementById('walletAddressDisplay');
-
-    if (address) {
-        const short = `${address.substring(0, 4)}...${address.slice(-4)}`;
-        connectBtns.forEach(btn => { btn.style.display = 'none'; btn.classList.add('connected'); });
-        walletDisplays.forEach(div => { 
-            div.style.display = 'flex'; 
-            div.onclick = disconnectWallet; // Клик по кошельку для отключения
-        });
-        walletAddresses.forEach(span => span.textContent = short);
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = address;
-            fullAddressDisplay.classList.add('connected');
-        }
-        uiElements.copyButtons?.forEach(btn => { 
-            btn.dataset.copyTarget = address; 
-            btn.style.display = 'block'; 
-        });
-    } else {
-        connectBtns.forEach(btn => { btn.style.display = 'block'; btn.classList.remove('connected'); });
-        walletDisplays.forEach(div => { div.style.display = 'none'; div.onclick = null; });
-        if (fullAddressDisplay) {
-            fullAddressDisplay.textContent = 'Not Connected';
-            fullAddressDisplay.classList.remove('connected');
-        }
-        uiElements.copyButtons?.forEach(btn => { btn.style.display = 'none'; });
-    }
-}
-
-/**
- * 4. ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
+ * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
  */
 function initializeAurumFoxApp() {
-    console.log("🛠 Инициализация системы...");
+    console.log("🛠 Инициализация системы Aurum Fox...");
 
-    // А. Кэширование элементов (Поиск всех нужных ID)
+    // 1. Фикс Buffer для работы с Solana Web3.js в браузере
+    if (!window.Buffer) {
+        window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+    }
+
+    // 2. Кэширование элементов (Сбор всех ID и классов из твоего HTML)
     uiElements = {
         connectWalletButtons: Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn')),
-        walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display, #walletAddressDisplay')),
-        copyButtons: Array.from(document.querySelectorAll('.copy-btn')),
-        stakeAfoxBtn: document.getElementById('stake-afox-btn') || document.getElementById('stakeAfoxBtn'),
-        claimRewardsBtn: document.getElementById('claim-rewards-btn') || document.getElementById('claimRewardsBtn'),
-        unstakeAfoxBtn: document.getElementById('unstake-afox-btn') || document.getElementById('unstakeAfoxBtn'),
-        pageLoader: document.getElementById('page-loader'),
-        notificationContainer: document.getElementById('notification-container')
+        walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display, #walletAddressDisplay, #walletAddressSpan')),
+        copyButtons: Array.from(document.querySelectorAll('.copy-btn, #copyWalletBtn')),
+        // Кнопки стейкинга
+        stakeAfoxBtn: document.getElementById('stakeAfoxBtn') || document.getElementById('stake-afox-btn'),
+        claimRewardsBtn: document.getElementById('claimRewardsBtn') || document.getElementById('claim-rewards-btn'),
+        unstakeAfoxBtn: document.getElementById('unstakeAfoxBtn') || document.getElementById('unstake-afox-btn'),
+        // Поля ввода
+        stakeAmountInput: document.getElementById('stakeAmountInput') || document.getElementById('stake-amount'),
+        // Технические элементы
+        notificationContainer: document.getElementById('notification-container') || document.getElementById('notificationContainer')
     };
 
-    // Б. Привязка действий (onclick исключает дублирование слушателей)
-    const actions = [
-        { id: 'connectWalletBtn', func: connectWallet },
-        { id: 'stake-afox-btn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
-        { id: 'claim-rewards-btn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
-        { id: 'unstake-afox-btn', func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null }
+    // 3. Динамическая привязка обработчиков событий (защита от дублирования)
+    const buttonMap = [
+        { id: 'connectWalletBtn', func: typeof connectWallet !== 'undefined' ? connectWallet : null },
+        { id: 'stakeAfoxBtn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
+        { id: 'claimRewardsBtn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
+        { id: 'unstakeAfoxBtn', func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null },
+        { id: 'copyWalletBtn', func: () => {
+            const addr = uiElements.walletAddressDisplays[0]?.textContent;
+            if (addr && addr !== 'Not Connected') {
+                navigator.clipboard.writeText(appState.walletPublicKey?.toBase58() || "");
+                showNotification('Address Copied!', 'success');
+            }
+        }}
     ];
 
-    actions.forEach(item => {
+    buttonMap.forEach(item => {
         const btn = document.getElementById(item.id);
         if (btn && item.func) {
-            btn.onclick = null; // Сброс старых обработчиков
+            btn.onclick = null; // Очистка предыдущих привязок
             btn.onclick = async (e) => {
                 e.preventDefault();
                 await item.func();
@@ -956,29 +839,30 @@ function initializeAurumFoxApp() {
         }
     });
 
-    // В. Настройка кнопок копирования
+    // 4. Настройка кнопок копирования (если их несколько)
     uiElements.copyButtons.forEach(btn => {
         btn.onclick = (e) => {
-            e.stopPropagation(); // Чтобы не срабатывал клик по родителю
-            if (btn.dataset.copyTarget) {
-                navigator.clipboard.writeText(btn.dataset.copyTarget);
-                showNotification('Copied!', 'success');
+            e.stopPropagation();
+            const targetText = btn.dataset.copyTarget || (appState.walletPublicKey ? appState.walletPublicKey.toBase58() : null);
+            if (targetText) {
+                navigator.clipboard.writeText(targetText);
+                showNotification('Copied to clipboard!', 'success');
             }
         };
     });
 
-    // Г. Проверка активной сессии Phantom
-    if (window.solana?.isConnected && window.solana?.publicKey) {
-        appState.provider = window.solana;
-        handlePublicKeyChange(window.solana.publicKey);
+    // 5. Авто-подключение (если сессия Phantom уже активна)
+    if (window.solana && window.solana.isConnected) {
+        console.log("♻️ Восстановление активной сессии кошелька...");
+        connectWallet(); 
     }
 
     console.log("🚀 Aurum Fox Core Ready.");
 }
 
-// 5. ЗАПУСК ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+// Запуск инициализации
 if (document.readyState === 'complete') {
     initializeAurumFoxApp();
 } else {
     window.addEventListener('load', initializeAurumFoxApp);
-        }
+}
