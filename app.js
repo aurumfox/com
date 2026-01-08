@@ -58,16 +58,17 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-// Попробуй эти адреса по очереди, если первый выдает ошибку в консоли
+
+
+
 const RPC_ENDPOINTS = [
-    'https://api.mainnet-beta.solana.com',
     'https://solana-mainnet.rpc.extrnode.com',
-    'https://rpc.ankr.com/solana'
+    'https://rpc.ankr.com/solana',
+    'https://api.mainnet-beta.solana.com'
 ];
 
-// Используем первый из списка
+// Теперь мы берем рабочий узел сразу
 const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[0]; 
-
 
 
 
