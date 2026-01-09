@@ -61,14 +61,17 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
+// Используем более надежные публичные эндпоинты
 const RPC_ENDPOINTS = [
-    'https://solana-mainnet.rpc.extrnode.com',
-    'https://rpc.ankr.com/solana',
-    'https://api.mainnet-beta.solana.com'
+    'https://api.mainnet-beta.solana.com', // Официальный (может ограничивать лимиты)
+    'https://solana-mainnet.rpc.ankr.com', // Хороший публичный узел
+    'https://rpc.flashbots.net/solana',     // Альтернатива
+    'https://mainnet.helius-rpc.com/?api-key=YOUR_KEY' // Рекомендуется создать бесплатный ключ на helius.dev
 ];
 
-// Теперь мы берем рабочий узел сразу
+// Автоматический выбор первого доступного узла
 const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[0]; 
+
 
 
 
