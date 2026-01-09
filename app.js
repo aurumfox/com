@@ -495,26 +495,20 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
         
+        // Добавляем проверку на существование аккаунта перед fetch
+        const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
+        if (!accountInfo) {
+            console.log("ℹ️ Аккаунт стейкинга еще не создан для этого кошелька.");
+            return;
+        }
+
         const stakingData = await program.account.userStakingAccount.fetch(userStakingPDA);
-        
-        appState.userStakingData = {
-            stakedAmount: stakingData.stakedAmount.toBigInt(),
-            rewards: stakingData.rewardsToClaim.toBigInt(), 
-            lockupEndTime: stakingData.lockupEndTime.toNumber(),
-            poolIndex: stakingData.poolIndex,
-            lending: stakingData.lending.toBigInt()
-        };
+        // ... остальная логика обновления appState
     } catch (e) {
-        console.warn("Аккаунт не найден или ошибка десериализации, сбрасываем данные.");
-        appState.userStakingData = { 
-            stakedAmount: 0n, 
-            rewards: 0n, 
-            lockupEndTime: 0, 
-            poolIndex: 4, 
-            lending: 0n 
-        };
+        console.error("⚠️ Ошибка при загрузке данных стейкинга:", e.message);
     }
-} 
+}
+
 
 // Функция получения PDA адреса (строго по Rust: owner + pool_state)
 async function getUserStakingAccountPDA(owner) {
