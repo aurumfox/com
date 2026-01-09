@@ -620,44 +620,37 @@ async function handleUnstakeAfox() {
 
 async function getLiveAPR() {
     try {
-        // 1. ПРОВЕРКА: Если нет связи с блокчейном, не пытаемся считать
-        if (!appState.connection) {
-            return "Connect Wallet";
-        }
+        if (!appState.connection) return "Connect Wallet";
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         
-        // 2. ПОЛУЧЕНИЕ ДАННЫХ: Ждем ответа от контракта
-        const poolAccount = await program.account.userStakingAccount.fetch(AFOX_POOL_STATE_PUBKEY);
+        // ИСПРАВЛЕНО: Обращаемся к poolState, так как именно там лежит общий баланс стейкинга
+        const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
         
-        // 3. КОНВЕРТАЦИЯ: В блокчейне числа целые (BigInt), переводим в обычные для расчета
-        // Используем 10 в степени AFOX_DECIMALS (обычно 6)
-        const totalStaked = Number(poolAccount.stakedAmount) / Math.pow(10, AFOX_DECIMALS);
+        // В Rust у тебя это поле называется total_staked_amount (в JS станет totalStakedAmount)
+        const totalStakedRaw = poolAccount.totalStakedAmount;
+        const totalStaked = Number(totalStakedRaw) / Math.pow(10, AFOX_DECIMALS);
 
-        // Настройки наград: 0.0001 AFOX в секунду
+        // Твои настройки из контракта: REWARD_RATE_PER_SEC = 100
+        // Это 0.0001 AFOX в секунду (если у AFOX 6 знаков)
         const rewardsPerSecond = 0.0001; 
         const secondsInYear = 31536000;
         const totalRewardsYear = rewardsPerSecond * secondsInYear; 
 
-        // 4. ЗАЩИТА: Если в пуле еще никто не стейкает, показываем базовый высокий процент
-        if (totalStaked <= 0.01) {
+        if (totalStaked <= 0.001) {
             return "100% (Genesis)";
         }
 
-        // 5. РАСЧЕТ: Годовая доходность
         const realAPR = (totalRewardsYear / totalStaked) * 100;
         
-        // Ограничиваем разумными цифрами, чтобы не пугать пользователей
-        if (realAPR > 1000) return "999%+";
-
-        return realAPR.toFixed(2) + "%";
+        return realAPR > 1000 ? "999%+" : realAPR.toFixed(2) + "%";
         
     } catch (e) {
-        // Если ошибка — значит, контракт еще не инициализирован или нет сети
-        console.warn("APR пока недоступен (ждем инициализацию пула)");
+        console.error("Ошибка в APR:", e);
         return "Calculating...";
     }
 }
+
 
 /**
  * Создает экземпляр программы Anchor для взаимодействия со смарт-контрактом.
