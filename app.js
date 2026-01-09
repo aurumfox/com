@@ -62,11 +62,14 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 const RPC_ENDPOINTS = [
-    'https://api.mainnet-beta.solana.com',
-    'https://solana-rpc.publicnode.com',
-    'https://rpc.ankr.com/solana'
+    'https://solana-rpc.publicnode.com', // Очень стабильный бесплатный узел
+    'https://rpc.ankr.com/solana',
+    'https://api.mainnet-beta.solana.com'
 ];
-const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[1]; // Попробуйте второй узел, он часто стабильнее
+
+// Установите публичный узел как основной
+const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[0]; 
+
 
 
 
