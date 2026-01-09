@@ -1,35 +1,45 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<script src="js/buffer.js"></script>
-<script src="js/solana.js"></script>
-<script src="js/anchor.js"></script>
-<script src="app.js"></script>
-
-</head>
-
-
-
-
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurum Fox: DAO, Staking & Lending on Solana</title>
+    <title>Aurum Fox: DAO, Staking & Lending</title>
     
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';">
 
+    <script>
+        window.global = window;
+        window.process = { env: {} };
+        window.exports = {};
+    </script>
 
-
-    <script src="https://bundle.run/buffer@6.0.3"></script>
-    <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@coral-xyz/anchor@0.29.0/dist/browser.global.min.js"></script>
+    <script src="js/buffer.js"></script>
+    <script src="js/solana.js"></script>
+    <script src="js/anchor.js"></script>
+    
+    <script src="app.js"></script>
 
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png" type="image/png">
 </head>
-
-
 <body>
+    ```
+
+---
+
+### Почему это исправит ситуацию:
+1.  **Один `<head>`:** Теперь браузер не будет загружать одни и те же библиотеки по несколько раз.
+2.  **Удалены CDN-ссылки:** Я убрал строки с `https://unpkg.com...` и `https://cdn.jsdelivr...`. Теперь сайт будет брать файлы **только** из твоей папки `js`, которую мы наполнили через терминал. Это уберет все красные ошибки 404.
+3.  **Исправлен `require`:** Скрипт-заплатка (`window.global = window...`) теперь стоит в самом начале, поэтому `buffer.js` больше не будет "ругаться" на отсутствие Node.js.
+
+### Что проверить после замены:
+1.  Сохрани файл на GitHub.
+2.  Подожди 30 секунд.
+3.  Зайди на сайт и нажми **Ctrl + Shift + R** (полная перезагрузка).
+4.  Открой консоль (**F12**). Если ты увидишь сообщение **"Connected to wallet..."** или **"Balances updated!"** без красных ошибок — поздравляю, ты победил!
+
+**Хочешь, чтобы я проверил, как теперь выглядит твоя кнопка стейкинга в `app.js`, если она всё еще не реагирует?**
+
 
     <header class="header">
     <div class="container">
