@@ -1,47 +1,34 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
+    <script src="js/solana.js"></script>
+    <script src="js/anchor.js"></script>
+    <script src="app.js"></script>
+</head>
+
+
+
+
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurum Fox: Staking & DAO</title>
+    <title>Aurum Fox: DAO, Staking & Lending on Solana</title>
     
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';">
 
-    <script>
-        window.global = window;
-        window.process = { env: {} };
-        window.exports = {};
-        // Создаем заглушку, чтобы buffer.js не ругался
-        window.require = function(name) { return window[name]; };
-    </script>
 
-    <script src="js/buffer.js"></script>
-    <script src="js/solana.js"></script>
-    <script src="js/anchor.js"></script>
-    
-    <script src="app.js"></script>
+
+    <script src="https://bundle.run/buffer@6.0.3"></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@coral-xyz/anchor@0.29.0/dist/browser.global.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png" type="image/png">
 </head>
+
+
 <body>
-    <div id="app">
-        <h1>Aurum Fox Staking</h1>
-        <div class="wallet-control">
-            </div>
-        
-        <div class="staking-container">
-            <p>Баланс AFOX: <span id="user-afox-balance">0</span></p>
-            <input type="number" id="stake-amount" placeholder="Количество">
-            <button id="stake-afox-btn">Stake AFOX</button>
-        </div>
-    </div>
-
-    <div id="notification-container"></div>
-</body>
-</html>
-
-
 
     <header class="header">
     <div class="container">
