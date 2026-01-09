@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+  <script>
+    // Этот блок исправляет ошибку "require is not defined"
+    window.global = window;
+    window.process = { env: {} };
+    window.exports = {};
+    window.require = function(name) { return window[name]; };
+</script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aurum Fox: DAO, Staking & Lending on Solana</title>
