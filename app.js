@@ -624,15 +624,16 @@ async function getLiveAPR() {
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         
-        // ИСПРАВЛЕНО: Обращаемся к poolState, так как именно там лежит общий баланс стейкинга
+        // 1. ПРАВИЛЬНЫЙ ВЫЗОВ: Берем PoolState (общие данные), а не UserStaking (личные)
+        // Используем fetch для PoolState
         const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
         
-        // В Rust у тебя это поле называется total_staked_amount (в JS станет totalStakedAmount)
+        // 2. ПОЛЯ: В твоем Rust коде это total_staked_amount
         const totalStakedRaw = poolAccount.totalStakedAmount;
         const totalStaked = Number(totalStakedRaw) / Math.pow(10, AFOX_DECIMALS);
 
-        // Твои настройки из контракта: REWARD_RATE_PER_SEC = 100
-        // Это 0.0001 AFOX в секунду (если у AFOX 6 знаков)
+        // 3. ЛОГИКА НАГРАД: В контракте REWARD_RATE_PER_SEC = 100
+        // С учетом 6 знаков (AFOX_DECIMALS), 100 единиц — это 0.0001 токена в сек.
         const rewardsPerSecond = 0.0001; 
         const secondsInYear = 31536000;
         const totalRewardsYear = rewardsPerSecond * secondsInYear; 
@@ -641,13 +642,15 @@ async function getLiveAPR() {
             return "100% (Genesis)";
         }
 
+        // Расчет APR
         const realAPR = (totalRewardsYear / totalStaked) * 100;
         
         return realAPR > 1000 ? "999%+" : realAPR.toFixed(2) + "%";
         
     } catch (e) {
-        console.error("Ошибка в APR:", e);
-        return "Calculating...";
+        console.error("Критическая ошибка APR:", e);
+        // Если аккаунт пула еще не инициализирован в сети, вернем заглушку
+        return "100% (Base)";
     }
 }
 
