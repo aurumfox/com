@@ -845,6 +845,84 @@ async function fetchUserBalances() {
 }
 
 
+// Вспомогательная функция для получения ATA (Associated Token Account)
+async function findAssociatedTokenAddress(walletAddress, mintAddress) {
+    return (await window.solanaWeb3.PublicKey.findProgramAddress(
+        [walletAddress.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mintAddress.toBuffer()],
+        ASSOCIATED_TOKEN_PROGRAM_ID
+    ))[0];
+}
+
+// 1. STAKE (DEPOSIT)
+async function handleStakeAfox() {
+    if (!appState.walletPublicKey) return connectWallet();
+    const amountStr = uiElements.stakeAmountInput.value;
+    if (!amountStr) return showNotification("Enter amount", "warning");
+
+    setLoadingState(true, uiElements.stakeAfoxBtn);
+    try {
+        const amount = new window.anchor.BN(parseAmountToBigInt(amountStr, AFOX_DECIMALS).toString());
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
+
+        await program.methods.deposit(amount).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDA,
+            owner: appState.walletPublicKey,
+            userSourceAta: userAfoxATA,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+
+        showNotification("Stake Successful!", "success");
+        await updateStakingAndBalanceUI();
+    } catch (e) {
+        console.error(e);
+        showNotification("Stake error: " + e.message, "error");
+    } finally {
+        setLoadingState(false, uiElements.stakeAfoxBtn);
+    }
+}
+
+// 2. UNSTAKE
+async function handleUnstakeAfox() {
+    if (!appState.walletPublicKey) return;
+    setLoadingState(true, uiElements.unstakeAfoxBtn);
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
+        
+        // ВАЖНО: Берем всю сумму стейка из данных аккаунта
+        const amount = new window.anchor.BN(appState.userStakingData.stakedAmount.toString());
+        
+        // Проверяем на ранний выход (isEarlyExit = true если время еще не вышло)
+        const isEarly = appState.userStakingData.lockupEndTime > (Date.now() / 1000);
+
+        await program.methods.unstake(amount, isEarly).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDA,
+            owner: appState.walletPublicKey,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+            userRewardsAta: userAfoxATA,
+            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+
+        showNotification(isEarly ? "Unstaked with 40% fee" : "Unstake Successful", "success");
+        await updateStakingAndBalanceUI();
+    } catch (e) {
+        showNotification("Unstake error: " + e.message, "error");
+    } finally {
+        setLoadingState(false, uiElements.unstakeAfoxBtn);
+    }
+}
 
 
 
