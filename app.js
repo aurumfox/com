@@ -962,55 +962,69 @@ updateWalletDisplay();
 /**
  * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
  */
+function initializeAurumFoxApp() {
+    console.log("🛠 Инициализация системы Aurum Fox...");
 
-// 1. ОДИН объект для всех элементов (без дублей)
-let uiElements = {};
-
-// 2. ФУНКЦИЯ ОБРАБОТКИ КЛИКОВ (Делегирование)
-// Она будет работать, даже если ты перерисовал кнопку через innerHTML
-document.addEventListener('click', async (e) => {
-    const target = e.target.closest('button'); // Находим кнопку, даже если кликнули по иконке внутри
-    if (!target) return;
-
-    // Проверяем ID или класс нажатой кнопки
-    if (target.id === 'stake-afox-btn' || target.id === 'stakeAfoxBtn') {
-        e.preventDefault();
-        await handleStakeAfox();
-    } 
-    else if (target.id === 'claim-rewards-btn' || target.id === 'claimRewardsBtn') {
-        e.preventDefault();
-        await handleClaimRewards();
+    // 1. Сначала подгружаем адреса (КРИТИЧЕСКИ ВАЖНО)
+    // Это создаст все PublicKey, необходимые для работы
+    if (!setupAddresses()) {
+        console.error("❌ Остановка: Адреса не инициализированы.");
+        return; 
     }
-    else if (target.id === 'unstake-afox-btn' || target.id === 'unstakeAfoxBtn') {
-        e.preventDefault();
-        await handleUnstakeAfox();
-    }
-    else if (target.classList.contains('connect-fox-btn') || target.id === 'connectWalletBtn') {
-        e.preventDefault();
-        await connectWallet();
-    }
-});
 
-// 3. Исправленная функция отрисовки (убираем лишние вложенные слушатели)
-function updateWalletDisplay() {
-    const containers = document.querySelectorAll('.wallet-control');
-    const isConnected = window.solana && window.solana.isConnected;
-    
-    containers.forEach(container => {
-        if (isConnected) {
-            const pubKey = window.solana.publicKey.toString();
-            container.innerHTML = `
-                <div class="wallet-display" style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: #f39c12;">${pubKey.slice(0, 4)}...${pubKey.slice(-4)}</span>
-                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${pubKey}')">📋</button>
-                    <button id="disconnectBtn" onclick="disconnectWallet()" style="font-size: 10px;">Exit</button>
-                </div>`;
-        } else {
-            container.innerHTML = `
-                <button id="connectWalletBtn" class="web3-button connect-fox-btn">
-                    <i class="fox-icon">🦊</i> Connect Wallet
-                </button>`;
+    // 2. Фикс Buffer для работы с Solana Web3.js в браузере
+    if (!window.Buffer) {
+        window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+    }
+
+    // 3. Кэширование элементов (Сбор всех ID и классов из твоего HTML)
+    uiElements = {
+        connectWalletButtons: Array.from(document.querySelectorAll('.connect-wallet-btn, #connectWalletBtn')),
+        walletAddressDisplays: Array.from(document.querySelectorAll('.wallet-address-display, #walletAddressDisplay, #walletAddressSpan')),
+        copyButtons: Array.from(document.querySelectorAll('.copy-btn, #copyWalletBtn')),
+        stakeAfoxBtn: document.getElementById('stakeAfoxBtn') || document.getElementById('stake-afox-btn'),
+        claimRewardsBtn: document.getElementById('claimRewardsBtn') || document.getElementById('claim-rewards-btn'),
+        unstakeAfoxBtn: document.getElementById('unstakeAfoxBtn') || document.getElementById('unstake-afox-btn'),
+        stakeAmountInput: document.getElementById('stakeAmountInput') || document.getElementById('stake-amount'),
+        notificationContainer: document.getElementById('notification-container') || document.getElementById('notificationContainer')
+    };
+
+    // 4. Привязка функций к кнопкам
+    const buttonMap = [
+        { id: 'connectWalletBtn', func: typeof connectWallet !== 'undefined' ? connectWallet : null },
+        { id: 'stakeAfoxBtn', func: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
+        { id: 'claimRewardsBtn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
+        { id: 'unstakeAfoxBtn', func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null }
+    ];
+
+    buttonMap.forEach(item => {
+        const btn = document.getElementById(item.id) || document.getElementById(item.id.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)); 
+        if (btn && item.func) {
+            btn.onclick = async (e) => {
+                e.preventDefault();
+                await item.func();
+            };
         }
     });
+
+    // 5. Авто-подключение сессии
+    if (window.solana && window.solana.isConnected) {
+        console.log("♻️ Восстановление активной сессии кошелька...");
+        connectWallet(); 
+    }
+
+    console.log("🚀 Aurum Fox Core Ready.");
 }
+
+
+
+
+// Запуск инициализации
+if (document.readyState === 'complete') {
+    initializeAurumFoxApp();
+} else {
+    window.addEventListener('load', initializeAurumFoxApp);
+}
+
+
 
