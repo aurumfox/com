@@ -457,43 +457,26 @@ if (uiElements.stakingApr) {
 
 async function fetchUserStakingData() {
     if (!appState.walletPublicKey || !appState.connection) return;
-
     try {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
         
-        // Добавляем проверку на существование аккаунта перед fetch
-        const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
-        if (!accountInfo) {
-            console.log("ℹ️ Аккаунт стейкинга еще не создан для этого кошелька.");
-            return;
-        }
-
-        const stakingData = await program.account.userStakingAccount.fetch(userStakingPDA);
-        // ... остальная логика обновления appState
+        // Используем fetch, Anchor сам распарсит zero_copy структуру по IDL
+        const data = await program.account.userStakingAccount.fetch(userStakingPDA);
+        
+        appState.userStakingData = {
+            stakedAmount: BigInt(data.stakedAmount.toString()),
+            rewards: BigInt(data.rewardsToClaim.toString()) + BigInt(data.pendingRewardsDueToLimit.toString()),
+            lockupEndTime: Number(data.lockupEndTime),
+            poolIndex: data.poolIndex,
+            lending: BigInt(data.lending.toString())
+        };
+        console.log("📊 Данные стейкинга обновлены:", appState.userStakingData);
     } catch (e) {
-        console.error("⚠️ Ошибка при загрузке данных стейкинга:", e.message);
+        console.log("ℹ️ Стейкинг не найден или ошибка парсинга:", e.message);
     }
 }
 
-
-// Функция получения PDA адреса (строго по Rust: owner + pool_state)
-async function getUserStakingAccountPDA(owner) {
-    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
-
-async function getUserStakingPDA(owner) {
-    // ВАЖНО: Seeds должны быть точно как в Rust [owner, pool_state]
-    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
 
 
 /**
