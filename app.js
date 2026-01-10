@@ -210,34 +210,6 @@ async function connectWallet() {
 
 function updateWalletDisplay() {
     const containers = document.querySelectorAll('.wallet-control');
-    containers.forEach(container => {
-        if (window.solana && window.solana.isConnected) {
-            const pubKey = window.solana.publicKey.toString();
-            container.innerHTML = `<div class="wallet-active">${pubKey.slice(0,4)}...${pubKey.slice(-4)} 📋</div>`;
-        } else {
-            container.innerHTML = `<button class="web3-button connect-fox-btn">🦊 Connect Wallet</button>`;
-            container.querySelector('.connect-fox-btn').onclick = connectWallet;
-        }
-    });
-}
-
-async function disconnectWallet() {
-    try {
-        if (window.solana) await window.solana.disconnect();
-        if (appState.provider) appState.provider = null;
-    } catch (err) {
-        console.error("Disconnect Error:", err);
-    }
-    handlePublicKeyChange(null);
-    showNotification("Disconnected", "info");
-}
-
-
-
-
-
-function updateWalletDisplay() {
-    const containers = document.querySelectorAll('.wallet-control');
     console.log("Found wallet containers:", containers.length); // Для отладки
 
     containers.forEach(container => {
@@ -283,6 +255,22 @@ function updateWalletDisplay() {
         }
     });
 }
+
+
+async function disconnectWallet() {
+    try {
+        if (window.solana) await window.solana.disconnect();
+        if (appState.provider) appState.provider = null;
+    } catch (err) {
+        console.error("Disconnect Error:", err);
+    }
+    handlePublicKeyChange(null);
+    showNotification("Disconnected", "info");
+}
+
+
+
+
 
 
 
