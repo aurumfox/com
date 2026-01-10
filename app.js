@@ -196,18 +196,43 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 
 let appState = { connection: null, provider: null, walletPublicKey: null };
 
-async function connectWallet() {
-    if (!window.solana) return alert("Please install Phantom!");
-    try {
-        const resp = await window.solana.connect();
-        appState.walletPublicKey = resp.publicKey;
-        appState.provider = window.solana;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        updateWalletDisplay();
-        // Здесь вызываем обновление балансов и стейкинга
-    } catch (err) { console.error(err); }
-}
 
+/**
+ * 2. ЛОГИКА КОШЕЛЬКА (CONNECT / DISCONNECT)
+ */
+async function connectWallet() {
+    try {
+        // 1. Проверяем, есть ли расширение Phantom в браузере
+        if (!window.solana || !window.solana.isPhantom) {
+            showNotification("Phantom wallet not found! Please install it.", "error");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+
+        // 2. Запрашиваем подключение
+        const resp = await window.solana.connect();
+        appState.provider = window.solana;
+        appState.walletPublicKey = resp.publicKey;
+        
+        // 3. Создаем соединение с блокчейном (RPC)
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, {
+            commitment: 'confirmed'
+        });
+        
+        // 4. Обновляем интерфейс
+        handlePublicKeyChange(resp.publicKey);
+        showNotification("Wallet Connected!", "success");
+        
+        console.log("Connected to wallet:", resp.publicKey.toBase58());
+    } catch (err) {
+        console.error("Connection Error:", err);
+        if (err.code === 4001) {
+            showNotification("Connection rejected by user.", "warning");
+        } else {
+            showNotification("Failed to connect wallet.", "error");
+        }
+    }
+}
 function updateWalletDisplay() {
     const containers = document.querySelectorAll('.wallet-control');
     console.log("Found wallet containers:", containers.length); // Для отладки
