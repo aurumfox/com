@@ -194,6 +194,99 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 }
 
 
+let appState = { connection: null, provider: null, walletPublicKey: null };
+
+async function connectWallet() {
+    if (!window.solana) return alert("Please install Phantom!");
+    try {
+        const resp = await window.solana.connect();
+        appState.walletPublicKey = resp.publicKey;
+        appState.provider = window.solana;
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        updateWalletDisplay();
+        // Здесь вызываем обновление балансов и стейкинга
+    } catch (err) { console.error(err); }
+}
+
+function updateWalletDisplay() {
+    const containers = document.querySelectorAll('.wallet-control');
+    containers.forEach(container => {
+        if (window.solana && window.solana.isConnected) {
+            const pubKey = window.solana.publicKey.toString();
+            container.innerHTML = `<div class="wallet-active">${pubKey.slice(0,4)}...${pubKey.slice(-4)} 📋</div>`;
+        } else {
+            container.innerHTML = `<button class="web3-button connect-fox-btn">🦊 Connect Wallet</button>`;
+            container.querySelector('.connect-fox-btn').onclick = connectWallet;
+        }
+    });
+}
+
+async function disconnectWallet() {
+    try {
+        if (window.solana) await window.solana.disconnect();
+        if (appState.provider) appState.provider = null;
+    } catch (err) {
+        console.error("Disconnect Error:", err);
+    }
+    handlePublicKeyChange(null);
+    showNotification("Disconnected", "info");
+}
+
+
+
+
+
+function updateWalletDisplay() {
+    const containers = document.querySelectorAll('.wallet-control');
+    console.log("Found wallet containers:", containers.length); // Для отладки
+
+    containers.forEach(container => {
+        // Проверяем подключение через Phantom
+        if (window.solana && window.solana.isConnected && window.solana.publicKey) {
+            const pubKey = window.solana.publicKey.toString();
+            container.innerHTML = `
+                <div class="wallet-display-active" style="display: flex; align-items: center; gap: 10px; background: #1a1a1a; padding: 5px 15px; border-radius: 20px; border: 1px solid #f39c12;">
+                    <span style="color: #f39c12; font-family: monospace;">
+                        ${pubKey.slice(0, 4)}...${pubKey.slice(-4)}
+                    </span>
+                    <button onclick="navigator.clipboard.writeText('${pubKey}'); alert('Address copied!')" style="background:none; border:none; cursor:pointer; color:white;">
+                        📋
+                    </button>
+                </div>
+            `;
+        } else {
+            // Если НЕ подключен - создаем кнопку принудительно
+            container.innerHTML = `
+                <button class="web3-button connect-fox-btn" id="dynamicConnectBtn" style="
+                    background: #f39c12; 
+                    color: black; 
+                    padding: 10px 20px; 
+                    border-radius: 5px; 
+                    font-weight: bold; 
+                    cursor: pointer;
+                    border: none;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;">
+                    <span class="fox-icon">🦊</span> Connect Wallet
+                </button>
+            `;
+            
+            // Вешаем событие клика на новую кнопку
+            const btn = container.querySelector('.connect-fox-btn');
+            if (btn) {
+                btn.onclick = async (e) => {
+                    e.preventDefault();
+                    await connectWallet();
+                };
+            }
+        }
+    });
+}
+
+
+
+
 /**
  * Utility to run a fetch request with a timeout.
  */
@@ -922,74 +1015,6 @@ async function handleUnstakeAfox() {
     } finally {
         setLoadingState(false, uiElements.unstakeAfoxBtn);
     }
-}
-
-
-
-async function disconnectWallet() {
-    try {
-        if (window.solana) await window.solana.disconnect();
-        if (appState.provider) appState.provider = null;
-    } catch (err) {
-        console.error("Disconnect Error:", err);
-    }
-    handlePublicKeyChange(null);
-    showNotification("Disconnected", "info");
-}
-
-/**
- * ЕДИНЫЙ ЦЕНТР ОТОБРАЖЕНИЯ КОШЕЛЬКА (Заменяет все старые блоки UI)
- */
-
-
-
-
-function updateWalletDisplay() {
-    const containers = document.querySelectorAll('.wallet-control');
-    console.log("Found wallet containers:", containers.length); // Для отладки
-
-    containers.forEach(container => {
-        // Проверяем подключение через Phantom
-        if (window.solana && window.solana.isConnected && window.solana.publicKey) {
-            const pubKey = window.solana.publicKey.toString();
-            container.innerHTML = `
-                <div class="wallet-display-active" style="display: flex; align-items: center; gap: 10px; background: #1a1a1a; padding: 5px 15px; border-radius: 20px; border: 1px solid #f39c12;">
-                    <span style="color: #f39c12; font-family: monospace;">
-                        ${pubKey.slice(0, 4)}...${pubKey.slice(-4)}
-                    </span>
-                    <button onclick="navigator.clipboard.writeText('${pubKey}'); alert('Address copied!')" style="background:none; border:none; cursor:pointer; color:white;">
-                        📋
-                    </button>
-                </div>
-            `;
-        } else {
-            // Если НЕ подключен - создаем кнопку принудительно
-            container.innerHTML = `
-                <button class="web3-button connect-fox-btn" id="dynamicConnectBtn" style="
-                    background: #f39c12; 
-                    color: black; 
-                    padding: 10px 20px; 
-                    border-radius: 5px; 
-                    font-weight: bold; 
-                    cursor: pointer;
-                    border: none;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;">
-                    <span class="fox-icon">🦊</span> Connect Wallet
-                </button>
-            `;
-            
-            // Вешаем событие клика на новую кнопку
-            const btn = container.querySelector('.connect-fox-btn');
-            if (btn) {
-                btn.onclick = async (e) => {
-                    e.preventDefault();
-                    await connectWallet();
-                };
-            }
-        }
-    });
 }
 
 
