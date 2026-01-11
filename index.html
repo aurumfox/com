@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+  <script>
+    // Этот блок исправляет ошибку "require is not defined"
+    window.global = window;
+    window.process = { env: {} };
+    window.exports = {};
+    window.require = function(name) { return window[name]; };
+</script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aurum Fox: DAO, Staking & Lending on Solana</title>
@@ -11,6 +19,7 @@
         window.global = window;
         window.process = { env: {} };
         window.exports = {};
+        // Обманка для buffer.js, чтобы не было ошибки "require is not defined"
         window.require = function(name) { return window[name]; };
     </script>
 
@@ -37,7 +46,7 @@
         </nav>
 
      <div class="wallet-controls">
-    <div class="wallet-control"></div>
+    <div id="wallet-header-area" class="wallet-control"></div>
 </div>
    
         
@@ -269,7 +278,7 @@
         </p>
         
         <div class="wallet-control-box" style="margin: 20px 0; padding: 15px; border: 1px dashed #f39c12; border-radius: 8px;">
-    <p class="web3-wallet-display">Status: Check Wallet</p>
+    <p class="web3-wallet-display">Status:</p>
     <div class="wallet-control"></div>
 </div>
 
@@ -306,22 +315,34 @@
                 </div>
 
                 <h3 class="web3-subheading">Active Proposals</h3>
-                <div class="content-area web3-content-area dao-proposals-grid">
-                    <p class="web3-placeholder">Connect wallet to see proposals...</p>
+                <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
+                    <div class="dao-proposal-item web3-placeholder" data-proposal-id="1">
+                        <h4>Loading Proposal #1: Example Title</h4>
+                        <p>Description: Real-time DAO proposals are loading here.</p>
+                        <p>Creator: <span class="dao-creator">0x123...abc</span></p>
+                        <p>Votes For: <span class="dao-votes-for">100 AFOX</span> | Votes Against: <span class="dao-votes-against">50 AFOX</span></p>
+                        <button class="web3-btn dao-vote-btn" data-vote-type="for" aria-label="Vote FOR Proposal 1">Vote FOR</button>
+                        <button class="web3-btn dao-vote-btn" data-vote-type="against" aria-label="Vote AGAINST Proposal 1">Vote AGAINST</button>
+                    </div>
                 </div>
 
-                <div id="dao-modal" class="modal" aria-modal="true" role="dialog" style="display:none;">
+                <h3 class="web3-subheading">Completed Proposals</h3>
+                <div id="completed-proposals-list" class="content-area web3-content-area dao-proposals-grid">
+                    <p class="web3-placeholder">No completed proposals yet.</p>
+                </div>
+
+                <div id="createProposalModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="newProposalModalTitle" style="display:none;">
                     <div class="modal-content">
-                        <span class="close-button" id="close-dao-modal" aria-label="Close">&times;</span>
-                        <h3 class="web3-heading">Create New DAO Proposal</h3>
-                        <form id="create-proposal-form" class="web3-form">
-                            <label for="prop-title">Proposal Title:</label>
-                            <input type="text" id="prop-title" name="proposalTitle" placeholder="Enter proposal title" required>
+                        <span class="close-button" id="closeProposalModal" aria-label="Close create proposal modal">&times;</span>
+                        <h3 id="newProposalModalTitle" class="web3-heading">Create New DAO Proposal</h3>
+                        <form id="newProposalForm" class="web3-form">
+                            <label for="proposalTitle">Proposal Title:</label>
+                            <input type="text" id="proposalTitle" name="proposalTitle" placeholder="Enter proposal title" required aria-required="true">
 
-                            <label for="prop-desc">Proposal Description:</label>
-                            <textarea id="prop-desc" name="proposalDescription" rows="6" placeholder="Describe your proposal..." required></textarea>
+                            <label for="proposalDescription">Proposal Description:</label>
+                            <textarea type="text" id="proposalDescription" name="proposalDescription" rows="6" placeholder="Describe your proposal in detail..." required aria-required="true"></textarea>
 
-                            <button type="submit" class="web3-btn">Submit Proposal</button>
+                            <button type="submit" class="web3-btn" aria-label="Submit new proposal">Submit Proposal</button>
                         </form>
                     </div>
                 </div>
@@ -336,19 +357,19 @@
                 <div class="staking-info-grid">
                     <div class="info-card">
                         <h3>Your AFOX Balance</h3>
-                        <p id="user-afox-balance" class="info-value">0 AFOX</p>
+                        <p id="userAfoxBalance" class="info-value">0 AFOX</p>
                     </div>
                     <div class="info-card">
                         <h3>Your Staked Amount</h3>
-                        <p id="user-staked-amount" class="info-value">0 AFOX</p>
+                        <p id="userStakedAmount" class="info-value">0 AFOX</p>
                     </div>
                     <div class="info-card">
                         <h3>Accrued Rewards</h3>
-                        <p id="user-rewards-amount" class="info-value">0 AFOX</p>
+                        <p id="userRewardsAmount" class="info-value">0 AFOX</p>
                     </div>
                     <div class="info-card">
                         <h3>Annual Percentage Rate (APR)</h3>
-                        <p id="staking-apr" class="info-value">--%</p>
+                        <p id="stakingApr" class="info-value">--%</p>
                     </div>
                 </div>
 
@@ -356,8 +377,8 @@
     <h3 class="web3-subheading">Stake AFOX</h3>
 
     <div class="pool-selection-wrapper" style="margin-bottom: 15px;">
-        <label for="staking-plan-select" style="color: #f39c12; display: block; margin-bottom: 5px;">Choose Plan:</label>
-        <select id="staking-plan-select" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
+        <label for="pool-selector" style="color: #f39c12; display: block; margin-bottom: 5px;">Choose Plan:</label>
+        <select id="pool-selector" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
             <option value="0">Flexible (0 days) - 5% APR</option>
             <option value="1">Standard (30 days) - 12% APR</option>
             <option value="2">Max Boost (90 days) - 25% APR</option>
@@ -365,25 +386,26 @@
     </div>
 
     <div class="input-group">
-        <input type="number" id="stake-amount" min="0.000001" step="0.000001" placeholder="Enter AFOX amount">
-        <button id="stake-afox-btn" class="web3-btn">Stake</button>
+        <input type="number" id="stakeAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX amount" aria-label="Amount to stake">
+        <button id="stakeAfoxBtn" class="web3-btn">Stake</button>
     </div>
     
     <h3 class="web3-subheading" style="margin-top:20px;">Management</h3>
     <div class="input-group">
-        <button id="unstake-afox-btn" class="web3-btn" style="width:100%">Unstake</button>
+        <input type="number" id="unstakeAmountInput" placeholder="Amount to unstake">
+        <button id="unstakeAfoxBtn" class="web3-btn">Unstake</button>
     </div>
-    <button id="claim-rewards-btn" class="web3-btn" style="width:100%; margin-top:10px;">Claim Rewards</button>
+    <button id="claimRewardsBtn" class="web3-btn" style="width:100%; margin-top:10px;">Claim Rewards</button>
 </div>
 
 
                 <div class="staking-details">
                     <h3 class="web3-subheading">Staking Details</h3>
                     <ul>
-                        <li><strong>Minimum staking amount:</strong> 1 AFOX</li>
-                        <li><strong>Lockup period:</strong> 0 days (flexible)</li>
-                        <li><strong>Early unstake fee:</strong> 0%</li>
-                        <li><strong>Reward calculation:</strong> Daily</li>
+                        <li><strong>Minimum staking amount:</strong> <span id="minStakeAmount">1 AFOX</span></li>
+                        <li><strong>Lockup period:</strong> <span id="lockupPeriod">0 days (flexible)</span></li>
+                        <li><strong>Early unstake fee:</strong> <span id="unstakeFee">0%</span></li>
+                        <li><strong>Reward calculation:</strong> <span id="rewardCalculation">Daily</span></li>
                     </ul>
                     <p class="web3-note">Please connect your wallet to see live data and interact with staking.</p>
                 </div>
@@ -398,46 +420,56 @@
                 <div class="staking-info-grid">
                     <div class="info-card">
                         <h3>APR for Lending (AFOX)</h3>
-                        <p class="info-value">--%</p>
+                        <p id="afoxLendApr" class="info-value">--%</p>
                     </div>
                     <div class="info-card">
                         <h3>Borrowing Rate (SOL)</h3>
-                        <p class="info-value">--%</p>
+                        <p id="solBorrowRate" class="info-value">--%</p>
                     </div>
                     <div class="info-card">
                         <h3>Your Lent Amount</h3>
-                        <p class="info-value">0 AFOX</p>
+                        <p id="userLentAmount" class="info-value">0 AFOX</p>
                     </div>
                     <div class="info-card">
                         <h3>Your Loan</h3>
-                        <p class="info-value">0 SOL</p>
+                        <p id="userBorrowedAmount" class="info-value">0 SOL</p>
                     </div>
                 </div>
 
                 <div class="staking-actions" style="margin-top: 30px;">
                     <h3 class="web3-subheading">Lend AFOX</h3>
                     <div class="input-group">
-                        <input type="number" placeholder="Enter AFOX to lend">
-                        <button id="lend-btn" class="web3-btn">Lend</button>
+                        <input type="number" id="lendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to lend" aria-label="Amount to lend">
+                        <button id="lendAfoxBtn" class="web3-btn" aria-label="Lend AFOX tokens">Lend</button>
+                    </div>
+                    <h3 class="web3-subheading">Withdraw Lent AFOX</h3>
+                    <div class="input-group">
+                        <input type="number" id="withdrawLendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to withdraw" aria-label="Amount to withdraw from lending">
+                        <button id="withdrawLendBtn" class="web3-btn" aria-label="Withdraw lent AFOX tokens">Withdraw</button>
                     </div>
                 </div>
 
                 <div class="staking-actions" style="margin-top: 30px;">
                     <h3 class="web3-subheading">Borrow SOL</h3>
                     <div class="input-group">
-                        <input type="number" placeholder="Enter SOL to borrow">
-                        <button id="borrow-btn" class="web3-btn">Borrow</button>
+                        <input type="number" id="borrowAmountInput" min="0.000001" step="0.000001" placeholder="Enter SOL to borrow" aria-label="Amount to borrow">
+                        <button id="borrowSolBtn" class="web3-btn" aria-label="Borrow SOL">Borrow</button>
+                    </div>
+                    <h3 class="web3-subheading">Repay SOL Loan</h3>
+                    <div class="input-group">
+                        <input type="number" id="repayAmountInput" min="0.000001" step="0.000001" placeholder="Enter SOL to repay" aria-label="Amount to repay">
+                        <button id="repaySolBtn" class="web3-btn" aria-label="Repay SOL loan">Repay Loan</button>
                     </div>
                 </div>
                 
                 <div class="staking-details">
                     <h3 class="web3-subheading">Lending Terms</h3>
                     <ul>
-                        <li><strong>Loan-to-Value (LTV) Limit:</strong> 75%</li>
-                        <li><strong>AFOX in Pool:</strong> ... AFOX</li>
-                        <li><strong>SOL in Pool:</strong> ... SOL</li>
+                        <li><strong>Loan-to-Value (LTV) Limit:</strong> <span id="ltvRatio">75%</span></li>
+                        <li><strong>AFOX in Pool:</strong> <span id="poolAfoxAmount">... AFOX</span></li>
+                        <li><strong>SOL in Pool:</strong> <span id="poolSolAmount">... SOL</span></li>
                     </ul>
-                    <p class="web3-note">DeFi Lending functionality is under development.</p>
+                    <p class="web3-note">DeFi Lending functionality is under development and requires connection to a Solana protocol.</p>
                 </div>
             </div>
         </section>
@@ -474,9 +506,10 @@
 </footer>
 
 <style>
+    /* Стили для обычных текстовых ссылок, чтобы они выглядели красиво */
     .footer-link-item {
         text-decoration: none;
-        color: #555;
+        color: #555; /* Цвет текста (можно поменять на белый, если фон темный) */
         font-weight: 500;
         font-size: 14px;
         transition: color 0.3s;
@@ -484,7 +517,7 @@
         padding: 8px 0;
     }
     .footer-link-item:hover {
-        color: #00bf75;
+        color: #00bf75; /* Цвет при наведении */
     }
 </style>
             
@@ -507,6 +540,8 @@
             
     <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
-    
+    <script type="module" src="app.js"></script> 
 </body>
 </html>
+
+    
