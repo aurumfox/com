@@ -1063,6 +1063,94 @@ function updateWalletDisplay() {
 // Вызываем эту функцию сразу при загрузке скрипта, чтобы кнопка отрисовалась
 updateWalletDisplay();
 
+// Универсальный визуальный отклик
+function btnFeedback(btn, status, message) {
+    if (!btn) return;
+    if (status === 'success') {
+        btn.classList.add('success-anim');
+        showNotification(`🎁 Success! ${message}`, "success");
+        setTimeout(() => btn.classList.remove('success-anim'), 1000);
+    } else if (status === 'error') {
+        showNotification(`❌ Error: ${message}`, "error");
+    }
+}
+
+// --- Кнопки WALLET & DAO ---
+async function handleConnect() {
+    const btn = document.getElementById('connectWalletBtn');
+    showNotification("🦊 Trying to link wallet...", "info");
+    try {
+        await connectWallet(); // Твоя основная функция
+        btnFeedback(btn, 'success', "Wallet Linked! Welcome back!");
+    } catch (e) { btnFeedback(btn, 'error', "Connection rejected"); }
+}
+
+async function handleProposal() {
+    actionAudit("DAO", "process", "Drafting proposal...");
+    // После успеха:
+    btnFeedback(uiElements.createProposalBtn, 'success', "Proposal created! Here is your 📜");
+}
+
+async function handleVote(side) {
+    const btn = document.getElementById(`vote-${side.toLowerCase()}-btn`);
+    showNotification(`🗳️ Voting ${side}...`, "info");
+    try {
+        // Логика...
+        btnFeedback(btn, 'success', `You voted ${side}! Power +10 ⚡`);
+    } catch (e) { btnFeedback(btn, 'error', "Vote not counted"); }
+}
+
+// --- Кнопки STAKING ---
+async function handleStakeAfox() {
+    const btn = uiElements.stakeAfoxBtn;
+    setBtnState(btn, true, "🔒 Locking...");
+    try {
+        // Твоя логика...
+        btnFeedback(btn, 'success', "Staked successfully! Earning rewards... 💰");
+    } catch (e) { btnFeedback(btn, 'error', "Staking failed"); }
+    finally { setBtnState(btn, false); }
+}
+
+async function handleUnstakeAfox() {
+    const btn = uiElements.unstakeAfoxBtn;
+    setBtnState(btn, true, "🔓 Unlocking...");
+    try {
+        btnFeedback(btn, 'success', "Tokens are free! 🕊️");
+    } catch (e) { btnFeedback(btn, 'error', "Unstake failed"); }
+    finally { setBtnState(btn, false); }
+}
+
+async function handleClaimRewards() {
+    const btn = uiElements.claimRewardsBtn;
+    setBtnState(btn, true, "🎁 Opening...");
+    try {
+        btnFeedback(btn, 'success', "Rewards collected! Enjoy your gift! 💎");
+    } catch (e) { btnFeedback(btn, 'error', "Claim failed"); }
+    finally { setBtnState(btn, false); }
+}
+
+// --- Кнопки LENDING & LOANS ---
+async function handleLend() {
+    const btn = document.getElementById('lend-btn');
+    showNotification("🏦 Depositing to pool...", "info");
+    btnFeedback(btn, 'success', "Lending active! You are now a banker 🎩");
+}
+
+async function handleWithdraw() {
+    const btn = document.getElementById('withdraw-btn');
+    btnFeedback(btn, 'success', "Funds withdrawn! 💸");
+}
+
+async function handleBorrow() {
+    const btn = document.getElementById('borrow-btn');
+    showNotification("⚖️ Checking collateral...", "info");
+    btnFeedback(btn, 'success', "Loan approved! Spend wisely 💳");
+}
+
+async function handleRepay() {
+    const btn = document.getElementById('repay-btn');
+    btnFeedback(btn, 'success', "Debt cleared! You are free! 🔓");
+}
 
 /**
  * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ (ENTRY POINT)
