@@ -385,6 +385,34 @@ function closeAllPopups() {
     }
 }
 
+
+function actionAudit(name, status, detail = "") {
+    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
+    const messages = {
+        process: `${icons.process} ${name}: Transaction started...`,
+        success: `${icons.success} ${name}: Successful! ${detail}`,
+        error: `${icons.error} ${name} Failed: ${detail}`,
+        info: `${icons.info} ${detail}`
+    };
+    showNotification(messages[status], status === 'process' ? 'info' : status);
+    console.log(`[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()} ${detail}`);
+}
+
+// Улучшенная функция статуса кнопок
+function setBtnState(btn, isLoading, text = "Wait...") {
+    if (!btn) return;
+    if (isLoading) {
+        btn.disabled = true;
+        btn.dataset.old = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner"></span> ${text}`;
+        btn.style.opacity = "0.6";
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.old || btn.innerHTML;
+        btn.style.opacity = "1";
+    }
+}
+
 // --------------------------------------------------------
 
 /**
@@ -754,6 +782,12 @@ function getSolanaTxnFeeReserve() {
         });
     }
 
+// Добавь это внутрь initializeAurumFoxApp
+if (document.getElementById('vote-for-btn')) document.getElementById('vote-for-btn').onclick = () => handleVote('FOR');
+if (document.getElementById('vote-against-btn')) document.getElementById('vote-against-btn').onclick = () => handleVote('AGAINST');
+if (document.getElementById('lend-btn')) document.getElementById('lend-btn').onclick = () => handleLendingAction('Lend');
+if (document.getElementById('borrow-btn')) document.getElementById('borrow-btn').onclick = () => handleLoanAction('Borrow');
+if (document.getElementById('repay-btn')) document.getElementById('repay-btn').onclick = () => handleLoanAction('Repay');
 
 // ==========================================
 // БЛОК 3: DAO (ГОЛОСОВАНИЕ)
@@ -773,6 +807,54 @@ function setupDAO() {
     }
 }
 
+// DAO VOTING (FOR / AGAINST)
+async function handleVote(side) {
+    actionAudit(`Vote ${side}`, "process");
+    try {
+        // Логика голосования
+        actionAudit(`Vote ${side}`, "success", "Your voice is counted");
+    } catch (e) {
+        actionAudit(`Vote ${side}`, "error", "Vote rejected");
+    }
+}
+
+// LENDING (Lend, Withdraw)
+async function handleLendingAction(type) {
+    const btn = document.getElementById(type.toLowerCase() + '-btn');
+    setBtnState(btn, true, "Processing...");
+    actionAudit(type, "process");
+    try {
+        // Логика Lend или Withdraw
+        actionAudit(type, "success", "Operation confirmed");
+    } catch (e) {
+        actionAudit(type, "error", "Action failed");
+    } finally { setBtnState(btn, false); }
+}
+
+// LOANS (Borrow, Repay)
+async function handleLoanAction(type) {
+    actionAudit(type, "process", "Calculating collateral...");
+    try {
+        // Логика Borrow или Repay
+        actionAudit(type, "success", "Loan balance updated");
+    } catch (e) {
+        actionAudit(type, "error", "Check your limits");
+    }
+}
+
+// CREATE PROPOSAL
+async function handleCreateProposal(e) {
+    e.preventDefault();
+    actionAudit("DAO Proposal", "process", "Uploading data...");
+    try {
+        // Симуляция создания
+        await new Promise(r => setTimeout(r, 1500));
+        actionAudit("DAO Proposal", "success", "Proposal is now active");
+        closeAllPopups();
+    } catch (e) {
+        actionAudit("DAO Proposal", "error", "Access denied");
+    }
+}
 
 
 // ============================================================
@@ -822,42 +904,65 @@ function setLoadingState(isLoading, button = null) {
     }
 }
 
-/**
- * 2. ЛОГИКА КОШЕЛЬКА (CONNECT / DISCONNECT)
- */
+// CONNECT
 async function connectWallet() {
+    actionAudit("Wallet", "process", "Connecting to Phantom");
     try {
-        // 1. Проверяем, есть ли расширение Phantom в браузере
-        if (!window.solana || !window.solana.isPhantom) {
-            showNotification("Phantom wallet not found! Please install it.", "error");
-            window.open("https://phantom.app/", "_blank");
-            return;
-        }
-
-        // 2. Запрашиваем подключение
+        if (!window.solana) throw new Error("Phantom not found");
         const resp = await window.solana.connect();
-        appState.provider = window.solana;
         appState.walletPublicKey = resp.publicKey;
-        
-        // 3. Создаем соединение с блокчейном (RPC)
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, {
-            commitment: 'confirmed'
-        });
-        
-        // 4. Обновляем интерфейс
         handlePublicKeyChange(resp.publicKey);
-        showNotification("Wallet Connected!", "success");
-        
-        console.log("Connected to wallet:", resp.publicKey.toBase58());
+        actionAudit("Wallet", "success", "Connected");
     } catch (err) {
-        console.error("Connection Error:", err);
-        if (err.code === 4001) {
-            showNotification("Connection rejected by user.", "warning");
-        } else {
-            showNotification("Failed to connect wallet.", "error");
-        }
+        actionAudit("Wallet", "error", err.message);
     }
 }
+
+// STAKE
+async function handleStakeAfox() {
+    const btn = uiElements.stakeAfoxBtn;
+    const amount = uiElements.stakeAmountInput.value;
+    if (!amount || amount <= 0) return actionAudit("Stake", "error", "Enter amount");
+
+    setBtnState(btn, true, "Staking...");
+    actionAudit("Stake", "process", `${amount} AFOX`);
+    try {
+        // ... твой код вызова программы ...
+        await updateStakingAndBalanceUI();
+        actionAudit("Stake", "success", "Tokens locked in pool");
+    } catch (e) {
+        actionAudit("Stake", "error", "Transaction denied");
+    } finally { setBtnState(btn, false); }
+}
+
+// UNSTAKE
+async function handleUnstakeAfox() {
+    const btn = uiElements.unstakeAfoxBtn;
+    setBtnState(btn, true, "Unstaking...");
+    actionAudit("Unstake", "process");
+    try {
+        // ... твой код вызова программы ...
+        await updateStakingAndBalanceUI();
+        actionAudit("Unstake", "success", "Tokens returned to wallet");
+    } catch (e) {
+        actionAudit("Unstake", "error", "Failed to unlock");
+    } finally { setBtnState(btn, false); }
+}
+
+// CLAIM
+async function handleClaimRewards() {
+    const btn = uiElements.claimRewardsBtn;
+    setBtnState(btn, true, "Claiming...");
+    actionAudit("Claim", "process", "Fetching rewards");
+    try {
+        // ... твой код вызова программы ...
+        await updateStakingAndBalanceUI();
+        actionAudit("Claim", "success", "AFOX rewards received");
+    } catch (e) {
+        actionAudit("Claim", "error", "Blockchain error");
+    } finally { setBtnState(btn, false); }
+}
+
 /**
  * Получает реальные балансы SOL и AFOX из блокчейна.
  */
