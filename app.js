@@ -683,17 +683,11 @@ async function getLiveAPR() {
         if (!appState.connection) return "Connect Wallet";
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        
-        // 1. ПРАВИЛЬНЫЙ ВЫЗОВ: Берем PoolState (общие данные), а не UserStaking (личные)
-        // Используем fetch для PoolState
         const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
         
-        // 2. ПОЛЯ: В твоем Rust коде это total_staked_amount
         const totalStakedRaw = poolAccount.totalStakedAmount;
         const totalStaked = Number(totalStakedRaw) / Math.pow(10, AFOX_DECIMALS);
 
-        // 3. ЛОГИКА НАГРАД: В контракте REWARD_RATE_PER_SEC = 100
-        // С учетом 6 знаков (AFOX_DECIMALS), 100 единиц — это 0.0001 токена в сек.
         const rewardsPerSecond = 0.0001; 
         const secondsInYear = 31536000;
         const totalRewardsYear = rewardsPerSecond * secondsInYear; 
@@ -702,25 +696,27 @@ async function getLiveAPR() {
             return "100% (Genesis)";
         }
 
-        // Расчет APR
         const realAPR = (totalRewardsYear / totalStaked) * 100;
-        
         return realAPR > 1000 ? "999%+" : realAPR.toFixed(2) + "%";
         
     } catch (e) {
         console.error("Критическая ошибка APR:", e);
-        // Если аккаунт пула еще не инициализирован в сети, вернем заглушку
         return "100% (Base)";
     }
 }
 
-
+// ЭТОТ БЛОК НУЖНО ВЫНЕСТИ ИЗ getLiveAPR ИЛИ ПРАВИЛЬНО ОФОРМИТЬ В updateStakingUI
+function updateLockupDisplay(currentPool, remainingDays, loanInfo, isLockedByTime) {
+    const lockupDisplay = uiElements.lockupPeriod;
+    if (lockupDisplay) {
+        if (isLockedByTime) {
             lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
-         else {
+        } else {
             lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
         }
     }
 }
+
 
 
 /**
