@@ -716,7 +716,7 @@ async function getLiveAPR() {
 
 
             lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
-        } else {
+         else {
             lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
         }
     }
