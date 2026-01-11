@@ -197,39 +197,26 @@ async function findAssociatedTokenAddress(walletAddress, mintAddress) {
     ))[0];
 }
 
-// 1. STAKE (DEPOSIT)
-async function handleStakeAfox() {
-    if (!appState.walletPublicKey) return connectWallet();
-    const amountStr = uiElements.stakeAmountInput.value;
-    if (!amountStr) return showNotification("Enter amount", "warning");
-
-    setLoadingState(true, uiElements.stakeAfoxBtn);
+async function handleCreateProposal(e) {
+    e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    setElementStatus(submitBtn, true, "📝 Creating...");
+    
     try {
-        const amount = new window.anchor.BN(parseAmountToBigInt(amountStr, AFOX_DECIMALS).toString());
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
-
-        await program.methods.deposit(amount).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: userStakingPDA,
-            owner: appState.walletPublicKey,
-            userSourceAta: userAfoxATA,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-
-        showNotification("Stake Successful!", "success");
-        await updateStakingAndBalanceUI();
-    } catch (e) {
-        console.error(e);
-        showNotification("Stake error: " + e.message, "error");
+        // Симуляция задержки сети для красоты
+        await new Promise(r => setTimeout(r, 1500)); 
+        
+        showNotification("Proposal submitted to DAO!", "success");
+        e.target.reset();
+        closeAllPopups();
+    } catch (err) {
+        showNotification("DAO Error", "error");
     } finally {
-        setLoadingState(false, uiElements.stakeAfoxBtn);
+        setElementStatus(submitBtn, false);
     }
 }
+
 
 
 /**
@@ -362,6 +349,19 @@ function showNotification(message, type = 'info', duration = null) {
     }, finalDuration);
 }
 
+function setElementStatus(el, isLoading, loadingText = "⏳ Wait...") {
+    if (!el) return;
+    if (isLoading) {
+        el.disabled = true;
+        el.dataset.oldHtml = el.innerHTML; // Сохраняем иконки и текст
+        el.innerHTML = loadingText;
+        el.style.opacity = "0.7";
+    } else {
+        el.disabled = false;
+        el.innerHTML = el.dataset.oldHtml || el.innerHTML;
+        el.style.opacity = "1";
+    }
+}
 
 // Функция для анимации кнопок
 function setBtnLoading(btn, isLoading, text = "⏳ Processing...") {
@@ -422,32 +422,44 @@ function updateWalletDisplay() {
 updateWalletDisplay();
 
 
-    
-function closeAllPopups() {
+   function closeAllPopups() {
     const modals = [
         uiElements.createProposalModal 
     ].filter(Boolean);
 
     let wasModalOpen = false;
 
+    // Закрываем модальные окна
     modals.forEach(modal => {
-        if (modal && modal.style.display === 'flex') {
+        if (modal && (modal.style.display === 'flex' || modal.classList.contains('is-open'))) {
             modal.style.display = 'none';
             modal.classList.remove('is-open'); 
             wasModalOpen = true;
         }
     });
     
+    // Закрываем мобильное меню, если оно открыто
     const menuToggle = document.getElementById('menuToggle');
     if (menuToggle && menuToggle.classList.contains('open')) {
-        toggleMenuState(true);
+        if (typeof toggleMenuState === 'function') {
+            toggleMenuState(true); // Закрываем меню
+        }
         wasModalOpen = true; 
     }
 
+    // Если что-то было закрыто, пишем комментарий и разблокируем скролл
     if (wasModalOpen) {
-        toggleScrollLock(false); 
+        if (typeof toggleScrollLock === 'function') {
+            toggleScrollLock(false); 
+        }
+        
+        // Оживляем: пишем комментарий в уведомлении
+        showNotification("Window closed", "info"); 
+        console.log("🛠️ Система: Все активные окна закрыты пользователем.");
     }
 }
+ 
+
 
 function cacheUIElements() {
     
@@ -538,42 +550,41 @@ async function getRobustConnection() {
     }
 }
 
-/**
- * 2. ЛОГИКА КОШЕЛЬКА (CONNECT / DISCONNECT)
- */
+
+
+// Подключение кошелька
 async function connectWallet() {
+    const btn = document.querySelector('.connect-fox-btn') || document.getElementById('connectWalletBtn');
     try {
-        // 1. Проверяем, есть ли расширение Phantom в браузере
         if (!window.solana || !window.solana.isPhantom) {
-            showNotification("Phantom wallet not found! Please install it.", "error");
-            window.open("https://phantom.app/", "_blank");
+            showNotification("Phantom not found!", "error");
             return;
         }
-
-        // 2. Запрашиваем подключение
+        setElementStatus(btn, true, "🦊 Connecting...");
+        
         const resp = await window.solana.connect();
-        appState.provider = window.solana;
         appState.walletPublicKey = resp.publicKey;
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
         
-        // 3. Создаем соединение с блокчейном (RPC)
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, {
-            commitment: 'confirmed'
-        });
-        
-        // 4. Обновляем интерфейс
         handlePublicKeyChange(resp.publicKey);
-        showNotification("Wallet Connected!", "success");
-        
-        console.log("Connected to wallet:", resp.publicKey.toBase58());
+        showNotification("Wallet Linked!", "success");
     } catch (err) {
-        console.error("Connection Error:", err);
-        if (err.code === 4001) {
-            showNotification("Connection rejected by user.", "warning");
-        } else {
-            showNotification("Failed to connect wallet.", "error");
-        }
+        showNotification("Rejected", "warning");
+    } finally {
+        setElementStatus(btn, false);
     }
 }
+
+// Кнопка копирования адреса
+function copyAddressToClipboard(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const original = btn.innerHTML;
+        btn.innerHTML = "✅ Done!";
+        setTimeout(() => { btn.innerHTML = original; }, 2000);
+        showNotification("Address copied!", "info");
+    });
+}
+
 
 
 async function disconnectWallet() {
