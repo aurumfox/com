@@ -1203,6 +1203,29 @@ function setupAllButtonListeners() {
         { id: 'borrow-btn', fn: handleBorrow },
         { id: 'repay-btn', fn: handleRepay }
     ];
+function setupModernUI() {
+    const actions = [
+        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Identity Verified! 🦊', icon: '🔑', fn: connectWallet },
+        { id: 'stake-afox-btn', name: 'Staking', msg: 'Yield started! 📈', icon: '💰', fn: handleStakeAfox },
+        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Assets Unlocked! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
+        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Rewards Collected! Enjoy! 🎁', icon: '💎', fn: handleClaimRewards },
+        { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power of Governance! ⚡', icon: '✅', fn: () => {} },
+        { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition recorded! 🛡️', icon: '🚫', fn: () => {} },
+        { id: 'lend-btn', name: 'Lending', msg: 'Liquidity Provided! 🏦', icon: '🏦', fn: () => {} },
+        { id: 'borrow-btn', name: 'Borrow', msg: 'Credit Line Active! 💳', icon: '💵', fn: () => {} },
+        { id: 'repay-btn', name: 'Repayment', msg: 'Debt Cleared! Well done! 🏆', icon: '⭐', fn: () => {} }
+    ];
+
+    actions.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (el) {
+            el.onclick = (e) => {
+                e.preventDefault();
+                smartAction(item.id, item.name, item.msg, item.icon, item.fn);
+            };
+        }
+    });
+}
 
     map.forEach(item => {
         const el = document.getElementById(item.id);
