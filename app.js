@@ -1101,6 +1101,31 @@ function initializeAurumFoxApp() {
         { id: 'claimRewardsBtn', func: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
         { id: 'unstakeAfoxBtn', func: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null }
     ];
+function setupAllButtonListeners() {
+    const map = [
+        { id: 'connectWalletBtn', fn: handleConnect },
+        { id: 'createProposalBtn', fn: handleProposal },
+        { id: 'vote-for-btn', fn: () => handleVote('FOR') },
+        { id: 'vote-against-btn', fn: () => handleVote('AGAINST') },
+        { id: 'stake-afox-btn', fn: handleStakeAfox },
+        { id: 'unstake-afox-btn', fn: handleUnstakeAfox },
+        { id: 'claim-rewards-btn', fn: handleClaimRewards },
+        { id: 'lend-btn', fn: handleLend },
+        { id: 'withdraw-btn', fn: handleWithdraw },
+        { id: 'borrow-btn', fn: handleBorrow },
+        { id: 'repay-btn', fn: handleRepay }
+    ];
+
+    map.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (el) {
+            el.onclick = (e) => {
+                e.preventDefault();
+                item.fn();
+            };
+        }
+    });
+}
 
     buttonMap.forEach(item => {
         const btn = document.getElementById(item.id) || document.getElementById(item.id.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)); 
