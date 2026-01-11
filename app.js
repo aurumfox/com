@@ -363,20 +363,21 @@ function showNotification(message, type = 'info', duration = null) {
 }
 
 
-function setLoadingState(isLoading, button = null) {
-    if (uiElements.pageLoader) uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
-    const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
-    btns.forEach(btn => { if (btn) btn.disabled = isLoading; });
-    if (button) {
-        button.disabled = isLoading;
-        if (isLoading) {
-            button.dataset.oldText = button.textContent;
-            button.textContent = '...Wait';
-        } else if (button.dataset.oldText) {
-            button.textContent = button.dataset.oldText;
-        }
+// Функция для анимации кнопок
+function setBtnLoading(btn, isLoading, text = "⏳ Processing...") {
+    if (!btn) return;
+    if (isLoading) {
+        btn.disabled = true;
+        btn.dataset.originalText = btn.innerHTML; // Сохраняем старый текст
+        btn.innerHTML = text; 
+        btn.style.opacity = "0.6";
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.originalText || btn.innerHTML; // Возвращаем текст
+        btn.style.opacity = "1";
     }
 }
+
 
 function updateWalletDisplay() {
     // Ищем все места в HTML, где должна быть кнопка или адрес
@@ -851,19 +852,18 @@ async function sendLogToFirebase(walletAddress, actionType, amount) {
 // --- STAKING FUNCTIONS (ANCHOR TEMPLATES + REAL LOGIC) ---
 // =========================================================================================
 
-// 2. UNSTAKE
+
 async function handleUnstakeAfox() {
     if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.unstakeAfoxBtn);
+    const btn = uiElements.unstakeAfoxBtn;
+    
+    setBtnLoading(btn, true, "🔓 Unstaking...");
     try {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
         const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
         
-        // ВАЖНО: Берем всю сумму стейка из данных аккаунта
         const amount = new window.anchor.BN(appState.userStakingData.stakedAmount.toString());
-        
-        // Проверяем на ранний выход (isEarlyExit = true если время еще не вышло)
         const isEarly = appState.userStakingData.lockupEndTime > (Date.now() / 1000);
 
         await program.methods.unstake(amount, isEarly).accounts({
@@ -879,34 +879,29 @@ async function handleUnstakeAfox() {
             clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
         }).rpc();
 
-        showNotification(isEarly ? "Unstaked with 40% fee" : "Unstake Successful", "success");
+        showNotification("✅ Unstaked successfully!", "success");
         await updateStakingAndBalanceUI();
     } catch (e) {
-        showNotification("Unstake error: " + e.message, "error");
+        showNotification("❌ Unstake error", "error");
     } finally {
-        setLoadingState(false, uiElements.unstakeAfoxBtn);
+        setBtnLoading(btn, false);
     }
 }
         
 
 
 
-/**
- * ФУНКЦИЯ: ЗАБРАТЬ НАГРАДЫ (CLAIM)
- */
 async function handleClaimRewards() {
     if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.claimRewardsBtn);
+    const btn = uiElements.claimRewardsBtn;
+    
+    setBtnLoading(btn, true, "💰 Claiming...");
     try {
-        const provider = new window.anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
-        const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        
-        // Получаем ATA (Associated Token Account)
-        const userAfoxATA = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        ).then(res => res[0]);
+        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
+
+        showNotification("Processing rewards...", "info");
 
         await program.methods.claimRewards().accounts({
             poolState: AFOX_POOL_STATE_PUBKEY,
@@ -920,49 +915,57 @@ async function handleClaimRewards() {
             clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
         }).rpc();
 
-        showNotification("Rewards claimed!", "success");
+        showNotification("✅ Rewards received!", "success");
         await updateStakingAndBalanceUI();
-    } catch (err) {
-        showNotification("Claim failed: " + err.message, "error");
+    } catch (e) {
+        showNotification("❌ Claim failed", "error");
     } finally {
-        setLoadingState(false, uiElements.claimRewardsBtn);
+        setBtnLoading(btn, false);
     }
 }
 
 
-async function handleUnstakeAfox() {
-    if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.unstakeAfoxBtn);
+
+async function handleStakeAfox() {
+    if (!appState.walletPublicKey) return connectWallet();
+    const btn = uiElements.stakeAfoxBtn;
+    const amountStr = uiElements.stakeAmountInput.value;
+    
+    if (!amountStr || parseFloat(amountStr) <= 0) {
+        return showNotification("Enter a valid amount", "warning");
+    }
+
+    setBtnLoading(btn, true, "📡 Sending..."); // Кнопка ожила
     try {
+        const amount = new window.anchor.BN(parseAmountToBigInt(amountStr, AFOX_DECIMALS).toString());
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const sender = appState.walletPublicKey;
-        const userStakingPDA = await getUserStakingAccountPDA(sender);
-        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
-        );
-        const amountToUnstake = new window.Anchor.BN(appState.userStakingData.stakedAmount.toString());
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
 
-        const tx = await program.methods.unstake(amountToUnstake, false)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPDA,
-                owner: sender,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardsAta: userAfoxATA,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            }).transaction();
+        showNotification("Please confirm in Phantom", "info");
 
-        await appState.provider.sendAndConfirm(tx);
-        showNotification(`Unstake success!`, 'success');
+        const tx = await program.methods.deposit(amount).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDA,
+            owner: appState.walletPublicKey,
+            userSourceAta: userAfoxATA,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+
+        showNotification("🚀 Confirming transaction...", "info");
+        setBtnLoading(btn, true, "🔗 Confirming...");
+
         await updateStakingAndBalanceUI();
-    } catch (error) {
-        showNotification(`Unstake failed: ${error.message}`, 'error');
+        showNotification("✅ Successfully Staked!", "success");
+        uiElements.stakeAmountInput.value = ""; 
+    } catch (e) {
+        console.error(e);
+        showNotification("❌ Error: " + e.message, "error");
     } finally {
-        setLoadingState(false, uiElements.unstakeAfoxBtn);
+        setBtnLoading(btn, false); // Кнопка вернулась в норму
     }
 }
 
