@@ -56,6 +56,11 @@ const AFOX_DECIMALS = 6;
 const SECONDS_PER_DAY = 86400;
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
 
+
+
+
+
+
 const RPC_ENDPOINTS = [
     'https://solana-rpc.publicnode.com', // Очень стабильный бесплатный узел
     'https://rpc.ankr.com/solana',
@@ -64,6 +69,18 @@ const RPC_ENDPOINTS = [
 
 // Установите публичный узел как основной
 const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[0]; 
+
+
+
+
+
+
+
+
+
+
+
+
 
 const POOLS_CONFIG = {
     0: { name: "Flexible", apr_rate: 500 },
@@ -178,46 +195,105 @@ let appState = { connection: null, provider: null, walletPublicKey: null, userBa
 let uiElements = {};
 
 
+// =========================================================================================
+// 🟢 NEW FUNCTION: SECURE LOG SENDING VIA PROXY
+// =========================================================================================
 
-
-// --------------------------------------------------------
-// Функция получения PDA адреса (строго по Rust: owner + pool_state)
-async function getUserStakingAccountPDA(owner) {
-    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
-// Вспомогательная функция для получения ATA (Associated Token Account)
-async function findAssociatedTokenAddress(walletAddress, mintAddress) {
-    return (await window.solanaWeb3.PublicKey.findProgramAddress(
-        [walletAddress.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mintAddress.toBuffer()],
-        ASSOCIATED_TOKEN_PROGRAM_ID
-    ))[0];
-}
-
-async function handleCreateProposal(e) {
-    e.preventDefault();
-    const submitBtn = e.target.querySelector('button[type="submit"]');
+/**
+ * Sends log data via a Cloudflare Worker (proxy) that uses the hidden FIREBASE_API_KEY.
+ *
+ * @param {string} walletAddress - The user's wallet public key.
+ * @param {string} actionType - The type of action ('STAKE', 'UNSTAKE', 'CLAIM').
+ * @param {bigint | string | number} amount - The transaction amount.
+ */
+async function sendLogToFirebase(walletAddress, actionType, amount) {
+    if (!walletAddress || !actionType) return; 
     
-    setElementStatus(submitBtn, true, "📝 Creating...");
+    // Convert amount to string for JSON
+    const amountString = (typeof amount === 'bigint') ? amount.toString() : String(amount);
     
     try {
-        // Симуляция задержки сети для красоты
-        await new Promise(r => setTimeout(r, 1500)); 
-        
-        showNotification("Proposal submitted to DAO!", "success");
-        e.target.reset();
-        closeAllPopups();
-    } catch (err) {
-        showNotification("DAO Error", "error");
-    } finally {
-        setElementStatus(submitBtn, false);
+        await fetch(FIREBASE_PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                wallet: walletAddress,
+                action: actionType,
+                amount: amountString 
+            })
+        });
+        // Success! Logging went through the proxy.
+        console.log(`Log sent via Worker: ${actionType} by ${walletAddress.substring(0, 8)}...`);
+    } catch (error) {
+        console.error("Error sending log via Worker:", error);
     }
 }
 
 
+/**
+ * Utility to run a fetch request with a timeout.
+ */
+async function fetchWithTimeout(url, options = {}, timeout = 8000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    } catch (error) {
+        clearTimeout(id);
+        if (error.name === 'AbortError') {
+            throw new Error('Network request timed out.');
+        }
+        throw error;
+    }
+}
+
+/**
+ * Utility function to debounce repeated function calls.
+ */
+function debounce(func, delay) {
+    let timeoutId;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            func.apply(context, args);
+        }, delay);
+    };
+}
+
+/**
+ * Universal function to display notifications.
+ */
+function showNotification(message, type = 'info', duration = null) {
+    if (!uiElements.notificationContainer) {
+        console.warn('Notification container not found. Cannot display notification.');
+        return;
+    }
+
+    const finalDuration = duration || (type === 'error' || type === 'warning' ? 7000 : 3500);
+
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+
+    if (message.includes('<a') && message.includes('</a>')) {
+        notification.innerHTML = message;
+    } else {
+        // SECURITY: Use textContent for safety
+        notification.textContent = message;
+    }
+
+    uiElements.notificationContainer.prepend(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, finalDuration);
+}
 
 /**
  * Formats BigInt considering decimal places.
@@ -282,454 +358,52 @@ function parseAmountToBigInt(amountStr, decimals) {
         return BigInt(paddedFractionalPart);
     }
 } 
-
-/**
- * Utility function to debounce repeated function calls.
- */
-function debounce(func, delay) {
-    let timeoutId;
-    return function(...args) {
-        const context = this;
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            func.apply(context, args);
-        }, delay);
-    };
-}
-
-/**
- * Utility to run a fetch request with a timeout.
- */
-async function fetchWithTimeout(url, options = {}, timeout = 8000) {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-
-    try {
-        const response = await fetch(url, {
-            ...options,
-            signal: controller.signal
-        });
-        clearTimeout(id);
-        return response;
-    } catch (error) {
-        clearTimeout(id);
-        if (error.name === 'AbortError') {
-            throw new Error('Network request timed out.');
-        }
-        throw error;
-    }
-}
-
-
-/**
- * Universal function to display notifications.
- */
-function showNotification(message, type = 'info', duration = null) {
-    if (!uiElements.notificationContainer) {
-        console.warn('Notification container not found. Cannot display notification.');
-        return;
-    }
-
-    const finalDuration = duration || (type === 'error' || type === 'warning' ? 7000 : 3500);
-
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-
-    if (message.includes('<a') && message.includes('</a>')) {
-        notification.innerHTML = message;
-    } else {
-        // SECURITY: Use textContent for safety
-        notification.textContent = message;
-    }
-
-    uiElements.notificationContainer.prepend(notification);
-
-    setTimeout(() => {
-        notification.remove();
-    }, finalDuration);
-}
-
-function setElementStatus(el, isLoading, loadingText = "⏳ Wait...") {
-    if (!el) return;
-    if (isLoading) {
-        el.disabled = true;
-        el.dataset.oldHtml = el.innerHTML; // Сохраняем иконки и текст
-        el.innerHTML = loadingText;
-        el.style.opacity = "0.7";
-    } else {
-        el.disabled = false;
-        el.innerHTML = el.dataset.oldHtml || el.innerHTML;
-        el.style.opacity = "1";
-    }
-}
-
-// Функция для анимации кнопок
-function setBtnLoading(btn, isLoading, text = "⏳ Processing...") {
-    if (!btn) return;
-    if (isLoading) {
-        btn.disabled = true;
-        btn.dataset.originalText = btn.innerHTML; // Сохраняем старый текст
-        btn.innerHTML = text; 
-        btn.style.opacity = "0.6";
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.originalText || btn.innerHTML; // Возвращаем текст
-        btn.style.opacity = "1";
-    }
-}
-
-
-function updateWalletDisplay() {
-    // Ищем все места в HTML, где должна быть кнопка или адрес
-    const containers = document.querySelectorAll('.wallet-control');
     
-    containers.forEach(container => {
-        if (window.solana && window.solana.isConnected) {
-            // Если кошелек ПОДКЛЮЧЕН
-            const pubKey = window.solana.publicKey.toString();
-            container.innerHTML = `
-                <div class="wallet-display" style="display: flex; align-items: center; gap: 10px;">
-                    <span class="wallet-address-text" style="color: #f39c12;">
-                        ${pubKey.slice(0, 4)}...${pubKey.slice(-4)}
-                    </span>
-                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${pubKey}')" title="Copy Address">
-                        <i class="fas fa-copy"></i> 📋
-                    </button>
-                </div>
-            `;
-        } else {
-            // Если кошелек НЕ ПОДКЛЮЧЕН — создаем кнопку с лисой
-            container.innerHTML = `
-                <button class="web3-button connect-fox-btn wallet-connect-btn" style="cursor: pointer;">
-                    <i class="fox-icon">🦊</i> Connect Wallet
-                </button>
-            `;
-            
-            // Находим только что созданную кнопку и вешаем на неё функцию подключения
-            const btn = container.querySelector('.connect-fox-btn');
-            btn.addEventListener('click', async () => {
-                try {
-                    await connectWallet(); // Вызываем твою основную функцию подключения
-                } catch (err) {
-                    console.error("Connection failed", err);
-                }
-            });
-        }
-    });
-}
-
-// Вызываем эту функцию сразу при загрузке скрипта, чтобы кнопка отрисовалась
-updateWalletDisplay();
-
-
-   function closeAllPopups() {
+function closeAllPopups() {
     const modals = [
         uiElements.createProposalModal 
     ].filter(Boolean);
 
     let wasModalOpen = false;
 
-    // Закрываем модальные окна
     modals.forEach(modal => {
-        if (modal && (modal.style.display === 'flex' || modal.classList.contains('is-open'))) {
+        if (modal && modal.style.display === 'flex') {
             modal.style.display = 'none';
             modal.classList.remove('is-open'); 
             wasModalOpen = true;
         }
     });
     
-    // Закрываем мобильное меню, если оно открыто
     const menuToggle = document.getElementById('menuToggle');
     if (menuToggle && menuToggle.classList.contains('open')) {
-        if (typeof toggleMenuState === 'function') {
-            toggleMenuState(true); // Закрываем меню
-        }
+        toggleMenuState(true);
         wasModalOpen = true; 
     }
 
-    // Если что-то было закрыто, пишем комментарий и разблокируем скролл
     if (wasModalOpen) {
-        if (typeof toggleScrollLock === 'function') {
-            toggleScrollLock(false); 
-        }
-        
-        // Оживляем: пишем комментарий в уведомлении
-        showNotification("Window closed", "info"); 
-        console.log("🛠️ Система: Все активные окна закрыты пользователем.");
+        toggleScrollLock(false); 
     }
 }
- 
 
-
-function cacheUIElements() {
-    
-    // Inputs & Display
-    uiElements.stakeAmountInput = document.getElementById('stake-amount') || document.getElementById('stakeAmountInput');
-    uiElements.userAfoxBalance = document.getElementById('user-afox-balance') || document.getElementById('userAfoxBalance');
-    uiElements.userStakedAmount = document.getElementById('user-staked-amount') || document.getElementById('userStakedAmount');
-    uiElements.userRewardsAmount = document.getElementById('user-rewards-amount') || document.getElementById('userRewardsAmount');
-    uiElements.stakingApr = document.getElementById('staking-apr') || document.getElementById('stakingApr');
-    uiElements.lockupPeriod = document.getElementById('lockup-period');
-    
-    // Global Elements
-    uiElements.notificationContainer = document.getElementById('notification-container') || document.getElementById('notificationContainer');
-    uiElements.pageLoader = document.getElementById('page-loader');
-    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
-    
-    // DAO
-    uiElements.createProposalBtn = document.getElementById('createProposalBtn');
-    uiElements.createProposalModal = document.getElementById('dao-modal');
-}
-
-
-    // Staking Section
-    uiElements.userAfoxBalance = document.getElementById('user-afox-balance');
-    uiElements.userStakedAmount = document.getElementById('user-staked-amount');
-    uiElements.userRewardsAmount = document.getElementById('user-rewards-amount');
-    uiElements.stakingApr = document.getElementById('staking-apr');
-    uiElements.stakeAmountInput = document.getElementById('stake-amount');
-    uiElements.stakeAfoxBtn = document.getElementById('stake-afox-btn');
-    uiElements.claimRewardsBtn = document.getElementById('claim-rewards-btn');
-    uiElements.unstakeAfoxBtn = document.getElementById('unstake-afox-btn');
-    uiElements.lockupPeriod = document.getElementById('lockup-period');
-    uiElements.poolSelector = document.getElementById('pool-selector'); 
-
-
-    // Utility
-    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
-    uiElements.notificationContainer = document.getElementById('notification-container');
-    uiElements.pageLoader = document.getElementById('page-loader');
-    uiElements.contactForm = document.getElementById('contact-form');
-
-
-
-    // Staking Actions
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
-    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
-    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
-    
-    // DAO Actions
-    if (uiElements.createProposalBtn) {
-        uiElements.createProposalBtn.addEventListener('click', () => {
-            if (uiElements.createProposalModal) {
-                closeAllPopups();
-                uiElements.createProposalModal.style.display = 'flex';
-                uiElements.createProposalModal.classList.add('is-open');
-                toggleScrollLock(true);
-            }
-        });
-    }
-
-    if (uiElements.createProposalForm) {
-        uiElements.createProposalForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            console.log("DAO Proposal Form submitted"); 
-            showNotification('Proposal creation simulated!', 'success', 3000);
-            e.target.reset();
-            closeAllPopups();
-        });
-    }
+// --------------------------------------------------------
 
 /**
- * 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И RPC
+ * Updates staking and balance UI elements after a transaction.
  */
-async function getRobustConnection() {
+async function updateStakingAndBalanceUI() {
     try {
-        // Use a more reliable RPC if possible, mainnet-beta is often rate-limited
-        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { 
-            commitment: 'confirmed',
-            disableRetryOnRateLimit: false 
-        });
-        await conn.getSlot(); 
-        return conn;
-    } catch (e) {
-        if (e.message.includes('fetch')) {
-            showNotification("Connection blocked by browser (CSP/CORS). Check console.", "error");
-        }
-        throw new Error('RPC endpoint unreachable.');
-    }
-}
-
-
-
-// Подключение кошелька
-async function connectWallet() {
-    const btn = document.querySelector('.connect-fox-btn') || document.getElementById('connectWalletBtn');
-    try {
-        if (!window.solana || !window.solana.isPhantom) {
-            showNotification("Phantom not found!", "error");
-            return;
-        }
-        setElementStatus(btn, true, "🦊 Connecting...");
-        
-        const resp = await window.solana.connect();
-        appState.walletPublicKey = resp.publicKey;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        
-        handlePublicKeyChange(resp.publicKey);
-        showNotification("Wallet Linked!", "success");
-    } catch (err) {
-        showNotification("Rejected", "warning");
-    } finally {
-        setElementStatus(btn, false);
-    }
-}
-
-// Кнопка копирования адреса
-function copyAddressToClipboard(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-        const original = btn.innerHTML;
-        btn.innerHTML = "✅ Done!";
-        setTimeout(() => { btn.innerHTML = original; }, 2000);
-        showNotification("Address copied!", "info");
-    });
-}
-
-
-
-async function disconnectWallet() {
-    try {
-        if (window.solana) await window.solana.disconnect();
-        if (appState.provider) appState.provider = null;
-    } catch (err) {
-        console.error("Disconnect Error:", err);
-    }
-    handlePublicKeyChange(null);
-    showNotification("Disconnected", "info");
-}
-
-
-function handlePublicKeyChange(newPublicKey) {
-    appState.walletPublicKey = newPublicKey;
-    const address = newPublicKey ? newPublicKey.toBase58() : null;
-    updateWalletDisplay(address);
-    if (newPublicKey) updateStakingAndBalanceUI();
-}
-
-
-/**
- * Создает экземпляр программы Anchor для взаимодействия со смарт-контрактом.
- */
-function getAnchorProgram(programId, idl) {
-    if (!appState.connection || !appState.provider) {
-        throw new Error("Wallet not connected");
-    }
-    // Используем window.anchor (маленькая 'a'), так как это стандарт для браузерного билда
-    const provider = new (window.anchor.AnchorProvider || window.Anchor.AnchorProvider)(
-        appState.connection,
-        appState.provider,
-        { commitment: "confirmed" }
-    );
-    return new (window.anchor.Program || window.Anchor.Program)(idl, programId, provider);
-}
-
-
-/**
- * Получает реальные балансы SOL и AFOX из блокчейна.
- */
-
-async function fetchUserBalances() {
-    if (!appState.walletPublicKey) return;
-
-    // Гарантируем наличие соединения, если его вдруг нет
-    if (!appState.connection) {
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-    }
-
-    const sender = appState.walletPublicKey;
-
-    try {
-        // 1. Баланс SOL
-        const solBalance = await appState.connection.getBalance(sender, 'confirmed');
-        appState.userBalances.SOL = BigInt(solBalance);
-
-        // 2. Баланс AFOX
-        const tokenAccounts = await appState.connection.getParsedTokenAccountsByOwner(sender, {
-            mint: AFOX_TOKEN_MINT_ADDRESS
-        });
-
-        if (tokenAccounts.value.length > 0) {
-            const amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
-            appState.userBalances.AFOX = BigInt(amount);
-        } else {
-            appState.userBalances.AFOX = 0n;
-        }
-
-        console.log("✅ Balances updated!");
+        await Promise.all([
+            fetchUserBalances(),
+            updateStakingUI()
+        ]);
     } catch (error) {
-        console.error("❌ Ошибка RPC при получении баланса:", error);
-        // Если заблокировали — пробуем переключиться на Ankr
-        appState.connection = new window.solanaWeb3.Connection(RPC_ENDPOINTS[1], 'confirmed');
+        console.error("Error refreshing UI:", error);
     }
 }
 
-
-async function fetchUserStakingData() {
-    if (!appState.walletPublicKey || !appState.connection) return;
-
-    try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        
-        // Добавляем проверку на существование аккаунта перед fetch
-        const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
-        if (!accountInfo) {
-            console.log("ℹ️ Аккаунт стейкинга еще не создан для этого кошелька.");
-            return;
-        }
-
-        const stakingData = await program.account.userStakingAccount.fetch(userStakingPDA);
-        // ... остальная логика обновления appState
-    } catch (e) {
-        console.error("⚠️ Ошибка при загрузке данных стейкинга:", e.message);
-    }
-}
-
-
-/**
- * Получает динамический APR на основе общего стейкинга в пуле.
- */
-
-async function getLiveAPR() {
-    try {
-        if (!appState.connection) return "Connect Wallet";
-
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
-        
-        const totalStakedRaw = poolAccount.totalStakedAmount;
-        const totalStaked = Number(totalStakedRaw) / Math.pow(10, AFOX_DECIMALS);
-
-        const rewardsPerSecond = 0.0001; 
-        const secondsInYear = 31536000;
-        const totalRewardsYear = rewardsPerSecond * secondsInYear; 
-
-        if (totalStaked <= 0.001) {
-            return "100% (Genesis)";
-        }
-
-        const realAPR = (totalRewardsYear / totalStaked) * 100;
-        return realAPR > 1000 ? "999%+" : realAPR.toFixed(2) + "%";
-        
-    } catch (e) {
-        console.error("Критическая ошибка APR:", e);
-        return "100% (Base)";
-    }
-}
-
-// ЭТОТ БЛОК НУЖНО ВЫНЕСТИ ИЗ getLiveAPR ИЛИ ПРАВИЛЬНО ОФОРМИТЬ В updateStakingUI
-function updateLockupDisplay(currentPool, remainingDays, loanInfo, isLockedByTime) {
-    const lockupDisplay = uiElements.lockupPeriod;
-    if (lockupDisplay) {
-        if (isLockedByTime) {
-            lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
-        } else {
-            lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
-        }
-    }
-}
-
-
+// =========================================================================================
+// --- STAKING FUNCTIONS (ANCHOR TEMPLATES + REAL LOGIC) ---
+// =========================================================================================
 
 /**
  * Updates the staking UI elements with current user data (REAL).
@@ -810,109 +484,70 @@ if (uiElements.stakingApr) {
             const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
             const remainingSeconds = lockupEndTime - now;
             const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
+            lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
+        } else {
+            lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
+        }
+    }
+}
+
+async function fetchUserStakingData() {
+    if (!appState.walletPublicKey || !appState.connection) return;
+
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        
+        // Добавляем проверку на существование аккаунта перед fetch
+        const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
+        if (!accountInfo) {
+            console.log("ℹ️ Аккаунт стейкинга еще не создан для этого кошелька.");
+            return;
+        }
+
+        const stakingData = await program.account.userStakingAccount.fetch(userStakingPDA);
+        // ... остальная логика обновления appState
+    } catch (e) {
+        console.error("⚠️ Ошибка при загрузке данных стейкинга:", e.message);
+    }
+}
 
 
+// Функция получения PDA адреса (строго по Rust: owner + pool_state)
+async function getUserStakingAccountPDA(owner) {
+    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+        STAKING_PROGRAM_ID
+    );
+    return pda;
+}
+
+async function getUserStakingPDA(owner) {
+    // ВАЖНО: Seeds должны быть точно как в Rust [owner, pool_state]
+    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+        STAKING_PROGRAM_ID
+    );
+    return pda;
+}
 
 
 /**
- * Updates staking and balance UI elements after a transaction.
+ * ФУНКЦИЯ: ЗАБРАТЬ НАГРАДЫ (CLAIM)
  */
-async function updateStakingAndBalanceUI() {
-    try {
-        await Promise.all([
-            fetchUserBalances(),
-            updateStakingUI()
-        ]);
-    } catch (error) {
-        console.error("Error refreshing UI:", error);
-    }
-}
-
-
-            /**
- * Sends log data via a Cloudflare Worker (proxy) that uses the hidden FIREBASE_API_KEY.
- *
- * @param {string} walletAddress - The user's wallet public key.
- * @param {string} actionType - The type of action ('STAKE', 'UNSTAKE', 'CLAIM').
- * @param {bigint | string | number} amount - The transaction amount.
- */
-async function sendLogToFirebase(walletAddress, actionType, amount) {
-    if (!walletAddress || !actionType) return; 
-    
-    // Convert amount to string for JSON
-    const amountString = (typeof amount === 'bigint') ? amount.toString() : String(amount);
-    
-    try {
-        await fetch(FIREBASE_PROXY_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                wallet: walletAddress,
-                action: actionType,
-                amount: amountString 
-            })
-        });
-        // Success! Logging went through the proxy.
-        console.log(`Log sent via Worker: ${actionType} by ${walletAddress.substring(0, 8)}...`);
-    } catch (error) {
-        console.error("Error sending log via Worker:", error);
-    }
-}
-            
-// =========================================================================================
-// --- STAKING FUNCTIONS (ANCHOR TEMPLATES + REAL LOGIC) ---
-// =========================================================================================
-
-
-async function handleUnstakeAfox() {
-    if (!appState.walletPublicKey) return;
-    const btn = uiElements.unstakeAfoxBtn;
-    
-    setBtnLoading(btn, true, "🔓 Unstaking...");
-    try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
-        
-        const amount = new window.anchor.BN(appState.userStakingData.stakedAmount.toString());
-        const isEarly = appState.userStakingData.lockupEndTime > (Date.now() / 1000);
-
-        await program.methods.unstake(amount, isEarly).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: userStakingPDA,
-            owner: appState.walletPublicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-            userRewardsAta: userAfoxATA,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-
-        showNotification("✅ Unstaked successfully!", "success");
-        await updateStakingAndBalanceUI();
-    } catch (e) {
-        showNotification("❌ Unstake error", "error");
-    } finally {
-        setBtnLoading(btn, false);
-    }
-}
-        
-
-
-
 async function handleClaimRewards() {
     if (!appState.walletPublicKey) return;
-    const btn = uiElements.claimRewardsBtn;
-    
-    setBtnLoading(btn, true, "💰 Claiming...");
+    setLoadingState(true, uiElements.claimRewardsBtn);
     try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const provider = new window.anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
+        const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
         const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
-
-        showNotification("Processing rewards...", "info");
+        
+        // Получаем ATA (Associated Token Account)
+        const userAfoxATA = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        ).then(res => res[0]);
 
         await program.methods.claimRewards().accounts({
             poolState: AFOX_POOL_STATE_PUBKEY,
@@ -926,60 +561,112 @@ async function handleClaimRewards() {
             clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
         }).rpc();
 
-        showNotification("✅ Rewards received!", "success");
+        showNotification("Rewards claimed!", "success");
         await updateStakingAndBalanceUI();
-    } catch (e) {
-        showNotification("❌ Claim failed", "error");
+    } catch (err) {
+        showNotification("Claim failed: " + err.message, "error");
     } finally {
-        setBtnLoading(btn, false);
+        setLoadingState(false, uiElements.claimRewardsBtn);
     }
 }
 
 
-
-async function handleStakeAfox() {
-    if (!appState.walletPublicKey) return connectWallet();
-    const btn = uiElements.stakeAfoxBtn;
-    const amountStr = uiElements.stakeAmountInput.value;
-    
-    if (!amountStr || parseFloat(amountStr) <= 0) {
-        return showNotification("Enter a valid amount", "warning");
-    }
-
-    setBtnLoading(btn, true, "📡 Sending..."); // Кнопка ожила
+async function handleUnstakeAfox() {
+    if (!appState.walletPublicKey) return;
+    setLoadingState(true, uiElements.unstakeAfoxBtn);
     try {
-        const amount = new window.anchor.BN(parseAmountToBigInt(amountStr, AFOX_DECIMALS).toString());
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
+        const sender = appState.walletPublicKey;
+        const userStakingPDA = await getUserStakingAccountPDA(sender);
+        const userAfoxATA = await window.SolanaWeb3.Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, sender
+        );
+        const amountToUnstake = new window.Anchor.BN(appState.userStakingData.stakedAmount.toString());
 
-        showNotification("Please confirm in Phantom", "info");
+        const tx = await program.methods.unstake(amountToUnstake, false)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPDA,
+                owner: sender,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+                userRewardsAta: userAfoxATA,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.SolanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            }).transaction();
 
-        const tx = await program.methods.deposit(amount).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: userStakingPDA,
-            owner: appState.walletPublicKey,
-            userSourceAta: userAfoxATA,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-
-        showNotification("🚀 Confirming transaction...", "info");
-        setBtnLoading(btn, true, "🔗 Confirming...");
-
+        await appState.provider.sendAndConfirm(tx);
+        showNotification(`Unstake success!`, 'success');
         await updateStakingAndBalanceUI();
-        showNotification("✅ Successfully Staked!", "success");
-        uiElements.stakeAmountInput.value = ""; 
-    } catch (e) {
-        console.error(e);
-        showNotification("❌ Error: " + e.message, "error");
+    } catch (error) {
+        showNotification(`Unstake failed: ${error.message}`, 'error');
     } finally {
-        setBtnLoading(btn, false); // Кнопка вернулась в норму
+        setLoadingState(false, uiElements.unstakeAfoxBtn);
     }
 }
 
+// ============================================================
+// БЛОК ЛОГИКИ: APR, БАЛАНСЫ И ПОДКЛЮЧЕНИЕ ПРОГРАММЫ
+// ============================================================
+
+/**
+ * Получает динамический APR на основе общего стейкинга в пуле.
+ */
+
+async function getLiveAPR() {
+    try {
+        if (!appState.connection) return "Connect Wallet";
+
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        
+        // 1. ПРАВИЛЬНЫЙ ВЫЗОВ: Берем PoolState (общие данные), а не UserStaking (личные)
+        // Используем fetch для PoolState
+        const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+        
+        // 2. ПОЛЯ: В твоем Rust коде это total_staked_amount
+        const totalStakedRaw = poolAccount.totalStakedAmount;
+        const totalStaked = Number(totalStakedRaw) / Math.pow(10, AFOX_DECIMALS);
+
+        // 3. ЛОГИКА НАГРАД: В контракте REWARD_RATE_PER_SEC = 100
+        // С учетом 6 знаков (AFOX_DECIMALS), 100 единиц — это 0.0001 токена в сек.
+        const rewardsPerSecond = 0.0001; 
+        const secondsInYear = 31536000;
+        const totalRewardsYear = rewardsPerSecond * secondsInYear; 
+
+        if (totalStaked <= 0.001) {
+            return "100% (Genesis)";
+        }
+
+        // Расчет APR
+        const realAPR = (totalRewardsYear / totalStaked) * 100;
+        
+        return realAPR > 1000 ? "999%+" : realAPR.toFixed(2) + "%";
+        
+    } catch (e) {
+        console.error("Критическая ошибка APR:", e);
+        // Если аккаунт пула еще не инициализирован в сети, вернем заглушку
+        return "100% (Base)";
+    }
+}
+
+
+/**
+ * Создает экземпляр программы Anchor для взаимодействия со смарт-контрактом.
+ */
+function getAnchorProgram(programId, idl) {
+    if (!appState.connection || !appState.provider) {
+        throw new Error("Wallet not connected");
+    }
+    // Используем window.anchor (маленькая 'a'), так как это стандарт для браузерного билда
+    const provider = new (window.anchor.AnchorProvider || window.Anchor.AnchorProvider)(
+        appState.connection,
+        appState.provider,
+        { commitment: "confirmed" }
+    );
+    return new (window.anchor.Program || window.Anchor.Program)(idl, programId, provider);
+}
 
 
 /**
@@ -998,7 +685,74 @@ function getSolanaTxnFeeReserve() {
 }
 
 
+    function cacheUIElements() {
     
+    // Inputs & Display
+    uiElements.stakeAmountInput = document.getElementById('stake-amount') || document.getElementById('stakeAmountInput');
+    uiElements.userAfoxBalance = document.getElementById('user-afox-balance') || document.getElementById('userAfoxBalance');
+    uiElements.userStakedAmount = document.getElementById('user-staked-amount') || document.getElementById('userStakedAmount');
+    uiElements.userRewardsAmount = document.getElementById('user-rewards-amount') || document.getElementById('userRewardsAmount');
+    uiElements.stakingApr = document.getElementById('staking-apr') || document.getElementById('stakingApr');
+    uiElements.lockupPeriod = document.getElementById('lockup-period');
+    
+    // Global Elements
+    uiElements.notificationContainer = document.getElementById('notification-container') || document.getElementById('notificationContainer');
+    uiElements.pageLoader = document.getElementById('page-loader');
+    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
+    
+    // DAO
+    uiElements.createProposalBtn = document.getElementById('createProposalBtn');
+    uiElements.createProposalModal = document.getElementById('dao-modal');
+}
+
+
+    // Staking Section
+    uiElements.userAfoxBalance = document.getElementById('user-afox-balance');
+    uiElements.userStakedAmount = document.getElementById('user-staked-amount');
+    uiElements.userRewardsAmount = document.getElementById('user-rewards-amount');
+    uiElements.stakingApr = document.getElementById('staking-apr');
+    uiElements.stakeAmountInput = document.getElementById('stake-amount');
+    uiElements.stakeAfoxBtn = document.getElementById('stake-afox-btn');
+    uiElements.claimRewardsBtn = document.getElementById('claim-rewards-btn');
+    uiElements.unstakeAfoxBtn = document.getElementById('unstake-afox-btn');
+    uiElements.lockupPeriod = document.getElementById('lockup-period');
+    uiElements.poolSelector = document.getElementById('pool-selector'); 
+
+
+    // Utility
+    uiElements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
+    uiElements.notificationContainer = document.getElementById('notification-container');
+    uiElements.pageLoader = document.getElementById('page-loader');
+    uiElements.contactForm = document.getElementById('contact-form');
+
+
+
+    // Staking Actions
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.addEventListener('click', handleStakeAfox);
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.addEventListener('click', handleClaimRewards);
+    if (uiElements.unstakeAfoxBtn) uiElements.unstakeAfoxBtn.addEventListener('click', handleUnstakeAfox);
+    
+    // DAO Actions
+    if (uiElements.createProposalBtn) {
+        uiElements.createProposalBtn.addEventListener('click', () => {
+            if (uiElements.createProposalModal) {
+                closeAllPopups();
+                uiElements.createProposalModal.style.display = 'flex';
+                uiElements.createProposalModal.classList.add('is-open');
+                toggleScrollLock(true);
+            }
+        });
+    }
+
+    if (uiElements.createProposalForm) {
+        uiElements.createProposalForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            console.log("DAO Proposal Form submitted"); 
+            showNotification('Proposal creation simulated!', 'success', 3000);
+            e.target.reset();
+            closeAllPopups();
+        });
+    }
 
 
 // ==========================================
@@ -1017,11 +771,192 @@ function setupDAO() {
             });
         }
     }
-
 }
 
 
 
+// ============================================================
+// ЕДИНЫЙ МОДУЛЬ УПРАВЛЕНИЯ КОШЕЛЬКОМ И ИНТЕРФЕЙСОМ (FINAL)
+// ============================================================
+
+/**
+ * 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И RPC
+ */
+async function getRobustConnection() {
+    try {
+        // Use a more reliable RPC if possible, mainnet-beta is often rate-limited
+        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { 
+            commitment: 'confirmed',
+            disableRetryOnRateLimit: false 
+        });
+        await conn.getSlot(); 
+        return conn;
+    } catch (e) {
+        if (e.message.includes('fetch')) {
+            showNotification("Connection blocked by browser (CSP/CORS). Check console.", "error");
+        }
+        throw new Error('RPC endpoint unreachable.');
+    }
+}
+
+
+function handlePublicKeyChange(newPublicKey) {
+    appState.walletPublicKey = newPublicKey;
+    const address = newPublicKey ? newPublicKey.toBase58() : null;
+    updateWalletDisplay(address);
+    if (newPublicKey) updateStakingAndBalanceUI();
+}
+
+function setLoadingState(isLoading, button = null) {
+    if (uiElements.pageLoader) uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
+    const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
+    btns.forEach(btn => { if (btn) btn.disabled = isLoading; });
+    if (button) {
+        button.disabled = isLoading;
+        if (isLoading) {
+            button.dataset.oldText = button.textContent;
+            button.textContent = '...Wait';
+        } else if (button.dataset.oldText) {
+            button.textContent = button.dataset.oldText;
+        }
+    }
+}
+
+/**
+ * 2. ЛОГИКА КОШЕЛЬКА (CONNECT / DISCONNECT)
+ */
+async function connectWallet() {
+    try {
+        // 1. Проверяем, есть ли расширение Phantom в браузере
+        if (!window.solana || !window.solana.isPhantom) {
+            showNotification("Phantom wallet not found! Please install it.", "error");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+
+        // 2. Запрашиваем подключение
+        const resp = await window.solana.connect();
+        appState.provider = window.solana;
+        appState.walletPublicKey = resp.publicKey;
+        
+        // 3. Создаем соединение с блокчейном (RPC)
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, {
+            commitment: 'confirmed'
+        });
+        
+        // 4. Обновляем интерфейс
+        handlePublicKeyChange(resp.publicKey);
+        showNotification("Wallet Connected!", "success");
+        
+        console.log("Connected to wallet:", resp.publicKey.toBase58());
+    } catch (err) {
+        console.error("Connection Error:", err);
+        if (err.code === 4001) {
+            showNotification("Connection rejected by user.", "warning");
+        } else {
+            showNotification("Failed to connect wallet.", "error");
+        }
+    }
+}
+/**
+ * Получает реальные балансы SOL и AFOX из блокчейна.
+ */
+
+async function fetchUserBalances() {
+    if (!appState.walletPublicKey) return;
+
+    // Гарантируем наличие соединения, если его вдруг нет
+    if (!appState.connection) {
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+    }
+
+    const sender = appState.walletPublicKey;
+
+    try {
+        // 1. Баланс SOL
+        const solBalance = await appState.connection.getBalance(sender, 'confirmed');
+        appState.userBalances.SOL = BigInt(solBalance);
+
+        // 2. Баланс AFOX
+        const tokenAccounts = await appState.connection.getParsedTokenAccountsByOwner(sender, {
+            mint: AFOX_TOKEN_MINT_ADDRESS
+        });
+
+        if (tokenAccounts.value.length > 0) {
+            const amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
+            appState.userBalances.AFOX = BigInt(amount);
+        } else {
+            appState.userBalances.AFOX = 0n;
+        }
+
+        console.log("✅ Balances updated!");
+    } catch (error) {
+        console.error("❌ Ошибка RPC при получении баланса:", error);
+        // Если заблокировали — пробуем переключиться на Ankr
+        appState.connection = new window.solanaWeb3.Connection(RPC_ENDPOINTS[1], 'confirmed');
+    }
+}
+
+
+
+
+
+async function disconnectWallet() {
+    try {
+        if (window.solana) await window.solana.disconnect();
+        if (appState.provider) appState.provider = null;
+    } catch (err) {
+        console.error("Disconnect Error:", err);
+    }
+    handlePublicKeyChange(null);
+    showNotification("Disconnected", "info");
+}
+
+/**
+ * ЕДИНЫЙ ЦЕНТР ОТОБРАЖЕНИЯ КОШЕЛЬКА (Заменяет все старые блоки UI)
+ */
+
+function updateWalletDisplay() {
+    // Ищем все места в HTML, где должна быть кнопка или адрес
+    const containers = document.querySelectorAll('.wallet-control');
+    
+    containers.forEach(container => {
+        if (window.solana && window.solana.isConnected) {
+            // Если кошелек ПОДКЛЮЧЕН
+            const pubKey = window.solana.publicKey.toString();
+            container.innerHTML = `
+                <div class="wallet-display" style="display: flex; align-items: center; gap: 10px;">
+                    <span class="wallet-address-text" style="color: #f39c12;">
+                        ${pubKey.slice(0, 4)}...${pubKey.slice(-4)}
+                    </span>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${pubKey}')" title="Copy Address">
+                        <i class="fas fa-copy"></i> 📋
+                    </button>
+                </div>
+            `;
+        } else {
+            // Если кошелек НЕ ПОДКЛЮЧЕН — создаем кнопку с лисой
+            container.innerHTML = `
+                <button class="web3-button connect-fox-btn wallet-connect-btn" style="cursor: pointer;">
+                    <i class="fox-icon">🦊</i> Connect Wallet
+                </button>
+            `;
+            
+            // Находим только что созданную кнопку и вешаем на неё функцию подключения
+            const btn = container.querySelector('.connect-fox-btn');
+            btn.addEventListener('click', async () => {
+                try {
+                    await connectWallet(); // Вызываем твою основную функцию подключения
+                } catch (err) {
+                    console.error("Connection failed", err);
+                }
+            });
+        }
+    });
+}
+
+// Вызываем эту функцию сразу при загрузке скрипта, чтобы кнопка отрисовалась
+updateWalletDisplay();
 
 
 /**
