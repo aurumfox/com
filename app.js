@@ -199,35 +199,7 @@ let uiElements = {};
 // 🟢 NEW FUNCTION: SECURE LOG SENDING VIA PROXY
 // =========================================================================================
 
-/**
- * Sends log data via a Cloudflare Worker (proxy) that uses the hidden FIREBASE_API_KEY.
- *
- * @param {string} walletAddress - The user's wallet public key.
- * @param {string} actionType - The type of action ('STAKE', 'UNSTAKE', 'CLAIM').
- * @param {bigint | string | number} amount - The transaction amount.
- */
-async function sendLogToFirebase(walletAddress, actionType, amount) {
-    if (!walletAddress || !actionType) return; 
-    
-    // Convert amount to string for JSON
-    const amountString = (typeof amount === 'bigint') ? amount.toString() : String(amount);
-    
-    try {
-        await fetch(FIREBASE_PROXY_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                wallet: walletAddress,
-                action: actionType,
-                amount: amountString 
-            })
-        });
-        // Success! Logging went through the proxy.
-        console.log(`Log sent via Worker: ${actionType} by ${walletAddress.substring(0, 8)}...`);
-    } catch (error) {
-        console.error("Error sending log via Worker:", error);
-    }
-}
+
 
 
 
@@ -289,42 +261,7 @@ async function handleStakeAfox() {
     }
 }
 
-// 2. UNSTAKE
-async function handleUnstakeAfox() {
-    if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.unstakeAfoxBtn);
-    try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
-        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
-        
-        // ВАЖНО: Берем всю сумму стейка из данных аккаунта
-        const amount = new window.anchor.BN(appState.userStakingData.stakedAmount.toString());
-        
-        // Проверяем на ранний выход (isEarlyExit = true если время еще не вышло)
-        const isEarly = appState.userStakingData.lockupEndTime > (Date.now() / 1000);
 
-        await program.methods.unstake(amount, isEarly).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: userStakingPDA,
-            owner: appState.walletPublicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-            userRewardsAta: userAfoxATA,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-
-        showNotification(isEarly ? "Unstaked with 40% fee" : "Unstake Successful", "success");
-        await updateStakingAndBalanceUI();
-    } catch (e) {
-        showNotification("Unstake error: " + e.message, "error");
-    } finally {
-        setLoadingState(false, uiElements.unstakeAfoxBtn);
-    }
-}
 /**
  * Formats BigInt considering decimal places.
  */
@@ -767,26 +704,54 @@ async function fetchUserStakingData() {
 }
 
 
-
-
-
 /**
- * Updates staking and balance UI elements after a transaction.
+ * Получает динамический APR на основе общего стейкинга в пуле.
  */
-async function updateStakingAndBalanceUI() {
+
+async function getLiveAPR() {
     try {
-        await Promise.all([
-            fetchUserBalances(),
-            updateStakingUI()
-        ]);
-    } catch (error) {
-        console.error("Error refreshing UI:", error);
+        if (!appState.connection) return "Connect Wallet";
+
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        
+        // 1. ПРАВИЛЬНЫЙ ВЫЗОВ: Берем PoolState (общие данные), а не UserStaking (личные)
+        // Используем fetch для PoolState
+        const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+        
+        // 2. ПОЛЯ: В твоем Rust коде это total_staked_amount
+        const totalStakedRaw = poolAccount.totalStakedAmount;
+        const totalStaked = Number(totalStakedRaw) / Math.pow(10, AFOX_DECIMALS);
+
+        // 3. ЛОГИКА НАГРАД: В контракте REWARD_RATE_PER_SEC = 100
+        // С учетом 6 знаков (AFOX_DECIMALS), 100 единиц — это 0.0001 токена в сек.
+        const rewardsPerSecond = 0.0001; 
+        const secondsInYear = 31536000;
+        const totalRewardsYear = rewardsPerSecond * secondsInYear; 
+
+        if (totalStaked <= 0.001) {
+            return "100% (Genesis)";
+        }
+
+        // Расчет APR
+        const realAPR = (totalRewardsYear / totalStaked) * 100;
+        
+        return realAPR > 1000 ? "999%+" : realAPR.toFixed(2) + "%";
+        
+    } catch (e) {
+        console.error("Критическая ошибка APR:", e);
+        // Если аккаунт пула еще не инициализирован в сети, вернем заглушку
+        return "100% (Base)";
     }
 }
 
-// =========================================================================================
-// --- STAKING FUNCTIONS (ANCHOR TEMPLATES + REAL LOGIC) ---
-// =========================================================================================
+
+            lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
+        } else {
+            lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
+        }
+    }
+}
+
 
 /**
  * Updates the staking UI elements with current user data (REAL).
@@ -867,24 +832,97 @@ if (uiElements.stakingApr) {
             const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
             const remainingSeconds = lockupEndTime - now;
             const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
-            lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
-        } else {
-            lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
-        }
+
+
+
+
+/**
+ * Updates staking and balance UI elements after a transaction.
+ */
+async function updateStakingAndBalanceUI() {
+    try {
+        await Promise.all([
+            fetchUserBalances(),
+            updateStakingUI()
+        ]);
+    } catch (error) {
+        console.error("Error refreshing UI:", error);
     }
 }
 
 
-
-
-async function getUserStakingPDA(owner) {
-    // ВАЖНО: Seeds должны быть точно как в Rust [owner, pool_state]
-    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
+            /**
+ * Sends log data via a Cloudflare Worker (proxy) that uses the hidden FIREBASE_API_KEY.
+ *
+ * @param {string} walletAddress - The user's wallet public key.
+ * @param {string} actionType - The type of action ('STAKE', 'UNSTAKE', 'CLAIM').
+ * @param {bigint | string | number} amount - The transaction amount.
+ */
+async function sendLogToFirebase(walletAddress, actionType, amount) {
+    if (!walletAddress || !actionType) return; 
+    
+    // Convert amount to string for JSON
+    const amountString = (typeof amount === 'bigint') ? amount.toString() : String(amount);
+    
+    try {
+        await fetch(FIREBASE_PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                wallet: walletAddress,
+                action: actionType,
+                amount: amountString 
+            })
+        });
+        // Success! Logging went through the proxy.
+        console.log(`Log sent via Worker: ${actionType} by ${walletAddress.substring(0, 8)}...`);
+    } catch (error) {
+        console.error("Error sending log via Worker:", error);
+    }
 }
+            
+// =========================================================================================
+// --- STAKING FUNCTIONS (ANCHOR TEMPLATES + REAL LOGIC) ---
+// =========================================================================================
+
+// 2. UNSTAKE
+async function handleUnstakeAfox() {
+    if (!appState.walletPublicKey) return;
+    setLoadingState(true, uiElements.unstakeAfoxBtn);
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        const userAfoxATA = await findAssociatedTokenAddress(appState.walletPublicKey, AFOX_TOKEN_MINT_ADDRESS);
+        
+        // ВАЖНО: Берем всю сумму стейка из данных аккаунта
+        const amount = new window.anchor.BN(appState.userStakingData.stakedAmount.toString());
+        
+        // Проверяем на ранний выход (isEarlyExit = true если время еще не вышло)
+        const isEarly = appState.userStakingData.lockupEndTime > (Date.now() / 1000);
+
+        await program.methods.unstake(amount, isEarly).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDA,
+            owner: appState.walletPublicKey,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+            userRewardsAta: userAfoxATA,
+            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+
+        showNotification(isEarly ? "Unstaked with 40% fee" : "Unstake Successful", "success");
+        await updateStakingAndBalanceUI();
+    } catch (e) {
+        showNotification("Unstake error: " + e.message, "error");
+    } finally {
+        setLoadingState(false, uiElements.unstakeAfoxBtn);
+    }
+}
+        
+
 
 
 /**
@@ -962,49 +1000,15 @@ async function handleUnstakeAfox() {
     }
 }
 
+
+
+
+
+
 // ============================================================
 // БЛОК ЛОГИКИ: APR, БАЛАНСЫ И ПОДКЛЮЧЕНИЕ ПРОГРАММЫ
 // ============================================================
 
-/**
- * Получает динамический APR на основе общего стейкинга в пуле.
- */
-
-async function getLiveAPR() {
-    try {
-        if (!appState.connection) return "Connect Wallet";
-
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        
-        // 1. ПРАВИЛЬНЫЙ ВЫЗОВ: Берем PoolState (общие данные), а не UserStaking (личные)
-        // Используем fetch для PoolState
-        const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
-        
-        // 2. ПОЛЯ: В твоем Rust коде это total_staked_amount
-        const totalStakedRaw = poolAccount.totalStakedAmount;
-        const totalStaked = Number(totalStakedRaw) / Math.pow(10, AFOX_DECIMALS);
-
-        // 3. ЛОГИКА НАГРАД: В контракте REWARD_RATE_PER_SEC = 100
-        // С учетом 6 знаков (AFOX_DECIMALS), 100 единиц — это 0.0001 токена в сек.
-        const rewardsPerSecond = 0.0001; 
-        const secondsInYear = 31536000;
-        const totalRewardsYear = rewardsPerSecond * secondsInYear; 
-
-        if (totalStaked <= 0.001) {
-            return "100% (Genesis)";
-        }
-
-        // Расчет APR
-        const realAPR = (totalRewardsYear / totalStaked) * 100;
-        
-        return realAPR > 1000 ? "999%+" : realAPR.toFixed(2) + "%";
-        
-    } catch (e) {
-        console.error("Критическая ошибка APR:", e);
-        // Если аккаунт пула еще не инициализирован в сети, вернем заглушку
-        return "100% (Base)";
-    }
-}
 
 
 
