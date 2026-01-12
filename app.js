@@ -1153,55 +1153,6 @@ async function connectWallet() {
 }
 
 
-async function connectToProvider(walletName) {
-    let provider = null;
-    
-    try {
-        // 1. Определение провайдера по имени из data-wallet
-        if (walletName === 'phantom') {
-            provider = window.phantom?.solana || window.solana;
-        } else if (walletName === 'solflare') {
-            provider = window.solflare;
-        } else if (walletName === 'backpack') {
-            provider = window.backpack;
-        }
-
-        if (!provider) {
-            showNotification(`Wallet ${walletName} not found!`, "error");
-            const urls = {
-                'phantom': 'https://phantom.app/',
-                'solflare': 'https://solflare.com/',
-                'backpack': 'https://backpack.app/'
-            };
-            window.open(urls[walletName], "_blank");
-            return;
-        }
-
-        // 2. Стандартный процесс подключения
-        const resp = await provider.connect();
-        
-        // 3. Обновление глобального состояния (твоего appState)
-        appState.walletPublicKey = resp.publicKey;
-        appState.provider = provider;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        
-        console.log(`✅ Подключено к ${walletName}:`, resp.publicKey.toString());
-
-        // 4. Закрытие модалки
-        const modal = document.getElementById('walletModal');
-        if (modal) modal.style.display = 'none';
-
-        // 5. Твои стандартные обновления UI
-        updateWalletDisplay();
-        await updateStakingAndBalanceUI();
-        
-        showNotification(`Success: Connected via ${walletName}`, "success");
-
-    } catch (err) {
-        console.error("❌ Ошибка провайдера:", err);
-        showNotification(err.code === 4001 ? "Connection cancelled" : "Wallet Error", "error");
-    }
-}
 
 
 
