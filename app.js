@@ -202,11 +202,12 @@ const STAKING_IDL = {
 // Поиск PDA пользователя (строго соответствует Rust seeds)
 
 // ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
+
 async function getUserStakingPDA(owner) {
     const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
         [
             owner.toBuffer(), 
-            AFOX_POOL_STATE_PUBKEY.toBuffer() // Это должен быть DfAaH2Xs...
+            AFOX_POOL_STATE_PUBKEY.toBuffer() 
         ],
         STAKING_PROGRAM_ID
     );
@@ -469,8 +470,13 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // ВАЖНО: Для zero_copy аккаунтов используем fetchNullable или fetch
-        // Если выдает "Layout mismatch", значит JS не видит падинги [u8; 104]
+        // ПРОВЕРКА: существует ли аккаунт в блокчейне?
+        const accountInfo = await appState.connection.getAccountInfo(userPDA);
+        if (!accountInfo) {
+            console.log("🆕 Аккаунт пользователя еще не создан (первый вход)");
+            return; // Просто выходим, UI останется в "0"
+        }
+
         const stakingData = await program.account.userStakingAccount.fetch(userPDA);
 
         appState.userStakingData = {
@@ -478,14 +484,16 @@ async function fetchUserStakingData() {
             rewards: BigInt(stakingData.rewardsToClaim.toString()),
             lockupEndTime: stakingData.lockupEndTime.toNumber(),
             poolIndex: stakingData.poolIndex,
-            lending: BigInt(stakingData.lending.toString())
+            lending: BigInt(stakingData.lending.toString()),
+            lastUpdateTime: stakingData.lastUpdateTime.toNumber()
         };
         
-        console.log("📊 Данные стейкинга обновлены:", appState.userStakingData);
+        console.log("✅ Данные получены:", appState.userStakingData);
     } catch (e) {
-        console.error("⚠️ Ошибка парсинга zero_copy данных:", e.message);
+        console.error("❌ Ошибка при чтении стейкинга:", e);
     }
 }
+
 
 
 
