@@ -1041,25 +1041,34 @@ function updateWalletDisplay() {
 
 
 
+
+// 1. ИСПРАВЛЕННЫЙ БЛОК НАСТРОЙКИ КНОПОК
 function setupModernUI() {
     const actions = [
+        // --- WALLET ---
         { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
+
+        // --- STAKING ---
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
         
-        // DAO Кнопки (Добавлено)
-        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening Modal...', icon: '✍️', fn: async () => { document.getElementById('createProposalModal').style.display = 'flex'; } },
+        // --- DAO ---
+        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening Modal...', icon: '✍️', fn: async () => { 
+            const modal = document.getElementById('dao-modal') || document.getElementById('createProposalModal');
+            if(modal) modal.style.display = 'flex'; 
+        }},
         { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 📜', icon: '🚀', fn: handleCreateProposal },
-
-        // DAO & Voting
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
-        
-        // Lending & Borrowing
-        { id: 'lend-btn', name: 'Lending', msg: 'Liquidity Added! 🏦', icon: '🏦', fn: () => handleLendingAction('Lend') },
+
+        // --- LENDING (ЛЕНДИНГ) ---
+        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
+        { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
+
+        // --- BORROWING (ЗАЙМЫ) ---
         { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
-        { id: 'repay-btn', name: 'Repayment', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
+        { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
     actions.forEach(item => {
@@ -1068,11 +1077,20 @@ function setupModernUI() {
             const cleanBtn = el.cloneNode(true);
             el.parentNode.replaceChild(cleanBtn, el);
             cleanBtn.onclick = (e) => {
-                e.preventDefault();
+                if (e) e.preventDefault();
                 executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
+
+    // Исправление для кнопки закрытия модалки
+    const closeBtn = document.getElementById('close-dao-modal') || document.getElementById('closeProposalModal');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            const modal = document.getElementById('dao-modal') || document.getElementById('createProposalModal');
+            if(modal) modal.style.display = 'none';
+        };
+    }
 }
 
 
