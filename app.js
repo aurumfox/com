@@ -378,87 +378,51 @@ async function updateStakingAndBalanceUI() {
  * Updates the staking UI elements with current user data (REAL).
  */
 async function updateStakingUI() {
+    // 1. Проверка кошелька
     if (!appState.walletPublicKey) {
-        const elements = [uiElements.userAfoxBalance, uiElements.userStakedAmount, uiElements.userRewardsAmount];
-const liveAprValue = await getLiveAPR();
-if (uiElements.stakingApr) {
-    uiElements.stakingApr.textContent = liveAprValue;
-}
-
-        elements.forEach(el => { if (el) el.textContent = '0 AFOX'; });
-        [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn].filter(Boolean).forEach(btn => btn.disabled = true);
-        if (uiElements.stakingApr) uiElements.stakingApr.textContent = '—';
-        if (uiElements.lockupPeriod) uiElements.lockupPeriod.textContent = '—'; 
+        const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
+        btns.forEach(btn => { if (btn) btn.disabled = true; });
         return;
     }
 
+    // 2. Получаем данные
     await fetchUserStakingData(); 
 
     const data = appState.userStakingData;
-    const afoxBalanceBigInt = appState.userBalances.AFOX;
-    const stakedAmountBigInt = data.stakedAmount;
-    const rewardsAmountBigInt = data.rewards;
-    const lockupEndTime = data.lockupEndTime;
-    const poolIndex = data.poolIndex; 
-    const lendingAmountBigInt = data.lending;
+    const afoxBalance = appState.userBalances.AFOX;
 
-    if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = `${formatBigInt(afoxBalanceBigInt, AFOX_DECIMALS)} AFOX`;
-    if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = `${formatBigInt(stakedAmountBigInt, AFOX_DECIMALS)} AFOX`;
-    if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = `${formatBigInt(rewardsAmountBigInt, AFOX_DECIMALS)} AFOX`;
+    // 3. Обновляем текстовые поля
+    if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = `${formatBigInt(afoxBalance, AFOX_DECIMALS)} AFOX`;
+    if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = `${formatBigInt(data.stakedAmount, AFOX_DECIMALS)} AFOX`;
+    if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = `${formatBigInt(data.rewards, AFOX_DECIMALS)} AFOX`;
+
+    // 4. УПРАВЛЕНИЕ КНОПКАМИ (Оживляем их)
     
-    const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
-    if (uiElements.stakingApr) uiElements.stakingApr.textContent = `${currentPool.apr_rate / 100}% APR (${currentPool.name})`;
-    
-    // 2. Logic checks
-    const now = Date.now() / 1000;
-    const isLockedByTime = lockupEndTime > now;
-    const hasStakedAmount = stakedAmountBigInt > BigInt(0);
-    const hasRewards = rewardsAmountBigInt > BigInt(0);
-    const isLockedByLoan = lendingAmountBigInt > BigInt(0);
-
-    // 3. Button Management
-    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
-    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = !hasRewards;
-
-    if (uiElements.unstakeAfoxBtn) {
-        uiElements.unstakeAfoxBtn.disabled = true;
-        uiElements.unstakeAfoxBtn.textContent = 'Unstake';
-        
-        if (!hasStakedAmount) {
-            uiElements.unstakeAfoxBtn.textContent = 'No Stake';
-        } else if (isLockedByLoan) {
-             uiElements.unstakeAfoxBtn.disabled = true;
-             uiElements.unstakeAfoxBtn.textContent = `❌ Locked by Loan (${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
-        } else if (isLockedByTime) {
-            const remainingSeconds = lockupEndTime - now;
-            const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
-            uiElements.unstakeAfoxBtn.disabled = false; 
-            uiElements.unstakeAfoxBtn.textContent = `Unstake (${remainingDays} days, with penalty)`;
-        } else {
-            uiElements.unstakeAfoxBtn.disabled = false;
-            uiElements.unstakeAfoxBtn.textContent = 'Unstake (No penalty)';
-        }
+    // Кнопка Stake — всегда активна, если кошелек подключен
+    if (uiElements.stakeAfoxBtn) {
+        uiElements.stakeAfoxBtn.disabled = false;
     }
-    
-    // 4. Update Lockup Period
-    const lockupDisplay = uiElements.lockupPeriod;
 
-    if (lockupDisplay) {
-        let loanInfo = '';
-        if (isLockedByLoan) {
-             loanInfo = ` (Collateral: ${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
-        }
+    // Кнопка Claim — активна только если награды > 0
+    if (uiElements.claimRewardsBtn) {
+        uiElements.claimRewardsBtn.disabled = (data.rewards <= 0n);
+    }
+
+    // Кнопка Unstake — активна только если стейк > 0 и не в лендинге
+    if (uiElements.unstakeAfoxBtn) {
+        const isLockedByLoan = data.lending > 0n;
+        const hasStake = data.stakedAmount > 0n;
         
-        if (isLockedByTime) {
-            const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
-            const remainingSeconds = lockupEndTime - now;
-            const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
-            lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
+        uiElements.unstakeAfoxBtn.disabled = (!hasStake || isLockedByLoan);
+        
+        if (isLockedByLoan) {
+            uiElements.unstakeAfoxBtn.textContent = "Locked by Loan";
         } else {
-            lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
+            uiElements.unstakeAfoxBtn.textContent = "Unstake";
         }
     }
 }
+
 
 
 
@@ -469,23 +433,35 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // ВАЖНО: Для zero_copy аккаунтов используем fetchNullable или fetch
-        // Если выдает "Layout mismatch", значит JS не видит падинги [u8; 104]
-        const stakingData = await program.account.userStakingAccount.fetch(userPDA);
+        // Используем fetchNullable вместо fetch, чтобы код не ломался, если аккаунта нет
+        const stakingData = await program.account.userStakingAccount.fetchNullable(userPDA);
 
-        appState.userStakingData = {
-            stakedAmount: BigInt(stakingData.stakedAmount.toString()),
-            rewards: BigInt(stakingData.rewardsToClaim.toString()),
-            lockupEndTime: stakingData.lockupEndTime.toNumber(),
-            poolIndex: stakingData.poolIndex,
-            lending: BigInt(stakingData.lending.toString())
-        };
-        
-        console.log("📊 Данные стейкинга обновлены:", appState.userStakingData);
+        if (stakingData) {
+            appState.userStakingData = {
+                stakedAmount: BigInt(stakingData.stakedAmount.toString()),
+                rewards: BigInt(stakingData.rewardsToClaim.toString()),
+                lockupEndTime: stakingData.lockupEndTime.toNumber(),
+                poolIndex: stakingData.poolIndex,
+                lending: BigInt(stakingData.lending.toString())
+            };
+            console.log("📊 Данные стейкинга получены:", appState.userStakingData);
+        } else {
+            // Если аккаунт не найден (новый пользователь), ставим нули
+            appState.userStakingData = {
+                stakedAmount: 0n,
+                rewards: 0n,
+                lockupEndTime: 0,
+                poolIndex: 0,
+                lending: 0n
+            };
+            console.log("ℹ️ Новый пользователь: аккаунт стейкинга еще не создан.");
+        }
     } catch (e) {
-        console.error("⚠️ Ошибка парсинга zero_copy данных:", e.message);
+        console.error("⚠️ Ошибка при чтении данных:", e.message);
+        // Не даем приложению упасть
     }
 }
+
 
 
 
