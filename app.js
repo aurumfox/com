@@ -817,41 +817,6 @@ style.innerHTML = `
 `;
 document.head.appendChild(style);
 
-/**
- * Улучшенная функция "Взрыва" (Spawn Prize)
- * Разлетается по кругу с разной скоростью
- */
-function spawnEmoji(el, emoji) {
-    const rect = el.getBoundingClientRect();
-    const count = 12; // Больше значков для "богатого" эффекта
-    
-    for(let i = 0; i < count; i++) {
-        const span = document.createElement('span');
-        span.textContent = emoji;
-        span.className = 'floating-emoji';
-        span.style.left = (rect.left + rect.width/2) + 'px';
-        span.style.top = (rect.top + rect.height/2) + 'px';
-        document.body.appendChild(span);
-
-        const angle = (i / count) * Math.PI * 2;
-        const velocity = 2 + Math.random() * 4;
-        const dist = 80 + Math.random() * 120;
-        
-        const x = Math.cos(angle) * dist;
-        const y = Math.sin(angle) * dist;
-
-        span.animate([
-            { transform: 'translate(0, 0) scale(1)', opacity: 1 },
-            { transform: `translate(${x}px, ${y}px) scale(2)`, opacity: 0 }
-        ], {
-            duration: 800 + Math.random() * 400,
-            easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)',
-            fill: 'forwards'
-        });
-
-        setTimeout(() => span.remove(), 1200);
-    }
-}
 
 
 
