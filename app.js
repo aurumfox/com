@@ -1081,7 +1081,14 @@ function setupModernUI() {
     // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
     const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
     const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
-    
+    const closeBtn = document.getElementById('closeProposalModal');
+if (closeBtn) {
+    closeBtn.onclick = (e) => {
+        e.preventDefault();
+        closeAllPopups(); // Вызываем твою исправленную функцию
+    };
+}
+
     if (closeBtn && modal) {
         closeBtn.onclick = (e) => {
             e.preventDefault();
