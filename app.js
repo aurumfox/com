@@ -756,43 +756,88 @@ function cacheUIElements() {
 
 
 // ЕДИНЫЙ ОБРАБОТЧИК ДЛЯ ВСЕХ КНОПОК
-async function runContractAction(btn, config) {
-    if (!btn || btn.classList.contains('loading')) return;
 
-    // 1. Проверка кошелька перед действием
-    if (!appState.walletPublicKey && config.id !== 'connectWalletBtn') {
-        showNotification("Please connect wallet first! 🦊", "error");
-        return;
-    }
+async function executeSmartActionWithFullEffects(btn, config) {
+    if (btn.classList.contains('loading')) return;
 
     const originalHTML = btn.innerHTML;
+    
+    // 1. СТИЛЬ: Вход в состояние загрузки
     btn.classList.add('loading');
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
+    
+    // Аудит в консоль и уведомление
+    actionAudit(config.name, "process", "Connecting to Solana...");
 
     try {
-        // 2. ВЫЗОВ ЛОГИКИ (Твои функции handleStake, handleUnstake и т.д.)
+        // 2. ЛОГИКА: Выполнение Rust-инструкции
         await config.fn(); 
 
-        // 3. УСПЕХ
-        btn.innerHTML = `✅ ${config.msg}`;
+        // 3. ФИДБЕК: Успех + Анимация
+        btn.classList.remove('loading');
         btn.classList.add('success-glow');
-        showNotification(`Success: ${config.msg}`, "success");
+        btn.innerHTML = `✅ ${config.msg}`;
         
-        // Обновляем балансы после успеха
-        setTimeout(() => updateStakingAndBalanceUI(), 500);
+        // Взрыв иконок (твой фирменный стиль)
+        spawnEmoji(btn, config.icon); 
+
+        actionAudit(config.name, "success", config.msg);
+        
+        // Глобальное обновление данных
+        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
 
     } catch (err) {
-        console.error(`Ошибка в ${config.name}:`, err);
-        btn.innerHTML = `❌ Error`;
-        showNotification(err.message || "Transaction rejected", "error");
+        // 4. ОШИБКА: Визуальный откат
+        console.error(`[CRITICAL] Error in ${config.name}:`, err);
+        btn.classList.remove('loading');
+        btn.innerHTML = `❌ Failed`;
+        btn.classList.add('error-shake'); // Добавь в CSS для тряски
+        
+        actionAudit(config.name, "error", err.message);
     } finally {
-        // Сброс состояния через 3 секунды
+        // Сброс через 3.5 секунды
         setTimeout(() => {
-            btn.classList.remove('loading', 'success-glow');
+            btn.classList.remove('success-glow', 'loading', 'error-shake');
             btn.disabled = false;
             btn.innerHTML = originalHTML;
-        }, 3000);
+        }, 3500);
+    }
+}
+
+/**
+ * Улучшенная функция "Взрыва" (Spawn Prize)
+ * Разлетается по кругу с разной скоростью
+ */
+function spawnEmoji(el, emoji) {
+    const rect = el.getBoundingClientRect();
+    const count = 12; // Больше значков для "богатого" эффекта
+    
+    for(let i = 0; i < count; i++) {
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.className = 'floating-emoji';
+        span.style.left = (rect.left + rect.width/2) + 'px';
+        span.style.top = (rect.top + rect.height/2) + 'px';
+        document.body.appendChild(span);
+
+        const angle = (i / count) * Math.PI * 2;
+        const velocity = 2 + Math.random() * 4;
+        const dist = 80 + Math.random() * 120;
+        
+        const x = Math.cos(angle) * dist;
+        const y = Math.sin(angle) * dist;
+
+        span.animate([
+            { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+            { transform: `translate(${x}px, ${y}px) scale(2)`, opacity: 0 }
+        ], {
+            duration: 800 + Math.random() * 400,
+            easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)',
+            fill: 'forwards'
+        });
+
+        setTimeout(() => span.remove(), 1200);
     }
 }
 
@@ -1076,35 +1121,38 @@ async function smartAction(btn, name, successMsg, icon, logicFn) {
         setTimeout(() => btn.innerHTML = originalHTML, 2000);
     }
 }
+
 function setupModernUI() {
     const actions = [
-        // Формат: { ID в HTML, Название, Текст успеха, Иконка, Функция из контракта }
         { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
+        
+        // DAO & Voting
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
-        { id: 'lend-btn', name: 'Lending', msg: 'Liquidity Added! 🏦', icon: '🏦', fn: handleLend },
-        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: handleBorrow },
-        { id: 'repay-btn', name: 'Repayment', msg: 'Debt Paid! 🏆', icon: '⭐', fn: handleRepay }
+        
+        // Lending & Borrowing
+        { id: 'lend-btn', name: 'Lending', msg: 'Liquidity Added! 🏦', icon: '🏦', fn: () => handleLendingAction('Lend') },
+        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
+        { id: 'repay-btn', name: 'Repayment', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            // Удаляем старые слушатели (клон кнопки — самый чистый способ)
             const cleanBtn = el.cloneNode(true);
             el.parentNode.replaceChild(cleanBtn, el);
-
-            // Вешаем единый современный исполнитель
             cleanBtn.onclick = (e) => {
                 e.preventDefault();
-                executeSmartAction(cleanBtn, item);
+                executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 }
+
+
 async function executeSmartAction(btn, config) {
     if (btn.classList.contains('loading')) return;
 
