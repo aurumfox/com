@@ -1060,6 +1060,69 @@ async function connectWallet() {
     }
 }
 
+// ============================================================
+// БЛОК: ОТКЛЮЧЕНИЕ КОШЕЛЬКА (DISCONNECT)
+// ============================================================
+
+/**
+ * Разрывает соединение с кошельком и сбрасывает состояние приложения.
+ */
+async function disconnectWallet() {
+    try {
+        console.log("🔄 Запуск процесса отключения...");
+
+        // 1. Команда самому расширению Phantom отключиться
+        if (window.solana && window.solana.isConnected) {
+            await window.solana.disconnect();
+        }
+
+        // 2. Очистка глобального состояния приложения
+        appState.walletPublicKey = null;
+        appState.provider = null;
+        
+        // Обнуляем балансы в памяти, чтобы старые данные не мелькали
+        appState.userBalances = { SOL: 0n, AFOX: 0n };
+        appState.userStakingData = { 
+            stakedAmount: 0n, 
+            rewards: 0n, 
+            lockupEndTime: 0, 
+            poolIndex: 0, 
+            lending: 0n 
+        };
+
+        // 3. Визуальное обновление (возвращаем кнопку "Connect")
+        if (typeof updateWalletDisplay === 'function') {
+            updateWalletDisplay();
+        }
+
+        // 4. Обнуление данных в интерфейсе (балансы в 0)
+        if (typeof updateStakingUI === 'function') {
+            await updateStakingUI();
+        }
+
+        // 5. Уведомление пользователя
+        if (typeof showNotification === 'function') {
+            showNotification("Wallet disconnected", "info");
+        }
+
+        console.log("✅ Кошелек успешно отключен, UI сброшен.");
+
+    } catch (err) {
+        console.error("❌ Ошибка при отключении кошелька:", err);
+        if (typeof showNotification === 'function') {
+            showNotification("Error during disconnect", "error");
+        }
+    }
+}
+
+// Дополнительно: Слушатель события 'disconnect' от самого Phantom
+// (на случай, если пользователь отключит сайт прямо внутри кошелька)
+if (window.solana) {
+    window.solana.on('disconnect', () => {
+        console.log("🔌 Событие: Кошелек отключен через интерфейс Phantom");
+        disconnectWallet();
+    });
+}
 
 
 function updateWalletDisplay() {
