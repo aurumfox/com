@@ -952,19 +952,7 @@ async function handleLoanAction(type) {
 }
 
 
-// CREATE PROPOSAL
-async function handleCreateProposal(e) {
-    e.preventDefault();
-    actionAudit("DAO Proposal", "process", "Uploading data...");
-    try {
-        // Симуляция создания
-        await new Promise(r => setTimeout(r, 1500));
-        actionAudit("DAO Proposal", "success", "Proposal is now active");
-        closeAllPopups();
-    } catch (e) {
-        actionAudit("DAO Proposal", "error", "Access denied");
-    }
-}
+
 
 
 // ============================================================
