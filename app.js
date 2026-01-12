@@ -1015,28 +1015,35 @@ async function fetchUserBalances() {
     }
 }
 
+
 function updateWalletDisplay() {
-    uiElements.walletControls.forEach(container => {
-        const isConnected = window.solana && window.solana.isConnected;
-        
-        if (isConnected) {
-            const pubKey = window.solana.publicKey.toString();
+    // Ищем все места, где может быть кнопка (в хедере и в теле сайта)
+    const containers = document.querySelectorAll('.wallet-control, #wallet-header-area');
+    
+    const isConnected = window.solana && window.solana.isConnected;
+    const pubKey = appState.walletPublicKey || (window.solana && window.solana.publicKey);
+
+    containers.forEach(container => {
+        if (isConnected && pubKey) {
+            const base58 = pubKey.toString();
             container.innerHTML = `
-                <div class="wallet-badge">
-                    <span>${pubKey.slice(0, 4)}...${pubKey.slice(-4)}</span>
-                    <button class="small-btn" onclick="disconnectWallet()">🚪</button>
+                <div class="wallet-badge-modern">
+                    <span>🦊 ${base58.slice(0, 4)}...${base58.slice(-4)}</span>
+                    <button class="exit-btn" onclick="window.solana.disconnect().then(() => location.reload())">✕</button>
                 </div>`;
+            console.log("💎 Адрес выведен на экран:", base58);
         } else {
             container.innerHTML = `
-                <button class="web3-button connect-fox-btn">
+                <button id="connectWalletBtn" class="web3-button connect-fox-btn">
                     🦊 Connect Wallet
                 </button>`;
             
-            container.querySelector('.connect-fox-btn').onclick = () => 
-                smartAction(null, "Wallet", "Connected!", "🔑", connectWallet);
+            const btn = container.querySelector('.connect-fox-btn');
+            if (btn) btn.onclick = connectWallet;
         }
     });
 }
+
 
 
 
@@ -1101,47 +1108,28 @@ function setupModernUI() {
 
 
 
-function initializeAurumFoxApp() {
+async function initializeAurumFoxApp() {
     console.log("🚀 Инициализация Aurum Fox Core...");
-
-    // 1. Инициализация критических данных
     if (!setupAddresses()) return;
-    if (!window.Buffer) window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
-
-    // 2. Сбор всех элементов (утилита для кэширования)
     cacheUIElements();
-
-    // 3. Установка СОВРЕМЕННОЙ логики кнопок (убирает все дубли)
     setupModernUI();
 
-    // 4. Проверка активной сессии
-    if (window.solana && window.solana.isConnected) {
-        connectWallet(); 
+    // Специальный блок для мобилок: ждем появления провайдера
+    const adapter = window.solana;
+    if (adapter) {
+        // Если кошелек уже говорит, что подключен, или разрешает "тихий" вход
+        adapter.connect({ onlyIfTrusted: true }).then(({ publicKey }) => {
+            appState.walletPublicKey = publicKey;
+            appState.provider = adapter;
+            updateWalletDisplay();
+            updateStakingAndBalanceUI();
+            console.log("✅ Сессия восстановлена автоматически");
+        }).catch(() => {
+            console.log("ℹ️ Нужно нажать Connect (первый вход)");
+            updateWalletDisplay(); // Показываем кнопку входа
+        });
+    } else {
+        updateWalletDisplay();
     }
 }
 
-// ЗАПУСК ПРИЛОЖЕНИЯ ПРИ ЗАГРУЗКЕ
-window.addEventListener('DOMContentLoaded', () => {
-    initializeAurumFoxApp();
-});
-
-// Добавляем функцию подключения кошелька (она вызывается в setupModernUI)
-async function connectWallet() {
-    try {
-        if (!window.solana) {
-            showNotification("Phantom wallet not found!", "error");
-            window.open("https://phantom.app/", "_blank");
-            return;
-        }
-        const resp = await window.solana.connect();
-        appState.walletPublicKey = resp.publicKey;
-        appState.provider = window.solana;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        
-        console.log("🦊 Кошелек подключен:", resp.publicKey.toString());
-        await updateStakingAndBalanceUI();
-    } catch (err) {
-        console.error("Ошибка подключения:", err);
-        throw err;
-    }
-}
