@@ -679,17 +679,18 @@ async function handleClaimRewards() {
         ).then(res => res[0]);
 
         return await program.methods.claimRewards()
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userPDA,
-                owner: appState.walletPublicKey,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardsAta: userAta,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY // ИСПРАВЛЕНО
-            }).rpc();
+    .accounts({
+        poolState: AFOX_POOL_STATE_PUBKEY,
+        userStaking: userPDA,
+        owner: appState.walletPublicKey,
+        vault: AFOX_POOL_VAULT_PUBKEY,
+        adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+        userRewardsAta: userAta,
+        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+    }).rpc();
+
     });
 }
 
