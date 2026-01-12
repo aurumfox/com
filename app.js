@@ -251,24 +251,7 @@ function setupAddresses() {
 
 
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
-let uiElements = {};
 
-
-
-
-        let fractionalPart = paddedStr.slice(-decimals);
-        fractionalPart = fractionalPart.replace(/0+$/, ''); 
-
-        return '0' + (fractionalPart.length > 0 ? '.' + fractionalPart : '');
-    } else {
-        const integerPart = str.slice(0, str.length - decimals);
-        let fractionalPart = str.slice(str.length - decimals);
-        
-        fractionalPart = fractionalPart.replace(/0+$/, '');
-        
-        return integerPart + (fractionalPart.length > 0 ? '.' + fractionalPart : '');
-    }
-}
 
 /**
  * Converts a string value (user input) into BigInt.
