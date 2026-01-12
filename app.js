@@ -1147,39 +1147,79 @@ function updateWalletDisplay() {
 
 
 function setupModernUI() {
+    // 1. Инициализируем DAO (Открытие модалки)
+    // Эта кнопка НЕ должна быть в списке actions, иначе она будет "загружаться" вместо открытия
+    const openDaoBtn = document.getElementById('createProposalBtn');
+    if (openDaoBtn) {
+        openDaoBtn.onclick = (e) => {
+            e.preventDefault();
+            const modal = document.getElementById('createProposalModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('is-open');
+                console.log("✅ Modal Opened");
+            }
+        };
+    }
+
+    // 2. Закрытие модалок (крестик)
+    const closeDaoBtn = document.getElementById('closeProposalModal') || document.getElementById('close-dao-modal');
+    if (closeDaoBtn) {
+        closeDaoBtn.onclick = () => closeAllPopups();
+    }
+
+    // 3. Список всех активных Web3 действий (Транзакции)
     const actions = [
-        // Добавляем ПРАВИЛЬНЫЕ описания для каждой кнопки
+        // Кошелек
         { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
+        
+        // Стейкинг
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
         
-        // DAO Кнопки (чтобы они тоже «говорили»)
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
+        // DAO (Действия)
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: (e) => handleCreateProposal(e) },
         { id: 'vote-for-btn', name: 'Voting', msg: 'Voted FOR! ✅', icon: '⚡', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Voting', msg: 'Voted AGAINST! 🚫', icon: '🛡️', fn: () => handleVote('AGAINST') },
         
-        // Lending & Loans
+        // Lending (Лендинг)
         { id: 'lend-btn', name: 'Lending', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
         { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Back! 📥', icon: '💰', fn: () => handleLendingAction('Withdraw') },
+        
+        // Loans (Займы)
         { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
+    // Применяем магию эффектов Aurum Fox ко всем кнопкам из списка
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            // УБИРАЕМ cloneNode, если хочешь сохранить оригинальный вид кнопок из HTML
-            // Просто вешаем событие напрямую
-            el.onclick = (e) => {
-                if (e) e.preventDefault();
-                executeSmartActionWithFullEffects(el, item);
+            // Очищаем старые события, чтобы не было дублей
+            el.onclick = null; 
+            
+            el.onclick = async (e) => {
+                if (e && e.preventDefault) e.preventDefault();
+                
+                // Запускаем красивую анимацию и логику транзакции
+                await executeSmartActionWithFullEffects(el, {
+                    name: item.name,
+                    msg: item.msg,
+                    icon: item.icon,
+                    fn: async () => {
+                        // Вызываем функцию. Если это форма, передаем event
+                        return await item.fn(e);
+                    }
+                });
             };
         }
     });
 
-    // ... остальной код (модалки и т.д.)
+    // 4. Инициализация отображения кошелька (чтобы кнопка Disconnect появилась сразу)
+    updateWalletDisplay();
 }
+
 
 
 
