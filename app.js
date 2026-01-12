@@ -1040,47 +1040,6 @@ function updateWalletDisplay() {
 
 
 
-
-/**
- * Универсальный исполнитель действий для кнопок
- */
-async function smartAction(btn, name, successMsg, icon, logicFn) {
-    if (!btn || btn.classList.contains('loading')) return;
-
-    const originalHTML = btn.innerHTML;
-    
-    // 1. Визуальный старт (Современный лоадер)
-    btn.classList.add('loading');
-    btn.innerHTML = `<span class="spinner">⏳</span> ${name}...`;
-    showNotification(`🛰️ [${name}]: Соединение с Solana...`, "info");
-
-    try {
-        // 2. Выполнение основной логики (Rust-контракт или Wallet)
-        await logicFn();
-
-        // 3. Фидбек успеха
-        btn.classList.remove('loading');
-        btn.classList.add('success-glow'); // Свечение (нужно добавить в CSS)
-        btn.innerHTML = `✅ ${successMsg}`;
-        
-        showNotification(`${icon} ${successMsg}`, "success");
-        if (typeof updateUI === 'function') await updateUI(); // Обновляем балансы
-
-        // Сброс кнопки через 3 секунды
-        setTimeout(() => {
-            btn.classList.remove('success-glow');
-            btn.innerHTML = originalHTML;
-        }, 3000);
-
-    } catch (err) {
-        // 4. Обработка ошибки
-        btn.classList.remove('loading');
-        btn.innerHTML = `❌ Error`;
-        showNotification(err.message || "User rejected request", "error");
-        setTimeout(() => btn.innerHTML = originalHTML, 2000);
-    }
-}
-
 function setupModernUI() {
     const actions = [
         { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
