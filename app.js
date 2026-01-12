@@ -613,16 +613,17 @@ async function handleStakeAfox() {
         ).then(res => res[0]);
 
         return await program.methods.deposit(new window.anchor.BN(amount.toString()))
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userPDA,
-                owner: appState.walletPublicKey,
-                userSourceAta: userAta,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-            }).rpc();
+    .accounts({
+        poolState: AFOX_POOL_STATE_PUBKEY, // DfAa...
+        userStaking: userPDA,
+        owner: appState.walletPublicKey,
+        userSourceAta: userAta,
+        vault: AFOX_POOL_VAULT_PUBKEY,
+        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+    }).rpc();
+
     });
 }
 
