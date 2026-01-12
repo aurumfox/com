@@ -749,34 +749,6 @@ function spawnEmoji(el, emoji) {
 
 
 
-// Универсальный обработчик для всех кнопок
-async function smartAction(btnId, actionName, successMsg, emoji, logicFunc) {
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
-
-    // 1. Старт
-    showNotification(`🛰️ ${actionName}: Connection established...`, "info");
-    setBtnState(btn, true, "📡 Process...");
-
-    try {
-        await logicFunc(); // Выполняем твою логику (стейк, воут и т.д.)
-
-        // 2. Успех (Красота)
-        btn.classList.add('btn-success-active');
-        spawnEmoji(btn, emoji); 
-        showNotification(`✨ ${successMsg}`, "success");
-        console.log(`[OK] ${actionName} completed with prize ${emoji}`);
-        
-    } catch (err) {
-        // 3. Ошибка
-        showNotification(`⚠️ Transaction failed: ${err.message || 'Rejected'}`, "error");
-        btn.style.borderColor = "#e74c3c";
-        setTimeout(() => btn.style.borderColor = "", 2000);
-    } finally {
-        setBtnState(btn, false);
-        setTimeout(() => btn.classList.remove('btn-success-active'), 1000);
-    }
-}
 
 
 // ==========================================
@@ -1034,43 +1006,7 @@ function setupModernUI() {
 }
 
 
-async function executeSmartAction(btn, config) {
-    if (btn.classList.contains('loading')) return;
 
-    const originalContent = btn.innerHTML;
-    
-    // 1. Состояние ожидания (Стиль: Glassmorphism loading)
-    btn.classList.add('loading');
-    btn.innerHTML = `<span class="spinner">⏳</span> ${config.name}...`;
-
-    try {
-        // 2. Вызов логики (Rust/Contract)
-        await config.fn(); 
-
-        // 3. Успех (Современный фидбек)
-        btn.classList.remove('loading');
-        btn.classList.add('success-glow'); // Добавь в CSS для свечения
-        btn.innerHTML = `✅ ${config.msg}`;
-        
-        showNotification(`${config.name}: ${config.msg}`, "success");
-        if (typeof UI_EFFECTS !== 'undefined') UI_EFFECTS.spawnPrize(btn, config.icon);
-
-        // Возвращаем кнопку в норму через 3 сек
-        setTimeout(() => {
-            btn.classList.remove('success-glow');
-            btn.innerHTML = originalContent;
-        }, 3000);
-
-    } catch (err) {
-        // 4. Обработка ошибки
-        btn.classList.remove('loading');
-        btn.innerHTML = `❌ Failed`;
-        console.error(`Error in ${config.name}:`, err);
-        showNotification(err.message, "error");
-        
-        setTimeout(() => { btn.innerHTML = originalContent; }, 2000);
-    }
-}
 function initializeAurumFoxApp() {
     console.log("🚀 Инициализация Aurum Fox Core...");
 
