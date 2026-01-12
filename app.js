@@ -1,3 +1,12 @@
+function formatBigInt(value, decimals) {
+    if (!value) return "0";
+    let str = value.toString().padStart(decimals + 1, '0');
+    let intPart = str.slice(0, -decimals);
+    let fracPart = str.slice(-decimals).replace(/0+$/, '');
+    return fracPart ? (intPart + "." + fracPart) : intPart;
+}
+
+
 // ============================================================
 // ГЛОБАЛЬНЫЙ МОСТ: РЕШАЕМ ПРОБЛЕМУ CSP И SYNTAXERROR
 // ============================================================
