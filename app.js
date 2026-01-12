@@ -191,22 +191,19 @@ const STAKING_IDL = {
 
 
 // Поиск PDA пользователя (строго соответствует Rust seeds)
+
+// ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
 async function getUserStakingPDA(owner) {
     const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+        [
+            owner.toBuffer(), 
+            AFOX_POOL_STATE_PUBKEY.toBuffer() // Это должен быть DfAaH2Xs...
+        ],
         STAKING_PROGRAM_ID
     );
     return pda;
 }
 
-// Поиск основного PDA пула (если нужно для системных вызовов)
-async function getPoolPDA() {
-    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [Buffer.from("pool")],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
 
 
 
@@ -503,31 +500,10 @@ async function fetchUserStakingData() {
 
 
 
-async function getUserStakingPDA(owner) {
-    // ВАЖНО: pool_state — это аккаунт данных DfAaH2Xs..., а не ID программы!
-    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [
-            owner.toBuffer(), 
-            AFOX_POOL_STATE_PUBKEY.toBuffer() 
-        ],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
 
 
 
-// ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
-async function getUserStakingPDA(owner) {
-    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [
-            owner.toBuffer(), 
-            AFOX_POOL_STATE_PUBKEY.toBuffer() // Это должен быть DfAaH2Xs...
-        ],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
+
 
 
 
