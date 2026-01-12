@@ -598,7 +598,8 @@ async function handleStakeAfox() {
     const poolIndex = parseInt(uiElements.poolSelector?.value || "0");
 
     if (!amountStr || parseFloat(amountStr) <= 0) {
-        throw new Error("Enter a valid amount");
+        showNotification("Enter a valid amount", "error");
+        return;
     }
 
     await smartAction(btn, "Staking", "Success!", "📈", async () => {
@@ -606,26 +607,48 @@ async function handleStakeAfox() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // Логика ATA пользователя
+        // --- 1. ПРОВЕРКА НАЛИЧИЯ АККАУНТА ---
+        const accountInfo = await appState.connection.getAccountInfo(userPDA);
+        
+        if (!accountInfo) {
+            console.log("🆕 Создаем новый аккаунт стейкинга...");
+            actionAudit("Init", "process", "Creating staking account...");
+            
+            // Сначала выполняем транзакцию создания аккаунта
+            await program.methods.initializeUserStake(poolIndex)
+                .accounts({
+                    poolState: AFOX_POOL_STATE_PUBKEY,
+                    userStaking: userPDA,
+                    owner: appState.walletPublicKey,
+                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                    systemProgram: SYSTEM_PROGRAM_ID,
+                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+                }).rpc();
+                
+            console.log("✅ Аккаунт создан успешно!");
+        }
+
+        // --- 2. ПОДГОТОВКА К ДЕПОЗИТУ ---
         const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
             [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
             ASSOCIATED_TOKEN_PROGRAM_ID
         ).then(res => res[0]);
 
+        // --- 3. САМ ДЕПОЗИТ ---
         return await program.methods.deposit(new window.anchor.BN(amount.toString()))
-    .accounts({
-        poolState: AFOX_POOL_STATE_PUBKEY, // DfAa...
-        userStaking: userPDA,
-        owner: appState.walletPublicKey,
-        userSourceAta: userAta,
-        vault: AFOX_POOL_VAULT_PUBKEY,
-        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-    }).rpc();
-
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userPDA,
+                owner: appState.walletPublicKey,
+                userSourceAta: userAta,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+            }).rpc();
     });
 }
+
 
 
 
