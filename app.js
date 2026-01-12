@@ -554,24 +554,24 @@ async function handleUnstakeAfox() {
         const now = Math.floor(Date.now() / 1000);
         const isEarly = now < stakingData.lockupEndTime.toNumber();
 
-        const userAta = await solanaWeb3.PublicKey.findProgramAddress(
+        // ИСПРАВЛЕНО: добавлена приставка window.
+        const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
             [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
             ASSOCIATED_TOKEN_PROGRAM_ID
         ).then(res => res[0]);
 
-        // ПЕРЕДАЧА АККАУНТОВ СТРОГО ПО RUST:
         return await program.methods.unstake(stakingData.stakedAmount, isEarly)
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
                 userStaking: userPDA,
                 owner: appState.walletPublicKey,
                 vault: AFOX_POOL_VAULT_PUBKEY,
-                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY, // Штраф 40%
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,    // Комиссия админа
+                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
                 userRewardsAta: userAta,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 tokenProgram: TOKEN_PROGRAM_ID,
-                clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY // ИСПРАВЛЕНО
             }).rpc();
     });
 }
@@ -581,13 +581,15 @@ async function handleUnstakeAfox() {
 /**
  * ФУНКЦИЯ: ЗАБРАТЬ НАГРАДЫ (CLAIM)
  */
+
 async function handleClaimRewards() {
     const btn = uiElements.claimRewardsBtn;
     await smartAction(btn, "Claiming", "Rewards Received!", "💎", async () => {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        const userAta = await solanaWeb3.PublicKey.findProgramAddress(
+        // ИСПРАВЛЕНО: добавлена приставка window.
+        const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
             [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
             ASSOCIATED_TOKEN_PROGRAM_ID
         ).then(res => res[0]);
@@ -598,15 +600,14 @@ async function handleClaimRewards() {
                 userStaking: userPDA,
                 owner: appState.walletPublicKey,
                 vault: AFOX_POOL_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Это BXinWR...
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
                 userRewardsAta: userAta,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 tokenProgram: TOKEN_PROGRAM_ID,
-                clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY // ИСПРАВЛЕНО
             }).rpc();
     });
 }
-
 
 
 /**
