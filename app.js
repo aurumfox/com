@@ -1017,48 +1017,102 @@ async function fetchUserBalances() {
 
 
 
+
+
 // ============================================================
-// ИСПРАВЛЕННЫЙ БЛОК КОШЕЛЬКА (ПОДКЛЮЧЕНИЕ И UI)
+// УНИВЕРСАЛЬНЫЙ БЛОК ПОДКЛЮЧЕНИЯ (WEB, MOBILE, TWITTER)
 // ============================================================
 
 async function connectWallet() {
     try {
-        // 1. Проверка наличия Phantom
-        if (!window.solana || !window.solana.isPhantom) {
-            showNotification("Phantom wallet not found!", "error");
+        console.log("🔗 Попытка подключения к кошельку...");
+
+        // 1. Проверка провайдера
+        const provider = window.phantom?.solana || window.solana;
+
+        if (!provider) {
+            console.warn("❌ Phantom не найден");
+            
+            // Если мы на мобилке — предлагаем открыть через Deep Link
+            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                const url = encodeURIComponent(window.location.href);
+                const ref = encodeURIComponent(window.location.host);
+                window.open(`https://phantom.app/ul/browse/${url}?ref=${ref}`, '_blank');
+                return;
+            }
+            
+            showNotification("Please install Phantom wallet!", "error");
             window.open("https://phantom.app/", "_blank");
             return;
         }
 
-        // 2. Запрос подключения
-        const resp = await window.solana.connect();
+        // 2. Подключение
+        // standard connection request
+        const resp = await provider.connect();
         
-        // 3. Сохранение данных в состояние приложения
+        // 3. Сохранение данных в состояние
         appState.walletPublicKey = resp.publicKey;
-        appState.provider = window.solana;
+        appState.provider = provider;
         
-        // 4. Установка соединения с RPC
+        // Пересоздаем соединение с RPC, если оно упало
         appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
         
-        console.log("🦊 Кошелек успешно подключен:", resp.publicKey.toString());
+        console.log("✅ Кошелек подключен:", resp.publicKey.toString());
         
-        // 5. Обновление интерфейса
+        // 4. Обновление UI
         updateWalletDisplay();
         await updateStakingAndBalanceUI();
         
-        showNotification("Wallet Connected!", "success");
+        showNotification("Success: Connected to Fox Ecosystem", "success");
         return resp.publicKey.toString();
 
     } catch (err) {
-        console.error("Ошибка подключения кошелька:", err);
+        console.error("❌ Ошибка подключения:", err);
+        
+        // Обработка отказа пользователя
         if (err.code === 4001) {
-            showNotification("Connection rejected by user", "warning");
+            showNotification("Connection cancelled", "warning");
         } else {
-            showNotification("Failed to connect wallet", "error");
+            showNotification("Wallet Error: Check if app is trusted", "error");
         }
-        throw err; // Важно для обработки в executeSmartAction
+        throw err;
     }
 }
+
+function updateWalletDisplay() {
+    // Ищем все места, где должна быть кнопка или адрес
+    const containers = document.querySelectorAll('.wallet-control, #wallet-area, .web3-container');
+    const isConnected = !!(appState.walletPublicKey && window.solana?.isConnected);
+
+    containers.forEach(container => {
+        if (isConnected) {
+            const pubKey = appState.walletPublicKey.toString();
+            const shortKey = `${pubKey.slice(0, 4)}...${pubKey.slice(-4)}`;
+            
+            container.innerHTML = `
+                <div class="wallet-badge-active">
+                    <span class="addr-text">${shortKey}</span>
+                    <button class="exit-btn" onclick="disconnectWallet()">✕</button>
+                </div>`;
+        } else {
+            container.innerHTML = `
+                <button class="web3-button connect-fox-btn" id="connectWalletBtn">
+                    🦊 Connect Wallet
+                </button>`;
+            
+            // Прямая привязка клика без клонирования (для стабильности мобилок)
+            const btn = container.querySelector('#connectWalletBtn');
+            if (btn) {
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    connectWallet();
+                };
+            }
+        }
+    });
+}
+
+            
 
 // ============================================================
 // БЛОК: ОТКЛЮЧЕНИЕ КОШЕЛЬКА (DISCONNECT)
