@@ -1139,64 +1139,105 @@ async function fetchUserBalances() {
 
 
 // ============================================================
-// УНИВЕРСАЛЬНЫЙ БЛОК ПОДКЛЮЧЕНИЯ (WEB, MOBILE, TWITTER)
+// НОВЫЙ БЛОК: УПРАВЛЕНИЕ ВЫБОРОМ КОШЕЛЬКА
 // ============================================================
 
 async function connectWallet() {
-    try {
-        console.log("🔗 Попытка подключения к кошельку...");
+    const modal = document.getElementById('walletModal');
+    if (modal) {
+        modal.style.display = 'flex'; // Открываем твое новое окно
+        console.log("📂 Окно выбора кошелька открыто");
+    } else {
+        // Если модалки нет в HTML, фоллбэк на старый метод
+        await connectToProvider('phantom');
+    }
+}
 
-        // 1. Проверка провайдера
-        const provider = window.phantom?.solana || window.solana;
+async function connectToProvider(walletName) {
+    let provider = null;
+    
+    try {
+        // 1. Определение провайдера по имени из data-wallet
+        if (walletName === 'phantom') {
+            provider = window.phantom?.solana || window.solana;
+        } else if (walletName === 'solflare') {
+            provider = window.solflare;
+        } else if (walletName === 'backpack') {
+            provider = window.backpack;
+        }
 
         if (!provider) {
-            console.warn("❌ Phantom не найден");
-            
-            // Если мы на мобилке — предлагаем открыть через Deep Link
-            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                const url = encodeURIComponent(window.location.href);
-                const ref = encodeURIComponent(window.location.host);
-                window.open(`https://phantom.app/ul/browse/${url}?ref=${ref}`, '_blank');
-                return;
-            }
-            
-            showNotification("Please install Phantom wallet!", "error");
-            window.open("https://phantom.app/", "_blank");
+            showNotification(`Wallet ${walletName} not found!`, "error");
+            const urls = {
+                'phantom': 'https://phantom.app/',
+                'solflare': 'https://solflare.com/',
+                'backpack': 'https://backpack.app/'
+            };
+            window.open(urls[walletName], "_blank");
             return;
         }
 
-        // 2. Подключение
-        // standard connection request
+        // 2. Стандартный процесс подключения
         const resp = await provider.connect();
         
-        // 3. Сохранение данных в состояние
+        // 3. Обновление глобального состояния (твоего appState)
         appState.walletPublicKey = resp.publicKey;
         appState.provider = provider;
-        
-        // Пересоздаем соединение с RPC, если оно упало
         appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
         
-        console.log("✅ Кошелек подключен:", resp.publicKey.toString());
-        
-        // 4. Обновление UI
+        console.log(`✅ Подключено к ${walletName}:`, resp.publicKey.toString());
+
+        // 4. Закрытие модалки
+        const modal = document.getElementById('walletModal');
+        if (modal) modal.style.display = 'none';
+
+        // 5. Твои стандартные обновления UI
         updateWalletDisplay();
         await updateStakingAndBalanceUI();
         
-        showNotification("Success: Connected to Fox Ecosystem", "success");
-        return resp.publicKey.toString();
+        showNotification(`Success: Connected via ${walletName}`, "success");
 
     } catch (err) {
-        console.error("❌ Ошибка подключения:", err);
-        
-        // Обработка отказа пользователя
-        if (err.code === 4001) {
-            showNotification("Connection cancelled", "warning");
-        } else {
-            showNotification("Wallet Error: Check if app is trusted", "error");
-        }
-        throw err;
+        console.error("❌ Ошибка провайдера:", err);
+        showNotification(err.code === 4001 ? "Connection cancelled" : "Wallet Error", "error");
     }
 }
+
+
+
+
+// ============================================================
+// БЛОК: СЛУШАТЕЛИ МОДАЛЬНОГО ОКНА КОШЕЛЬКОВ
+// ============================================================
+
+function setupWalletModalEvents() {
+    // Закрытие при клике на крестик
+    const closeBtn = document.getElementById('closeWalletModal');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            document.getElementById('walletModal').style.display = 'none';
+        };
+    }
+
+    // Закрытие при клике вне окна
+    const modal = document.getElementById('walletModal');
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Привязка кнопок (Phantom, Solflare, Backpack)
+    const walletButtons = document.querySelectorAll('.wallet-option-btn');
+    walletButtons.forEach(btn => {
+        btn.onclick = () => {
+            const walletType = btn.getAttribute('data-wallet');
+            connectToProvider(walletType);
+        };
+    });
+}
+
+
 
 
 
