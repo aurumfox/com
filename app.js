@@ -1148,40 +1148,68 @@ if (window.solana) {
 }
 
 
+// ============================================================
+// ИСПРАВЛЕННЫЙ БЛОК: ОБНОВЛЕНИЕ ИНТЕРФЕЙСА КОШЕЛЬКА
+// ============================================================
+
 function updateWalletDisplay() {
-    // Находим все контейнеры для управления кошельком
+    // 1. Ищем все возможные контейнеры
     const containers = document.querySelectorAll('.wallet-control, #wallet-area');
-    const isConnected = window.solana && window.solana.isConnected && appState.walletPublicKey;
+    
+    // ПРОВЕРКА: Подключен ли Phantom на самом деле?
+    const isConnected = window.solana && window.solana.isConnected && window.solana.publicKey;
+    
+    // Если подключен, берем ключ напрямую из провайдера для надежности
+    const activePublicKey = isConnected ? window.solana.publicKey.toString() : null;
+
+    console.log("🔄 Обновление UI кошелька. Статус:", isConnected ? "Подключен" : "Отключен");
 
     containers.forEach(container => {
-        if (isConnected) {
-            const pubKey = appState.walletPublicKey.toString();
+        if (isConnected && activePublicKey) {
+            // СОСТОЯНИЕ: КОШЕЛЕК ПОДКЛЮЧЕН
             container.innerHTML = `
-                <div class="wallet-badge" style="display: flex; align-items: center; gap: 10px; background: rgba(243, 156, 18, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid #f39c12;">
-                    <span style="color: #f39c12; font-weight: bold; font-family: monospace;">
-                        ${pubKey.slice(0, 4)}...${pubKey.slice(-4)}
+                <div class="wallet-badge" style="display: flex; align-items: center; gap: 10px; background: rgba(243, 156, 18, 0.1); padding: 8px 16px; border-radius: 20px; border: 1px solid #f39c12; box-shadow: 0 0 10px rgba(243, 156, 18, 0.2);">
+                    <span style="color: #f39c12; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 1px;">
+                        ${activePublicKey.slice(0, 4)}...${activePublicKey.slice(-4)}
                     </span>
-                    <button onclick="disconnectWallet()" title="Disconnect" style="background: none; border: none; cursor: pointer; font-size: 16px;">🚪</button>
+                    <button onclick="disconnectWallet()" title="Disconnect" style="background: none; border: none; cursor: pointer; font-size: 18px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+                        🚪
+                    </button>
                 </div>`;
         } else {
+            // СОСТОЯНИЕ: КОШЕЛЕК НЕ ПОДКЛЮЧЕН
             container.innerHTML = `
-                <button class="web3-button connect-fox-btn" id="connectWalletBtn" style="cursor: pointer;">
+                <button class="web3-button connect-fox-btn" id="connectWalletBtn" style="cursor: pointer !important; position: relative; z-index: 10;">
                     <i class="fox-icon">🦊</i> Connect Wallet
                 </button>`;
             
-            // Заново инициализируем кнопку после её создания
+            // Находим кнопку и вешаем событие напрямую (без сложных оберток для теста)
             const btn = container.querySelector('#connectWalletBtn');
             if (btn) {
-                btn.onclick = (e) => {
+                btn.onclick = async (e) => {
                     e.preventDefault();
-                    // Используем твою обертку для эффектов
-                    const action = { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet };
-                    executeSmartActionWithFullEffects(btn, action);
+                    console.log("клик по кнопке Connect");
+                    try {
+                        await connectWallet(); // Твоя функция подключения
+                    } catch (err) {
+                        console.error("Ошибка при клике:", err);
+                    }
                 };
             }
         }
     });
 }
+
+// ЭКСТРЕННЫЙ СЛУШАТЕЛЬ (Чтобы UI менялся мгновенно при ответе от Phantom)
+if (window.solana) {
+    window.solana.on('connect', () => {
+        console.log("⚓ Событие 'connect' поймано!");
+        // Принудительно обновляем состояние
+        appState.walletPublicKey = window.solana.publicKey;
+        updateWalletDisplay();
+    });
+}
+
 
 
 
