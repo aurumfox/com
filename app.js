@@ -1040,7 +1040,26 @@ function updateWalletDisplay() {
 
 
 
-
+// Добавляем функцию подключения кошелька (она вызывается в setupModernUI)
+async function connectWallet() {
+    try {
+        if (!window.solana) {
+            showNotification("Phantom wallet not found!", "error");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+        const resp = await window.solana.connect();
+        appState.walletPublicKey = resp.publicKey;
+        appState.provider = window.solana;
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        
+        console.log("🦊 Кошелек подключен:", resp.publicKey.toString());
+        await updateStakingAndBalanceUI();
+    } catch (err) {
+        console.error("Ошибка подключения:", err);
+        throw err;
+    }
+}
 
 
 
@@ -1125,23 +1144,4 @@ window.addEventListener('DOMContentLoaded', () => {
     initializeAurumFoxApp();
 });
 
-// Добавляем функцию подключения кошелька (она вызывается в setupModernUI)
-async function connectWallet() {
-    try {
-        if (!window.solana) {
-            showNotification("Phantom wallet not found!", "error");
-            window.open("https://phantom.app/", "_blank");
-            return;
-        }
-        const resp = await window.solana.connect();
-        appState.walletPublicKey = resp.publicKey;
-        appState.provider = window.solana;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        
-        console.log("🦊 Кошелек подключен:", resp.publicKey.toString());
-        await updateStakingAndBalanceUI();
-    } catch (err) {
-        console.error("Ошибка подключения:", err);
-        throw err;
-    }
-                            }
+
