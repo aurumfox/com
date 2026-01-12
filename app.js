@@ -1039,27 +1039,98 @@ function updateWalletDisplay() {
 }
 
 
+// ============================================================
+// ИСПРАВЛЕННЫЙ БЛОК КОШЕЛЬКА (ПОДКЛЮЧЕНИЕ И UI)
+// ============================================================
 
-// Добавляем функцию подключения кошелька (она вызывается в setupModernUI)
 async function connectWallet() {
     try {
-        if (!window.solana) {
+        // 1. Проверка наличия Phantom
+        if (!window.solana || !window.solana.isPhantom) {
             showNotification("Phantom wallet not found!", "error");
             window.open("https://phantom.app/", "_blank");
             return;
         }
+
+        // 2. Запрос подключения
         const resp = await window.solana.connect();
+        
+        // 3. Сохранение данных в состояние приложения
         appState.walletPublicKey = resp.publicKey;
         appState.provider = window.solana;
+        
+        // 4. Установка соединения с RPC
         appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
         
-        console.log("🦊 Кошелек подключен:", resp.publicKey.toString());
+        console.log("🦊 Кошелек успешно подключен:", resp.publicKey.toString());
+        
+        // 5. Обновление интерфейса
+        updateWalletDisplay();
         await updateStakingAndBalanceUI();
+        
+        showNotification("Wallet Connected!", "success");
+        return resp.publicKey.toString();
+
     } catch (err) {
-        console.error("Ошибка подключения:", err);
-        throw err;
+        console.error("Ошибка подключения кошелька:", err);
+        if (err.code === 4001) {
+            showNotification("Connection rejected by user", "warning");
+        } else {
+            showNotification("Failed to connect wallet", "error");
+        }
+        throw err; // Важно для обработки в executeSmartAction
     }
 }
+
+async function disconnectWallet() {
+    try {
+        if (window.solana) {
+            await window.solana.disconnect();
+            appState.walletPublicKey = null;
+            appState.provider = null;
+            updateWalletDisplay();
+            showNotification("Disconnected", "info");
+        }
+    } catch (err) {
+        console.error("Error disconnecting:", err);
+    }
+}
+
+function updateWalletDisplay() {
+    // Находим все контейнеры для управления кошельком
+    const containers = document.querySelectorAll('.wallet-control, #wallet-area');
+    const isConnected = window.solana && window.solana.isConnected && appState.walletPublicKey;
+
+    containers.forEach(container => {
+        if (isConnected) {
+            const pubKey = appState.walletPublicKey.toString();
+            container.innerHTML = `
+                <div class="wallet-badge" style="display: flex; align-items: center; gap: 10px; background: rgba(243, 156, 18, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid #f39c12;">
+                    <span style="color: #f39c12; font-weight: bold; font-family: monospace;">
+                        ${pubKey.slice(0, 4)}...${pubKey.slice(-4)}
+                    </span>
+                    <button onclick="disconnectWallet()" title="Disconnect" style="background: none; border: none; cursor: pointer; font-size: 16px;">🚪</button>
+                </div>`;
+        } else {
+            container.innerHTML = `
+                <button class="web3-button connect-fox-btn" id="connectWalletBtn" style="cursor: pointer;">
+                    <i class="fox-icon">🦊</i> Connect Wallet
+                </button>`;
+            
+            // Заново инициализируем кнопку после её создания
+            const btn = container.querySelector('#connectWalletBtn');
+            if (btn) {
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    // Используем твою обертку для эффектов
+                    const action = { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet };
+                    executeSmartActionWithFullEffects(btn, action);
+                };
+            }
+        }
+    });
+}
+
 
 
 
