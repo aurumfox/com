@@ -749,31 +749,6 @@ function spawnEmoji(el, emoji) {
 
 
 
-// Функция для создания "Взрыва" эмодзи (Подарок)
-function spawnEmoji(el, emoji) {
-    const rect = el.getBoundingClientRect();
-    for(let i = 0; i < 8; i++) {
-        const span = document.createElement('span');
-        span.textContent = emoji;
-        span.style.position = 'fixed';
-        span.style.left = (rect.left + rect.width/2) + 'px';
-        span.style.top = (rect.top + rect.height/2) + 'px';
-        span.style.transition = 'all 0.8s ease-out';
-        span.style.pointerEvents = 'none';
-        span.style.zIndex = '9999';
-        document.body.appendChild(span);
-
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 50 + Math.random() * 50;
-        setTimeout(() => {
-            span.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(2)`;
-            span.style.opacity = '0';
-        }, 10);
-        setTimeout(() => span.remove(), 800);
-    }
-}
-
-
 // Универсальный обработчик для всех кнопок
 async function smartAction(btnId, actionName, successMsg, emoji, logicFunc) {
     const btn = document.getElementById(btnId);
