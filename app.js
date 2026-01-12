@@ -690,11 +690,11 @@ function cacheUIElements() {
         unstakeAfoxBtn: document.getElementById('unstake-afox-btn'),
         
         // DAO & Lending
+        // --- DAO (ИСПРАВЛЕННЫЕ ID ПОД ТВОЙ HTML) ---
         createProposalBtn: document.getElementById('createProposalBtn'),
+        createProposalModal: document.getElementById('createProposalModal'), // Исправлено!
+        createProposalForm: document.getElementById('newProposalForm'),   
         
-uiElements.createProposalModal = document.getElementById('createProposalModal');
-
-        createProposalForm: document.getElementById('create-proposal-form'),
         
         // Утилиты
         notificationContainer: document.getElementById('notification-container'),
