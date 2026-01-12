@@ -98,28 +98,18 @@ const STAKING_IDL = {
     "version": "0.1.0",
     "name": "my_new_afox_project",
     "instructions": [
-        // ... другие инструкции
         {
-            "name": "deposit",
+            "name": "initializeUserStake",
             "accounts": [
                 { "name": "poolState", "isMut": true },
                 { "name": "userStaking", "isMut": true },
                 { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "userSourceAta", "isMut": true },
-                { "name": "vault", "isMut": true },
                 { "name": "rewardMint", "isMut": false },
-                { "name": "tokenProgram", "isMut": false },
+                { "name": "systemProgram", "isMut": false },
                 { "name": "clock", "isMut": false }
             ],
-            "args": [{ "name": "amount", "type": "u64" }]
-        }
-        // ВАЖНО: Убедись, что имена аккаунтов в JS (CamelCase) 
-        // совпадают с именами в Rust (snake_case) через конвертацию Anchor
-    ]
-};
-
-
-        
+            "args": [{ "name": "poolIndex", "type": "u8" }]
+        },
         {
             "name": "deposit",
             "accounts": [
@@ -146,7 +136,8 @@ const STAKING_IDL = {
                 { "name": "rewardMint", "isMut": false },
                 { "name": "tokenProgram", "isMut": false },
                 { "name": "clock", "isMut": false }
-            ]
+            ],
+            "args": []
         },
         {
             "name": "unstake",
@@ -166,6 +157,35 @@ const STAKING_IDL = {
                 { "name": "amount", "type": "u64" },
                 { "name": "isEarlyExit", "type": "bool" }
             ]
+        }
+    ],
+    "accounts": [
+        {
+            "name": "UserStakingAccount",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    { "name": "owner", "type": "publicKey" },
+                    { "name": "stakedAmount", "type": "u64" },
+                    { "name": "rewardsToClaim", "type": "u64" },
+                    { "name": "lastUpdateTimestamp", "type": "i64" },
+                    { "name": "lockupEndTime", "type": "i64" },
+                    { "name": "poolIndex", "type": "u8" },
+                    { "name": "lending", "type": "u64" },
+                    { "name": "padding", "type": { "array": ["u8", 104] } }
+                ]
+            }
+        },
+        {
+            "name": "PoolState",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    { "name": "admin", "type": "publicKey" },
+                    { "name": "totalStakedAmount", "type": "u64" },
+                    { "name": "rewardRatePerSec", "type": "u64" }
+                ]
+            }
         }
     ]
 };
