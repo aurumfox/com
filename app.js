@@ -462,21 +462,26 @@ async function fetchUserStakingData() {
 
     try {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+        const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // Добавляем проверку на существование аккаунта перед fetch
-        const accountInfo = await appState.connection.getAccountInfo(userStakingPDA);
-        if (!accountInfo) {
-            console.log("ℹ️ Аккаунт стейкинга еще не создан для этого кошелька.");
-            return;
-        }
+        // ВАЖНО: Для zero_copy аккаунтов используем fetchNullable или fetch
+        // Если выдает "Layout mismatch", значит JS не видит падинги [u8; 104]
+        const stakingData = await program.account.userStakingAccount.fetch(userPDA);
 
-        const stakingData = await program.account.userStakingAccount.fetch(userStakingPDA);
-        // ... остальная логика обновления appState
+        appState.userStakingData = {
+            stakedAmount: BigInt(stakingData.stakedAmount.toString()),
+            rewards: BigInt(stakingData.rewardsToClaim.toString()),
+            lockupEndTime: stakingData.lockupEndTime.toNumber(),
+            poolIndex: stakingData.poolIndex,
+            lending: BigInt(stakingData.lending.toString())
+        };
+        
+        console.log("📊 Данные стейкинга обновлены:", appState.userStakingData);
     } catch (e) {
-        console.error("⚠️ Ошибка при загрузке данных стейкинга:", e.message);
+        console.error("⚠️ Ошибка парсинга zero_copy данных:", e.message);
     }
 }
+
 
 
 
@@ -573,35 +578,28 @@ async function handleStakeAfox() {
 
 async function handleUnstakeAfox() {
     const btn = uiElements.unstakeAfoxBtn;
-    
-    await smartAction(btn, "Unstaking", "Tokens Freed!", "🕊️", async () => {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userPDA = await getUserStakingPDA(appState.walletPublicKey);
-        
-        // Загружаем данные аккаунта пользователя из блокчейна
+    const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+    const userPDA = await getUserStakingPDA(appState.walletPublicKey);
+
+    await smartAction(btn, "Unstaking", "Tokens Freed!", "🔓", async () => {
         const stakingData = await program.account.userStakingAccount.fetch(userPDA);
         const now = Math.floor(Date.now() / 1000);
-        
-        // Сравниваем текущее время с lockup_end_time из Rust
         const isEarly = now < stakingData.lockupEndTime.toNumber();
-        
-        if (isEarly && !confirm("Warning: Early exit fee is 40%. Continue?")) {
-            throw new Error("Cancelled by user");
-        }
 
         const userAta = await solanaWeb3.PublicKey.findProgramAddress(
             [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
             ASSOCIATED_TOKEN_PROGRAM_ID
         ).then(res => res[0]);
 
+        // ПЕРЕДАЧА АККАУНТОВ СТРОГО ПО RUST:
         return await program.methods.unstake(stakingData.stakedAmount, isEarly)
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
                 userStaking: userPDA,
                 owner: appState.walletPublicKey,
                 vault: AFOX_POOL_VAULT_PUBKEY,
-                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY, // Штраф 40%
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,    // Комиссия админа
                 userRewardsAta: userAta,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 tokenProgram: TOKEN_PROGRAM_ID,
