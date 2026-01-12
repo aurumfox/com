@@ -607,15 +607,16 @@ async function handleStakeAfox() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // --- 1. ПРОВЕРКА НАЛИЧИЯ АККАУНТА ---
+        // --- 1. ПРОВЕРКА НАЛИЧИЯ АККАУНТА (getAccountInfo) ---
+        // Мы проверяем, существует ли PDA пользователя в блокчейне
         const accountInfo = await appState.connection.getAccountInfo(userPDA);
         
         if (!accountInfo) {
-            console.log("🆕 Создаем новый аккаунт стейкинга...");
-            actionAudit("Init", "process", "Creating staking account...");
+            console.log("🆕 Аккаунт не найден. Запуск инициализации...");
+            actionAudit("Init Account", "process", "Creating your staking profile...");
             
-            // Сначала выполняем транзакцию создания аккаунта
-            await program.methods.initializeUserStake(poolIndex)
+            // Вызываем метод инициализации
+            const initSig = await program.methods.initializeUserStake(poolIndex)
                 .accounts({
                     poolState: AFOX_POOL_STATE_PUBKEY,
                     userStaking: userPDA,
@@ -625,16 +626,21 @@ async function handleStakeAfox() {
                     clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
                 }).rpc();
                 
-            console.log("✅ Аккаунт создан успешно!");
+            console.log("✅ Аккаунт создан. TX:", initSig);
+            actionAudit("Init Account", "success", "Account ready!");
+            
+            // Небольшая пауза, чтобы блокчейн успел подтвердить создание
+            await new Promise(r => setTimeout(r, 1000));
         }
 
-        // --- 2. ПОДГОТОВКА К ДЕПОЗИТУ ---
+        // --- 2. ПОЛУЧЕНИЕ ATA (Откуда списываем токены) ---
         const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
             [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
             ASSOCIATED_TOKEN_PROGRAM_ID
         ).then(res => res[0]);
 
-        // --- 3. САМ ДЕПОЗИТ ---
+        // --- 3. ВЫПОЛНЕНИЕ ДЕПОЗИТА ---
+        // Теперь мы уверены, что userPDA существует
         return await program.methods.deposit(new window.anchor.BN(amount.toString()))
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
@@ -648,6 +654,7 @@ async function handleStakeAfox() {
             }).rpc();
     });
 }
+
 
 
 
