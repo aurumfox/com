@@ -1145,13 +1145,13 @@ async function fetchUserBalances() {
 async function connectWallet() {
     const modal = document.getElementById('walletModal');
     if (modal) {
-        modal.style.display = 'flex'; // Открываем твое новое окно
-        console.log("📂 Окно выбора кошелька открыто");
+        modal.style.display = 'flex'; // Показываем выбор кошельков
+        console.log("📂 Открыто окно выбора кошелька");
     } else {
-        // Если модалки нет в HTML, фоллбэк на старый метод
-        await connectToProvider('phantom');
+        console.error("❌ Ошибка: Модальное окно 'walletModal' не найдено в HTML");
     }
 }
+
 
 async function connectToProvider(walletName) {
     let provider = null;
@@ -1373,10 +1373,25 @@ if (window.solana) {
 
 
 
-
 function setupModernUI() {
     const actions = [
-        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
+        { 
+            id: 'connectWalletBtn', 
+            name: 'Wallet', 
+            msg: 'Opening Selector...', 
+            icon: '🔑', 
+            fn: async () => {
+                // ИСПРАВЛЕНИЕ: Открываем твое модальное окно выбора кошелька
+                const modal = document.getElementById('walletModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    console.log("📂 Окно выбора кошелька открыто");
+                } else {
+                    // Если модалки нет, вызываем обычный коннект как запасной вариант
+                    if (typeof connectWallet === 'function') await connectWallet();
+                }
+            }
+        },
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
@@ -1395,7 +1410,7 @@ function setupModernUI() {
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // Привязка действий к кнопкам
+    // Привязка действий к кнопкам (клонирование для очистки слушателей)
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
@@ -1408,53 +1423,55 @@ function setupModernUI() {
         }
     });
 
-    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
-    const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
-    const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
+    // --- ФИКС ЗАКРЫТИЯ МОДАЛОК (DAO И КОШЕЛЬКИ) ---
     
-
-    if (closeBtn && modal) {
-        closeBtn.onclick = (e) => {
+    // Закрытие DAO модалки
+    const closeProposalBtn = document.getElementById('closeProposalModal');
+    const proposalModal = document.getElementById('createProposalModal');
+    
+    if (closeProposalBtn && proposalModal) {
+        closeProposalBtn.onclick = (e) => {
             e.preventDefault();
-            modal.style.display = 'none';
-            console.log("Модалка DAO закрыта через крестик");
+            proposalModal.style.display = 'none';
         };
-
-        // Дополнительно: закрытие при клике ВНЕ окна
-        window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
     }
+
+    // Закрытие модалки кошельков (walletModal)
+    const closeWalletBtn = document.getElementById('closeWalletModal');
+    const walletModal = document.getElementById('walletModal');
+    
+    if (closeWalletBtn && walletModal) {
+        closeWalletBtn.onclick = (e) => {
+            e.preventDefault();
+            walletModal.style.display = 'none';
+        };
+    }
+
+    // Закрытие при клике ВНЕ окон
+    window.addEventListener('click', (event) => {
+        if (event.target === proposalModal) proposalModal.style.display = 'none';
+        if (event.target === walletModal) walletModal.style.display = 'none';
+    });
 }
+
 
 
 
 function initializeAurumFoxApp() {
     console.log("🚀 Инициализация Aurum Fox Core...");
 
-    // 1. Инициализация критических данных (Адреса и Buffer)
     if (!setupAddresses()) return;
     if (!window.Buffer) window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
 
-    // 2. Сбор элементов и настройка событий модального окна кошельков
     cacheUIElements();
-    setupWalletModalEvents(); // <--- Добавляем этот вызов здесь
-
-    // 3. Установка СОВРЕМЕННОЙ логики кнопок (DAO, Staking и т.д.)
+    setupWalletModalEvents(); // Активируем модалку
     setupModernUI();
 
-    // 4. Проверка активной сессии
-    // Если кошелек уже был подключен, восстанавливаем сессию через Phantom
-    if (window.solana && window.solana.isConnected) {
-        console.log("♻️ Восстановление сессии кошелька...");
-        connectToProvider('phantom'); 
-    }
+    // ❌ УДАЛИ ИЛИ ИЗМЕНИ ЭТОТ БЛОК:
+    /* if (window.solana && window.solana.isConnected) {
+        // Раньше тут стоял принудительный коннект к фантому
+    } 
+    */
 }
 
-// ЗАПУСК ПРИЛОЖЕНИЯ ПРИ ЗАГРУЗКЕ
-window.addEventListener('DOMContentLoaded', () => {
-    initializeAurumFoxApp();
-});
 
