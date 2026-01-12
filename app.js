@@ -1017,32 +1017,64 @@ async function fetchUserBalances() {
 
 
 function updateWalletDisplay() {
-    // Ищем все места, где может быть кнопка (в хедере и в теле сайта)
+    // Ищем все контейнеры (в шапке и в мобильном меню)
     const containers = document.querySelectorAll('.wallet-control, #wallet-header-area');
     
-    const isConnected = window.solana && window.solana.isConnected;
+    // Проверяем статус подключения
+    const isConnected = (window.solana && window.solana.isConnected) || !!appState.walletPublicKey;
     const pubKey = appState.walletPublicKey || (window.solana && window.solana.publicKey);
 
     containers.forEach(container => {
         if (isConnected && pubKey) {
             const base58 = pubKey.toString();
+            // Рендерим блок с адресом и кнопкой отключения
             container.innerHTML = `
                 <div class="wallet-badge-modern">
-                    <span>🦊 ${base58.slice(0, 4)}...${base58.slice(-4)}</span>
-                    <button class="exit-btn" onclick="window.solana.disconnect().then(() => location.reload())">✕</button>
+                    <span class="wallet-address">🦊 ${base58.slice(0, 4)}...${base58.slice(-4)}</span>
+                    <button id="disconnectBtn" class="exit-btn" title="Disconnect">✕</button>
                 </div>`;
-            console.log("💎 Адрес выведен на экран:", base58);
+            
+            // Находим созданную кнопку и вешаем на неё удаление сессии
+            const discBtn = container.querySelector('#disconnectBtn');
+            if (discBtn) {
+                discBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation(); // Чтобы клик не ушел на родительские элементы
+                    try {
+                        if (window.solana) await window.solana.disconnect();
+                        
+                        // Полная очистка состояния
+                        appState.walletPublicKey = null;
+                        appState.provider = null;
+                        
+                        console.log("🔌 Wallet Disconnected");
+                        
+                        // Вместо жесткой перезагрузки просто обновляем UI
+                        updateWalletDisplay();
+                        if (typeof updateStakingAndBalanceUI === 'function') {
+                            await updateStakingAndBalanceUI();
+                        }
+                        
+                        // Если нужно всё же сбросить всё — раскомментируй:
+                        // location.reload(); 
+                    } catch (err) {
+                        console.error("Disconnect error:", err);
+                    }
+                };
+            }
         } else {
+            // Если не подключен — показываем стандартную кнопку входа
             container.innerHTML = `
                 <button id="connectWalletBtn" class="web3-button connect-fox-btn">
                     🦊 Connect Wallet
                 </button>`;
             
-            const btn = container.querySelector('.connect-fox-btn');
+            const btn = container.querySelector('#connectWalletBtn');
             if (btn) btn.onclick = connectWallet;
         }
     });
 }
+
 
 
 
