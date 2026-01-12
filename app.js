@@ -87,9 +87,7 @@ const POOLS_CONFIG = {
     4: { name: "Legacy", apr_rate: 0 }
 };
 
-// 1. Константы и IDL (Синхронизировано с Anchor ZiECm...)
-const STAKING_PROGRAM_ID = new solanaWeb3.PublicKey('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-const AFOX_POOL_STATE_PUBKEY = new solanaWeb3.PublicKey('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
+
 
 
 
