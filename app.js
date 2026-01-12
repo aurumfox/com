@@ -1134,6 +1134,57 @@ async function fetchUserBalances() {
     }
 }
 
+/**
+ * Подключается к выбранному расширению (Phantom, Solflare или Backpack)
+ */
+async function connectToProvider(walletType) {
+    let provider = null;
+
+    try {
+        if (walletType === 'phantom') {
+            provider = window.solana;
+        } else if (walletType === 'solflare') {
+            provider = window.solflare;
+        } else if (walletType === 'backpack') {
+            provider = window.backpack;
+        }
+
+        if (!provider) {
+            showNotification(`${walletType.toUpperCase()} not found! Please install the extension.`, "error");
+            window.open(walletType === 'phantom' ? 'https://phantom.app/' : 'https://solflare.com/', '_blank');
+            return;
+        }
+
+        actionAudit("Connect", "process", `Connecting to ${walletType}...`);
+
+        // Запрос на подключение
+        const resp = await provider.connect();
+        
+        // Сохраняем данные в глобальный стейт
+        appState.provider = provider;
+        appState.walletPublicKey = resp.publicKey;
+        
+        // Создаем соединение с RPC, если его еще нет
+        if (!appState.connection) {
+            appState.connection = await getRobustConnection();
+        }
+
+        // Закрываем модалку
+        const modal = document.getElementById('walletModal');
+        if (modal) modal.style.display = 'none';
+
+        // Обновляем всё
+        updateWalletDisplay();
+        await updateStakingAndBalanceUI();
+        
+        showNotification(`Connected to ${walletType}!`, "success");
+        spawnEmoji(document.body, "🦊");
+
+    } catch (err) {
+        console.error("Connection error:", err);
+        showNotification("User rejected connection", "error");
+    }
+}
 
 
 
