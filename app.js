@@ -1020,31 +1020,6 @@ function updateWalletDisplay() {
 
 
 
-function setupModernUI() {
-    const actionsMap = [
-        // ID кнопки | Название | Сообщение успеха | Иконка | Функция
-        { id: 'stake-afox-btn', name: 'Locking', msg: 'Yield started!', icon: '💰', fn: handleStakeAfox },
-        { id: 'unstake-afox-btn', name: 'Unlocking', msg: 'Assets returned!', icon: '🕊️', fn: handleUnstakeAfox },
-        { id: 'claim-rewards-btn', name: 'Collecting', msg: 'Profit secured!', icon: '💎', fn: handleClaimRewards },
-        { id: 'lend-btn', name: 'Lending', msg: 'Banker mode ON!', icon: '🏦', fn: handleLend },
-        { id: 'borrow-btn', name: 'Borrowing', msg: 'Credit active!', icon: '💵', fn: handleBorrow },
-        { id: 'repay-btn', name: 'Repaying', msg: 'Debt cleared!', icon: '⭐', fn: handleRepay },
-        { id: 'vote-for-btn', name: 'Voting', msg: 'Vote counted!', icon: '✅', fn: () => handleVote('FOR') },
-        { id: 'vote-against-btn', name: 'Voting', msg: 'Vote counted!', icon: '🚫', fn: () => handleVote('AGAINST') }
-    ];
-
-    actionsMap.forEach(item => {
-        const el = document.getElementById(item.id);
-        if (el) {
-            el.onclick = (e) => {
-                e.preventDefault();
-                smartAction(el, item.name, item.msg, item.icon, item.fn);
-            };
-        }
-    });
-
-    // Специальная обработка для Кошелька (так как он меняет UI)
-    updateWalletDisplay();
 
 
 /**
