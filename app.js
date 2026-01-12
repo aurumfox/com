@@ -1080,31 +1080,6 @@ async function connectWallet() {
     }
 }
 
-// 2. Исправленная инициализация
-function initializeAurumFoxApp() {
-    console.log("🚀 Запуск Aurum Fox Core...");
-
-    if (!setupAddresses()) return;
-    if (!window.Buffer) window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
-
-    cacheUIElements();
-    setupModernUI();
-
-    // СЛУШАТЕЛЬ: Если пользователь уже залогинен в Phantom, 
-    // или вернулся из приложения — подхватываем его сразу
-    if (window.solana) {
-        window.solana.on('connect', () => {
-            appState.walletPublicKey = window.solana.publicKey;
-            updateWalletDisplay();
-            updateStakingAndBalanceUI();
-        });
-
-        // Если уже подключен (например, после рефреша)
-        if (window.solana.isConnected) {
-            connectWallet(); 
-        }
-    }
-}
 
 
 
