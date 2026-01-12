@@ -1048,6 +1048,10 @@ function setupModernUI() {
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
         
+        // DAO Кнопки (Добавлено)
+        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening Modal...', icon: '✍️', fn: async () => { document.getElementById('createProposalModal').style.display = 'flex'; } },
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 📜', icon: '🚀', fn: handleCreateProposal },
+
         // DAO & Voting
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
@@ -1070,6 +1074,7 @@ function setupModernUI() {
         }
     });
 }
+
 
 
 
