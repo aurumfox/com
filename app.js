@@ -753,6 +753,70 @@ async function executeSmartActionWithFullEffects(btn, config) {
     }
 }
 
+
+
+function showNotification(msg, type = 'info') {
+    // Вывод в консоль для отладки
+    console.log(`[${type.toUpperCase()}] ${msg}`);
+
+    // Находим или создаем контейнер для уведомлений
+    let container = document.getElementById('notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;';
+        document.body.appendChild(container);
+    }
+
+    // Создаем само уведомление
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    // Стилизация в зависимости от типа (success, error, info)
+    const colors = {
+        success: '#00ffaa',
+        error: '#ff4d4d',
+        info: '#00ccff'
+    };
+
+    toast.style.cssText = `
+        background: rgba(20, 20, 20, 0.95);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        border-left: 4px solid ${colors[type] || colors.info};
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        min-width: 250px;
+        animation: slideIn 0.3s ease forwards;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    `;
+
+    toast.innerHTML = `
+        <span>${msg}</span>
+        <button onclick="this.parentElement.remove()" style="background:none; border:none; color:white; cursor:pointer; margin-left:10px; opacity:0.5;">✕</button>
+    `;
+
+    container.appendChild(toast);
+
+    // Удаляем уведомление через 5 секунд
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+// Добавим анимации в документ
+const style = document.createElement('style');
+style.innerHTML = `
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+`;
+document.head.appendChild(style);
+
 /**
  * Улучшенная функция "Взрыва" (Spawn Prize)
  * Разлетается по кругу с разной скоростью
