@@ -755,40 +755,47 @@ function cacheUIElements() {
 }
 
 
-async function executeWeb3Action(btn, logicFn, config) {
-    if (btn.classList.contains('loading')) return;
+// ЕДИНЫЙ ОБРАБОТЧИК ДЛЯ ВСЕХ КНОПОК
+async function runContractAction(btn, config) {
+    if (!btn || btn.classList.contains('loading')) return;
 
-    // Визуальный старт
+    // 1. Проверка кошелька перед действием
+    if (!appState.walletPublicKey && config.id !== 'connectWalletBtn') {
+        showNotification("Please connect wallet first! 🦊", "error");
+        return;
+    }
+
     const originalHTML = btn.innerHTML;
     btn.classList.add('loading');
-    btn.innerHTML = `<span class="spinner">⏳</span> ${config.name}...`;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
 
     try {
-        // ВЫЗОВ ТВОЕГО RUST КОНТРАКТА
-        await logicFn(); 
+        // 2. ВЫЗОВ ЛОГИКИ (Твои функции handleStake, handleUnstake и т.д.)
+        await config.fn(); 
 
-        // Визуальный успех
-        btn.classList.remove('loading');
-        btn.classList.add('success-glow'); // Добавь этот класс в CSS для свечения
-        btn.innerHTML = `✅ Done!`;
+        // 3. УСПЕХ
+        btn.innerHTML = `✅ ${config.msg}`;
+        btn.classList.add('success-glow');
+        showNotification(`Success: ${config.msg}`, "success");
         
-        UI_EFFECTS.spawnPrize(btn, config.icon);
-        showNotification(`${config.name} Successful!`, "success");
-
-        setTimeout(() => {
-            btn.classList.remove('success-glow');
-            btn.innerHTML = originalHTML;
-        }, 3000);
+        // Обновляем балансы после успеха
+        setTimeout(() => updateStakingAndBalanceUI(), 500);
 
     } catch (err) {
-        // Визуальная ошибка
-        btn.classList.remove('loading');
+        console.error(`Ошибка в ${config.name}:`, err);
         btn.innerHTML = `❌ Error`;
-        showNotification(`Failed: ${err.message}`, "error");
-        
-        setTimeout(() => btn.innerHTML = originalHTML, 3000);
+        showNotification(err.message || "Transaction rejected", "error");
+    } finally {
+        // Сброс состояния через 3 секунды
+        setTimeout(() => {
+            btn.classList.remove('loading', 'success-glow');
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }, 3000);
     }
 }
+
 
 
 // Функция для создания "Взрыва" эмодзи (Подарок)
