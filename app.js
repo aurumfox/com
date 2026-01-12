@@ -298,32 +298,30 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
-    
-function closeAllPopups() {
-    const modals = [
-        uiElements.createProposalModal 
-    ].filter(Boolean);
+   function closeAllPopups() {
+    // Пробуем взять из uiElements или напрямую из DOM по верному ID
+    const modal = uiElements.createProposalModal || document.getElementById('createProposalModal');
 
-    let wasModalOpen = false;
-
-    modals.forEach(modal => {
-        if (modal && modal.style.display === 'flex') {
-            modal.style.display = 'none';
-            modal.classList.remove('is-open'); 
-            wasModalOpen = true;
-        }
-    });
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('is-open');
+        console.log("✅ Модалка закрыта");
+    } else {
+        console.error("❌ Ошибка: Элемент createProposalModal не найден в DOM");
+    }
     
+    // Закрытие меню (если оно есть)
     const menuToggle = document.getElementById('menuToggle');
     if (menuToggle && menuToggle.classList.contains('open')) {
-        toggleMenuState(true);
-        wasModalOpen = true; 
+        if (typeof toggleMenuState === 'function') toggleMenuState(true);
     }
 
-    if (wasModalOpen) {
-        toggleScrollLock(false); 
+    if (typeof toggleScrollLock === 'function') {
+        toggleScrollLock(false);
     }
 }
+ 
+
 
 
 
