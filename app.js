@@ -517,57 +517,6 @@ async function getPoolPDA() {
 }
 
 
-async function handleStakeAfox() {
-    const btn = uiElements.stakeAfoxBtn;
-    const amountRaw = uiElements.stakeAmountInput.value;
-    
-    // Преобразование в BigInt (с учетом 6 знаков AFOX)
-    const amountBI = parseAmountToBigInt(amountRaw, AFOX_DECIMALS); 
-    const amountBN = new anchor.BN(amountBI.toString());
-
-    await smartAction(btn, "Staking", "Success!", "💰", async () => {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userPDA = await getUserStakingPDA(appState.walletPublicKey);
-        
-        // Поиск ATA пользователя (откуда списываем токены)
-        const userAta = await solanaWeb3.PublicKey.findProgramAddress(
-            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        ).then(res => res[0]);
-
-        // ПРОВЕРКА: Если аккаунт стейкинга не создан, Anchor сделает init через preInstructions автоматически,
-        // но в твоем контракте это отдельная функция initialize_user_stake.
-        const accountInfo = await appState.connection.getAccountInfo(userPDA);
-        let preInstructions = [];
-        if (!accountInfo) {
-            preInstructions.push(
-                await program.methods.initializeUserStake(0).accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    userStaking: userPDA,
-                    owner: appState.walletPublicKey,
-                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                    systemProgram: SYSTEM_PROGRAM_ID,
-                    clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                }).instruction()
-            );
-        }
-
-        return await program.methods.deposit(amountBN)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userPDA,
-                owner: appState.walletPublicKey,
-                userSourceAta: userAta,
-                vault: AFOX_POOL_VAULT_PUBKEY, // Убедись, что это адрес из InitializePool
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
-            })
-            .preInstructions(preInstructions)
-            .rpc();
-    });
-}
-
 
 
 async function handleUnstakeAfox() {
