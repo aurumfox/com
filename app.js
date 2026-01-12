@@ -1015,28 +1015,6 @@ async function fetchUserBalances() {
     }
 }
 
-function updateWalletDisplay() {
-    uiElements.walletControls.forEach(container => {
-        const isConnected = window.solana && window.solana.isConnected;
-        
-        if (isConnected) {
-            const pubKey = window.solana.publicKey.toString();
-            container.innerHTML = `
-                <div class="wallet-badge">
-                    <span>${pubKey.slice(0, 4)}...${pubKey.slice(-4)}</span>
-                    <button class="small-btn" onclick="disconnectWallet()">🚪</button>
-                </div>`;
-        } else {
-            container.innerHTML = `
-                <button class="web3-button connect-fox-btn">
-                    🦊 Connect Wallet
-                </button>`;
-            
-            container.querySelector('.connect-fox-btn').onclick = () => 
-                smartAction(null, "Wallet", "Connected!", "🔑", connectWallet);
-        }
-    });
-}
 
 
 // ============================================================
@@ -1082,19 +1060,7 @@ async function connectWallet() {
     }
 }
 
-async function disconnectWallet() {
-    try {
-        if (window.solana) {
-            await window.solana.disconnect();
-            appState.walletPublicKey = null;
-            appState.provider = null;
-            updateWalletDisplay();
-            showNotification("Disconnected", "info");
-        }
-    } catch (err) {
-        console.error("Error disconnecting:", err);
-    }
-}
+
 
 function updateWalletDisplay() {
     // Находим все контейнеры для управления кошельком
