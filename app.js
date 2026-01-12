@@ -378,51 +378,87 @@ async function updateStakingAndBalanceUI() {
  * Updates the staking UI elements with current user data (REAL).
  */
 async function updateStakingUI() {
-    // 1. Проверка кошелька
     if (!appState.walletPublicKey) {
-        const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
-        btns.forEach(btn => { if (btn) btn.disabled = true; });
+        const elements = [uiElements.userAfoxBalance, uiElements.userStakedAmount, uiElements.userRewardsAmount];
+const liveAprValue = await getLiveAPR();
+if (uiElements.stakingApr) {
+    uiElements.stakingApr.textContent = liveAprValue;
+}
+
+        elements.forEach(el => { if (el) el.textContent = '0 AFOX'; });
+        [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn].filter(Boolean).forEach(btn => btn.disabled = true);
+        if (uiElements.stakingApr) uiElements.stakingApr.textContent = '—';
+        if (uiElements.lockupPeriod) uiElements.lockupPeriod.textContent = '—'; 
         return;
     }
 
-    // 2. Получаем данные
     await fetchUserStakingData(); 
 
     const data = appState.userStakingData;
-    const afoxBalance = appState.userBalances.AFOX;
+    const afoxBalanceBigInt = appState.userBalances.AFOX;
+    const stakedAmountBigInt = data.stakedAmount;
+    const rewardsAmountBigInt = data.rewards;
+    const lockupEndTime = data.lockupEndTime;
+    const poolIndex = data.poolIndex; 
+    const lendingAmountBigInt = data.lending;
 
-    // 3. Обновляем текстовые поля
-    if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = `${formatBigInt(afoxBalance, AFOX_DECIMALS)} AFOX`;
-    if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = `${formatBigInt(data.stakedAmount, AFOX_DECIMALS)} AFOX`;
-    if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = `${formatBigInt(data.rewards, AFOX_DECIMALS)} AFOX`;
-
-    // 4. УПРАВЛЕНИЕ КНОПКАМИ (Оживляем их)
+    if (uiElements.userAfoxBalance) uiElements.userAfoxBalance.textContent = `${formatBigInt(afoxBalanceBigInt, AFOX_DECIMALS)} AFOX`;
+    if (uiElements.userStakedAmount) uiElements.userStakedAmount.textContent = `${formatBigInt(stakedAmountBigInt, AFOX_DECIMALS)} AFOX`;
+    if (uiElements.userRewardsAmount) uiElements.userRewardsAmount.textContent = `${formatBigInt(rewardsAmountBigInt, AFOX_DECIMALS)} AFOX`;
     
-    // Кнопка Stake — всегда активна, если кошелек подключен
-    if (uiElements.stakeAfoxBtn) {
-        uiElements.stakeAfoxBtn.disabled = false;
-    }
+    const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
+    if (uiElements.stakingApr) uiElements.stakingApr.textContent = `${currentPool.apr_rate / 100}% APR (${currentPool.name})`;
+    
+    // 2. Logic checks
+    const now = Date.now() / 1000;
+    const isLockedByTime = lockupEndTime > now;
+    const hasStakedAmount = stakedAmountBigInt > BigInt(0);
+    const hasRewards = rewardsAmountBigInt > BigInt(0);
+    const isLockedByLoan = lendingAmountBigInt > BigInt(0);
 
-    // Кнопка Claim — активна только если награды > 0
-    if (uiElements.claimRewardsBtn) {
-        uiElements.claimRewardsBtn.disabled = (data.rewards <= 0n);
-    }
+    // 3. Button Management
+    if (uiElements.stakeAfoxBtn) uiElements.stakeAfoxBtn.disabled = false;
+    if (uiElements.claimRewardsBtn) uiElements.claimRewardsBtn.disabled = !hasRewards;
 
-    // Кнопка Unstake — активна только если стейк > 0 и не в лендинге
     if (uiElements.unstakeAfoxBtn) {
-        const isLockedByLoan = data.lending > 0n;
-        const hasStake = data.stakedAmount > 0n;
+        uiElements.unstakeAfoxBtn.disabled = true;
+        uiElements.unstakeAfoxBtn.textContent = 'Unstake';
         
-        uiElements.unstakeAfoxBtn.disabled = (!hasStake || isLockedByLoan);
-        
-        if (isLockedByLoan) {
-            uiElements.unstakeAfoxBtn.textContent = "Locked by Loan";
+        if (!hasStakedAmount) {
+            uiElements.unstakeAfoxBtn.textContent = 'No Stake';
+        } else if (isLockedByLoan) {
+             uiElements.unstakeAfoxBtn.disabled = true;
+             uiElements.unstakeAfoxBtn.textContent = `❌ Locked by Loan (${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
+        } else if (isLockedByTime) {
+            const remainingSeconds = lockupEndTime - now;
+            const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
+            uiElements.unstakeAfoxBtn.disabled = false; 
+            uiElements.unstakeAfoxBtn.textContent = `Unstake (${remainingDays} days, with penalty)`;
         } else {
-            uiElements.unstakeAfoxBtn.textContent = "Unstake";
+            uiElements.unstakeAfoxBtn.disabled = false;
+            uiElements.unstakeAfoxBtn.textContent = 'Unstake (No penalty)';
+        }
+    }
+    
+    // 4. Update Lockup Period
+    const lockupDisplay = uiElements.lockupPeriod;
+
+    if (lockupDisplay) {
+        let loanInfo = '';
+        if (isLockedByLoan) {
+             loanInfo = ` (Collateral: ${formatBigInt(lendingAmountBigInt, AFOX_DECIMALS)} AFOX)`;
+        }
+        
+        if (isLockedByTime) {
+            const currentPool = POOLS_CONFIG[poolIndex] || POOLS_CONFIG[4];
+            const remainingSeconds = lockupEndTime - now;
+            const remainingDays = (remainingSeconds / SECONDS_PER_DAY).toFixed(1);
+            lockupDisplay.textContent = `${currentPool.name}: ${remainingDays} days remaining${loanInfo}`;
+        } else {
+            lockupDisplay.textContent = `${currentPool.name}: Flexible${loanInfo}`;
         }
     }
 }
-
 
 
 
@@ -433,35 +469,23 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // Используем fetchNullable вместо fetch, чтобы код не ломался, если аккаунта нет
-        const stakingData = await program.account.userStakingAccount.fetchNullable(userPDA);
+        // ВАЖНО: Для zero_copy аккаунтов используем fetchNullable или fetch
+        // Если выдает "Layout mismatch", значит JS не видит падинги [u8; 104]
+        const stakingData = await program.account.userStakingAccount.fetch(userPDA);
 
-        if (stakingData) {
-            appState.userStakingData = {
-                stakedAmount: BigInt(stakingData.stakedAmount.toString()),
-                rewards: BigInt(stakingData.rewardsToClaim.toString()),
-                lockupEndTime: stakingData.lockupEndTime.toNumber(),
-                poolIndex: stakingData.poolIndex,
-                lending: BigInt(stakingData.lending.toString())
-            };
-            console.log("📊 Данные стейкинга получены:", appState.userStakingData);
-        } else {
-            // Если аккаунт не найден (новый пользователь), ставим нули
-            appState.userStakingData = {
-                stakedAmount: 0n,
-                rewards: 0n,
-                lockupEndTime: 0,
-                poolIndex: 0,
-                lending: 0n
-            };
-            console.log("ℹ️ Новый пользователь: аккаунт стейкинга еще не создан.");
-        }
+        appState.userStakingData = {
+            stakedAmount: BigInt(stakingData.stakedAmount.toString()),
+            rewards: BigInt(stakingData.rewardsToClaim.toString()),
+            lockupEndTime: stakingData.lockupEndTime.toNumber(),
+            poolIndex: stakingData.poolIndex,
+            lending: BigInt(stakingData.lending.toString())
+        };
+        
+        console.log("📊 Данные стейкинга обновлены:", appState.userStakingData);
     } catch (e) {
-        console.error("⚠️ Ошибка при чтении данных:", e.message);
-        // Не даем приложению упасть
+        console.error("⚠️ Ошибка парсинга zero_copy данных:", e.message);
     }
 }
-
 
 
 
@@ -834,61 +858,23 @@ function spawnEmoji(el, emoji) {
 
 
 
-// Настройка открытия/закрытия модалки
+// ==========================================
+// БЛОК 3: DAO (ГОЛОСОВАНИЕ)
+// ==============================
 function setupDAO() {
-    const openBtn = document.getElementById('createProposalBtn');
-    const modal = document.getElementById('createProposalModal');
-    const closeBtn = document.getElementById('closeProposalModal') || document.getElementById('close-dao-modal');
-
-    if (openBtn && modal) {
-        openBtn.onclick = (e) => {
-            e.preventDefault();
-            modal.style.display = 'flex';
-            modal.classList.add('is-open');
-            console.log("📂 Модалка DAO открыта");
-        };
-    }
-
-    if (closeBtn && modal) {
-        closeBtn.onclick = () => {
-            modal.style.display = 'none';
-            modal.classList.remove('is-open');
-        };
+    if (uiElements.createProposalBtn && uiElements.createProposalModal) {
+        uiElements.createProposalBtn.addEventListener('click', () => {
+            uiElements.createProposalModal.style.display = 'flex';
+        });
+        
+        const closeBtn = document.getElementById('closeProposalModal') || document.getElementById('close-dao-modal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                uiElements.createProposalModal.style.display = 'none';
+            });
+        }
     }
 }
-
-// Обработка создания пропозиции
-async function handleCreateProposal(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    
-    // Получаем данные из формы
-    const title = document.getElementById('proposalTitle')?.value;
-    const desc = document.getElementById('proposalDescription')?.value;
-
-    if (!title || !desc) {
-        showNotification("Please fill in all fields", "error");
-        return;
-    }
-
-    actionAudit("DAO Proposal", "process", "Submitting to blockchain...");
-    
-    try {
-        // Здесь будет твой вызов в смарт-контракт Solana (RPC)
-        // Имитация задержки транзакции:
-        await new Promise(r => setTimeout(r, 2000)); 
-        
-        actionAudit("DAO Proposal", "success", "Proposal created successfully!");
-        closeAllPopups();
-        
-        // Очистка формы
-        if (uiElements.createProposalForm) uiElements.createProposalForm.reset();
-        
-    } catch (err) {
-        actionAudit("DAO Proposal", "error", err.message);
-        throw err; // Пробрасываем для executeSmartAction
-    }
-}
-
 
 
 // DAO VOTING (FOR / AGAINST)
@@ -928,7 +914,19 @@ async function handleLoanAction(type) {
 }
 
 
-
+// CREATE PROPOSAL
+async function handleCreateProposal(e) {
+    e.preventDefault();
+    actionAudit("DAO Proposal", "process", "Uploading data...");
+    try {
+        // Симуляция создания
+        await new Promise(r => setTimeout(r, 1500));
+        actionAudit("DAO Proposal", "success", "Proposal is now active");
+        closeAllPopups();
+    } catch (e) {
+        actionAudit("DAO Proposal", "error", "Access denied");
+    }
+}
 
 
 // ============================================================
@@ -1017,93 +1015,29 @@ async function fetchUserBalances() {
     }
 }
 
-
-// 1. Улучшенная функция подключения с комментариями
-async function connectWallet() {
-    try {
-        if (!window.solana) {
-            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                const url = encodeURIComponent(window.location.href);
-                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
-                return;
-            }
-            showNotification("Phantom wallet not found!", "error");
-            return;
-        }
-
-        // Лог в консоль и уведомление о начале
-        actionAudit("Wallet", "process", "Requesting connection...");
-
-        const resp = await window.solana.connect();
-        
-        appState.walletPublicKey = resp.publicKey;
-        appState.provider = window.solana;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        
-        // УВЕДОМЛЕНИЕ ОБ УСПЕХЕ
-        showNotification("Wallet Connected! 🦊", "success");
-        actionAudit("Wallet", "success", resp.publicKey.toString().slice(0, 8) + "...");
-
-        updateWalletDisplay(); 
-        await updateStakingAndBalanceUI();
-
-    } catch (err) {
-        console.error("Ошибка подключения:", err);
-        showNotification("Connection failed", "error");
-        actionAudit("Wallet", "error", err.message);
-    }
-}
-
-// 2. Функция отображения с уведомлением о выходе
 function updateWalletDisplay() {
-    const containers = document.querySelectorAll('.wallet-control, #wallet-header-area');
-    const isConnected = (window.solana && window.solana.isConnected) || !!appState.walletPublicKey;
-    const pubKey = appState.walletPublicKey || (window.solana && window.solana.publicKey);
-
-    containers.forEach(container => {
-        if (isConnected && pubKey) {
-            const base58 = pubKey.toString();
+    uiElements.walletControls.forEach(container => {
+        const isConnected = window.solana && window.solana.isConnected;
+        
+        if (isConnected) {
+            const pubKey = window.solana.publicKey.toString();
             container.innerHTML = `
-                <div class="wallet-badge-modern">
-                    <span class="wallet-address">🦊 ${base58.slice(0, 4)}...${base58.slice(-4)}</span>
-                    <button id="disconnectBtn" class="exit-btn" title="Disconnect">✕</button>
+                <div class="wallet-badge">
+                    <span>${pubKey.slice(0, 4)}...${pubKey.slice(-4)}</span>
+                    <button class="small-btn" onclick="disconnectWallet()">🚪</button>
                 </div>`;
-            
-            const discBtn = container.querySelector('#disconnectBtn');
-            if (discBtn) {
-                discBtn.onclick = async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    try {
-                        if (window.solana) await window.solana.disconnect();
-                        
-                        appState.walletPublicKey = null;
-                        appState.provider = null;
-                        
-                        // УВЕДОМЛЕНИЕ О ВЫХОДЕ
-                        showNotification("Wallet Disconnected! 🔌", "info");
-                        actionAudit("Wallet", "info", "Session ended by user");
-                        
-                        updateWalletDisplay();
-                        if (typeof updateStakingAndBalanceUI === 'function') {
-                            await updateStakingAndBalanceUI();
-                        }
-                    } catch (err) {
-                        console.error("Disconnect error:", err);
-                    }
-                };
-            }
         } else {
             container.innerHTML = `
-                <button id="connectWalletBtn" class="web3-button connect-fox-btn">
+                <button class="web3-button connect-fox-btn">
                     🦊 Connect Wallet
                 </button>`;
             
-            const btn = container.querySelector('#connectWalletBtn');
-            if (btn) btn.onclick = connectWallet;
+            container.querySelector('.connect-fox-btn').onclick = () => 
+                smartAction(null, "Wallet", "Connected!", "🔑", connectWallet);
         }
     });
 }
+
 
 
 
@@ -1111,116 +1045,103 @@ function updateWalletDisplay() {
 
 
 function setupModernUI() {
-    // 1. Инициализируем DAO (Открытие модалки)
-    // Эта кнопка НЕ должна быть в списке actions, иначе она будет "загружаться" вместо открытия
-    const openDaoBtn = document.getElementById('createProposalBtn');
-    if (openDaoBtn) {
-        openDaoBtn.onclick = (e) => {
-            e.preventDefault();
-            const modal = document.getElementById('createProposalModal');
-            if (modal) {
-                modal.style.display = 'flex';
-                modal.classList.add('is-open');
-                console.log("✅ Modal Opened");
-            }
-        };
-    }
-
-    // 2. Закрытие модалок (крестик)
-    const closeDaoBtn = document.getElementById('closeProposalModal') || document.getElementById('close-dao-modal');
-    if (closeDaoBtn) {
-        closeDaoBtn.onclick = () => closeAllPopups();
-    }
-
-    // 3. Список всех активных Web3 действий (Транзакции)
     const actions = [
-        // Кошелек
         { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
-        
-        // Стейкинг
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
         
-        // DAO (Действия)
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: (e) => handleCreateProposal(e) },
-        { id: 'vote-for-btn', name: 'Voting', msg: 'Voted FOR! ✅', icon: '⚡', fn: () => handleVote('FOR') },
-        { id: 'vote-against-btn', name: 'Voting', msg: 'Voted AGAINST! 🚫', icon: '🛡️', fn: () => handleVote('AGAINST') },
-        
-        // Lending (Лендинг)
-        { id: 'lend-btn', name: 'Lending', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
-        { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Back! 📥', icon: '💰', fn: () => handleLendingAction('Withdraw') },
-        
-        // Loans (Займы)
+        // Открытие модалки DAO
+        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
+            const modal = document.getElementById('createProposalModal');
+            if(modal) modal.style.display = 'flex'; 
+        }},
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
+        { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
+        { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
+        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
+        { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
         { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // Применяем магию эффектов Aurum Fox ко всем кнопкам из списка
+    // Привязка действий к кнопкам
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            // Очищаем старые события, чтобы не было дублей
-            el.onclick = null; 
-            
-            el.onclick = async (e) => {
-                if (e && e.preventDefault) e.preventDefault();
-                
-                // Запускаем красивую анимацию и логику транзакции
-                await executeSmartActionWithFullEffects(el, {
-                    name: item.name,
-                    msg: item.msg,
-                    icon: item.icon,
-                    fn: async () => {
-                        // Вызываем функцию. Если это форма, передаем event
-                        return await item.fn(e);
-                    }
-                });
+            const cleanBtn = el.cloneNode(true);
+            el.parentNode.replaceChild(cleanBtn, el);
+            cleanBtn.onclick = (e) => {
+                if (e) e.preventDefault();
+                executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 
-    // 4. Инициализация отображения кошелька (чтобы кнопка Disconnect появилась сразу)
-    updateWalletDisplay();
-}
-
-
-
-
-
-
-
-async function initializeAurumFoxApp() {
-    console.log("🚀 Инициализация Aurum Fox Core...");
-    if (!setupAddresses()) return;
+    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
+    const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
+    const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
     
-    // Кэшируем элементы
-    cacheUIElements();
-    
-    // Настраиваем кнопки
-    setupModernUI();
 
-    // Проверяем кошелек
-    if (window.solana) {
-        try {
-            // Попытка тихого входа
-            const resp = await window.solana.connect({ onlyIfTrusted: true });
-            if (resp) {
-                appState.walletPublicKey = resp.publicKey;
-                appState.provider = window.solana;
-                appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-                updateWalletDisplay();
-                await updateStakingAndBalanceUI();
+    if (closeBtn && modal) {
+        closeBtn.onclick = (e) => {
+            e.preventDefault();
+            modal.style.display = 'none';
+            console.log("Модалка DAO закрыта через крестик");
+        };
+
+        // Дополнительно: закрытие при клике ВНЕ окна
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
             }
-        } catch (e) {
-            updateWalletDisplay(); // Просто показываем кнопку "Connect"
-        }
-    } else {
-        updateWalletDisplay();
+        });
     }
 }
 
-// ТОТ САМЫЙ ВЫЗОВ, КОТОРЫЙ ТЫ ПОТЕРЯЛ:
-window.addEventListener('load', initializeAurumFoxApp);
 
 
+function initializeAurumFoxApp() {
+    console.log("🚀 Инициализация Aurum Fox Core...");
+
+    // 1. Инициализация критических данных
+    if (!setupAddresses()) return;
+    if (!window.Buffer) window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+
+    // 2. Сбор всех элементов (утилита для кэширования)
+    cacheUIElements();
+
+    // 3. Установка СОВРЕМЕННОЙ логики кнопок (убирает все дубли)
+    setupModernUI();
+
+    // 4. Проверка активной сессии
+    if (window.solana && window.solana.isConnected) {
+        connectWallet(); 
+    }
+}
+
+// ЗАПУСК ПРИЛОЖЕНИЯ ПРИ ЗАГРУЗКЕ
+window.addEventListener('DOMContentLoaded', () => {
+    initializeAurumFoxApp();
+});
+
+// Добавляем функцию подключения кошелька (она вызывается в setupModernUI)
+async function connectWallet() {
+    try {
+        if (!window.solana) {
+            showNotification("Phantom wallet not found!", "error");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+        const resp = await window.solana.connect();
+        appState.walletPublicKey = resp.publicKey;
+        appState.provider = window.solana;
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        
+        console.log("🦊 Кошелек подключен:", resp.publicKey.toString());
+        await updateStakingAndBalanceUI();
+    } catch (err) {
+        console.error("Ошибка подключения:", err);
+        throw err;
+    }
+                            }
