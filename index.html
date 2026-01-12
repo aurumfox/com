@@ -309,50 +309,74 @@
 </section>
 
 
+<section id="dao-section" class="section web3-section-alt">
+    <div class="container">
+        <h2 class="web3-heading">🏛️ Decentralized Autonomous Organization (DAO)</h2>
+        <p class="web3-intro">
+            Participate in Aurum Fox governance! Create proposals, vote, and shape the future of the project. 
+            <strong style="color: #f39c12;">Requires connected wallet.</strong>
+        </p>
 
-        <section id="dao-section" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🏛️ Decentralized Autonomous Organization (DAO)</h2>
-                <p class="web3-intro">Participate in Aurum Fox governance! Create proposals, vote, and shape the future of the project. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
+        <div class="dao-actions" style="margin-bottom: 30px;">
+            <button id="createProposalBtn" class="web3-btn" aria-label="Create new DAO proposal">
+                ➕ Create Proposal
+            </button>
+        </div>
 
-                <div class="dao-actions">
-                    <button id="createProposalBtn" class="web3-btn" aria-label="Create new DAO proposal">Create Proposal</button>
+        <h3 class="web3-subheading">Active Proposals</h3>
+        <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
+            
+            <div class="dao-proposal-item" data-proposal-id="1">
+                <h4>Proposal #1: Ecosystem Expansion</h4>
+                <p>Description: Allocation of rewards for liquidity providers on Raydium.</p>
+                <div class="dao-stats" style="margin: 10px 0; font-size: 0.9em; color: #ddd;">
+                    <p>Creator: <span class="dao-creator">0xAFox...777</span></p>
+                    <p>Votes For: <span class="dao-votes-for" style="color: #2ecc71;">0 AFOX</span></p>
+                    <p>Votes Against: <span class="dao-votes-against" style="color: #e74c3c;">0 AFOX</span></p>
                 </div>
-
-                <h3 class="web3-subheading">Active Proposals</h3>
-                <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
-                    <div class="dao-proposal-item web3-placeholder" data-proposal-id="1">
-                        <h4>Loading Proposal #1: Example Title</h4>
-                        <p>Description: Real-time DAO proposals are loading here.</p>
-                        <p>Creator: <span class="dao-creator">0x123...abc</span></p>
-                        <p>Votes For: <span class="dao-votes-for">100 AFOX</span> | Votes Against: <span class="dao-votes-against">50 AFOX</span></p>
-                        <button class="web3-btn dao-vote-btn" data-vote-type="for" aria-label="Vote FOR Proposal 1">Vote FOR</button>
-                        <button class="web3-btn dao-vote-btn" data-vote-type="against" aria-label="Vote AGAINST Proposal 1">Vote AGAINST</button>
-                    </div>
-                </div>
-
-                <h3 class="web3-subheading">Completed Proposals</h3>
-                <div id="completed-proposals-list" class="content-area web3-content-area dao-proposals-grid">
-                    <p class="web3-placeholder">No completed proposals yet.</p>
-                </div>
-
-                <div id="createProposalModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="newProposalModalTitle" style="display:none;">
-                    <div class="modal-content">
-                        <span class="close-button" id="closeProposalModal" aria-label="Close create proposal modal">&times;</span>
-                        <h3 id="newProposalModalTitle" class="web3-heading">Create New DAO Proposal</h3>
-                        <form id="newProposalForm" class="web3-form">
-                            <label for="proposalTitle">Proposal Title:</label>
-                            <input type="text" id="proposalTitle" name="proposalTitle" placeholder="Enter proposal title" required aria-required="true">
-
-                            <label for="proposalDescription">Proposal Description:</label>
-                            <textarea type="text" id="proposalDescription" name="proposalDescription" rows="6" placeholder="Describe your proposal in detail..." required aria-required="true"></textarea>
-
-                            <button type="submit" class="web3-btn" aria-label="Submit new proposal">Submit Proposal</button>
-                        </form>
-                    </div>
+                
+                <div class="dao-vote-actions" style="display: flex; gap: 10px;">
+                    <button id="vote-for-btn" class="web3-btn dao-vote-btn" data-vote-type="for" style="flex: 1;">
+                        Vote FOR
+                    </button>
+                    <button id="vote-against-btn" class="web3-btn dao-vote-btn" data-vote-type="against" style="flex: 1; background: #c0392b;">
+                        Vote AGAINST
+                    </button>
                 </div>
             </div>
-        </section>
+            </div>
+
+        <h3 class="web3-subheading" style="margin-top: 40px;">Completed Proposals</h3>
+        <div id="completed-proposals-list" class="content-area web3-content-area dao-proposals-grid">
+            <p class="web3-placeholder">No completed proposals yet.</p>
+        </div>
+
+        <div id="createProposalModal" class="modal" aria-modal="true" role="dialog" style="display:none;">
+            <div class="modal-content" style="background: #1a1a1a; border: 2px solid #f39c12; border-radius: 15px; padding: 25px;">
+                <span class="close-button" id="closeProposalModal" style="cursor: pointer; float: right; font-size: 28px; color: #fff;">&times;</span>
+                <h3 class="web3-heading">New DAO Proposal</h3>
+                
+                <form id="newProposalForm" class="web3-form" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <label for="proposalTitle" style="display: block; color: #f39c12; margin-bottom: 5px;">Title:</label>
+                        <input type="text" id="proposalTitle" name="proposalTitle" placeholder="Ex: Add AFOX/SOL Liquidity" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #000; color: #fff;">
+                    </div>
+
+                    <div>
+                        <label for="proposalDescription" style="display: block; color: #f39c12; margin-bottom: 5px;">Description:</label>
+                        <textarea id="proposalDescription" name="proposalDescription" rows="5" placeholder="Explain your idea..." required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #000; color: #fff;"></textarea>
+                    </div>
+
+                    <button type="submit" id="submitProposalBtn" class="web3-btn" style="width: 100%;">
+                        🚀 Submit to Blockchain
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+        
 
         <section id="staking-section" class="section web3-section">
     <div class="container">
@@ -435,13 +459,6 @@
     </div>
 </section>
 
-          <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
-    <div class="dao-proposal-item web3-placeholder" data-proposal-id="1">
-        <h4>Proposal #1: Community Growth</h4>
-        <button id="vote-for-btn" class="web3-btn dao-vote-btn">Vote FOR</button>
-        <button id="vote-against-btn" class="web3-btn dao-vote-btn">Vote AGAINST</button>
-    </div>
-</div>
 
         
         </main>
