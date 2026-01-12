@@ -508,6 +508,39 @@ async function getPoolPDA() {
     return pda;
 }
 
+async function handleStakeAfox() {
+    const btn = uiElements.stakeAfoxBtn;
+    const amountStr = uiElements.stakeAmountInput.value;
+    const poolIndex = parseInt(uiElements.poolSelector?.value || "0");
+
+    if (!amountStr || parseFloat(amountStr) <= 0) {
+        throw new Error("Enter a valid amount");
+    }
+
+    await smartAction(btn, "Staking", "Success!", "📈", async () => {
+        const amount = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const userPDA = await getUserStakingPDA(appState.walletPublicKey);
+        
+        // Логика ATA пользователя
+        const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        ).then(res => res[0]);
+
+        return await program.methods.deposit(new window.anchor.BN(amount.toString()))
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userPDA,
+                owner: appState.walletPublicKey,
+                userSourceAta: userAta,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+            }).rpc();
+    });
+}
 
 
 
