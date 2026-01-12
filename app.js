@@ -1046,6 +1046,65 @@ function updateWalletDisplay() {
 
 
 
+// 1. Улучшенная функция подключения
+async function connectWallet() {
+    try {
+        if (!window.solana) {
+            // Если мобилка — кидаем в приложение Phantom
+            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                const url = encodeURIComponent(window.location.href);
+                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
+                return;
+            }
+            showNotification("Phantom wallet not found!", "error");
+            return;
+        }
+
+        // Подключаемся
+        const resp = await window.solana.connect();
+        
+        // ВАЖНО: Записываем данные в глобальный стейт
+        appState.walletPublicKey = resp.publicKey;
+        appState.provider = window.solana;
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        
+        console.log("🦊 Кошелек успешно подключен:", resp.publicKey.toString());
+
+        // СРАЗУ обновляем интерфейс, чтобы адрес появился на экране
+        updateWalletDisplay(); 
+        await updateStakingAndBalanceUI();
+
+    } catch (err) {
+        console.error("Ошибка подключения:", err);
+        showNotification("Connection failed", "error");
+    }
+}
+
+// 2. Исправленная инициализация
+function initializeAurumFoxApp() {
+    console.log("🚀 Запуск Aurum Fox Core...");
+
+    if (!setupAddresses()) return;
+    if (!window.Buffer) window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+
+    cacheUIElements();
+    setupModernUI();
+
+    // СЛУШАТЕЛЬ: Если пользователь уже залогинен в Phantom, 
+    // или вернулся из приложения — подхватываем его сразу
+    if (window.solana) {
+        window.solana.on('connect', () => {
+            appState.walletPublicKey = window.solana.publicKey;
+            updateWalletDisplay();
+            updateStakingAndBalanceUI();
+        });
+
+        // Если уже подключен (например, после рефреша)
+        if (window.solana.isConnected) {
+            connectWallet(); 
+        }
+    }
+}
 
 
 
