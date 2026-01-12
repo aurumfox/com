@@ -1079,38 +1079,7 @@ async function connectWallet() {
     }
 }
 
-function updateWalletDisplay() {
-    // Ищем все места, где должна быть кнопка или адрес
-    const containers = document.querySelectorAll('.wallet-control, #wallet-area, .web3-container');
-    const isConnected = !!(appState.walletPublicKey && window.solana?.isConnected);
 
-    containers.forEach(container => {
-        if (isConnected) {
-            const pubKey = appState.walletPublicKey.toString();
-            const shortKey = `${pubKey.slice(0, 4)}...${pubKey.slice(-4)}`;
-            
-            container.innerHTML = `
-                <div class="wallet-badge-active">
-                    <span class="addr-text">${shortKey}</span>
-                    <button class="exit-btn" onclick="disconnectWallet()">✕</button>
-                </div>`;
-        } else {
-            container.innerHTML = `
-                <button class="web3-button connect-fox-btn" id="connectWalletBtn">
-                    🦊 Connect Wallet
-                </button>`;
-            
-            // Прямая привязка клика без клонирования (для стабильности мобилок)
-            const btn = container.querySelector('#connectWalletBtn');
-            if (btn) {
-                btn.onclick = (e) => {
-                    e.preventDefault();
-                    connectWallet();
-                };
-            }
-        }
-    });
-}
 
             
 
