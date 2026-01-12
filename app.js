@@ -645,19 +645,20 @@ async function handleUnstakeAfox() {
             ASSOCIATED_TOKEN_PROGRAM_ID
         ).then(res => res[0]);
 
-        return await program.methods.unstake(stakingData.stakedAmount, isEarly)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userPDA,
-                owner: appState.walletPublicKey,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardsAta: userAta,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY // ИСПРАВЛЕНО
-            }).rpc();
+        return await program.methods.unstake(new window.anchor.BN(stakingData.stakedAmount.toString()), isEarly)
+    .accounts({
+        poolState: AFOX_POOL_STATE_PUBKEY,
+        userStaking: userPDA,
+        owner: appState.walletPublicKey,
+        vault: AFOX_POOL_VAULT_PUBKEY,
+        daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+        adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+        userRewardsAta: userAta,
+        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+    }).rpc();
+
     });
 }
 
