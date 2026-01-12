@@ -1016,54 +1016,82 @@ async function fetchUserBalances() {
 }
 
 
+// 1. Улучшенная функция подключения с комментариями
+async function connectWallet() {
+    try {
+        if (!window.solana) {
+            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                const url = encodeURIComponent(window.location.href);
+                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
+                return;
+            }
+            showNotification("Phantom wallet not found!", "error");
+            return;
+        }
+
+        // Лог в консоль и уведомление о начале
+        actionAudit("Wallet", "process", "Requesting connection...");
+
+        const resp = await window.solana.connect();
+        
+        appState.walletPublicKey = resp.publicKey;
+        appState.provider = window.solana;
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        
+        // УВЕДОМЛЕНИЕ ОБ УСПЕХЕ
+        showNotification("Wallet Connected! 🦊", "success");
+        actionAudit("Wallet", "success", resp.publicKey.toString().slice(0, 8) + "...");
+
+        updateWalletDisplay(); 
+        await updateStakingAndBalanceUI();
+
+    } catch (err) {
+        console.error("Ошибка подключения:", err);
+        showNotification("Connection failed", "error");
+        actionAudit("Wallet", "error", err.message);
+    }
+}
+
+// 2. Функция отображения с уведомлением о выходе
 function updateWalletDisplay() {
-    // Ищем все контейнеры (в шапке и в мобильном меню)
     const containers = document.querySelectorAll('.wallet-control, #wallet-header-area');
-    
-    // Проверяем статус подключения
     const isConnected = (window.solana && window.solana.isConnected) || !!appState.walletPublicKey;
     const pubKey = appState.walletPublicKey || (window.solana && window.solana.publicKey);
 
     containers.forEach(container => {
         if (isConnected && pubKey) {
             const base58 = pubKey.toString();
-            // Рендерим блок с адресом и кнопкой отключения
             container.innerHTML = `
                 <div class="wallet-badge-modern">
                     <span class="wallet-address">🦊 ${base58.slice(0, 4)}...${base58.slice(-4)}</span>
                     <button id="disconnectBtn" class="exit-btn" title="Disconnect">✕</button>
                 </div>`;
             
-            // Находим созданную кнопку и вешаем на неё удаление сессии
             const discBtn = container.querySelector('#disconnectBtn');
             if (discBtn) {
                 discBtn.onclick = async (e) => {
                     e.preventDefault();
-                    e.stopPropagation(); // Чтобы клик не ушел на родительские элементы
+                    e.stopPropagation();
                     try {
                         if (window.solana) await window.solana.disconnect();
                         
-                        // Полная очистка состояния
                         appState.walletPublicKey = null;
                         appState.provider = null;
                         
-                        console.log("🔌 Wallet Disconnected");
+                        // УВЕДОМЛЕНИЕ О ВЫХОДЕ
+                        showNotification("Wallet Disconnected! 🔌", "info");
+                        actionAudit("Wallet", "info", "Session ended by user");
                         
-                        // Вместо жесткой перезагрузки просто обновляем UI
                         updateWalletDisplay();
                         if (typeof updateStakingAndBalanceUI === 'function') {
                             await updateStakingAndBalanceUI();
                         }
-                        
-                        // Если нужно всё же сбросить всё — раскомментируй:
-                        // location.reload(); 
                     } catch (err) {
                         console.error("Disconnect error:", err);
                     }
                 };
             }
         } else {
-            // Если не подключен — показываем стандартную кнопку входа
             container.innerHTML = `
                 <button id="connectWalletBtn" class="web3-button connect-fox-btn">
                     🦊 Connect Wallet
@@ -1075,42 +1103,6 @@ function updateWalletDisplay() {
     });
 }
 
-
-
-
-// 1. Улучшенная функция подключения
-async function connectWallet() {
-    try {
-        if (!window.solana) {
-            // Если мобилка — кидаем в приложение Phantom
-            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                const url = encodeURIComponent(window.location.href);
-                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${url}`;
-                return;
-            }
-            showNotification("Phantom wallet not found!", "error");
-            return;
-        }
-
-        // Подключаемся
-        const resp = await window.solana.connect();
-        
-        // ВАЖНО: Записываем данные в глобальный стейт
-        appState.walletPublicKey = resp.publicKey;
-        appState.provider = window.solana;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        
-        console.log("🦊 Кошелек успешно подключен:", resp.publicKey.toString());
-
-        // СРАЗУ обновляем интерфейс, чтобы адрес появился на экране
-        updateWalletDisplay(); 
-        await updateStakingAndBalanceUI();
-
-    } catch (err) {
-        console.error("Ошибка подключения:", err);
-        showNotification("Connection failed", "error");
-    }
-}
 
 
 
