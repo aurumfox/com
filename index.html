@@ -27,7 +27,7 @@
     <script src="js/solana.js"></script>
     <script src="js/anchor.js"></script>
     
-    <script src="app.js"></script>
+    
 
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png" type="image/png">
@@ -522,15 +522,15 @@
             <p>Contract Address: <span id="footerContractAddress">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> </p>
 
         </div>
-    </footer>
-            
-    <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+        </main>
 
-        <div id="walletModal" class="modal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
+    <footer class="footer">
+        </footer>
+
+    <div id="walletModal" class="modal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
         <div class="modal-content" style="background:#1a1a1a; padding:30px; border:2px solid #f39c12; border-radius:15px; text-align:center; min-width:300px; position: relative; box-shadow: 0 0 20px rgba(243, 156, 18, 0.2);">
             <span id="closeWalletModal" style="color:#fff; position: absolute; right: 15px; top: 10px; cursor:pointer; font-size:28px;">&times;</span>
             <h3 style="color:#f39c12; margin-bottom:20px; font-family: sans-serif;">Select Solana Wallet</h3>
-            
             <div style="display:flex; flex-direction:column; gap:12px;">
                 <button class="wallet-option-btn web3-btn" data-wallet="phantom" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding: 12px;">
                     <img src="https://phantom.app/favicon.ico" width="20" alt="P"> Phantom
@@ -545,8 +545,9 @@
     <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script src="app.js"></script>
-
 </body>
 </html>
+
+
 
     
