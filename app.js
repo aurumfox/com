@@ -480,14 +480,18 @@ async function fetchUserStakingData() {
 
 
 
-// Функция получения PDA адреса (строго по Rust: owner + pool_state)
-async function getUserStakingAccountPDA(owner) {
+async function getUserStakingPDA(owner) {
+    // ВАЖНО: pool_state — это аккаунт данных DfAaH2Xs..., а не ID программы!
     const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [owner.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+        [
+            owner.toBuffer(), 
+            AFOX_POOL_STATE_PUBKEY.toBuffer() 
+        ],
         STAKING_PROGRAM_ID
     );
     return pda;
 }
+
 
 
 // ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
@@ -612,39 +616,31 @@ async function handleUnstakeAfox() {
  * ФУНКЦИЯ: ЗАБРАТЬ НАГРАДЫ (CLAIM)
  */
 async function handleClaimRewards() {
-    if (!appState.walletPublicKey) return;
-    setLoadingState(true, uiElements.claimRewardsBtn);
-    try {
-        const provider = new window.anchor.AnchorProvider(appState.connection, window.solana, { commitment: "confirmed" });
-        const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
-        const userStakingPDA = await getUserStakingAccountPDA(appState.walletPublicKey);
+    const btn = uiElements.claimRewardsBtn;
+    await smartAction(btn, "Claiming", "Rewards Received!", "💎", async () => {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // Получаем ATA (Associated Token Account)
-        const userAfoxATA = await window.solanaWeb3.PublicKey.findProgramAddress(
+        const userAta = await solanaWeb3.PublicKey.findProgramAddress(
             [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
             ASSOCIATED_TOKEN_PROGRAM_ID
         ).then(res => res[0]);
 
-        await program.methods.claimRewards().accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: userStakingPDA,
-            owner: appState.walletPublicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-            userRewardsAta: userAfoxATA,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-
-        showNotification("Rewards claimed!", "success");
-        await updateStakingAndBalanceUI();
-    } catch (err) {
-        showNotification("Claim failed: " + err.message, "error");
-    } finally {
-        setLoadingState(false, uiElements.claimRewardsBtn);
-    }
+        return await program.methods.claimRewards()
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userPDA,
+                owner: appState.walletPublicKey,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY, // Это BXinWR...
+                userRewardsAta: userAta,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY
+            }).rpc();
+    });
 }
+
 
 
 /**
@@ -653,39 +649,27 @@ async function handleClaimRewards() {
 
 async function getLiveAPR() {
     try {
-        if (!appState.connection) return "Connect Wallet";
-
+        if (!appState.connection || !appState.walletPublicKey) return "Connect Wallet";
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         
-        // 1. ПРАВИЛЬНЫЙ ВЫЗОВ: Берем PoolState (общие данные), а не UserStaking (личные)
-        // Используем fetch для PoolState
+        // Используем fetch для poolState
         const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
         
-        // 2. ПОЛЯ: В твоем Rust коде это total_staked_amount
-        const totalStakedRaw = poolAccount.totalStakedAmount;
-        const totalStaked = Number(totalStakedRaw) / Math.pow(10, AFOX_DECIMALS);
+        // В Rust это поле total_staked_amount (u64)
+        const totalStaked = Number(poolAccount.totalStakedAmount) / Math.pow(10, AFOX_DECIMALS);
 
-        // 3. ЛОГИКА НАГРАД: В контракте REWARD_RATE_PER_SEC = 100
-        // С учетом 6 знаков (AFOX_DECIMALS), 100 единиц — это 0.0001 токена в сек.
-        const rewardsPerSecond = 0.0001; 
-        const secondsInYear = 31536000;
-        const totalRewardsYear = rewardsPerSecond * secondsInYear; 
+        // Расчет на основе твоего REWARD_RATE_PER_SEC = 100
+        const rewardsPerYear = (100 / Math.pow(10, AFOX_DECIMALS)) * 31536000;
 
-        if (totalStaked <= 0.001) {
-            return "100% (Genesis)";
-        }
-
-        // Расчет APR
-        const realAPR = (totalRewardsYear / totalStaked) * 100;
+        if (totalStaked < 1) return "100% (Genesis)";
         
-        return realAPR > 1000 ? "999%+" : realAPR.toFixed(2) + "%";
-        
+        const realAPR = (rewardsPerYear / totalStaked) * 100;
+        return realAPR > 5000 ? "5000%+" : realAPR.toFixed(2) + "%";
     } catch (e) {
-        console.error("Критическая ошибка APR:", e);
-        // Если аккаунт пула еще не инициализирован в сети, вернем заглушку
-        return "100% (Base)";
+        return "500% (Base)"; 
     }
 }
+
 
 
 /**
