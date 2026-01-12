@@ -691,7 +691,9 @@ function cacheUIElements() {
         
         // DAO & Lending
         createProposalBtn: document.getElementById('createProposalBtn'),
-        createProposalModal: document.getElementById('dao-modal'),
+        
+uiElements.createProposalModal = document.getElementById('createProposalModal');
+
         createProposalForm: document.getElementById('create-proposal-form'),
         
         // Утилиты
