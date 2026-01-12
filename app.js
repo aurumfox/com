@@ -1142,28 +1142,38 @@ function setupModernUI() {
 
 
 
+
 async function initializeAurumFoxApp() {
     console.log("🚀 Инициализация Aurum Fox Core...");
     if (!setupAddresses()) return;
+    
+    // Кэшируем элементы
     cacheUIElements();
+    
+    // Настраиваем кнопки
     setupModernUI();
 
-    // Специальный блок для мобилок: ждем появления провайдера
-    const adapter = window.solana;
-    if (adapter) {
-        // Если кошелек уже говорит, что подключен, или разрешает "тихий" вход
-        adapter.connect({ onlyIfTrusted: true }).then(({ publicKey }) => {
-            appState.walletPublicKey = publicKey;
-            appState.provider = adapter;
-            updateWalletDisplay();
-            updateStakingAndBalanceUI();
-            console.log("✅ Сессия восстановлена автоматически");
-        }).catch(() => {
-            console.log("ℹ️ Нужно нажать Connect (первый вход)");
-            updateWalletDisplay(); // Показываем кнопку входа
-        });
+    // Проверяем кошелек
+    if (window.solana) {
+        try {
+            // Попытка тихого входа
+            const resp = await window.solana.connect({ onlyIfTrusted: true });
+            if (resp) {
+                appState.walletPublicKey = resp.publicKey;
+                appState.provider = window.solana;
+                appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+                updateWalletDisplay();
+                await updateStakingAndBalanceUI();
+            }
+        } catch (e) {
+            updateWalletDisplay(); // Просто показываем кнопку "Connect"
+        }
     } else {
         updateWalletDisplay();
     }
 }
+
+// ТОТ САМЫЙ ВЫЗОВ, КОТОРЫЙ ТЫ ПОТЕРЯЛ:
+window.addEventListener('load', initializeAurumFoxApp);
+
 
