@@ -1042,35 +1042,30 @@ function updateWalletDisplay() {
 
 
 
-// 1. ИСПРАВЛЕННЫЙ БЛОК НАСТРОЙКИ КНОПОК
+
+
 function setupModernUI() {
     const actions = [
-        // --- WALLET ---
         { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
-
-        // --- STAKING ---
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
         
-        // --- DAO ---
-        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening Modal...', icon: '✍️', fn: async () => { 
-            const modal = document.getElementById('dao-modal') || document.getElementById('createProposalModal');
+        // Открытие модалки DAO
+        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
+            const modal = document.getElementById('createProposalModal');
             if(modal) modal.style.display = 'flex'; 
         }},
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 📜', icon: '🚀', fn: handleCreateProposal },
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
-
-        // --- LENDING (ЛЕНДИНГ) ---
         { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
         { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
-
-        // --- BORROWING (ЗАЙМЫ) ---
         { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
+    // Привязка действий к кнопкам
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
@@ -1083,16 +1078,25 @@ function setupModernUI() {
         }
     });
 
-    // Исправление для кнопки закрытия модалки
-    const closeBtn = document.getElementById('close-dao-modal') || document.getElementById('closeProposalModal');
-    if (closeBtn) {
-        closeBtn.onclick = () => {
-            const modal = document.getElementById('dao-modal') || document.getElementById('createProposalModal');
-            if(modal) modal.style.display = 'none';
+    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
+    const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
+    const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
+    
+    if (closeBtn && modal) {
+        closeBtn.onclick = (e) => {
+            e.preventDefault();
+            modal.style.display = 'none';
+            console.log("Модалка DAO закрыта через крестик");
         };
+
+        // Дополнительно: закрытие при клике ВНЕ окна
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     }
 }
-
 
 
 
