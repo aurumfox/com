@@ -1332,13 +1332,14 @@ function setupModernUI() {
             msg: 'Opening Selector...', 
             icon: '🔑', 
             fn: async () => {
-                // ИСПРАВЛЕНИЕ: Открываем твое модальное окно выбора кошелька
+                // ИСПРАВЛЕНИЕ: Открываем модальное окно выбора (Phantom/Solflare/Backpack)
                 const modal = document.getElementById('walletModal');
                 if (modal) {
                     modal.style.display = 'flex';
                     console.log("📂 Окно выбора кошелька открыто");
                 } else {
-                    // Если модалки нет, вызываем обычный коннект как запасной вариант
+                    console.error("❌ Ошибка: Элемент 'walletModal' не найден в HTML");
+                    // Если модалки нет, пробуем старый метод
                     if (typeof connectWallet === 'function') await connectWallet();
                 }
             }
@@ -1361,7 +1362,7 @@ function setupModernUI() {
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // Привязка действий к кнопкам (клонирование для очистки слушателей)
+    // Привязка действий к кнопкам (клонирование для удаления старых слушателей)
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
@@ -1373,6 +1374,38 @@ function setupModernUI() {
             };
         }
     });
+
+    // --- БЛОК ЗАКРЫТИЯ МОДАЛОК ---
+
+    // 1. Закрытие модалки DAO
+    const closeProposalBtn = document.getElementById('closeProposalModal');
+    const proposalModal = document.getElementById('createProposalModal');
+    
+    if (closeProposalBtn && proposalModal) {
+        closeProposalBtn.onclick = (e) => {
+            e.preventDefault();
+            proposalModal.style.display = 'none';
+        };
+    }
+
+    // 2. Закрытие модалки Кошелька (твое новое окно)
+    const closeWalletBtn = document.getElementById('closeWalletModal');
+    const walletModal = document.getElementById('walletModal');
+    
+    if (closeWalletBtn && walletModal) {
+        closeWalletBtn.onclick = (e) => {
+            e.preventDefault();
+            walletModal.style.display = 'none';
+        };
+    }
+
+    // 3. Закрытие при клике ВНЕ окон
+    window.addEventListener('click', (event) => {
+        if (event.target === proposalModal) proposalModal.style.display = 'none';
+        if (event.target === walletModal) walletModal.style.display = 'none';
+    });
+}
+
 
     // --- ФИКС ЗАКРЫТИЯ МОДАЛОК (DAO И КОШЕЛЬКИ) ---
     
