@@ -409,70 +409,39 @@
             </ul>
         </div>
     </div>
+
+          
+<section id="lending-section" class="section web3-section-alt">
+    <div class="staking-actions" style="margin-top: 30px;">
+        <h3 class="web3-subheading">Lend AFOX</h3>
+        <div class="input-group">
+            <input type="number" id="lend-amount-input" placeholder="Enter AFOX to lend">
+            <button id="lend-btn" class="web3-btn">Lend</button>
+        </div>
+    </div>
+
+    <div class="staking-actions" style="margin-top: 30px;">
+        <h3 class="web3-subheading">Borrow SOL</h3>
+        <div class="input-group">
+            <input type="number" id="borrow-amount-input" placeholder="Enter SOL to borrow">
+            <button id="borrow-btn" class="web3-btn">Borrow</button>
+        </div>
+        
+        <h3 class="web3-subheading">Repay SOL Loan</h3>
+        <div class="input-group">
+            <input type="number" id="repay-amount-input" placeholder="Enter SOL to repay">
+            <button id="repay-btn" class="web3-btn">Repay Loan</button>
+        </div>
+    </div>
 </section>
 
-
-        <section id="lending-section" class="section web3-section-alt">
-            <div class="container">
-                <h2 class="web3-heading">🏦 AFOX DeFi Lending (Lending & Borrowing)</h2>
-                <p class="web3-intro">Lend AFOX or SOL to liquidity pools to earn interest, or use them as collateral to take out a loan. <strong style="color: #f39c12;">Requires connected wallet.</strong></p>
-
-                <div class="staking-info-grid">
-                    <div class="info-card">
-                        <h3>APR for Lending (AFOX)</h3>
-                        <p id="afoxLendApr" class="info-value">--%</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Borrowing Rate (SOL)</h3>
-                        <p id="solBorrowRate" class="info-value">--%</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Your Lent Amount</h3>
-                        <p id="userLentAmount" class="info-value">0 AFOX</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Your Loan</h3>
-                        <p id="userBorrowedAmount" class="info-value">0 SOL</p>
-                    </div>
-                </div>
-
-                <div class="staking-actions" style="margin-top: 30px;">
-                    <h3 class="web3-subheading">Lend AFOX</h3>
-                    <div class="input-group">
-                        <input type="number" id="lendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to lend" aria-label="Amount to lend">
-                        <button id="lendAfoxBtn" class="web3-btn" aria-label="Lend AFOX tokens">Lend</button>
-                    </div>
-                    <h3 class="web3-subheading">Withdraw Lent AFOX</h3>
-                    <div class="input-group">
-                        <input type="number" id="withdrawLendAmountInput" min="0.000001" step="0.000001" placeholder="Enter AFOX to withdraw" aria-label="Amount to withdraw from lending">
-                        <button id="withdrawLendBtn" class="web3-btn" aria-label="Withdraw lent AFOX tokens">Withdraw</button>
-                    </div>
-                </div>
-
-                <div class="staking-actions" style="margin-top: 30px;">
-                    <h3 class="web3-subheading">Borrow SOL</h3>
-                    <div class="input-group">
-                        <input type="number" id="borrowAmountInput" min="0.000001" step="0.000001" placeholder="Enter SOL to borrow" aria-label="Amount to borrow">
-                        <button id="borrowSolBtn" class="web3-btn" aria-label="Borrow SOL">Borrow</button>
-                    </div>
-                    <h3 class="web3-subheading">Repay SOL Loan</h3>
-                    <div class="input-group">
-                        <input type="number" id="repayAmountInput" min="0.000001" step="0.000001" placeholder="Enter SOL to repay" aria-label="Amount to repay">
-                        <button id="repaySolBtn" class="web3-btn" aria-label="Repay SOL loan">Repay Loan</button>
-                    </div>
-                </div>
-                
-                <div class="staking-details">
-                    <h3 class="web3-subheading">Lending Terms</h3>
-                    <ul>
-                        <li><strong>Loan-to-Value (LTV) Limit:</strong> <span id="ltvRatio">75%</span></li>
-                        <li><strong>AFOX in Pool:</strong> <span id="poolAfoxAmount">... AFOX</span></li>
-                        <li><strong>SOL in Pool:</strong> <span id="poolSolAmount">... SOL</span></li>
-                    </ul>
-                    <p class="web3-note">DeFi Lending functionality is under development and requires connection to a Solana protocol.</p>
-                </div>
-            </div>
-        </section>
+          <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
+    <div class="dao-proposal-item web3-placeholder" data-proposal-id="1">
+        <h4>Proposal #1: Community Growth</h4>
+        <button id="vote-for-btn" class="web3-btn dao-vote-btn">Vote FOR</button>
+        <button id="vote-against-btn" class="web3-btn dao-vote-btn">Vote AGAINST</button>
+    </div>
+</div>
 
         
         </main>
