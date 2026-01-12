@@ -858,23 +858,61 @@ function spawnEmoji(el, emoji) {
 
 
 
-// ==========================================
-// БЛОК 3: DAO (ГОЛОСОВАНИЕ)
-// ==============================
+// Настройка открытия/закрытия модалки
 function setupDAO() {
-    if (uiElements.createProposalBtn && uiElements.createProposalModal) {
-        uiElements.createProposalBtn.addEventListener('click', () => {
-            uiElements.createProposalModal.style.display = 'flex';
-        });
-        
-        const closeBtn = document.getElementById('closeProposalModal') || document.getElementById('close-dao-modal');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                uiElements.createProposalModal.style.display = 'none';
-            });
-        }
+    const openBtn = document.getElementById('createProposalBtn');
+    const modal = document.getElementById('createProposalModal');
+    const closeBtn = document.getElementById('closeProposalModal') || document.getElementById('close-dao-modal');
+
+    if (openBtn && modal) {
+        openBtn.onclick = (e) => {
+            e.preventDefault();
+            modal.style.display = 'flex';
+            modal.classList.add('is-open');
+            console.log("📂 Модалка DAO открыта");
+        };
+    }
+
+    if (closeBtn && modal) {
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+            modal.classList.remove('is-open');
+        };
     }
 }
+
+// Обработка создания пропозиции
+async function handleCreateProposal(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    
+    // Получаем данные из формы
+    const title = document.getElementById('proposalTitle')?.value;
+    const desc = document.getElementById('proposalDescription')?.value;
+
+    if (!title || !desc) {
+        showNotification("Please fill in all fields", "error");
+        return;
+    }
+
+    actionAudit("DAO Proposal", "process", "Submitting to blockchain...");
+    
+    try {
+        // Здесь будет твой вызов в смарт-контракт Solana (RPC)
+        // Имитация задержки транзакции:
+        await new Promise(r => setTimeout(r, 2000)); 
+        
+        actionAudit("DAO Proposal", "success", "Proposal created successfully!");
+        closeAllPopups();
+        
+        // Очистка формы
+        if (uiElements.createProposalForm) uiElements.createProposalForm.reset();
+        
+    } catch (err) {
+        actionAudit("DAO Proposal", "error", err.message);
+        throw err; // Пробрасываем для executeSmartAction
+    }
+}
+
 
 
 // DAO VOTING (FOR / AGAINST)
