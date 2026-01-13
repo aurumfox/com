@@ -1159,104 +1159,73 @@ async function connectWallet() {
 // ИСПРАВЛЕННЫЙ БЛОК: УПРАВЛЕНИЕ КОШЕЛЬКАМИ И МОДАЛКАМИ
 // ============================================================
 
-/**
- * Универсальная функция подключения.
- * Поддерживает Phantom, Solflare, Backpack, Jupiter, Bitget, OKX и Trust.
- */
 async function connectToProvider(walletType) {
     let provider = null;
     const type = walletType.toLowerCase();
 
+    // 1. Карта поиска провайдеров
+    const providers = {
+        phantom: window.solana?.isPhantom ? window.solana : null,
+        solflare: window.solflare,
+        backpack: window.backpack,
+        bitget: window.bitkeep?.solana || window.bitgetWallet?.solana,
+        okx: window.okxwallet?.solana,
+        trust: window.trustwallet?.solana
+    };
+
+    // 2. Ссылки на установку
+    const installLinks = {
+        phantom: "https://phantom.app/",
+        solflare: "https://solflare.com/",
+        backpack: "https://backpack.app/",
+        bitget: "https://web3.bitget.com/",
+        okx: "https://www.okx.com/web3",
+        trust: "https://trustwallet.com/"
+    };
+
+    provider = providers[type];
+
+    // 3. ПРОВЕРКА: Если кошелька нет — отправляем скачивать
+    if (!provider) {
+        console.warn(`⚠️ Кошелек ${walletType} не найден. Редирект на установку...`);
+        showNotification(`Redirecting to ${walletType} install page...`, "info");
+        
+        // Маленькая задержка перед переходом для красоты
+        setTimeout(() => {
+            window.open(installLinks[type] || "https://solana.com/wallets", "_blank");
+        }, 800);
+        return;
+    }
+
+    // 4. Если кошелек есть — подключаемся
     try {
-        // Карта поиска провайдеров
-        const providers = {
-            phantom: window.solana,
-            solflare: window.solflare,
-            backpack: window.backpack,
-            jupiter: window.jupiter || (window.solana && window.solana.isJupiter ? window.solana : null),
-            bitget: window.bitkeep?.solana || window.bitgetWallet?.solana,
-            okx: window.okxwallet?.solana,
-            trust: window.trustwallet?.solana
-        };
-
-        provider = providers[type];
-
-        if (!provider) {
-            showNotification(`${walletType.toUpperCase()} не найден! Установите расширение.`, "error");
-            return;
-        }
-
-        actionAudit("Connect", "process", `Подключение к ${walletType}...`);
-
-        // Запрос на соединение
+        actionAudit("Connect", "process", `Connecting to ${walletType}...`);
+        
         const resp = await provider.connect();
         
         appState.provider = provider;
         appState.walletPublicKey = resp.publicKey;
         
-        // Автоматическое создание RPC соединения, если оно отсутствует
         if (!appState.connection) {
             appState.connection = await getRobustConnection();
         }
 
-        // Закрываем модальное окно выбора кошелька
+        // Закрываем модалку и обновляем UI
         const walletModal = document.getElementById('walletModal');
         if (walletModal) walletModal.style.display = 'none';
 
-        // Обновляем интерфейс
         updateWalletDisplay();
         await updateStakingAndBalanceUI();
         
-        showNotification(`Успешно подключено к ${walletType}!`, "success");
-        if (typeof spawnEmoji === 'function') spawnEmoji(document.body, "🦊");
+        showNotification(`Connected to ${walletType}!`, "success");
+        spawnEmoji(document.body, "🦊");
 
     } catch (err) {
-        console.error("Ошибка подключения:", err);
-        showNotification("Пользователь отклонил запрос", "error");
+        console.error("Connection error:", err);
+        showNotification("Connection refused", "error");
     }
 }
 
-/**
- * Функция настройки событий для всех модальных окон (Кошелек и DAO)
- * Решает проблему с закрытием окон и кликами вне их области.
- */
-function setupWalletModalEvents() {
-    const walletModal = document.getElementById('walletModal');
-    const proposalModal = document.getElementById('createProposalModal');
-    const closeWalletBtn = document.getElementById('closeWalletModal');
-    const closeProposalBtn = document.getElementById('closeProposalModal');
-
-    // Настройка кнопок выбора кошелька внутри модалки
-    const walletButtons = document.querySelectorAll('.wallet-option-btn');
-    walletButtons.forEach(btn => {
-        btn.onclick = (e) => {
-            e.preventDefault();
-            const type = btn.getAttribute('data-wallet');
-            if (type) connectToProvider(type);
-        };
-    });
-
-    // Закрытие модалки кошелька по крестику
-    if (closeWalletBtn && walletModal) {
-        closeWalletBtn.onclick = () => walletModal.style.display = 'none';
-    }
-
-    // Закрытие модалки DAO по крестику
-    if (closeProposalBtn && proposalModal) {
-        closeProposalBtn.onclick = () => proposalModal.style.display = 'none';
-    }
-
-    // Закрытие при клике на темный фон (вне контента модалки)
-    window.onclick = (event) => {
-        if (event.target === walletModal) walletModal.style.display = 'none';
-        if (event.target === proposalModal) proposalModal.style.display = 'none';
-    };
-}
-
-// Запуск инициализации событий после загрузки DOM
-document.addEventListener('DOMContentLoaded', () => {
-    setupWalletModalEvents();
-});
 
 
 
