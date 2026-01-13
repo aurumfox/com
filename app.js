@@ -98,71 +98,110 @@ const POOLS_CONFIG = {
 
 
 
-
-
-// Замени блок STAKING_IDL на этот (фрагмент для корректного маппинга):
 const STAKING_IDL = {
     "version": "0.1.0",
     "name": "my_new_afox_project",
     "instructions": [
         {
-            "name": "initializeUserStake",
+            "name": "initializePool",
             "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "systemProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "vault", "isMut": true, "isSigner": true },
+                { "name": "adminFeeVault", "isMut": true, "isSigner": true },
+                { "name": "daoTreasuryVault", "isMut": true, "isSigner": true },
+                { "name": "defaulterTreasuryVault", "isMut": true, "isSigner": true },
+                { "name": "governanceAuthority", "isMut": false, "isSigner": false },
+                { "name": "adminAuthority", "isMut": false, "isSigner": false },
+                { "name": "lendingAuthority", "isMut": false, "isSigner": false },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "initializer", "isMut": true, "isSigner": true },
+                { "name": "tokenProgram", "isMut": false, "isSigner": false },
+                { "name": "systemProgram", "isMut": false, "isSigner": false },
+                { "name": "rent", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
             ],
-            "args": [{ "name": "poolIndex", "type": "u8" }]
+            "args": [
+                { "name": "poolBump", "type": "u8" },
+                { "name": "maxDaoWithdrawalAmount", "type": "u64" },
+                { "name": "adminFeeShareBps", "type": "u16" },
+                { "name": "lockupSeconds", "type": { "array": ["i64", 3] } },
+                { "name": "sweepThreshold", "type": "u64" }
+            ]
         },
         {
             "name": "deposit",
             "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
                 { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "userSourceAta", "isMut": true },
-                { "name": "vault", "isMut": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "tokenProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
+                { "name": "userSourceAta", "isMut": true, "isSigner": false },
+                { "name": "vault", "isMut": true, "isSigner": false },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "tokenProgram", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
             ],
-            "args": [{ "name": "amount", "type": "u64" }]
+            "args": [
+                { "name": "amount", "type": "u64" }
+            ]
         },
         {
             "name": "claimRewards",
             "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
                 { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "vault", "isMut": true },
-                { "name": "adminFeeVault", "isMut": true },
-                { "name": "userRewardsAta", "isMut": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "tokenProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
+                { "name": "vault", "isMut": true, "isSigner": false },
+                { "name": "adminFeeVault", "isMut": true, "isSigner": false },
+                { "name": "userRewardsAta", "isMut": true, "isSigner": false },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "tokenProgram", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
             ],
             "args": []
         },
         {
             "name": "unstake",
             "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
                 { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "vault", "isMut": true },
-                { "name": "daoTreasuryVault", "isMut": true },
-                { "name": "adminFeeVault", "isMut": true },
-                { "name": "userRewardsAta", "isMut": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "tokenProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
+                { "name": "vault", "isMut": true, "isSigner": false },
+                { "name": "daoTreasuryVault", "isMut": true, "isSigner": false },
+                { "name": "adminFeeVault", "isMut": true, "isSigner": false },
+                { "name": "userRewardsAta", "isMut": true, "isSigner": false },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "tokenProgram", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
             ],
             "args": [
                 { "name": "amount", "type": "u64" },
                 { "name": "isEarlyExit", "type": "bool" }
+            ]
+        },
+        {
+            "name": "initializeUserStake",
+            "accounts": [
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
+                { "name": "owner", "isMut": true, "isSigner": true },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "systemProgram", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
+            ],
+            "args": [
+                { "name": "poolIndex", "type": "u8" }
+            ]
+        },
+        {
+            "name": "collateralizeLending",
+            "accounts": [
+                { "name": "poolState", "isMut": false, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
+                { "name": "lendingAuthority", "isMut": false, "isSigner": true },
+                { "name": "clock", "isMut": false, "isSigner": false }
+            ],
+            "args": [
+                { "name": "newLendingAmount", "type": "u64" }
             ]
         }
     ],
@@ -172,14 +211,20 @@ const STAKING_IDL = {
             "type": {
                 "kind": "struct",
                 "fields": [
+                    { "name": "isInitialized", "type": "bool" },
+                    { "name": "stakeBump", "type": "u8" },
+                    { "name": "poolIndex", "type": "u8" },
+                    { "name": "paddingA", "type": { "array": ["u8", 5] } },
                     { "name": "owner", "type": "publicKey" },
                     { "name": "stakedAmount", "type": "u64" },
-                    { "name": "rewardsToClaim", "type": "u64" },
-                    { "name": "lastUpdateTimestamp", "type": "i64" },
                     { "name": "lockupEndTime", "type": "i64" },
-                    { "name": "poolIndex", "type": "u8" },
+                    { "name": "rewardPerShareUser", "type": "u128" },
+                    { "name": "rewardsToClaim", "type": "u64" },
+                    { "name": "pendingRewardsDueToLimit", "type": "u64" },
                     { "name": "lending", "type": "u64" },
-                    { "name": "padding", "type": { "array": ["u8", 104] } }
+                    { "name": "lendingUnlockTime", "type": "i64" },
+                    { "name": "lastUpdateTime", "type": "i64" },
+                    { "name": "paddingFinal", "type": { "array": ["u8", 104] } }
                 ]
             }
         },
@@ -188,25 +233,59 @@ const STAKING_IDL = {
             "type": {
                 "kind": "struct",
                 "fields": [
-                    { "name": "admin", "type": "publicKey" },
+                    { "name": "isInitialized", "type": "bool" },
+                    { "name": "globalPause", "type": "bool" },
+                    { "name": "poolBump", "type": "u8" },
+                    { "name": "vaultBump", "type": "u8" },
+                    { "name": "adminFeeVaultBump", "type": "u8" },
+                    { "name": "daoTreasuryVaultBump", "type": "u8" },
+                    { "name": "defaulterTreasuryVaultBump", "type": "u8" },
+                    { "name": "paddingParams", "type": { "array": ["u8", 6] } },
+                    { "name": "governanceAuthority", "type": "publicKey" },
+                    { "name": "adminAuthority", "type": "publicKey" },
+                    { "name": "lendingAuthority", "type": "publicKey" },
+                    { "name": "pendingGovernanceAuthority", "type": "publicKey" },
+                    { "name": "rewardMint", "type": "publicKey" },
+                    { "name": "vault", "type": "publicKey" },
+                    { "name": "adminFeeVault", "type": "publicKey" },
+                    { "name": "daoTreasuryVault", "type": "publicKey" },
+                    { "name": "defaulterTreasuryVault", "type": "publicKey" },
+                    { "name": "pendingChangeTime", "type": "i64" },
+                    { "name": "lastRewardTime", "type": "i64" },
+                    { "name": "maxDaoWithdrawalAmount", "type": "u64" },
+                    { "name": "sweepThreshold", "type": "u64" },
+                    { "name": "adminFeeShareBps", "type": "u16" },
+                    { "name": "paddingParamsLockup", "type": { "array": ["u8", 6] } },
+                    { "name": "lockupSeconds", "type": { "array": ["i64", 3] } },
+                    { "name": "rewardPerShareGlobal", "type": "u128" },
                     { "name": "totalStakedAmount", "type": "u64" },
-                    { "name": "rewardRatePerSec", "type": "u64" }
+                    { "name": "totalUnclaimedRewards", "type": "u64" },
+                    { "name": "daoWithdrawal24hCap", "type": "u64" },
+                    { "name": "daoWithdrawalResetTime", "type": "i64" },
+                    { "name": "paddingFinal", "type": { "array": ["u8", 96] } }
                 ]
             }
         }
+    ],
+    "errors": [
+        { "code": 6000, "name": "AlreadyInitialized", "msg": "Account already initialized." },
+        { "code": 6001, "name": "InvalidPoolIndex", "msg": "Invalid pool index provided." },
+        { "code": 6005, "name": "LockupNotExpired", "msg": "Lockup period has not expired." },
+        { "code": 6007, "name": "GlobalPause", "msg": "Global pause is active." },
+        { "code": 6022, "name": "DaoLimitReached", "msg": "DAO daily withdrawal limit reached." }
     ]
 };
 
 
 
-// Поиск PDA пользователя (строго соответствует Rust seeds)
 
 // ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
+
 async function getUserStakingPDA(owner) {
     const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
         [
             owner.toBuffer(), 
-            AFOX_POOL_STATE_PUBKEY.toBuffer() // Это должен быть DfAaH2Xs...
+            AFOX_POOL_STATE_PUBKEY.toBuffer() 
         ],
         STAKING_PROGRAM_ID
     );
@@ -469,8 +548,13 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // ВАЖНО: Для zero_copy аккаунтов используем fetchNullable или fetch
-        // Если выдает "Layout mismatch", значит JS не видит падинги [u8; 104]
+        // ПРОВЕРКА: существует ли аккаунт в блокчейне?
+        const accountInfo = await appState.connection.getAccountInfo(userPDA);
+        if (!accountInfo) {
+            console.log("🆕 Аккаунт пользователя еще не создан (первый вход)");
+            return; // Просто выходим, UI останется в "0"
+        }
+
         const stakingData = await program.account.userStakingAccount.fetch(userPDA);
 
         appState.userStakingData = {
@@ -478,14 +562,16 @@ async function fetchUserStakingData() {
             rewards: BigInt(stakingData.rewardsToClaim.toString()),
             lockupEndTime: stakingData.lockupEndTime.toNumber(),
             poolIndex: stakingData.poolIndex,
-            lending: BigInt(stakingData.lending.toString())
+            lending: BigInt(stakingData.lending.toString()),
+            lastUpdateTime: stakingData.lastUpdateTime.toNumber()
         };
         
-        console.log("📊 Данные стейкинга обновлены:", appState.userStakingData);
+        console.log("✅ Данные получены:", appState.userStakingData);
     } catch (e) {
-        console.error("⚠️ Ошибка парсинга zero_copy данных:", e.message);
+        console.error("❌ Ошибка при чтении стейкинга:", e);
     }
 }
+
 
 
 
@@ -1025,43 +1111,57 @@ async function fetchUserBalances() {
 
 async function connectWallet() {
     try {
-        console.log("🔗 Попытка универсального подключения...");
+        console.log("🔗 Попытка подключения к кошельку...");
 
-        // Если вы не хотите ставить тяжелые библиотеки, 
-        // мы проверяем, какие кошельки установлены у пользователя
-        const providers = {
-            phantom: window.phantom?.solana,
-            solflare: window.solflare,
-            backpack: window.backpack,
-            trust: window.trustWallet?.solana
-        };
+        // 1. Проверка провайдера
+        const provider = window.phantom?.solana || window.solana;
 
-        // Находим первый доступный кошелек
-        let provider = providers.phantom || providers.solflare || providers.backpack || providers.trust;
-
-        // Если кошельков несколько, в идеале тут должно всплывать ваше окно выбора (Modal)
-        // Но для "одной кнопки" мы можем сделать так:
         if (!provider) {
-            // Если ничего не найдено, открываем WalletConnect (Reown)
-            showNotification("No wallet found. Try WalletConnect!", "info");
-            // Здесь вызывается окно WalletConnect (нужен их Project ID)
+            console.warn("❌ Phantom не найден");
+            
+            // Если мы на мобилке — предлагаем открыть через Deep Link
+            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                const url = encodeURIComponent(window.location.href);
+                const ref = encodeURIComponent(window.location.host);
+                window.open(`https://phantom.app/ul/browse/${url}?ref=${ref}`, '_blank');
+                return;
+            }
+            
+            showNotification("Please install Phantom wallet!", "error");
+            window.open("https://phantom.app/", "_blank");
             return;
         }
 
+        // 2. Подключение
+        // standard connection request
         const resp = await provider.connect();
+        
+        // 3. Сохранение данных в состояние
         appState.walletPublicKey = resp.publicKey;
         appState.provider = provider;
         
+        // Пересоздаем соединение с RPC, если оно упало
         appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
         
+        console.log("✅ Кошелек подключен:", resp.publicKey.toString());
+        
+        // 4. Обновление UI
         updateWalletDisplay();
         await updateStakingAndBalanceUI();
         
-        showNotification("Success: Connected via " + (provider.isPhantom ? "Phantom" : "Wallet"), "success");
+        showNotification("Success: Connected to Fox Ecosystem", "success");
+        return resp.publicKey.toString();
 
     } catch (err) {
-        console.error("❌ Ошибка:", err);
-        showNotification("Connection failed", "error");
+        console.error("❌ Ошибка подключения:", err);
+        
+        // Обработка отказа пользователя
+        if (err.code === 4001) {
+            showNotification("Connection cancelled", "warning");
+        } else {
+            showNotification("Wallet Error: Check if app is trusted", "error");
+        }
+        throw err;
     }
 }
 
@@ -1201,99 +1301,56 @@ if (window.solana) {
 
 
 function setupModernUI() {
-    // 1. Описываем все действия как единую систему
     const actions = [
-        { 
-            id: 'connectWalletBtn', 
-            name: 'Wallet', 
-            msg: 'Connected! 🦊', 
-            icon: '🔑', 
-            fn: async () => await connectWallet() 
-        },
-        { 
-            id: 'stake-afox-btn', 
-            name: 'Staking', 
-            msg: 'Tokens Locked! 📈', 
-            icon: '💰', 
-            fn: handleStakeAfox 
-        },
-        { 
-            id: 'unstake-afox-btn', 
-            name: 'Unstake', 
-            msg: 'Tokens Freed! 🕊️', 
-            icon: '🔓', 
-            fn: handleUnstakeAfox 
-        },
-        { 
-            id: 'claim-rewards-btn', 
-            name: 'Claim', 
-            msg: 'Profit Taken! 🎁', 
-            icon: '💎', 
-            fn: handleClaimRewards 
-        },
+        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
+        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
+        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
+        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
         
-        // Блок DAO
-        { 
-            id: 'createProposalBtn', 
-            name: 'DAO', 
-            msg: 'Opening...', 
-            icon: '✍️', 
-            fn: async () => { 
-                const modal = document.getElementById('createProposalModal');
-                if(modal) modal.style.display = 'flex'; 
-            }
-        },
+        // Открытие модалки DAO
+        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
+            const modal = document.getElementById('createProposalModal');
+            if(modal) modal.style.display = 'flex'; 
+        }},
         { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
-        
-        // Блок Lending/Loans
         { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
         { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
         { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // 2. Универсальная привязка слушателей (убирает дубли и "оживляет" кнопки)
+    // Привязка действий к кнопкам
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            // Клонируем, чтобы убрать старые слушатели и избежать багов
             const cleanBtn = el.cloneNode(true);
             el.parentNode.replaceChild(cleanBtn, el);
-            
-            cleanBtn.onclick = async (e) => {
+            cleanBtn.onclick = (e) => {
                 if (e) e.preventDefault();
-                
-                // Для всех действий, кроме коннекта, проверяем, подключен ли кошелек
-                if (item.id !== 'connectWalletBtn' && !appState.walletPublicKey) {
-                    showNotification("Please connect wallet first!", "info");
-                    return;
-                }
-                
-                // Запуск красивой анимации и основной функции
-                await executeSmartActionWithFullEffects(cleanBtn, item);
+                executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 
-    // 3. Логика закрытия модальных окон
-    setupModalHandlers();
-}
-
-// Вынес обработку модалок в отдельную функцию для чистоты
-function setupModalHandlers() {
-    const closeBtn = document.getElementById('closeProposalModal');
-    const modal = document.getElementById('createProposalModal');
+    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
+    const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
+    const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
+    
 
     if (closeBtn && modal) {
         closeBtn.onclick = (e) => {
             e.preventDefault();
             modal.style.display = 'none';
+            console.log("Модалка DAO закрыта через крестик");
         };
 
+        // Дополнительно: закрытие при клике ВНЕ окна
         window.addEventListener('click', (event) => {
-            if (event.target === modal) modal.style.display = 'none';
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
         });
     }
 }
