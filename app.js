@@ -304,12 +304,35 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
+function actionAudit(name, status, detail = "") {
+    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
+    const messages = {
+        process: `${icons.process} ${name}: Transaction started...`,
+        success: `${icons.success} ${name}: Successful! ${detail}`,
+        error: `${icons.error} ${name} Failed: ${detail}`,
+        info: `${icons.info} ${detail}`
+    };
+    showNotification(messages[status], status === 'process' ? 'info' : status);
+    console.log(`[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()} ${detail}`);
+}
 
 
 
 
-
-
+// Улучшенная функция статуса кнопок
+function setBtnState(btn, isLoading, text = "Wait...") {
+    if (!btn) return;
+    if (isLoading) {
+        btn.disabled = true;
+        btn.dataset.old = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner"></span> ${text}`;
+        btn.style.opacity = "0.6";
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.old || btn.innerHTML;
+        btn.style.opacity = "1";
+    }
+}
 
 
 
@@ -660,6 +683,55 @@ function cacheUIElements() {
 }
 
 
+// ЕДИНЫЙ ОБРАБОТЧИК ДЛЯ ВСЕХ КНОПОК
+
+async function executeSmartActionWithFullEffects(btn, config) {
+    if (btn.classList.contains('loading')) return;
+
+    const originalHTML = btn.innerHTML;
+    
+    // 1. СТИЛЬ: Вход в состояние загрузки
+    btn.classList.add('loading');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
+    
+    // Аудит в консоль и уведомление
+    actionAudit(config.name, "process", "Connecting to Solana...");
+
+    try {
+        // 2. ЛОГИКА: Выполнение Rust-инструкции
+        await config.fn(); 
+
+        // 3. ФИДБЕК: Успех + Анимация
+        btn.classList.remove('loading');
+        btn.classList.add('success-glow');
+        btn.innerHTML = `✅ ${config.msg}`;
+        
+        // Взрыв иконок (твой фирменный стиль)
+        spawnEmoji(btn, config.icon); 
+
+        actionAudit(config.name, "success", config.msg);
+        
+        // Глобальное обновление данных
+        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+
+    } catch (err) {
+        // 4. ОШИБКА: Визуальный откат
+        console.error(`[CRITICAL] Error in ${config.name}:`, err);
+        btn.classList.remove('loading');
+        btn.innerHTML = `❌ Failed`;
+        btn.classList.add('error-shake'); // Добавь в CSS для тряски
+        
+        actionAudit(config.name, "error", err.message);
+    } finally {
+        // Сброс через 3.5 секунды
+        setTimeout(() => {
+            btn.classList.remove('success-glow', 'loading', 'error-shake');
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }, 3500);
+    }
+}
 
 
 
