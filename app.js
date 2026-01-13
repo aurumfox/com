@@ -1109,50 +1109,67 @@ async function connectWallet() {
     try {
         console.log("🔗 Поиск доступных кошельков...");
 
-        // 1. Пытаемся найти любой установленный кошелек (Phantom, Solflare, Backpack и т.д.)
-        // Стандарт Wallet Standard позволяет подключиться к любому расширению одной командой
+        // 1. Ищем любого провайдера (Phantom, Solflare, Backpack или стандартный window.solana)
         const provider = window.phantom?.solana || window.solflare || window.backpack || window.solana;
 
         if (!provider) {
             console.warn("❌ Кошельки не найдены");
+            // Проверка на мобильные устройства
             if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                // Если мобилка — редирект в Phantom Browser
                 const url = encodeURIComponent(window.location.href);
                 window.open(`https://phantom.app/ul/browse/${url}`, '_blank');
             } else {
-                showNotification("Установите Phantom или Solflare!", "error");
+                // Если ты используешь систему уведомлений showNotification
+                if (typeof showNotification === 'function') {
+                    showNotification("Install Phantom or Solflare!", "error");
+                } else {
+                    alert("Please install a Solana wallet (Phantom or Solflare)!");
+                }
                 window.open("https://phantom.app/", "_blank");
             }
-            return;
+            return null;
         }
 
-        // 2. Универсальное подключение
+        // 2. Вызываем подключение (теперь через Wallet Standard это сработает для любого кошелька)
         const resp = await provider.connect();
         
-        // 3. Сохраняем данные в ваше текущее состояние appState
+        // 3. Сохраняем данные в ГЛОБАЛЬНОЕ состояние appState
+        // Важно: теперь appState.provider — это тот кошелек, который выбрал юзер
         appState.walletPublicKey = resp.publicKey;
-        appState.provider = provider;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        appState.provider = provider; 
+        
+        // Создаем соединение с сетью, если его еще нет
+        if (window.solanaWeb3) {
+            appState.connection = new window.solanaWeb3.Connection(
+                "https://api.mainnet-beta.solana.com", // Используй свой RPC если есть
+                'confirmed'
+            );
+        }
 
         console.log("✅ Подключено успешно:", resp.publicKey.toString());
         
-        // 4. Обновляем ваш интерфейс (эти функции у вас уже есть)
-        updateWalletDisplay();
-        await updateStakingAndBalanceUI();
+        // 4. Обновляем интерфейс (вызываем твои функции обновления)
+        if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
         
-        showNotification("Кошелек подключен!", "success");
+        if (typeof showNotification === 'function') {
+            showNotification("Wallet Connected! 🦊", "success");
+        }
+
         return resp.publicKey.toString();
 
     } catch (err) {
         console.error("❌ Ошибка коннекта:", err);
+        // Код 4001 — это когда пользователь сам закрыл окно кошелька (отмена)
         if (err.code === 4001) {
-            showNotification("Вы отменили подключение", "warning");
+            if (typeof showNotification === 'function') showNotification("Connection cancelled", "warning");
         } else {
-            showNotification("Ошибка кошелька", "error");
+            if (typeof showNotification === 'function') showNotification("Wallet Error", "error");
         }
-        throw err;
+        return null;
     }
 }
+
 
 
             
