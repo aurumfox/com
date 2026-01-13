@@ -1547,25 +1547,78 @@ window.addEventListener('click', (event) => {
 });
 
     
+// 1. Функция открытия модалки (Табло с кошельками)
+async function openWalletModal() {
+    const modal = document.getElementById('walletModal');
+    if (modal) {
+        modal.style.display = 'flex'; // Показываем модалку
+        console.log("🦊 Табло кошельков открыто");
+    } else {
+        console.error("❌ Ошибка: Элемент walletModal не найден в HTML");
+        showNotification("Wallet menu not found", "error");
+    }
+}
 
+// 2. Универсальный инициализатор событий (Исправленный)
+function setupModernUI() {
+    // Находим кнопку в хедере
+    const connectBtn = document.getElementById('connectWalletBtn');
+    
+    if (connectBtn) {
+        // Убираем старые слушатели и ставим один четкий
+        connectBtn.replaceWith(connectBtn.cloneNode(true));
+        const newConnectBtn = document.getElementById('connectWalletBtn');
+        
+        newConnectBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openWalletModal();
+        });
+    }
 
+    // Настройка кнопок выбора внутри модалки (Phantom, Solflare и т.д.)
+    const walletOptions = document.querySelectorAll('.wallet-option-btn');
+    walletOptions.forEach(btn => {
+        btn.onclick = (e) => {
+            const walletType = btn.getAttribute('data-wallet');
+            console.log("Выбран кошелек:", walletType);
+            connectToProvider(walletType);
+        };
+    });
 
+    // Кнопка закрытия модалки
+    const closeWalletBtn = document.getElementById('closeWalletModal');
+    if (closeWalletBtn) {
+        closeWalletBtn.onclick = () => {
+            document.getElementById('walletModal').style.display = 'none';
+        };
+    }
+}
 
+// 3. Исправленная функция инициализации (БЕЗ самовызова внутри)
 function initializeAurumFoxApp() {
-    console.log("🚀 Инициализация Aurum Fox Core...");
-
+    console.log("🚀 Инициализация системы...");
+    
     if (!setupAddresses()) return;
+    
+    // Настройка Buffer для Solana
     if (!window.Buffer) window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
 
     cacheUIElements();
-    setupWalletModalEvents(); // Активируем модалку
-    setupModernUI();
-window.addEventListener('DOMContentLoaded', () => {
+    setupModernUI(); // Привязываем кнопки
+    
+    // Если кошелек уже был подключен ранее (Phantom auto-connect)
+    if (window.solana && window.solana.isConnected) {
+        updateWalletDisplay();
+        updateStakingAndBalanceUI();
+    }
+}
+
+// ЗАПУСК ОДИН РАЗ при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
     initializeAurumFoxApp();
 });
 
-
-    } 
     
 
 
