@@ -1462,21 +1462,13 @@ if (window.solana) {
 // ============================================================
 
 function setupModernUI() {
-    console.log("🛠️ Настройка интерфейса...");
+    console.log("🛠️ Настройка богатого интерфейса AurumFox...");
 
     const actions = [
-        { 
-            id: 'connectWalletBtn', 
-            name: 'Wallet', 
-            msg: 'Opening Selector...', 
-            icon: '🔑', 
-            fn: async () => {
+        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Opening Selector...', icon: '🔑', fn: async () => {
                 const modal = document.getElementById('walletModal');
-                if (modal) {
-                    modal.style.display = 'flex';
-                } else {
-                    if (typeof connectWallet === 'function') await connectWallet();
-                }
+                if (modal) modal.style.display = 'flex';
+                else if (typeof connectWallet === 'function') await connectWallet();
             }
         },
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
@@ -1495,79 +1487,98 @@ function setupModernUI() {
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // 1. Привязка действий к основным кнопкам (с эффектами)
+    // 1. Привязка действий к основным кнопкам
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
+            // Клонируем, чтобы убрать старые слушатели
             const cleanBtn = el.cloneNode(true);
             el.parentNode.replaceChild(cleanBtn, el);
+            
+            // ВАЖНО: Обновляем ссылку в глобальном кэше uiElements!
+            // Ищем ключ в uiElements, который соответствует этому ID
+            for (let key in uiElements) {
+                if (uiElements[key] && uiElements[key].id === item.id) {
+                    uiElements[key] = cleanBtn;
+                }
+            }
+
             cleanBtn.onclick = (e) => {
                 if (e) e.preventDefault();
+                
+                // Проверка: Если не кнопка кошелька и не Jupiter — проверяем коннект
+                if (item.id !== 'connectWalletBtn' && !appState.walletPublicKey) {
+                    showNotification("Please connect wallet!", "info");
+                    const modal = document.getElementById('walletModal');
+                    if (modal) modal.style.display = 'flex';
+                    return;
+                }
+                
                 executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 
-    // 2. Настройка выбора конкретного кошелька (внутри табло)
-    const walletOptions = document.querySelectorAll('.wallet-option, .wallet-option-btn');
-    walletOptions.forEach(btn => {
+    // 2. Настройка выбора кошелька в табло
+    document.querySelectorAll('.wallet-option, .wallet-option-btn').forEach(btn => {
         btn.onclick = (e) => {
             e.preventDefault();
             const walletType = btn.getAttribute('data-wallet');
-            connectToProvider(walletType);
+            if (walletType) connectToProvider(walletType);
         };
     });
 
     // 3. Закрытие модалок (Крестики)
     const closeHandlers = [
-        { btn: 'closeWalletModal', modal: 'walletModal' },
-        { btn: 'closeProposalModal', modal: 'createProposalModal' }
+        { btnId: 'closeWalletModal', modalId: 'walletModal' },
+        { btnId: 'closeProposalModal', modalId: 'createProposalModal' }
     ];
 
     closeHandlers.forEach(item => {
-        const btnEl = document.getElementById(item.btn);
-        const modalEl = document.getElementById(item.modal);
-        if (btnEl && modalEl) {
-            btnEl.onclick = (e) => {
+        const btn = document.getElementById(item.btnId);
+        if (btn) {
+            btn.onclick = (e) => {
                 e.preventDefault();
-                modalEl.style.display = 'none';
+                const modal = document.getElementById(item.modalId);
+                if (modal) modal.style.display = 'none';
             };
         }
     });
 
     // 4. Закрытие при клике ВНЕ окон
-    window.onclick = (event) => {
+    window.addEventListener('click', (event) => {
         const wModal = document.getElementById('walletModal');
         const pModal = document.getElementById('createProposalModal');
         if (event.target === wModal) wModal.style.display = 'none';
         if (event.target === pModal) pModal.style.display = 'none';
-    };
+    });
 }
 
-// ФУНКЦИЯ ЗАПУСКА ПРИЛОЖЕНИЯ
 function initializeAurumFoxApp() {
     console.log("🚀 Система AurumFox запускается...");
     
     if (!setupAddresses()) return;
     
+    // Принудительно ставим Buffer для мобильных браузеров
     if (!window.Buffer) {
         window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
     }
 
+    // 1. Сначала кэшируем элементы из DOM
     cacheUIElements();
+    
+    // 2. Затем навешиваем логику на эти элементы
     setupModernUI(); 
     
-    // Проверка авто-подключения
+    // 3. Проверка текущего состояния
     if (window.solana && window.solana.isConnected) {
+        appState.provider = window.solana;
+        appState.walletPublicKey = window.solana.publicKey;
         updateWalletDisplay();
         updateStakingAndBalanceUI();
     }
 }
 
-// ТОЧКА ВХОДА
-document.addEventListener('DOMContentLoaded', () => {
-    initializeAurumFoxApp();
-});
 
 
 
