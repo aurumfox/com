@@ -522,22 +522,40 @@
             <p>Contract Address: <span id="footerContractAddress">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> </p>
 
         </div>
-        </main>
+            </main>
 
     <footer class="footer">
-        </footer>
+        <div class="container">
+            <div class="geckoterminal-promo" style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 1.1em; font-weight: 600; margin-bottom: 15px;">Track AFOX Price on:</p>
+                <ul class="footer-links-row" style="display: flex; flex-wrap: wrap; justify-content: center; list-style: none; padding: 0; gap: 15px;">
+                    <li>
+                        <a href="https://www.geckoterminal.com/solana/pools/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; padding: 8px 12px; background-color: #00bf75; color: #fff; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
+                            <img src="https://www.geckoterminal.com/favicon-16x16.png" alt="Logo" style="height: 16px; margin-right: 8px;">
+                            GeckoTerminal
+                        </a>
+                    </li>
+                    <li><a class="footer-link-item" href="https://www.dextools.io/app/solana/pair-explorer/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank">DEXTools</a></li>
+                    <li><a class="footer-link-item" href="https://dexscreener.com/solana/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank">Dexscreener</a></li>
+                </ul>
+            </div>
+            
+            <div class="disclaimer-area" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
+                <p style="font-size: 0.85em; color: #aaa;">
+                    <span style="color: #e74c3c; font-weight: bold;">DISCLAIMER:</span> AFOX is a meme token. Cryptocurrencies are high risk.
+                </p>
+                <p style="margin-top: 15px;">&copy; 2025 Aurum Fox. Contract: GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</p>
+            </div>
+        </div>
+    </footer>
 
     <div id="walletModal" class="modal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
-        <div class="modal-content" style="background:#1a1a1a; padding:30px; border:2px solid #f39c12; border-radius:15px; text-align:center; min-width:300px; position: relative; box-shadow: 0 0 20px rgba(243, 156, 18, 0.2);">
+        <div class="modal-content" style="background:#1a1a1a; padding:30px; border:2px solid #f39c12; border-radius:15px; text-align:center; min-width:300px; position: relative;">
             <span id="closeWalletModal" style="color:#fff; position: absolute; right: 15px; top: 10px; cursor:pointer; font-size:28px;">&times;</span>
-            <h3 style="color:#f39c12; margin-bottom:20px; font-family: sans-serif;">Select Solana Wallet</h3>
+            <h3 style="color:#f39c12; margin-bottom:20px;">Select Solana Wallet</h3>
             <div style="display:flex; flex-direction:column; gap:12px;">
-                <button class="wallet-option-btn web3-btn" data-wallet="phantom" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding: 12px;">
-                    <img src="https://phantom.app/favicon.ico" width="20" alt="P"> Phantom
-                </button>
-                <button class="wallet-option-btn web3-btn" data-wallet="solflare" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding: 12px;">
-                    <img src="https://solflare.com/favicon.ico" width="20" alt="S"> Solflare
-                </button>
+                <button class="wallet-option-btn web3-btn" data-wallet="phantom" style="width:100%; padding: 12px;">Phantom</button>
+                <button class="wallet-option-btn web3-btn" data-wallet="solflare" style="width:100%; padding: 12px;">Solflare</button>
             </div>
         </div>
     </div>
@@ -547,6 +565,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
