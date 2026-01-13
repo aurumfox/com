@@ -1502,6 +1502,9 @@ function initializeAurumFoxApp() {
     cacheUIElements();
     setupWalletModalEvents(); // Активируем модалку
     setupModernUI();
+window.addEventListener('DOMContentLoaded', () => {
+    initializeAurumFoxApp();
+});
 
 
     } 
