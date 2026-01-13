@@ -1516,35 +1516,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 
-    // --- БЛОК ЗАКРЫТИЯ МОДАЛОК ---
 
-    // 1. Закрытие модалки DAO
-    const closeProposalBtn = document.getElementById('closeProposalModal');
-    const proposalModal = document.getElementById('createProposalModal');
-    
-    if (closeProposalBtn && proposalModal) {
-        closeProposalBtn.onclick = (e) => {
-            e.preventDefault();
-            proposalModal.style.display = 'none';
-        };
-    }
-
-    // 2. Закрытие модалки Кошелька (твое новое окно)
-    const closeWalletBtn = document.getElementById('closeWalletModal');
-    const walletModal = document.getElementById('walletModal');
-    
-    if (closeWalletBtn && walletModal) {
-        closeWalletBtn.onclick = (e) => {
-            e.preventDefault();
-            walletModal.style.display = 'none';
-        };
-    }
-
-    // 3. Закрытие при клике ВНЕ окон
-    window.addEventListener('click', (event) => {
-        if (event.target === proposalModal) proposalModal.style.display = 'none';
-        if (event.target === walletModal) walletModal.style.display = 'none';
-    });
 
 
 
