@@ -1159,6 +1159,51 @@ async function connectWallet() {
 // ИСПРАВЛЕННЫЙ БЛОК: УПРАВЛЕНИЕ КОШЕЛЬКАМИ И МОДАЛКАМИ
 // ============================================================
 
+
+async function connectToProvider(walletType) {
+    let provider = null;
+    const type = walletType.toLowerCase();
+
+    // === ВОТ ЭТОТ БЛОК ДЛЯ JUPITER ===
+    if (type === 'jupiter') {
+        console.log("🚀 Переход на агрегатор Jupiter...");
+        window.open("https://jup.ag/", "_blank");
+        return; // Останавливаем выполнение функции, чтобы код не искал провайдера
+    }
+    // ================================
+
+    // Дальше идет ваш обычный список кошельков...
+    const providers = {
+        phantom: window.solana?.isPhantom ? window.solana : null,
+        solflare: window.solflare,
+        backpack: window.backpack,
+        // ... и так далее
+    };
+
+    const installLinks = {
+        phantom: "https://phantom.app/",
+        solflare: "https://solflare.com/",
+        // ... и так далее
+    };
+
+    provider = providers[type];
+
+    // Если это не Юпитер и кошелек не найден — отправляем качать
+    if (!provider) {
+        showNotification(`Redirecting to ${walletType} install page...`, "info");
+        setTimeout(() => {
+            window.open(installLinks[type] || "https://solana.com/wallets", "_blank");
+        }, 800);
+        return;
+    }
+
+    // Логика подключения (resp = await provider.connect()...)
+    // ...
+}
+
+
+
+
 async function connectToProvider(walletType) {
     let provider = null;
     const type = walletType.toLowerCase();
