@@ -1153,57 +1153,108 @@ async function connectWallet() {
 }
 
 
-/**
- * Подключается к выбранному расширению (Phantom, Solflare или Backpack)
- */
+// 1. Глобальные переменные (защита от ReferenceError)
+let uiElements = {};
+
 async function connectToProvider(walletType) {
     let provider = null;
 
     try {
-        if (walletType === 'phantom') {
-            provider = window.solana;
-        } else if (walletType === 'solflare') {
-            provider = window.solflare;
-        } else if (walletType === 'backpack') {
-            provider = window.backpack;
-        }
+        // Карта поиска провайдеров (включая Jupiter и Bitget)
+        const providers = {
+            phantom: window.solana,
+            solflare: window.solflare,
+            backpack: window.backpack,
+            jupiter: window.jupiter || (window.solana && window.solana.isJupiter ? window.solana : null),
+            bitget: window.bitkeep?.solana || window.bitgetWallet?.solana,
+            okx: window.okxwallet?.solana,
+            trust: window.trustwallet?.solana
+        };
+
+        provider = providers[walletType];
 
         if (!provider) {
-            showNotification(`${walletType.toUpperCase()} not found! Please install the extension.`, "error");
-            window.open(walletType === 'phantom' ? 'https://phantom.app/' : 'https://solflare.com/', '_blank');
+            showNotification(`${walletType.toUpperCase()} не найден!`, "error");
             return;
         }
 
-        actionAudit("Connect", "process", `Connecting to ${walletType}...`);
+        actionAudit("Connect", "process", `Подключение к ${walletType}...`);
 
-        // Запрос на подключение
         const resp = await provider.connect();
-        
-        // Сохраняем данные в глобальный стейт
         appState.provider = provider;
         appState.walletPublicKey = resp.publicKey;
         
-        // Создаем соединение с RPC, если его еще нет
         if (!appState.connection) {
             appState.connection = await getRobustConnection();
         }
 
-        // Закрываем модалку
+        // Закрываем модалку через ID напрямую для надежности
         const modal = document.getElementById('walletModal');
         if (modal) modal.style.display = 'none';
 
-        // Обновляем всё
         updateWalletDisplay();
         await updateStakingAndBalanceUI();
         
-        showNotification(`Connected to ${walletType}!`, "success");
-        spawnEmoji(document.body, "🦊");
+        showNotification(`Подключено к ${walletType}!`, "success");
+        if (typeof spawnEmoji === 'function') spawnEmoji(document.body, "🦊");
 
     } catch (err) {
-        console.error("Connection error:", err);
-        showNotification("User rejected connection", "error");
+        console.error("Ошибка подключения:", err);
+        showNotification("Отказано в доступе", "error");
     }
 }
+
+// Инициализация приложения при загрузке страницы
+window.addEventListener('DOMContentLoaded', () => {
+    console.log("🚀 Запуск Aurum Fox...");
+    
+    // Инициализируем адреса
+    if (typeof setupAddresses === 'function') setupAddresses();
+    
+    // Кэшируем элементы
+    if (typeof cacheUIElements === 'function') cacheUIElements();
+    
+    // Настраиваем события модалок
+    setupWalletModalEvents();
+    
+    // Настраиваем кнопки действий
+    if (typeof setupModernUI === 'function') setupModernUI();
+    
+    // Проверяем, был ли кошелек подключен ранее
+    if (window.solana && window.solana.isConnected) {
+        appState.walletPublicKey = window.solana.publicKey;
+        updateWalletDisplay();
+        updateStakingAndBalanceUI();
+    }
+});
+
+// ФИКС ЗАКРЫТИЯ МОДАЛОК (БЕЗ ЛИШНИХ СКОБОК)
+function setupWalletModalEvents() {
+    const closeWalletBtn = document.getElementById('closeWalletModal');
+    const walletModal = document.getElementById('walletModal');
+    
+    if (closeWalletBtn && walletModal) {
+        closeWalletBtn.onclick = (e) => {
+            e.preventDefault();
+            walletModal.style.display = 'none';
+        };
+    }
+
+    const walletButtons = document.querySelectorAll('.wallet-option-btn');
+    walletButtons.forEach(btn => {
+        btn.onclick = () => {
+            const type = btn.getAttribute('data-wallet');
+            connectToProvider(type);
+        };
+    });
+
+    window.addEventListener('click', (event) => {
+        const proposalModal = document.getElementById('createProposalModal');
+        if (event.target === walletModal) walletModal.style.display = 'none';
+        if (proposalModal && event.target === proposalModal) proposalModal.style.display = 'none';
+    });
+}
+
 
 
 
