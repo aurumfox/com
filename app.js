@@ -1201,56 +1201,99 @@ if (window.solana) {
 
 
 function setupModernUI() {
+    // 1. Описываем все действия как единую систему
     const actions = [
-        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
-        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
-        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
-        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
+        { 
+            id: 'connectWalletBtn', 
+            name: 'Wallet', 
+            msg: 'Connected! 🦊', 
+            icon: '🔑', 
+            fn: async () => await connectWallet() 
+        },
+        { 
+            id: 'stake-afox-btn', 
+            name: 'Staking', 
+            msg: 'Tokens Locked! 📈', 
+            icon: '💰', 
+            fn: handleStakeAfox 
+        },
+        { 
+            id: 'unstake-afox-btn', 
+            name: 'Unstake', 
+            msg: 'Tokens Freed! 🕊️', 
+            icon: '🔓', 
+            fn: handleUnstakeAfox 
+        },
+        { 
+            id: 'claim-rewards-btn', 
+            name: 'Claim', 
+            msg: 'Profit Taken! 🎁', 
+            icon: '💎', 
+            fn: handleClaimRewards 
+        },
         
-        // Открытие модалки DAO
-        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
-            const modal = document.getElementById('createProposalModal');
-            if(modal) modal.style.display = 'flex'; 
-        }},
+        // Блок DAO
+        { 
+            id: 'createProposalBtn', 
+            name: 'DAO', 
+            msg: 'Opening...', 
+            icon: '✍️', 
+            fn: async () => { 
+                const modal = document.getElementById('createProposalModal');
+                if(modal) modal.style.display = 'flex'; 
+            }
+        },
         { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
+        
+        // Блок Lending/Loans
         { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
         { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
         { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // Привязка действий к кнопкам
+    // 2. Универсальная привязка слушателей (убирает дубли и "оживляет" кнопки)
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
+            // Клонируем, чтобы убрать старые слушатели и избежать багов
             const cleanBtn = el.cloneNode(true);
             el.parentNode.replaceChild(cleanBtn, el);
-            cleanBtn.onclick = (e) => {
+            
+            cleanBtn.onclick = async (e) => {
                 if (e) e.preventDefault();
-                executeSmartActionWithFullEffects(cleanBtn, item);
+                
+                // Для всех действий, кроме коннекта, проверяем, подключен ли кошелек
+                if (item.id !== 'connectWalletBtn' && !appState.walletPublicKey) {
+                    showNotification("Please connect wallet first!", "info");
+                    return;
+                }
+                
+                // Запуск красивой анимации и основной функции
+                await executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 
-    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
-    const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
-    const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
-    
+    // 3. Логика закрытия модальных окон
+    setupModalHandlers();
+}
+
+// Вынес обработку модалок в отдельную функцию для чистоты
+function setupModalHandlers() {
+    const closeBtn = document.getElementById('closeProposalModal');
+    const modal = document.getElementById('createProposalModal');
 
     if (closeBtn && modal) {
         closeBtn.onclick = (e) => {
             e.preventDefault();
             modal.style.display = 'none';
-            console.log("Модалка DAO закрыта через крестик");
         };
 
-        // Дополнительно: закрытие при клике ВНЕ окна
         window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
+            if (event.target === modal) modal.style.display = 'none';
         });
     }
 }
