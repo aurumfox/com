@@ -549,37 +549,39 @@
         </div>
     </footer>
 
-    <div id="walletModal" class="modal">
+    <div id="walletModal" class="modal" style="display:none;">
     <div class="modal-content modern-ui">
-        <span class="close-button" onclick="closeModal()">&times;</span>
+        <span class="close-button" id="closeWalletModal">&times;</span>
+        
         <h2 class="modal-title">Connect Wallet</h2>
         <p class="modal-subtitle">Выберите кошелек для подключения к Solana</p>
         
         <div class="wallet-grid">
-            <button class="wallet-btn modern" data-wallet="phantom">
+            <button class="wallet-btn modern wallet-option-btn" data-wallet="phantom">
                 <span class="icon">👻</span> Phantom
             </button>
-            <button class="wallet-btn modern" data-wallet="solflare">
+            <button class="wallet-btn modern wallet-option-btn" data-wallet="solflare">
                 <span class="icon">☀️</span> Solflare
             </button>
-            <button class="wallet-btn modern" data-wallet="jupiter">
+            <button class="wallet-btn modern wallet-option-btn" data-wallet="jupiter">
                 <span class="icon">🪐</span> Jupiter
             </button>
-            <button class="wallet-btn modern" data-wallet="backpack">
+            <button class="wallet-btn modern wallet-option-btn" data-wallet="backpack">
                 <span class="icon">🎒</span> Backpack
             </button>
-            <button class="wallet-btn modern" data-wallet="okx">
+            <button class="wallet-btn modern wallet-option-btn" data-wallet="okx">
                 <span class="icon">🖤</span> OKX Wallet
             </button>
-            <button class="wallet-btn modern" data-wallet="bitget">
+            <button class="wallet-btn modern wallet-option-btn" data-wallet="bitget">
                 <span class="icon">💎</span> Bitget
             </button>
-            <button class="wallet-btn modern" data-wallet="trust">
+            <button class="wallet-btn modern wallet-option-btn" data-wallet="trust">
                 <span class="icon">🛡️</span> Trust Wallet
             </button>
         </div>
     </div>
 </div>
+
 
 
 
