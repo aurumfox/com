@@ -1158,26 +1158,7 @@ async function connectWallet() {
 
 
 
-const connectBtn = document.getElementById('connectWalletBtn');
-const walletModal = document.getElementById('walletModal');
-const closeBtn = document.getElementById('closeWalletModal');
 
-// Открытие модального окна
-connectBtn.addEventListener('click', () => {
-    walletModal.style.display = 'block';
-});
-
-// Закрытие модального окна
-closeBtn.addEventListener('click', () => {
-    walletModal.style.display = 'none';
-});
-
-// Закрытие при клике вне окна
-window.onclick = function(event) {
-    if (event.target == walletModal) {
-        walletModal.style.display = "none";
-    }
-}
 
 
 // ============================================================
@@ -1609,6 +1590,135 @@ async function executeSmartActionWithFullEffects(btn, config) {
 
 
 
+
+
+
+
+// --- 1. ЛОГИКА ИНТЕРФЕЙСА (КНОПКИ И МОДАЛКИ) ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Элементы модального окна кошельков
+    const walletModal = document.getElementById('walletModal');
+    const connectBtn = document.getElementById('connectWalletBtn');
+    const closeWalletBtn = document.getElementById('closeWalletModal');
+    
+    // Элементы модального окна DAO
+    const proposalModal = document.getElementById('createProposalModal');
+    const createProposalBtn = document.getElementById('createProposalBtn');
+    const closeProposalBtn = document.getElementById('closeProposalModal');
+
+    // Открытие окна кошельков
+    if (connectBtn) {
+        connectBtn.onclick = () => { walletModal.style.display = 'flex'; };
+    }
+
+    // Закрытие окна кошельков
+    if (closeWalletBtn) {
+        closeWalletBtn.onclick = () => { walletModal.style.display = 'none'; };
+    }
+
+    // Открытие окна создания предложения DAO
+    if (createProposalBtn) {
+        createProposalBtn.onclick = () => { proposalModal.style.display = 'flex'; };
+    }
+
+    if (closeProposalBtn) {
+        closeProposalBtn.onclick = () => { proposalModal.style.display = 'none'; };
+    }
+
+    // Закрытие окон при клике на темную область
+    window.onclick = (event) => {
+        if (event.target == walletModal) walletModal.style.display = "none";
+        if (event.target == proposalModal) proposalModal.style.display = "none";
+    };
+
+    // Привязка выбора конкретного кошелька
+    const walletOptions = document.querySelectorAll('.wallet-option-btn');
+    walletOptions.forEach(btn => {
+        btn.onclick = () => {
+            const walletType = btn.getAttribute('data-wallet');
+            connectSolanaWallet(walletType);
+        };
+    });
+});
+
+// --- 2. ЛОГИКА ПОДКЛЮЧЕНИЯ К SOLANA ---
+
+let userWalletAddress = null;
+
+async function connectSolanaWallet(type) {
+    try {
+        let provider = null;
+
+        if (type === 'phantom') {
+            if (window.solana && window.solana.isPhantom) {
+                provider = window.solana;
+            } else {
+                alert('Phantom не установлен! Пожалуйста, установите расширение.');
+                window.open("https://phantom.app/", "_blank");
+                return;
+            }
+        } else if (type === 'solflare') {
+            if (window.solflare) {
+                provider = window.solflare;
+            } else {
+                alert('Solflare не установлен!');
+                return;
+            }
+        }
+        // Добавьте логику для других кошельков по аналогии
+
+        if (provider) {
+            // Подключаемся
+            const resp = await provider.connect();
+            userWalletAddress = resp.publicKey.toString();
+            
+            console.log("Connected with Public Key:", userWalletAddress);
+            
+            // Обновляем интерфейс
+            updateUI(userWalletAddress);
+            
+            // Закрываем модалку
+            document.getElementById('walletModal').style.display = 'none';
+            showNotification("Успешно подключено!", "success");
+        }
+
+    } catch (err) {
+        console.error("Ошибка подключения:", err);
+        showNotification("Ошибка при подключении кошелька", "error");
+    }
+}
+
+// --- 3. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ПОСЛЕ ВХОДА ---
+
+function updateUI(address) {
+    const connectBtn = document.getElementById('connectWalletBtn');
+    if (connectBtn) {
+        // Сокращаем адрес для красоты: 4 буквы...4 буквы
+        const shortAddress = address.slice(0, 4) + "..." + address.slice(-4);
+        connectBtn.innerHTML = `🦊 ${shortAddress}`;
+        connectBtn.style.background = "#2ecc71"; // Зеленый цвет при успехе
+    }
+    
+    // Здесь можно добавить загрузку баланса AFOX из блокчейна
+    document.getElementById('user-afox-balance').innerText = "Загрузка...";
+}
+
+// --- 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (УВЕДОМЛЕНИЯ) ---
+
+function showNotification(message, type) {
+    const container = document.getElementById('notification-container');
+    const note = document.createElement('div');
+    note.style.padding = "15px";
+    note.style.marginBottom = "10px";
+    note.style.borderRadius = "8px";
+    note.style.color = "white";
+    note.style.background = type === "success" ? "#2ecc71" : "#e74c3c";
+    note.innerText = message;
+
+    container.appendChild(note);
+    setTimeout(() => note.remove(), 4000);
+}
 
 
 
