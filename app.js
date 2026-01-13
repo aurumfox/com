@@ -1519,7 +1519,7 @@ function setupModernUI() {
         if (event.target === proposalModal) proposalModal.style.display = 'none';
         if (event.target === walletModal) walletModal.style.display = 'none';
     });
-}
+
 
 
     // --- ФИКС ЗАКРЫТИЯ МОДАЛОК (DAO И КОШЕЛЬКИ) ---
