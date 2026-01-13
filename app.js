@@ -1161,115 +1161,68 @@ async function connectWallet() {
 
 
 async function connectToProvider(walletType) {
-    let provider = null;
+    if (!walletType) return;
     const type = walletType.toLowerCase();
 
-    // === ВОТ ЭТОТ БЛОК ДЛЯ JUPITER ===
+    // 1. СПЕЦИАЛЬНЫЙ БЛОК ДЛЯ JUPITER (Агрегатор)
+    // Мы выносим его отдельно, так как это не кошелек-расширение
     if (type === 'jupiter') {
-        console.log("🚀 Переход на агрегатор Jupiter...");
-        window.open("https://jup.ag/", "_blank");
-        return; // Останавливаем выполнение функции, чтобы код не искал провайдера
-    }
-    // ================================
-
-    // Дальше идет ваш обычный список кошельков...
-    const providers = {
-        phantom: window.solana?.isPhantom ? window.solana : null,
-        solflare: window.solflare,
-        backpack: window.backpack,
-        // ... и так далее
-    };
-
-    const installLinks = {
-        phantom: "https://phantom.app/",
-        solflare: "https://solflare.com/",
-        // ... и так далее
-    };
-
-    provider = providers[type];
-
-    // Если это не Юпитер и кошелек не найден — отправляем качать
-    if (!provider) {
-        showNotification(`Redirecting to ${walletType} install page...`, "info");
-        setTimeout(() => {
-            window.open(installLinks[type] || "https://solana.com/wallets", "_blank");
-        }, 800);
-        return;
+        console.log("🚀 Переход на Jupiter...");
+        window.open("https://jup.ag/swap/SOL-GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd", "_blank");
+        return; 
     }
 
-    // Логика подключения (resp = await provider.connect()...)
-    // ...
-}
-
-
-
-
-async function connectToProvider(walletType) {
-    let provider = null;
-    const type = walletType.toLowerCase();
-
-    // 1. Карта поиска провайдеров
+    // 2. Карта поиска провайдеров (7 штук, включая Trust и Jupiter для логики)
     const providers = {
         phantom: window.solana?.isPhantom ? window.solana : null,
         solflare: window.solflare,
         backpack: window.backpack,
         bitget: window.bitkeep?.solana || window.bitgetWallet?.solana,
         okx: window.okxwallet?.solana,
-        trust: window.trustwallet?.solana
+        trust: window.trustwallet?.solana || window.solana?.isTrust,
+        jupiter: null // Для Jupiter провайдер не нужен, мы обработали его выше
     };
 
-    // 2. Ссылки на установку
+    // 3. Ссылки на установку (Все 7 ссылок)
     const installLinks = {
         phantom: "https://phantom.app/",
         solflare: "https://solflare.com/",
         backpack: "https://backpack.app/",
-        bitget: "https://web3.bitget.com/",
+        bitget: "https://www.bitget.com/web3",
         okx: "https://www.okx.com/web3",
-        trust: "https://trustwallet.com/"
+        trust: "https://trustwallet.com/",
+        jupiter: "https://jup.ag/" // Добавлена седьмая ссылка
     };
 
-    provider = providers[type];
+    const provider = providers[type];
 
-    // 3. ПРОВЕРКА: Если кошелька нет — отправляем скачивать
+    // 4. Если кошелька нет в браузере — отправляем по ссылке
     if (!provider) {
-        console.warn(`⚠️ Кошелек ${walletType} не найден. Редирект на установку...`);
-        showNotification(`Redirecting to ${walletType} install page...`, "info");
+        console.warn(`⚠️ ${walletType} не обнаружен. Редирект...`);
+        showNotification(`Redirecting to ${walletType} page...`, "info");
         
-        // Маленькая задержка перед переходом для красоты
         setTimeout(() => {
-            window.open(installLinks[type] || "https://solana.com/wallets", "_blank");
+            // Берем ссылку из нашего списка installLinks
+            const url = installLinks[type] || "https://solana.com/wallets";
+            window.open(url, "_blank");
         }, 800);
         return;
     }
 
-    // 4. Если кошелек есть — подключаемся
+    // 5. Логика подключения (для Phantom, Solflare и т.д.)
     try {
-        actionAudit("Connect", "process", `Connecting to ${walletType}...`);
-        
         const resp = await provider.connect();
-        
         appState.provider = provider;
         appState.walletPublicKey = resp.publicKey;
         
-        if (!appState.connection) {
-            appState.connection = await getRobustConnection();
-        }
-
-        // Закрываем модалку и обновляем UI
-        const walletModal = document.getElementById('walletModal');
-        if (walletModal) walletModal.style.display = 'none';
-
-        updateWalletDisplay();
-        await updateStakingAndBalanceUI();
-        
+        if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
         showNotification(`Connected to ${walletType}!`, "success");
-        spawnEmoji(document.body, "🦊");
-
     } catch (err) {
-        console.error("Connection error:", err);
+        console.error("Ошибка:", err);
         showNotification("Connection refused", "error");
     }
 }
+
 
 
 
