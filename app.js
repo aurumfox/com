@@ -262,38 +262,7 @@ function setupAddresses() {
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
 
-/**
- * Converts a string value (user input) into BigInt.
- */
-function parseAmountToBigInt(amountStr, decimals) {
-    if (!amountStr || amountStr.trim() === '') return BigInt(0);
 
-    const cleanedStr = amountStr.trim().replace(/[^\d.]/g, '');
-
-    if (cleanedStr.split('.').length > 2) {
-        throw new Error('Invalid number format: multiple decimal points.');
-    }
-
-    const parts = cleanedStr.split('.');
-    const integerPart = parts[0] || '0';
-    let fractionalPart = parts.length > 1 ? parts[1] : '';
-
-    if (fractionalPart.length > decimals) {
-        fractionalPart = fractionalPart.substring(0, decimals);
-    }
-
-    const paddedFractionalPart = fractionalPart.padEnd(decimals, '0');
-
-    if (integerPart === '0' && paddedFractionalPart.replace(/0/g, '').length === 0) {
-         return BigInt(0);
-    }
-    
-        if (integerPart !== '0') {
-        return BigInt(integerPart + paddedFractionalPart);
-    } else {
-        return BigInt(paddedFractionalPart);
-    }
-} 
 
 
 
@@ -304,17 +273,7 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
-function actionAudit(name, status, detail = "") {
-    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
-    const messages = {
-        process: `${icons.process} ${name}: Transaction started...`,
-        success: `${icons.success} ${name}: Successful! ${detail}`,
-        error: `${icons.error} ${name} Failed: ${detail}`,
-        info: `${icons.info} ${detail}`
-    };
-    showNotification(messages[status], status === 'process' ? 'info' : status);
-    console.log(`[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()} ${detail}`);
-}
+
 
 
 
@@ -337,19 +296,7 @@ function setBtnState(btn, isLoading, text = "Wait...") {
 
 
 
-/**
- * Updates staking and balance UI elements after a transaction.
- */
-async function updateStakingAndBalanceUI() {
-    try {
-        await Promise.all([
-            fetchUserBalances(),
-            updateStakingUI()
-        ]);
-    } catch (error) {
-        console.error("Error refreshing UI:", error);
-    }
-}
+
 
 
 
@@ -799,24 +746,7 @@ document.head.appendChild(style);
 
 
 
-// 1. Восстанавливаем движок транзакций
-async function smartAction(btn, name, msg, icon, fn) {
-    try {
-        if (btn) setBtnState(btn, true, name);
-        const signature = await fn();
-        if (btn) {
-            if (typeof spawnEmoji === 'function') spawnEmoji(btn, icon);
-            showNotification(`${msg} TX: ${signature.slice(0, 8)}...`, "success");
-        }
-        return signature;
-    } catch (e) {
-        console.error(`❌ Ошибка в ${name}:`, e);
-        showNotification(e.message || "Ошибка транзакции", "error");
-        throw e;
-    } finally {
-        if (btn) setBtnState(btn, false);
-    }
-}
+
 
 // 2. Добавляем анимацию успеха (чтобы код не падал в конце)
 function spawnEmoji(el, emoji) {
