@@ -512,6 +512,73 @@ li {
 /* ==========================================================================
    Buttons
 ========================================================================== */
+/* Общий стиль модалки */
+.modern-ui {
+    background: rgba(20, 20, 30, 0.9) !important;
+    backdrop-filter: blur(15px); /* Размытие фона */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px !important;
+    padding: 30px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    max-width: 450px !important;
+}
+
+.modal-title {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.modal-subtitle {
+    color: #888;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+/* Сетка кнопок */
+.wallet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* В две колонки */
+    gap: 12px;
+}
+
+/* Современная кнопка */
+.wallet-btn.modern {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    color: #fff;
+    padding: 15px;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* Эффект при наведении */
+.wallet-btn.modern:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #6d4aff; /* Цвет бренда Solana (фиолетовый) */
+    transform: translateY(-3px); /* Легкий прыжок вверх */
+    box-shadow: 0 10px 20px rgba(109, 74, 255, 0.2);
+}
+
+.wallet-btn.modern .icon {
+    font-size: 20px;
+}
+
+/* Кнопка Jupiter (выделяем её цветом) */
+.wallet-btn.modern[data-wallet="jupiter"] {
+    background: linear-gradient(90deg, rgba(191, 255, 0, 0.1), rgba(0, 0, 0, 0));
+    border-color: rgba(191, 255, 0, 0.3);
+}
+
+
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
