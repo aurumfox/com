@@ -1018,20 +1018,7 @@ function handlePublicKeyChange(newPublicKey) {
     if (newPublicKey) updateStakingAndBalanceUI();
 }
 
-function setLoadingState(isLoading, button = null) {
-    if (uiElements.pageLoader) uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
-    const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
-    btns.forEach(btn => { if (btn) btn.disabled = isLoading; });
-    if (button) {
-        button.disabled = isLoading;
-        if (isLoading) {
-            button.dataset.oldText = button.textContent;
-            button.textContent = '...Wait';
-        } else if (button.dataset.oldText) {
-            button.textContent = button.dataset.oldText;
-        }
-    }
-}
+
 
 /**
  * Получает реальные балансы SOL и AFOX из блокчейна.
@@ -1075,9 +1062,7 @@ async function fetchUserBalances() {
 
 
 
-// ============================================================
-// НОВЫЙ БЛОК: УПРАВЛЕНИЕ ВЫБОРОМ КОШЕЛЬКА
-// ============================================================
+
 
 
 
@@ -1200,9 +1185,7 @@ function setupWalletModalEvents() {
 // БЛОК: ОТКЛЮЧЕНИЕ КОШЕЛЬКА (DISCONNECT)
 // ============================================================
 
-/**
- * Разрывает соединение с кошельком и сбрасывает состояние приложения.
- */
+
 async function disconnectWallet() {
     try {
         console.log("🔄 Запуск процесса отключения...");
@@ -1417,56 +1400,6 @@ function setupModernUI() {
 
 
     
-
-
-
-
-
-    // --- ФИКС ЗАКРЫТИЯ МОДАЛОК (DAO И КОШЕЛЬКИ) ---
-
-// Используем существующие элементы из uiElements или получаем их, если их там нет
-const closeProposalBtn = document.getElementById('closeProposalModal');
-const proposalModal = document.getElementById('createProposalModal');
-const closeWalletBtn = document.getElementById('closeWalletModal');
-const walletModal = document.getElementById('walletModal');
-
-if (closeProposalBtn && proposalModal) {
-    closeProposalBtn.onclick = (e) => {
-        e.preventDefault();
-        proposalModal.style.display = 'none';
-    };
-}
-
-if (closeWalletBtn && walletModal) {
-    closeWalletBtn.onclick = (e) => {
-        e.preventDefault();
-        walletModal.style.display = 'none';
-    };
-}
-
-// Единый слушатель для закрытия при клике вне окон
-window.addEventListener('click', (event) => {
-    if (proposalModal && event.target === proposalModal) {
-        proposalModal.style.display = 'none';
-    }
-    if (walletModal && event.target === walletModal) {
-        walletModal.style.display = 'none';
-    }
-});
-
-    
-// 1. Функция открытия модалки (Табло с кошельками)
-async function openWalletModal() {
-    const modal = document.getElementById('walletModal');
-    if (modal) {
-        modal.style.display = 'flex'; // Показываем модалку
-        console.log("🦊 Табло кошельков открыто");
-    } else {
-        console.error("❌ Ошибка: Элемент walletModal не найден в HTML");
-        showNotification("Wallet menu not found", "error");
-    }
-}
-
 
 
     
