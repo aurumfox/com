@@ -405,7 +405,35 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
+function actionAudit(name, status, detail = "") {
+    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
+    const messages = {
+        process: `${icons.process} ${name}: Transaction started...`,
+        success: `${icons.success} ${name}: Successful! ${detail}`,
+        error: `${icons.error} ${name} Failed: ${detail}`,
+        info: `${icons.info} ${detail}`
+    };
+    showNotification(messages[status], status === 'process' ? 'info' : status);
+    console.log(`[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()} ${detail}`);
+}
 
+
+
+
+// Улучшенная функция статуса кнопок
+function setBtnState(btn, isLoading, text = "Wait...") {
+    if (!btn) return;
+    if (isLoading) {
+        btn.disabled = true;
+        btn.dataset.old = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner"></span> ${text}`;
+        btn.style.opacity = "0.6";
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.old || btn.innerHTML;
+        btn.style.opacity = "1";
+    }
+}
 
 
 
@@ -931,7 +959,22 @@ async function smartAction(btn, name, msg, icon, fn) {
     }
 }
 
-
+// 2. Добавляем анимацию успеха (чтобы код не падал в конце)
+function spawnEmoji(el, emoji) {
+    const rect = el.getBoundingClientRect();
+    for (let i = 0; i < 8; i++) {
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.style.cssText = `position:fixed; left:${rect.left + rect.width/2}px; top:${rect.top}px; z-index:10000; pointer-events:none;`;
+        document.body.appendChild(span);
+        const angle = (Math.random() * Math.PI * 2);
+        const dist = 50 + Math.random() * 50;
+        span.animate([
+            { transform: 'translate(0,0) scale(1)', opacity: 1 },
+            { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(1.5)`, opacity: 0 }
+        ], { duration: 1000 }).onfinish = () => span.remove();
+    }
+}
 
 
 
@@ -1099,13 +1142,15 @@ async function fetchUserBalances() {
 // НОВЫЙ БЛОК: УПРАВЛЕНИЕ ВЫБОРОМ КОШЕЛЬКА
 // ============================================================
 
-
-
-
-
-
-
-
+async function connectWallet() {
+    const modal = document.getElementById('walletModal');
+    if (modal) {
+        modal.style.display = 'flex'; // Показываем выбор кошельков
+        console.log("📂 Открыто окно выбора кошелька");
+    } else {
+        console.error("❌ Ошибка: Модальное окно 'walletModal' не найдено в HTML");
+    }
+}
 
 
 
@@ -1118,124 +1163,65 @@ async function fetchUserBalances() {
 async function connectToProvider(walletType) {
     if (!walletType) return;
     const type = walletType.toLowerCase();
-    const modal = document.getElementById('walletModal');
-    
-    // 1. Определение мобильного устройства и текущей ссылки
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const currentUrl = window.location.href.replace(/^https?:\/\//, ''); // Ссылка без http для некоторых кошельков
-    const fullUrl = encodeURIComponent(window.location.href);
 
-    // Сохраняем выбор, чтобы после перезагрузки внутри кошелька всё подхватилось
-    localStorage.setItem('selectedWallet', type);
-
-    // 2. БЛОК JUPITER
+    // 1. СПЕЦИАЛЬНЫЙ БЛОК ДЛЯ JUPITER (Агрегатор)
+    // Мы выносим его отдельно, так как это не кошелек-расширение
     if (type === 'jupiter') {
-        if (modal) modal.style.display = 'none';
+        console.log("🚀 Переход на Jupiter...");
         window.open("https://jup.ag/swap/SOL-GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd", "_blank");
         return; 
     }
 
-    // 3. УНИВЕРСАЛЬНЫЕ DEEP LINKS (Чтобы сайт открывался ВНУТРИ кошелька)
-    const mobileLinks = {
-        phantom: `https://phantom.app/ul/browse/${fullUrl}`,
-        solflare: `https://solflare.com/ul/v1/browse/${fullUrl}`,
-        backpack: `https://backpack.app/ul/browse/${fullUrl}`,
-        bitget: `https://web3.bitget.com/ru/dapp/details?dappUrl=${fullUrl}`,
-        okx: `okx://wallet/dapp/details?dappUrl=${fullUrl}`,
-        trust: `https://link.trustwallet.com/open_url?url=${fullUrl}`,
-        // Для метамаска или других если понадобится: `https://metamask.app.link/dapp/${currentUrl}`
-    };
-
-    // 4. ПРОВЕРКА НАЛИЧИЯ ПРОВАЙДЕРА (уже внутри кошелька или на ПК)
+    // 2. Карта поиска провайдеров (7 штук, включая Trust и Jupiter для логики)
     const providers = {
         phantom: window.solana?.isPhantom ? window.solana : null,
         solflare: window.solflare,
         backpack: window.backpack,
         bitget: window.bitkeep?.solana || window.bitgetWallet?.solana,
         okx: window.okxwallet?.solana,
-        trust: window.trustwallet?.solana || window.solana?.isTrust
+        trust: window.trustwallet?.solana || window.solana?.isTrust,
+        jupiter: null // Для Jupiter провайдер не нужен, мы обработали его выше
+    };
+
+    // 3. Ссылки на установку (Все 7 ссылок)
+    const installLinks = {
+        phantom: "https://phantom.app/",
+        solflare: "https://solflare.com/",
+        backpack: "https://backpack.app/",
+        bitget: "https://www.bitget.com/web3",
+        okx: "https://www.okx.com/web3",
+        trust: "https://trustwallet.com/",
+        jupiter: "https://jup.ag/" // Добавлена седьмая ссылка
     };
 
     const provider = providers[type];
 
-    // 5. ЛОГИКА ДЛЯ МОБИЛОК (Если зашли из Twitter/Chrome)
-    if (isMobile && !provider) {
-        if (mobileLinks[type]) {
-            if (modal) modal.style.display = 'none';
-            showNotification(`Opening in ${walletType}...`, "info");
-            
-            // Прямой редирект на приложение кошелька с открытием сайта
-            window.location.href = mobileLinks[type];
-            return;
-        }
+    // 4. Если кошелька нет в браузере — отправляем по ссылке
+    if (!provider) {
+        console.warn(`⚠️ ${walletType} не обнаружен. Редирект...`);
+        showNotification(`Redirecting to ${walletType} page...`, "info");
+        
+        setTimeout(() => {
+            // Берем ссылку из нашего списка installLinks
+            const url = installLinks[type] || "https://solana.com/wallets";
+            window.open(url, "_blank");
+        }, 800);
+        return;
     }
 
-    // 6. ОБЫЧНОЕ ПОДКЛЮЧЕНИЕ (Если мы уже внутри кошелька)
-    if (provider) {
-        try {
-            if (modal) modal.style.display = 'none';
-            
-            const resp = await provider.connect();
-            appState.provider = provider;
-            appState.walletPublicKey = resp.publicKey;
-            
-            if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
-            if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
-            
-            showNotification("Connected!", "success");
-        } catch (err) {
-            console.error("Connection error:", err);
-            showNotification("Failed to connect", "error");
-        }
-    } else {
-        // Если кошелька нет и это ПК
-        window.open("https://solana.com/wallets", "_blank");
+    // 5. Логика подключения (для Phantom, Solflare и т.д.)
+    try {
+        const resp = await provider.connect();
+        appState.provider = provider;
+        appState.walletPublicKey = resp.publicKey;
+        
+        if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+        showNotification(`Connected to ${walletType}!`, "success");
+    } catch (err) {
+        console.error("Ошибка:", err);
+        showNotification("Connection refused", "error");
     }
 }
-
-
-
-
-
-
-
-window.addEventListener('load', () => {
-    // Ждем 1 секунду, пока мобильный кошелек внедрит свой скрипт в страницу
-    setTimeout(async () => {
-        const savedWallet = localStorage.getItem('selectedWallet');
-        if (!savedWallet) return;
-
-        const providers = {
-            phantom: window.solana?.isPhantom ? window.solana : null,
-            solflare: window.solflare,
-            backpack: window.backpack,
-            bitget: window.bitkeep?.solana || window.bitgetWallet?.solana,
-            okx: window.okxwallet?.solana,
-            trust: window.trustwallet?.solana || window.solana?.isTrust
-        };
-
-        const provider = providers[savedWallet];
-
-        if (provider) {
-            try {
-                // Пытаемся подключиться автоматически
-                const resp = await provider.connect({ onlyIfTrusted: true });
-                if (resp.publicKey) {
-                    appState.provider = provider;
-                    appState.walletPublicKey = resp.publicKey;
-                    updateWalletDisplay();
-                    updateStakingAndBalanceUI();
-                    
-                    // Убираем модалку, если она видна
-                    const modal = document.getElementById('walletModal');
-                    if (modal) modal.style.display = 'none';
-                }
-            } catch (e) {
-                console.log("Auto-connect silent failed");
-            }
-        }
-    }, 1000);
-});
 
 
 
@@ -1412,6 +1398,126 @@ if (window.solana) {
 
 
 
+// ============================================================
+// ЕДИНЫЙ ИСПРАВЛЕННЫЙ БЛОК УПРАВЛЕНИЯ ИНТЕРФЕЙСОМ
+// ============================================================
+
+function setupModernUI() {
+    console.log("🛠️ Настройка интерфейса...");
+
+    const actions = [
+        { 
+            id: 'connectWalletBtn', 
+            name: 'Wallet', 
+            msg: 'Opening Selector...', 
+            icon: '🔑', 
+            fn: async () => {
+                const modal = document.getElementById('walletModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                } else {
+                    if (typeof connectWallet === 'function') await connectWallet();
+                }
+            }
+        },
+        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
+        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
+        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
+        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
+            const modal = document.getElementById('createProposalModal');
+            if(modal) modal.style.display = 'flex'; 
+        }},
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
+        { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
+        { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
+        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
+        { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
+        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
+        { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
+    ];
+
+    // 1. Привязка действий к основным кнопкам (с эффектами)
+    actions.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (el) {
+            const cleanBtn = el.cloneNode(true);
+            el.parentNode.replaceChild(cleanBtn, el);
+            cleanBtn.onclick = (e) => {
+                if (e) e.preventDefault();
+                executeSmartActionWithFullEffects(cleanBtn, item);
+            };
+        }
+    });
+
+    // 2. Настройка выбора конкретного кошелька (внутри табло)
+    const walletOptions = document.querySelectorAll('.wallet-option, .wallet-option-btn');
+    walletOptions.forEach(btn => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            const walletType = btn.getAttribute('data-wallet');
+            connectToProvider(walletType);
+        };
+    });
+
+    // 3. Закрытие модалок (Крестики)
+    const closeHandlers = [
+        { btn: 'closeWalletModal', modal: 'walletModal' },
+        { btn: 'closeProposalModal', modal: 'createProposalModal' }
+    ];
+
+    closeHandlers.forEach(item => {
+        const btnEl = document.getElementById(item.btn);
+        const modalEl = document.getElementById(item.modal);
+        if (btnEl && modalEl) {
+            btnEl.onclick = (e) => {
+                e.preventDefault();
+                modalEl.style.display = 'none';
+            };
+        }
+    });
+
+    // 4. Закрытие при клике ВНЕ окон
+    window.onclick = (event) => {
+        const wModal = document.getElementById('walletModal');
+        const pModal = document.getElementById('createProposalModal');
+        if (event.target === wModal) wModal.style.display = 'none';
+        if (event.target === pModal) pModal.style.display = 'none';
+    };
+}
+
+// ФУНКЦИЯ ЗАПУСКА ПРИЛОЖЕНИЯ
+function initializeAurumFoxApp() {
+    console.log("🚀 Система AurumFox запускается...");
+    
+    if (!setupAddresses()) return;
+    
+    if (!window.Buffer) {
+        window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+    }
+
+    cacheUIElements();
+    setupModernUI(); 
+    
+    // Проверка авто-подключения
+    if (window.solana && window.solana.isConnected) {
+        updateWalletDisplay();
+        updateStakingAndBalanceUI();
+    }
+}
+
+// ТОЧКА ВХОДА
+document.addEventListener('DOMContentLoaded', () => {
+    initializeAurumFoxApp();
+});
+
+
+
+
+
+    
+
+
+
 
 
     // --- ФИКС ЗАКРЫТИЯ МОДАЛОК (DAO И КОШЕЛЬКИ) ---
@@ -1463,290 +1569,67 @@ async function openWalletModal() {
 
     
 
-
-
-
-
-
-    
-
-    
-
-// 1. КЭШИРОВАНИЕ (Исправлено: теперь это функция, которую мы вызываем ПОСЛЕ клонирования)
-function refreshCache() {
-    uiElements = {
-        userAfoxBalance: document.getElementById('user-afox-balance'),
-        userStakedAmount: document.getElementById('user-staked-amount'),
-        userRewardsAmount: document.getElementById('user-rewards-amount'),
-        stakingApr: document.getElementById('staking-apr'),
-        lockupPeriod: document.getElementById('lockup-period'),
-        stakeAmountInput: document.getElementById('stake-amount'),
-        poolSelector: document.getElementById('pool-selector'),
-        stakeAfoxBtn: document.getElementById('stake-afox-btn'),
-        claimRewardsBtn: document.getElementById('claim-rewards-btn'),
-        unstakeAfoxBtn: document.getElementById('unstake-afox-btn'),
-        createProposalModal: document.getElementById('createProposalModal'),
-        notificationContainer: document.getElementById('notification-container')
-    };
+// 1. Инициализация приложения
+function initializeAurumFoxApp() {
+    console.log("🦊 Инициализация Aurum Fox...");
+    setupModernUI(); // Запускаем настройку кнопок
 }
 
-// 2. ГЛАВНЫЙ МОТОР ЭФФЕКТОВ (Твой любимый стиль)
-async function executeSmartActionWithFullEffects(btn, config) {
-    if (btn.classList.contains('loading')) return;
-
-    const originalHTML = btn.innerHTML;
-    
-    // Вход в состояние загрузки
-    btn.classList.add('loading');
-    btn.disabled = true;
-    btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
-    
-    actionAudit(config.name, "process", "Connecting to Solana...");
-
-    try {
-        // Проверка кошелька перед действием (кроме коннекта)
-        if (config.id !== 'connectWalletBtn' && (!appState.walletPublicKey)) {
-            throw new Error("Connect wallet first!");
-        }
-
-        // ВЫПОЛНЕНИЕ ЛОГИКИ
-        await config.fn(); 
-
-        // ФИДБЕК: Успех + Твоя анимация
-        btn.classList.remove('loading');
-        btn.classList.add('success-glow');
-        btn.innerHTML = `✅ ${config.msg}`;
-        
-        if (typeof spawnEmoji === 'function') spawnEmoji(btn, config.icon); 
-
-        actionAudit(config.name, "success", config.msg);
-        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
-
-    } catch (err) {
-        console.error(`[CRITICAL] Error:`, err);
-        btn.classList.remove('loading');
-        btn.innerHTML = `❌ Failed`;
-        btn.classList.add('error-shake');
-        actionAudit(config.name, "error", err.message);
-    } finally {
-        setTimeout(() => {
-            btn.classList.remove('success-glow', 'loading', 'error-shake');
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-        }, 3500);
-    }
-}
-
-
-
-
-
-
-
-// --- 1. ЛОГИКА ИНТЕРФЕЙСА (КНОПКИ И МОДАЛКИ) ---
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Элементы модального окна кошельков
-    const walletModal = document.getElementById('walletModal');
+// 2. Настройка всех кнопок и модалок
+function setupModernUI() {
+    const modal = document.getElementById('walletModal');
     const connectBtn = document.getElementById('connectWalletBtn');
-    const closeWalletBtn = document.getElementById('closeWalletModal');
-    
-    // Элементы модального окна DAO
-    const proposalModal = document.getElementById('createProposalModal');
-    const createProposalBtn = document.getElementById('createProposalBtn');
-    const closeProposalBtn = document.getElementById('closeProposalModal');
+    const closeBtn = document.getElementById('closeWalletModal');
 
-    // Открытие окна кошельков
+    // Открытие модалки при клике на "Connect Wallet"
     if (connectBtn) {
-        connectBtn.onclick = () => { walletModal.style.display = 'flex'; };
+        connectBtn.onclick = (e) => {
+            e.preventDefault();
+            modal.style.display = 'flex'; // Используем flex для центрирования
+        };
     }
 
-    // Закрытие окна кошельков
-    if (closeWalletBtn) {
-        closeWalletBtn.onclick = () => { walletModal.style.display = 'none'; };
+    // Закрытие модалки (Крестик)
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
     }
 
-    // Открытие окна создания предложения DAO
-    if (createProposalBtn) {
-        createProposalBtn.onclick = () => { proposalModal.style.display = 'flex'; };
-    }
+    // Закрытие при клике на темный фон
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
 
-    if (closeProposalBtn) {
-        closeProposalBtn.onclick = () => { proposalModal.style.display = 'none'; };
-    }
-
-    // Закрытие окон при клике на темную область
-    window.onclick = (event) => {
-        if (event.target == walletModal) walletModal.style.display = "none";
-        if (event.target == proposalModal) proposalModal.style.display = "none";
-    };
-
-    // Привязка выбора конкретного кошелька
-    const walletOptions = document.querySelectorAll('.wallet-option-btn');
-    walletOptions.forEach(btn => {
-        btn.onclick = () => {
+    // Настройка кнопок выбора кошелька (Phantom, Solflare и т.д.)
+    const walletButtons = document.querySelectorAll('.wallet-option-btn');
+    walletButtons.forEach(btn => {
+        btn.onclick = async () => {
             const walletType = btn.getAttribute('data-wallet');
-            connectSolanaWallet(walletType);
+            console.log("Выбран кошелек:", walletType);
+            
+            // Вызываем твою функцию подключения
+            if (typeof connectToProvider === 'function') {
+                await connectToProvider(walletType);
+            } else {
+                // Если функции нет, используем простую логику
+                await connectWallet(walletType); 
+            }
+            modal.style.display = 'none'; // Закрываем после выбора
         };
     });
+}
+
+// 3. Точка входа (твой код с защитой от повторного запуска)
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof window.isAppInitialized === 'undefined') {
+        initializeAurumFoxApp();
+        window.isAppInitialized = true;
+    }
 });
 
-
-
-// --- 3. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ПОСЛЕ ВХОДА ---
-
-function updateUI(address) {
-    const connectBtn = document.getElementById('connectWalletBtn');
-    if (connectBtn) {
-        // Сокращаем адрес для красоты: 4 буквы...4 буквы
-        const shortAddress = address.slice(0, 4) + "..." + address.slice(-4);
-        connectBtn.innerHTML = `🦊 ${shortAddress}`;
-        connectBtn.style.background = "#2ecc71"; // Зеленый цвет при успехе
-    }
     
-    // Здесь можно добавить загрузку баланса AFOX из блокчейна
-    document.getElementById('user-afox-balance').innerText = "Загрузка...";
-}
 
-// --- 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (УВЕДОМЛЕНИЯ) ---
-
-function showNotification(message, type) {
-    const container = document.getElementById('notification-container');
-    const note = document.createElement('div');
-    note.style.padding = "15px";
-    note.style.marginBottom = "10px";
-    note.style.borderRadius = "8px";
-    note.style.color = "white";
-    note.style.background = type === "success" ? "#2ecc71" : "#e74c3c";
-    note.innerText = message;
-
-    container.appendChild(note);
-    setTimeout(() => note.remove(), 4000);
-}
-
-
-
-
-
-
-
-/**
- * НАСТРОЙКА ИНТЕРФЕЙСА
- * Устранена проблема с потерей ссылок при клонировании и добавлены все DAO/Lending действия.
- */
-function setupModernUI() {
-    console.log("🛠️ Синхронизация интерфейса и привязка триггеров...");
-
-    const actions = [
-        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
-        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
-        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
-        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
-        { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
-        { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
-        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
-        { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
-        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
-        { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
-    ];
-
-    actions.forEach(item => {
-        const el = document.getElementById(item.id);
-        if (el) {
-            // Вместо клонирования просто заменяем обработчик
-            el.onclick = null; // Очистка старого (на всякий случай)
-            el.onclick = async (e) => {
-                e.preventDefault();
-                
-                // Проверка: если это не кнопка коннекта, нужен подключенный кошелек
-                if (item.id !== 'connectWalletBtn' && !appState.walletPublicKey) {
-                    showNotification("Please connect your wallet first", "info");
-                    connectWallet();
-                    return;
-                }
-                
-                await executeSmartActionWithFullEffects(el, item);
-            };
-        }
-    });
-
-    // Специальная кнопка открытия модалки DAO (без эффектов загрузки)
-    const createBtn = document.getElementById('createProposalBtn');
-    if (createBtn) {
-        createBtn.onclick = (e) => {
-            e.preventDefault();
-            const modal = document.getElementById('createProposalModal');
-            if (modal) modal.style.display = 'flex';
-        };
-    }
-
-    // Настройка закрытия всех модалок
-    const setupModalClose = (closeId, modalId) => {
-        const btn = document.getElementById(closeId);
-        const modal = document.getElementById(modalId);
-        if (btn && modal) {
-            btn.onclick = (e) => { e.preventDefault(); modal.style.display = 'none'; };
-        }
-    };
-
-    setupModalClose('closeProposalModal', 'createProposalModal');
-    setupModalClose('closeWalletModal', 'walletModal');
-
-    // Клик по серому фону закрывает модалки
-    window.onclick = (e) => {
-        const modals = ['createProposalModal', 'walletModal'];
-        modals.forEach(id => {
-            const m = document.getElementById(id);
-            if (e.target === m) m.style.display = 'none';
-        });
-    };
-
-    // Обновляем кэш элементов для доступа из функций стейкинга
-    if (typeof refreshCache === 'function') refreshCache();
-}
-
-/**
- * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ
- * Упорядоченный запуск систем
- */
-async function initializeAurumFoxApp() {
-    console.log("🚀 Запуск AurumFox Web3 Engine...");
-
-    try {
-        // 1. Настройка окружения
-        if (!setupAddresses()) {
-            throw new Error("Failed to initialize Solana addresses.");
-        }
-        
-        // Fix для Buffer в браузере
-        if (!window.Buffer) {
-            window.Buffer = (await import('https://esm.sh/buffer')).Buffer;
-        }
-
-        // 2. Отрисовка UI и привязка событий
-        setupModernUI();
-
-        // 3. Восстановление сессии
-        const savedWallet = localStorage.getItem('selectedWallet');
-        if (savedWallet && window.solana && window.solana.isPhantom) {
-            // Если Phantom уже доверяет сайту, подключаемся тихо
-            const resp = await window.solana.connect({ onlyIfTrusted: true }).catch(() => null);
-            if (resp) {
-                appState.provider = window.solana;
-                appState.walletPublicKey = resp.publicKey;
-                updateWalletDisplay();
-                await updateStakingAndBalanceUI();
-                console.log("♻️ Сессия восстановлена");
-            }
-        }
-    } catch (err) {
-        console.error("🛑 Критическая ошибка при старте:", err);
-    }
-}
-
-
-
-
-
-
+    
