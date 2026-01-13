@@ -1502,11 +1502,9 @@ function initializeAurumFoxApp() {
     setupWalletModalEvents(); // Активируем модалку
     setupModernUI();
 
-    // ❌ УДАЛИ ИЛИ ИЗМЕНИ ЭТОТ БЛОК:
-    /* if (window.solana && window.solana.isConnected) {
-        // Раньше тут стоял принудительный коннект к фантому
+
     } 
-    */
+    
 }
 
 
