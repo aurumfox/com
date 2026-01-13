@@ -405,35 +405,6 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
-function actionAudit(name, status, detail = "") {
-    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
-    const messages = {
-        process: `${icons.process} ${name}: Transaction started...`,
-        success: `${icons.success} ${name}: Successful! ${detail}`,
-        error: `${icons.error} ${name} Failed: ${detail}`,
-        info: `${icons.info} ${detail}`
-    };
-    showNotification(messages[status], status === 'process' ? 'info' : status);
-    console.log(`[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()} ${detail}`);
-}
-
-
-
-
-// Улучшенная функция статуса кнопок
-function setBtnState(btn, isLoading, text = "Wait...") {
-    if (!btn) return;
-    if (isLoading) {
-        btn.disabled = true;
-        btn.dataset.old = btn.innerHTML;
-        btn.innerHTML = `<span class="spinner"></span> ${text}`;
-        btn.style.opacity = "0.6";
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.old || btn.innerHTML;
-        btn.style.opacity = "1";
-    }
-}
 
 
 
@@ -959,22 +930,7 @@ async function smartAction(btn, name, msg, icon, fn) {
     }
 }
 
-// 2. Добавляем анимацию успеха (чтобы код не падал в конце)
-function spawnEmoji(el, emoji) {
-    const rect = el.getBoundingClientRect();
-    for (let i = 0; i < 8; i++) {
-        const span = document.createElement('span');
-        span.textContent = emoji;
-        span.style.cssText = `position:fixed; left:${rect.left + rect.width/2}px; top:${rect.top}px; z-index:10000; pointer-events:none;`;
-        document.body.appendChild(span);
-        const angle = (Math.random() * Math.PI * 2);
-        const dist = 50 + Math.random() * 50;
-        span.animate([
-            { transform: 'translate(0,0) scale(1)', opacity: 1 },
-            { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(1.5)`, opacity: 0 }
-        ], { duration: 1000 }).onfinish = () => span.remove();
-    }
-}
+
 
 
 
@@ -1142,15 +1098,6 @@ async function fetchUserBalances() {
 // НОВЫЙ БЛОК: УПРАВЛЕНИЕ ВЫБОРОМ КОШЕЛЬКА
 // ============================================================
 
-async function connectWallet() {
-    const modal = document.getElementById('walletModal');
-    if (modal) {
-        modal.style.display = 'flex'; // Показываем выбор кошельков
-        console.log("📂 Открыто окно выбора кошелька");
-    } else {
-        console.error("❌ Ошибка: Модальное окно 'walletModal' не найдено в HTML");
-    }
-}
 
 
 
@@ -1484,32 +1431,6 @@ function setupModernUI() {
         if (event.target === pModal) pModal.style.display = 'none';
     };
 }
-
-// ФУНКЦИЯ ЗАПУСКА ПРИЛОЖЕНИЯ
-function initializeAurumFoxApp() {
-    console.log("🚀 Система AurumFox запускается...");
-    
-    if (!setupAddresses()) return;
-    
-    if (!window.Buffer) {
-        window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
-    }
-
-    cacheUIElements();
-    setupModernUI(); 
-    
-    // Проверка авто-подключения
-    if (window.solana && window.solana.isConnected) {
-        updateWalletDisplay();
-        updateStakingAndBalanceUI();
-    }
-}
-
-// ТОЧКА ВХОДА
-document.addEventListener('DOMContentLoaded', () => {
-    initializeAurumFoxApp();
-});
-
 
 
 
