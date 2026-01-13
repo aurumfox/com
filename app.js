@@ -262,7 +262,38 @@ function setupAddresses() {
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
 
+/**
+ * Converts a string value (user input) into BigInt.
+ */
+function parseAmountToBigInt(amountStr, decimals) {
+    if (!amountStr || amountStr.trim() === '') return BigInt(0);
 
+    const cleanedStr = amountStr.trim().replace(/[^\d.]/g, '');
+
+    if (cleanedStr.split('.').length > 2) {
+        throw new Error('Invalid number format: multiple decimal points.');
+    }
+
+    const parts = cleanedStr.split('.');
+    const integerPart = parts[0] || '0';
+    let fractionalPart = parts.length > 1 ? parts[1] : '';
+
+    if (fractionalPart.length > decimals) {
+        fractionalPart = fractionalPart.substring(0, decimals);
+    }
+
+    const paddedFractionalPart = fractionalPart.padEnd(decimals, '0');
+
+    if (integerPart === '0' && paddedFractionalPart.replace(/0/g, '').length === 0) {
+         return BigInt(0);
+    }
+    
+        if (integerPart !== '0') {
+        return BigInt(integerPart + paddedFractionalPart);
+    } else {
+        return BigInt(paddedFractionalPart);
+    }
+} 
 
 
 
@@ -278,25 +309,24 @@ let appState = { connection: null, provider: null, walletPublicKey: null, userBa
 
 
 
-// Улучшенная функция статуса кнопок
-function setBtnState(btn, isLoading, text = "Wait...") {
-    if (!btn) return;
-    if (isLoading) {
-        btn.disabled = true;
-        btn.dataset.old = btn.innerHTML;
-        btn.innerHTML = `<span class="spinner"></span> ${text}`;
-        btn.style.opacity = "0.6";
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.old || btn.innerHTML;
-        btn.style.opacity = "1";
+
+
+
+
+
+/**
+ * Updates staking and balance UI elements after a transaction.
+ */
+async function updateStakingAndBalanceUI() {
+    try {
+        await Promise.all([
+            fetchUserBalances(),
+            updateStakingUI()
+        ]);
+    } catch (error) {
+        console.error("Error refreshing UI:", error);
     }
 }
-
-
-
-
-
 
 
 
@@ -630,55 +660,6 @@ function cacheUIElements() {
 }
 
 
-// ЕДИНЫЙ ОБРАБОТЧИК ДЛЯ ВСЕХ КНОПОК
-
-async function executeSmartActionWithFullEffects(btn, config) {
-    if (btn.classList.contains('loading')) return;
-
-    const originalHTML = btn.innerHTML;
-    
-    // 1. СТИЛЬ: Вход в состояние загрузки
-    btn.classList.add('loading');
-    btn.disabled = true;
-    btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
-    
-    // Аудит в консоль и уведомление
-    actionAudit(config.name, "process", "Connecting to Solana...");
-
-    try {
-        // 2. ЛОГИКА: Выполнение Rust-инструкции
-        await config.fn(); 
-
-        // 3. ФИДБЕК: Успех + Анимация
-        btn.classList.remove('loading');
-        btn.classList.add('success-glow');
-        btn.innerHTML = `✅ ${config.msg}`;
-        
-        // Взрыв иконок (твой фирменный стиль)
-        spawnEmoji(btn, config.icon); 
-
-        actionAudit(config.name, "success", config.msg);
-        
-        // Глобальное обновление данных
-        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
-
-    } catch (err) {
-        // 4. ОШИБКА: Визуальный откат
-        console.error(`[CRITICAL] Error in ${config.name}:`, err);
-        btn.classList.remove('loading');
-        btn.innerHTML = `❌ Failed`;
-        btn.classList.add('error-shake'); // Добавь в CSS для тряски
-        
-        actionAudit(config.name, "error", err.message);
-    } finally {
-        // Сброс через 3.5 секунды
-        setTimeout(() => {
-            btn.classList.remove('success-glow', 'loading', 'error-shake');
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-        }, 3500);
-    }
-}
 
 
 
@@ -746,7 +727,24 @@ document.head.appendChild(style);
 
 
 
-
+// 1. Восстанавливаем движок транзакций
+async function smartAction(btn, name, msg, icon, fn) {
+    try {
+        if (btn) setBtnState(btn, true, name);
+        const signature = await fn();
+        if (btn) {
+            if (typeof spawnEmoji === 'function') spawnEmoji(btn, icon);
+            showNotification(`${msg} TX: ${signature.slice(0, 8)}...`, "success");
+        }
+        return signature;
+    } catch (e) {
+        console.error(`❌ Ошибка в ${name}:`, e);
+        showNotification(e.message || "Ошибка транзакции", "error");
+        throw e;
+    } finally {
+        if (btn) setBtnState(btn, false);
+    }
+}
 
 // 2. Добавляем анимацию успеха (чтобы код не падал в конце)
 function spawnEmoji(el, emoji) {
