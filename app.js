@@ -1460,35 +1460,38 @@ function setupModernUI() {
 
 
     // --- ФИКС ЗАКРЫТИЯ МОДАЛОК (DAO И КОШЕЛЬКИ) ---
-    
-    // Закрытие DAO модалки
-    const closeProposalBtn = document.getElementById('closeProposalModal');
-    const proposalModal = document.getElementById('createProposalModal');
-    
-    if (closeProposalBtn && proposalModal) {
-        closeProposalBtn.onclick = (e) => {
-            e.preventDefault();
-            proposalModal.style.display = 'none';
-        };
-    }
 
-    // Закрытие модалки кошельков (walletModal)
-    const closeWalletBtn = document.getElementById('closeWalletModal');
-    const walletModal = document.getElementById('walletModal');
-    
-    if (closeWalletBtn && walletModal) {
-        closeWalletBtn.onclick = (e) => {
-            e.preventDefault();
-            walletModal.style.display = 'none';
-        };
-    }
+// Используем существующие элементы из uiElements или получаем их, если их там нет
+const closeProposalBtn = document.getElementById('closeProposalModal');
+const proposalModal = document.getElementById('createProposalModal');
+const closeWalletBtn = document.getElementById('closeWalletModal');
+const walletModal = document.getElementById('walletModal');
 
-    // Закрытие при клике ВНЕ окон
-    window.addEventListener('click', (event) => {
-        if (event.target === proposalModal) proposalModal.style.display = 'none';
-        if (event.target === walletModal) walletModal.style.display = 'none';
-    });
+if (closeProposalBtn && proposalModal) {
+    closeProposalBtn.onclick = (e) => {
+        e.preventDefault();
+        proposalModal.style.display = 'none';
+    };
 }
+
+if (closeWalletBtn && walletModal) {
+    closeWalletBtn.onclick = (e) => {
+        e.preventDefault();
+        walletModal.style.display = 'none';
+    };
+}
+
+// Единый слушатель для закрытия при клике вне окон
+window.addEventListener('click', (event) => {
+    if (proposalModal && event.target === proposalModal) {
+        proposalModal.style.display = 'none';
+    }
+    if (walletModal && event.target === walletModal) {
+        walletModal.style.display = 'none';
+    }
+});
+
+    
 
 
 
