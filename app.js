@@ -1164,27 +1164,34 @@ async function connectToProvider(walletType) {
     if (!walletType) return;
     const type = walletType.toLowerCase();
     const modal = document.getElementById('walletModal');
+    
+    // 1. Определение мобильного устройства и текущей ссылки
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const currentUrl = encodeURIComponent(window.location.href);
+    const currentUrl = window.location.href.replace(/^https?:\/\//, ''); // Ссылка без http для некоторых кошельков
+    const fullUrl = encodeURIComponent(window.location.href);
 
-    // Сохраняем тип кошелька, чтобы сайт "вспомнил" его после перезагрузки в приложении
+    // Сохраняем выбор, чтобы после перезагрузки внутри кошелька всё подхватилось
     localStorage.setItem('selectedWallet', type);
 
+    // 2. БЛОК JUPITER
     if (type === 'jupiter') {
         if (modal) modal.style.display = 'none';
         window.open("https://jup.ag/swap/SOL-GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd", "_blank");
         return; 
     }
 
+    // 3. УНИВЕРСАЛЬНЫЕ DEEP LINKS (Чтобы сайт открывался ВНУТРИ кошелька)
     const mobileLinks = {
-        phantom: `https://phantom.app/ul/browse/${currentUrl}`,
-        solflare: `https://solflare.com/ul/v1/browse/${currentUrl}`,
-        backpack: `https://backpack.app/ul/browse/${currentUrl}`,
-        bitget: `https://web3.bitget.com/ru/dapp/details?dappUrl=${currentUrl}`,
-        okx: `okx://wallet/dapp/details?dappUrl=${currentUrl}`,
-        trust: `https://link.trustwallet.com/open_url?url=${currentUrl}`
+        phantom: `https://phantom.app/ul/browse/${fullUrl}`,
+        solflare: `https://solflare.com/ul/v1/browse/${fullUrl}`,
+        backpack: `https://backpack.app/ul/browse/${fullUrl}`,
+        bitget: `https://web3.bitget.com/ru/dapp/details?dappUrl=${fullUrl}`,
+        okx: `okx://wallet/dapp/details?dappUrl=${fullUrl}`,
+        trust: `https://link.trustwallet.com/open_url?url=${fullUrl}`,
+        // Для метамаска или других если понадобится: `https://metamask.app.link/dapp/${currentUrl}`
     };
 
+    // 4. ПРОВЕРКА НАЛИЧИЯ ПРОВАЙДЕРА (уже внутри кошелька или на ПК)
     const providers = {
         phantom: window.solana?.isPhantom ? window.solana : null,
         solflare: window.solflare,
@@ -1196,34 +1203,38 @@ async function connectToProvider(walletType) {
 
     const provider = providers[type];
 
-    // Если мы на мобилке и провайдера еще нет в объекте window
-    if (isMobile && !provider && mobileLinks[type]) {
-        if (modal) modal.style.display = 'none';
-        window.location.href = mobileLinks[type];
-        return;
+    // 5. ЛОГИКА ДЛЯ МОБИЛОК (Если зашли из Twitter/Chrome)
+    if (isMobile && !provider) {
+        if (mobileLinks[type]) {
+            if (modal) modal.style.display = 'none';
+            showNotification(`Opening in ${walletType}...`, "info");
+            
+            // Прямой редирект на приложение кошелька с открытием сайта
+            window.location.href = mobileLinks[type];
+            return;
+        }
     }
 
-    if (!provider) {
+    // 6. ОБЫЧНОЕ ПОДКЛЮЧЕНИЕ (Если мы уже внутри кошелька)
+    if (provider) {
+        try {
+            if (modal) modal.style.display = 'none';
+            
+            const resp = await provider.connect();
+            appState.provider = provider;
+            appState.walletPublicKey = resp.publicKey;
+            
+            if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+            if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+            
+            showNotification("Connected!", "success");
+        } catch (err) {
+            console.error("Connection error:", err);
+            showNotification("Failed to connect", "error");
+        }
+    } else {
+        // Если кошелька нет и это ПК
         window.open("https://solana.com/wallets", "_blank");
-        return;
-    }
-
-    try {
-        if (modal) modal.style.display = 'none'; // Закрываем сразу
-
-        // Параметр onlyIfTrusted: true позволяет подключиться без всплывающего окна, если уже залогинен
-        const resp = await provider.connect();
-        
-        appState.provider = provider;
-        appState.walletPublicKey = resp.publicKey;
-        
-        if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
-        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
-        
-        showNotification(`Connected!`, "success");
-    } catch (err) {
-        console.error("Connection error:", err);
-        showNotification("Failed to connect", "error");
     }
 }
 
@@ -1233,14 +1244,12 @@ async function connectToProvider(walletType) {
 
 
 
-
-// Функция автоматической проверки при загрузке страницы
-window.addEventListener('load', async () => {
-    const savedWallet = localStorage.getItem('selectedWallet');
-    if (!savedWallet) return;
-
-    // Ждем немного, чтобы провайдеры успели подгрузиться в window
+window.addEventListener('load', () => {
+    // Ждем 1 секунду, пока мобильный кошелек внедрит свой скрипт в страницу
     setTimeout(async () => {
+        const savedWallet = localStorage.getItem('selectedWallet');
+        if (!savedWallet) return;
+
         const providers = {
             phantom: window.solana?.isPhantom ? window.solana : null,
             solflare: window.solflare,
@@ -1252,26 +1261,25 @@ window.addEventListener('load', async () => {
 
         const provider = providers[savedWallet];
 
-        // Если мы внутри приложения кошелька, пробуем зайти автоматически
         if (provider) {
             try {
+                // Пытаемся подключиться автоматически
                 const resp = await provider.connect({ onlyIfTrusted: true });
                 if (resp.publicKey) {
                     appState.provider = provider;
                     appState.walletPublicKey = resp.publicKey;
-                    if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
-                    if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+                    updateWalletDisplay();
+                    updateStakingAndBalanceUI();
                     
-                    // Если всё успешно, скрываем модалку, если она вдруг открыта
+                    // Убираем модалку, если она видна
                     const modal = document.getElementById('walletModal');
                     if (modal) modal.style.display = 'none';
                 }
             } catch (e) {
-                // Если авто-вход не удался, просто ничего не делаем, пользователь нажмет сам
-                console.log("Авто-вход не удался, ждем клика");
+                console.log("Auto-connect silent failed");
             }
         }
-    }, 1000); 
+    }, 1000);
 });
 
 
