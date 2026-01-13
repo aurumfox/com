@@ -337,6 +337,7 @@ function setupAddresses() {
 
 
 
+let uiElements = {}; // Инициализируем пустым объектом глобально
 
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
@@ -1134,6 +1135,24 @@ async function fetchUserBalances() {
     }
 }
 
+
+
+
+// ============================================================
+// НОВЫЙ БЛОК: УПРАВЛЕНИЕ ВЫБОРОМ КОШЕЛЬКА
+// ============================================================
+
+async function connectWallet() {
+    const modal = document.getElementById('walletModal');
+    if (modal) {
+        modal.style.display = 'flex'; // Показываем выбор кошельков
+        console.log("📂 Открыто окно выбора кошелька");
+    } else {
+        console.error("❌ Ошибка: Модальное окно 'walletModal' не найдено в HTML");
+    }
+}
+
+
 /**
  * Подключается к выбранному расширению (Phantom, Solflare или Backpack)
  */
@@ -1185,24 +1204,6 @@ async function connectToProvider(walletType) {
         showNotification("User rejected connection", "error");
     }
 }
-
-
-
-
-// ============================================================
-// НОВЫЙ БЛОК: УПРАВЛЕНИЕ ВЫБОРОМ КОШЕЛЬКА
-// ============================================================
-
-async function connectWallet() {
-    const modal = document.getElementById('walletModal');
-    if (modal) {
-        modal.style.display = 'flex'; // Показываем выбор кошельков
-        console.log("📂 Открыто окно выбора кошелька");
-    } else {
-        console.error("❌ Ошибка: Модальное окно 'walletModal' не найдено в HTML");
-    }
-}
-
 
 
 
