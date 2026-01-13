@@ -1619,52 +1619,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// --- 2. ЛОГИКА ПОДКЛЮЧЕНИЯ К SOLANA ---
 
-let userWalletAddress = null;
-
-async function connectSolanaWallet(type) {
-    try {
-        let provider = null;
-
-        if (type === 'phantom') {
-            if (window.solana && window.solana.isPhantom) {
-                provider = window.solana;
-            } else {
-                alert('Phantom не установлен! Пожалуйста, установите расширение.');
-                window.open("https://phantom.app/", "_blank");
-                return;
-            }
-        } else if (type === 'solflare') {
-            if (window.solflare) {
-                provider = window.solflare;
-            } else {
-                alert('Solflare не установлен!');
-                return;
-            }
-        }
-        // Добавьте логику для других кошельков по аналогии
-
-        if (provider) {
-            // Подключаемся
-            const resp = await provider.connect();
-            userWalletAddress = resp.publicKey.toString();
-            
-            console.log("Connected with Public Key:", userWalletAddress);
-            
-            // Обновляем интерфейс
-            updateUI(userWalletAddress);
-            
-            // Закрываем модалку
-            document.getElementById('walletModal').style.display = 'none';
-            showNotification("Успешно подключено!", "success");
-        }
-
-    } catch (err) {
-        console.error("Ошибка подключения:", err);
-        showNotification("Ошибка при подключении кошелька", "error");
-    }
-}
 
 // --- 3. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ПОСЛЕ ВХОДА ---
 
