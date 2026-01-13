@@ -911,25 +911,6 @@ document.head.appendChild(style);
 
 
 
-// 1. Восстанавливаем движок транзакций
-async function smartAction(btn, name, msg, icon, fn) {
-    try {
-        if (btn) setBtnState(btn, true, name);
-        const signature = await fn();
-        if (btn) {
-            if (typeof spawnEmoji === 'function') spawnEmoji(btn, icon);
-            showNotification(`${msg} TX: ${signature.slice(0, 8)}...`, "success");
-        }
-        return signature;
-    } catch (e) {
-        console.error(`❌ Ошибка в ${name}:`, e);
-        showNotification(e.message || "Ошибка транзакции", "error");
-        throw e;
-    } finally {
-        if (btn) setBtnState(btn, false);
-    }
-}
-
 
 
 
