@@ -1165,63 +1165,79 @@ async function connectToProvider(walletType) {
     const type = walletType.toLowerCase();
 
     // 1. СПЕЦИАЛЬНЫЙ БЛОК ДЛЯ JUPITER (Агрегатор)
-    // Мы выносим его отдельно, так как это не кошелек-расширение
     if (type === 'jupiter') {
         console.log("🚀 Переход на Jupiter...");
         window.open("https://jup.ag/swap/SOL-GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd", "_blank");
+        // Закрываем модалку, так как пользователь ушел на другую вкладку
+        const modal = document.getElementById('walletModal');
+        if (modal) modal.style.display = 'none';
         return; 
     }
 
-    // 2. Карта поиска провайдеров (7 штук, включая Trust и Jupiter для логики)
+    // 2. Карта поиска провайдеров
     const providers = {
         phantom: window.solana?.isPhantom ? window.solana : null,
         solflare: window.solflare,
         backpack: window.backpack,
         bitget: window.bitkeep?.solana || window.bitgetWallet?.solana,
         okx: window.okxwallet?.solana,
-        trust: window.trustwallet?.solana || window.solana?.isTrust,
-        jupiter: null // Для Jupiter провайдер не нужен, мы обработали его выше
+        trust: window.trustwallet?.solana || window.solana?.isTrust
     };
 
-    // 3. Ссылки на установку (Все 7 ссылок)
+    // 3. Ссылки на установку
     const installLinks = {
         phantom: "https://phantom.app/",
         solflare: "https://solflare.com/",
         backpack: "https://backpack.app/",
         bitget: "https://www.bitget.com/web3",
         okx: "https://www.okx.com/web3",
-        trust: "https://trustwallet.com/",
-        jupiter: "https://jup.ag/" // Добавлена седьмая ссылка
+        trust: "https://trustwallet.com/"
     };
 
     const provider = providers[type];
 
-    // 4. Если кошелька нет в браузере — отправляем по ссылке
+    // 4. Если кошелька нет — редирект
     if (!provider) {
-        console.warn(`⚠️ ${walletType} не обнаружен. Редирект...`);
-        showNotification(`Redirecting to ${walletType} page...`, "info");
-        
+        console.warn(`⚠️ ${walletType} не обнаружен.`);
+        showNotification(`Redirecting to ${walletType} installation...`, "info");
         setTimeout(() => {
-            // Берем ссылку из нашего списка installLinks
             const url = installLinks[type] || "https://solana.com/wallets";
             window.open(url, "_blank");
         }, 800);
         return;
     }
 
-    // 5. Логика подключения (для Phantom, Solflare и т.д.)
+    // 5. Логика подключения
     try {
         const resp = await provider.connect();
+        
+        // Сохраняем данные в глобальное состояние
         appState.provider = provider;
         appState.walletPublicKey = resp.publicKey;
         
+        // Обновляем текст на кнопках (адрес кошелька)
         if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+        
         showNotification(`Connected to ${walletType}!`, "success");
+
+        // === ИСПРАВЛЕНИЕ: ЗАКРЫВАЕМ ОКНО ПОСЛЕ УСПЕХА ===
+        const modal = document.getElementById('walletModal');
+        if (modal) {
+            modal.style.display = 'none'; 
+            console.log("✅ Модалка закрыта автоматически");
+        }
+
+        // Запускаем обновление балансов
+        if (typeof updateStakingAndBalanceUI === 'function') {
+            await updateStakingAndBalanceUI();
+        }
+
     } catch (err) {
-        console.error("Ошибка:", err);
+        console.error("Ошибка подключения:", err);
         showNotification("Connection refused", "error");
     }
 }
+
 
 
 
