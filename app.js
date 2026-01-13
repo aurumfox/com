@@ -1164,29 +1164,27 @@ async function connectToProvider(walletType) {
     if (!walletType) return;
     const type = walletType.toLowerCase();
     const modal = document.getElementById('walletModal');
-    
-    // Проверка на мобильное устройство
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const currentUrl = encodeURIComponent(window.location.href);
 
-    // 1. СПЕЦИАЛЬНЫЙ БЛОК ДЛЯ JUPITER (Агрегатор)
+    // Сохраняем тип кошелька, чтобы сайт "вспомнил" его после перезагрузки в приложении
+    localStorage.setItem('selectedWallet', type);
+
     if (type === 'jupiter') {
         if (modal) modal.style.display = 'none';
         window.open("https://jup.ag/swap/SOL-GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd", "_blank");
         return; 
     }
 
-    // 2. КАРТА DEEP LINKS ДЛЯ МОБИЛОК (Чтобы выкидывало в приложение)
     const mobileLinks = {
         phantom: `https://phantom.app/ul/browse/${currentUrl}`,
         solflare: `https://solflare.com/ul/v1/browse/${currentUrl}`,
-        backpack: `https://backpack.app/ul/browse/${currentUrl}`, // DeepLink для Backpack
+        backpack: `https://backpack.app/ul/browse/${currentUrl}`,
         bitget: `https://web3.bitget.com/ru/dapp/details?dappUrl=${currentUrl}`,
         okx: `okx://wallet/dapp/details?dappUrl=${currentUrl}`,
         trust: `https://link.trustwallet.com/open_url?url=${currentUrl}`
     };
 
-    // 3. ПОИСК ПРОВАЙДЕРОВ (Все 6 + Jupiter выше)
     const providers = {
         phantom: window.solana?.isPhantom ? window.solana : null,
         solflare: window.solflare,
@@ -1196,57 +1194,85 @@ async function connectToProvider(walletType) {
         trust: window.trustwallet?.solana || window.solana?.isTrust
     };
 
-    // 4. ЛОГИКА ДЛЯ МОБИЛЬНЫХ: Если мы в обычном браузере (Twitter/Chrome), перекидываем в кошелек
-    if (isMobile && !providers[type] && mobileLinks[type]) {
-        if (modal) modal.style.display = 'none';
-        showNotification("Переходим в приложение кошелька...", "info");
-        setTimeout(() => {
-            window.location.href = mobileLinks[type];
-        }, 500);
-        return;
-    }
-
     const provider = providers[type];
 
-    // 5. ЕСЛИ КОШЕЛЕК НЕ НАЙДЕН (На ПК)
-    if (!provider) {
-        const installLinks = {
-            phantom: "https://phantom.app/",
-            solflare: "https://solflare.com/",
-            backpack: "https://backpack.app/",
-            bitget: "https://www.bitget.com/web3",
-            okx: "https://www.okx.com/web3",
-            trust: "https://trustwallet.com/"
-        };
-        window.open(installLinks[type] || "https://solana.com/wallets", "_blank");
+    // Если мы на мобилке и провайдера еще нет в объекте window
+    if (isMobile && !provider && mobileLinks[type]) {
+        if (modal) modal.style.display = 'none';
+        window.location.href = mobileLinks[type];
         return;
     }
 
-    // 6. ПОДКЛЮЧЕНИЕ (Если мы уже внутри браузера кошелька или на ПК)
-    try {
-        // Мгновенно закрываем модалку на телефоне перед коннектом
-        if (modal) modal.style.display = 'none';
+    if (!provider) {
+        window.open("https://solana.com/wallets", "_blank");
+        return;
+    }
 
+    try {
+        if (modal) modal.style.display = 'none'; // Закрываем сразу
+
+        // Параметр onlyIfTrusted: true позволяет подключиться без всплывающего окна, если уже залогинен
         const resp = await provider.connect();
         
         appState.provider = provider;
         appState.walletPublicKey = resp.publicKey;
         
         if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
-        showNotification(`Подключено!`, "success");
-
-        if (typeof updateStakingAndBalanceUI === 'function') {
-            await updateStakingAndBalanceUI();
-        }
-
+        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+        
+        showNotification(`Connected!`, "success");
     } catch (err) {
-        console.error("Ошибка подключения:", err);
-        showNotification("Ошибка входа", "error");
-        // Если пользователь нажал "отмена", можно вернуть модалку:
-        // if (modal) modal.style.display = 'flex';
+        console.error("Connection error:", err);
+        showNotification("Failed to connect", "error");
     }
 }
 
+
+
+
+
+
+
+
+// Функция автоматической проверки при загрузке страницы
+window.addEventListener('load', async () => {
+    const savedWallet = localStorage.getItem('selectedWallet');
+    if (!savedWallet) return;
+
+    // Ждем немного, чтобы провайдеры успели подгрузиться в window
+    setTimeout(async () => {
+        const providers = {
+            phantom: window.solana?.isPhantom ? window.solana : null,
+            solflare: window.solflare,
+            backpack: window.backpack,
+            bitget: window.bitkeep?.solana || window.bitgetWallet?.solana,
+            okx: window.okxwallet?.solana,
+            trust: window.trustwallet?.solana || window.solana?.isTrust
+        };
+
+        const provider = providers[savedWallet];
+
+        // Если мы внутри приложения кошелька, пробуем зайти автоматически
+        if (provider) {
+            try {
+                const resp = await provider.connect({ onlyIfTrusted: true });
+                if (resp.publicKey) {
+                    appState.provider = provider;
+                    appState.walletPublicKey = resp.publicKey;
+                    if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+                    if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+                    
+                    // Если всё успешно, скрываем модалку, если она вдруг открыта
+                    const modal = document.getElementById('walletModal');
+                    if (modal) modal.style.display = 'none';
+                }
+            } catch (e) {
+                // Если авто-вход не удался, просто ничего не делаем, пользователь нажмет сам
+                console.log("Авто-вход не удался, ждем клика");
+            }
+        }
+    }, 1000); 
+});
 
 
 
