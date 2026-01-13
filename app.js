@@ -1569,28 +1569,68 @@ async function openWalletModal() {
 
     
 
+// 1. Инициализация приложения
+function initializeAurumFoxApp() {
+    console.log("🦊 Инициализация Aurum Fox...");
+    setupModernUI(); // Запускаем настройку кнопок
+}
 
-    // Вызываем инициализацию только один раз при загрузке DOM
+// 2. Настройка всех кнопок и модалок
+function setupModernUI() {
+    const modal = document.getElementById('walletModal');
+    const connectBtn = document.getElementById('connectWalletBtn');
+    const closeBtn = document.getElementById('closeWalletModal');
+
+    // Открытие модалки при клике на "Connect Wallet"
+    if (connectBtn) {
+        connectBtn.onclick = (e) => {
+            e.preventDefault();
+            modal.style.display = 'flex'; // Используем flex для центрирования
+        };
+    }
+
+    // Закрытие модалки (Крестик)
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+
+    // Закрытие при клике на темный фон
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Настройка кнопок выбора кошелька (Phantom, Solflare и т.д.)
+    const walletButtons = document.querySelectorAll('.wallet-option-btn');
+    walletButtons.forEach(btn => {
+        btn.onclick = async () => {
+            const walletType = btn.getAttribute('data-wallet');
+            console.log("Выбран кошелек:", walletType);
+            
+            // Вызываем твою функцию подключения
+            if (typeof connectToProvider === 'function') {
+                await connectToProvider(walletType);
+            } else {
+                // Если функции нет, используем простую логику
+                await connectWallet(walletType); 
+            }
+            modal.style.display = 'none'; // Закрываем после выбора
+        };
+    });
+}
+
+// 3. Точка входа (твой код с защитой от повторного запуска)
 document.addEventListener('DOMContentLoaded', () => {
-    // Проверяем, не запущена ли инициализация уже
     if (typeof window.isAppInitialized === 'undefined') {
         initializeAurumFoxApp();
         window.isAppInitialized = true;
     }
 });
 
-// Слушатель для смены аккаунта в Phantom
-if (window.solana) {
-    window.solana.on('accountChanged', (publicKey) => {
-        if (publicKey) {
-            appState.walletPublicKey = publicKey;
-            updateWalletDisplay();
-            updateStakingAndBalanceUI();
-        } else {
-            disconnectWallet();
-        }
-    });
-}
+    
 
     
 
