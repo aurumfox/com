@@ -959,22 +959,7 @@ async function smartAction(btn, name, msg, icon, fn) {
     }
 }
 
-// 2. Добавляем анимацию успеха (чтобы код не падал в конце)
-function spawnEmoji(el, emoji) {
-    const rect = el.getBoundingClientRect();
-    for (let i = 0; i < 8; i++) {
-        const span = document.createElement('span');
-        span.textContent = emoji;
-        span.style.cssText = `position:fixed; left:${rect.left + rect.width/2}px; top:${rect.top}px; z-index:10000; pointer-events:none;`;
-        document.body.appendChild(span);
-        const angle = (Math.random() * Math.PI * 2);
-        const dist = 50 + Math.random() * 50;
-        span.animate([
-            { transform: 'translate(0,0) scale(1)', opacity: 1 },
-            { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(1.5)`, opacity: 0 }
-        ], { duration: 1000 }).onfinish = () => span.remove();
-    }
-}
+
 
 
 
@@ -1142,15 +1127,7 @@ async function fetchUserBalances() {
 // НОВЫЙ БЛОК: УПРАВЛЕНИЕ ВЫБОРОМ КОШЕЛЬКА
 // ============================================================
 
-async function connectWallet() {
-    const modal = document.getElementById('walletModal');
-    if (modal) {
-        modal.style.display = 'flex'; // Показываем выбор кошельков
-        console.log("📂 Открыто окно выбора кошелька");
-    } else {
-        console.error("❌ Ошибка: Модальное окно 'walletModal' не найдено в HTML");
-    }
-}
+
 
 
 
