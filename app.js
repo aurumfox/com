@@ -1512,6 +1512,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     } 
     
-}
+
 
 
