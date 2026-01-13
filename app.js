@@ -1565,32 +1565,7 @@ async function openWalletModal() {
     }
 }
 
-// 2. Универсальный инициализатор событий (Исправленный)
-function setupModernUI() {
-    // Находим кнопку в хедере
-    const connectBtn = document.getElementById('connectWalletBtn');
-    
-    if (connectBtn) {
-        // Убираем старые слушатели и ставим один четкий
-        connectBtn.replaceWith(connectBtn.cloneNode(true));
-        const newConnectBtn = document.getElementById('connectWalletBtn');
-        
-        newConnectBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openWalletModal();
-        });
-    }
 
-    // Настройка кнопок выбора внутри модалки (Phantom, Solflare и т.д.)
-    const walletOptions = document.querySelectorAll('.wallet-option-btn');
-    walletOptions.forEach(btn => {
-        btn.onclick = (e) => {
-            const walletType = btn.getAttribute('data-wallet');
-            console.log("Выбран кошелек:", walletType);
-            connectToProvider(walletType);
-        };
-    });
 
     
 
