@@ -1406,14 +1406,12 @@ function setupModernUI() {
             msg: 'Opening Selector...', 
             icon: '🔑', 
             fn: async () => {
-                // ИСПРАВЛЕНИЕ: Открываем модальное окно выбора (Phantom/Solflare/Backpack)
                 const modal = document.getElementById('walletModal');
                 if (modal) {
                     modal.style.display = 'flex';
                     console.log("📂 Окно выбора кошелька открыто");
                 } else {
-                    console.error("❌ Ошибка: Элемент 'walletModal' не найден в HTML");
-                    // Если модалки нет, пробуем старый метод
+                    console.error("❌ Ошибка: Элемент 'walletModal' не найден");
                     if (typeof connectWallet === 'function') await connectWallet();
                 }
             }
@@ -1421,8 +1419,6 @@ function setupModernUI() {
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
-        
-        // Открытие модалки DAO
         { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
             const modal = document.getElementById('createProposalModal');
             if(modal) modal.style.display = 'flex'; 
@@ -1436,7 +1432,7 @@ function setupModernUI() {
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // Привязка действий к кнопкам (клонирование для удаления старых слушателей)
+    // 1. Привязка действий к основным кнопкам
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
@@ -1448,6 +1444,51 @@ function setupModernUI() {
             };
         }
     });
+
+    // 2. АКТИВАЦИЯ ВЫБОРА КОШЕЛЬКА (Те самые красивые кнопки)
+    // Ищем все кнопки внутри модалки по классам
+    const walletOptions = document.querySelectorAll('.wallet-option, .wallet-option-btn');
+    walletOptions.forEach(btn => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            const walletType = btn.getAttribute('data-wallet');
+            console.log("📡 Подключение к кошельку:", walletType);
+            if (typeof connectToProvider === 'function') {
+                connectToProvider(walletType);
+            }
+        };
+    });
+
+    // 3. АКТИВАЦИЯ КРЕСТИКОВ ЗАКРЫТИЯ
+    const closeSelectors = [
+        { btn: 'closeWalletModal', modal: 'walletModal' },
+        { btn: 'closeProposalModal', modal: 'createProposalModal' }
+    ];
+
+    closeSelectors.forEach(item => {
+        const btn = document.getElementById(item.btn);
+        const modal = document.getElementById(item.modal);
+        if (btn && modal) {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                modal.style.display = 'none';
+            };
+        }
+    });
+
+    // 4. ЗАКРЫТИЕ ПО КЛИКУ ВНЕ ОКНА
+    window.addEventListener('click', (event) => {
+        const wModal = document.getElementById('walletModal');
+        const pModal = document.getElementById('createProposalModal');
+        if (event.target === wModal) wModal.style.display = 'none';
+        if (event.target === pModal) pModal.style.display = 'none';
+    });
+}
+
+
+
+
+    
 
     // --- БЛОК ЗАКРЫТИЯ МОДАЛОК ---
 
