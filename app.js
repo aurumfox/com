@@ -1582,19 +1582,27 @@ async function executeSmartActionWithFullEffects(btn, config) {
     }
 }
 
-// 3. НАСТРОЙКА ИНТЕРФЕЙСА (С правильным обновлением кэша)
+
+
+
+
+
+
+
+
+
+/**
+ * НАСТРОЙКА ИНТЕРФЕЙСА
+ * Устранена проблема с потерей ссылок при клонировании и добавлены все DAO/Lending действия.
+ */
 function setupModernUI() {
-    console.log("🛠️ Синхронизация интерфейса...");
+    console.log("🛠️ Синхронизация интерфейса и привязка триггеров...");
 
     const actions = [
         { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
-        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
-            const modal = document.getElementById('createProposalModal');
-            if(modal) modal.style.display = 'flex'; 
-        }},
         { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
@@ -1607,23 +1615,36 @@ function setupModernUI() {
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            // Клонируем кнопку, чтобы очистить старые слушатели
-            const cleanBtn = el.cloneNode(true);
-            el.parentNode.replaceChild(cleanBtn, el);
-            
-            cleanBtn.onclick = (e) => {
+            // Вместо клонирования просто заменяем обработчик
+            el.onclick = null; // Очистка старого (на всякий случай)
+            el.onclick = async (e) => {
                 e.preventDefault();
-                executeSmartActionWithFullEffects(cleanBtn, item);
+                
+                // Проверка: если это не кнопка коннекта, нужен подключенный кошелек
+                if (item.id !== 'connectWalletBtn' && !appState.walletPublicKey) {
+                    showNotification("Please connect your wallet first", "info");
+                    connectWallet();
+                    return;
+                }
+                
+                await executeSmartActionWithFullEffects(el, item);
             };
         }
     });
 
-    // КРИТИЧЕСКИЙ МОМЕНТ: Обновляем кэш, чтобы handleStakeAfox видел НОВЫЕ кнопки
-    refreshCache();
+    // Специальная кнопка открытия модалки DAO (без эффектов загрузки)
+    const createBtn = document.getElementById('createProposalBtn');
+    if (createBtn) {
+        createBtn.onclick = (e) => {
+            e.preventDefault();
+            const modal = document.getElementById('createProposalModal');
+            if (modal) modal.style.display = 'flex';
+        };
+    }
 
-    // Настройка модалок (Крестики)
-    const setupModalClose = (btnId, modalId) => {
-        const btn = document.getElementById(btnId);
+    // Настройка закрытия всех модалок
+    const setupModalClose = (closeId, modalId) => {
+        const btn = document.getElementById(closeId);
         const modal = document.getElementById(modalId);
         if (btn && modal) {
             btn.onclick = (e) => { e.preventDefault(); modal.style.display = 'none'; };
@@ -1633,33 +1654,60 @@ function setupModernUI() {
     setupModalClose('closeProposalModal', 'createProposalModal');
     setupModalClose('closeWalletModal', 'walletModal');
 
-    window.addEventListener('click', (e) => {
-        const modal = document.getElementById('createProposalModal');
-        if (e.target === modal) modal.style.display = 'none';
-    });
+    // Клик по серому фону закрывает модалки
+    window.onclick = (e) => {
+        const modals = ['createProposalModal', 'walletModal'];
+        modals.forEach(id => {
+            const m = document.getElementById(id);
+            if (e.target === m) m.style.display = 'none';
+        });
+    };
+
+    // Обновляем кэш элементов для доступа из функций стейкинга
+    if (typeof refreshCache === 'function') refreshCache();
 }
 
-// 4. ИНИЦИАЛИЗАЦИЯ (Порядок изменен для стабильности)
-function initializeAurumFoxApp() {
-    console.log("🚀 Система AurumFox запускается...");
-    
-    // Настройка Buffer и Адресов
-    if (!setupAddresses()) return;
-    window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
+/**
+ * ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ
+ * Упорядоченный запуск систем
+ */
+async function initializeAurumFoxApp() {
+    console.log("🚀 Запуск AurumFox Web3 Engine...");
 
-    // Сначала настраиваем UI и клонируем кнопки
-    setupModernUI(); 
-    
-    // Затем проверяем соединение
-    if (window.solana && window.solana.isConnected) {
-        // Мы используем setTimeout, чтобы дать DOM "продышаться"
-        setTimeout(() => {
-            connectWallet().then(() => {
-                updateStakingAndBalanceUI();
-            });
-        }, 500);
+    try {
+        // 1. Настройка окружения
+        if (!setupAddresses()) {
+            throw new Error("Failed to initialize Solana addresses.");
+        }
+        
+        // Fix для Buffer в браузере
+        if (!window.Buffer) {
+            window.Buffer = (await import('https://esm.sh/buffer')).Buffer;
+        }
+
+        // 2. Отрисовка UI и привязка событий
+        setupModernUI();
+
+        // 3. Восстановление сессии
+        const savedWallet = localStorage.getItem('selectedWallet');
+        if (savedWallet && window.solana && window.solana.isPhantom) {
+            // Если Phantom уже доверяет сайту, подключаемся тихо
+            const resp = await window.solana.connect({ onlyIfTrusted: true }).catch(() => null);
+            if (resp) {
+                appState.provider = window.solana;
+                appState.walletPublicKey = resp.publicKey;
+                updateWalletDisplay();
+                await updateStakingAndBalanceUI();
+                console.log("♻️ Сессия восстановлена");
+            }
+        }
+    } catch (err) {
+        console.error("🛑 Критическая ошибка при старте:", err);
     }
 }
+
+
+
 
 
 
