@@ -1398,7 +1398,13 @@ if (window.solana) {
 
 
 
+// ============================================================
+// ЕДИНЫЙ ИСПРАВЛЕННЫЙ БЛОК УПРАВЛЕНИЯ ИНТЕРФЕЙСОМ
+// ============================================================
+
 function setupModernUI() {
+    console.log("🛠️ Настройка интерфейса...");
+
     const actions = [
         { 
             id: 'connectWalletBtn', 
@@ -1409,9 +1415,7 @@ function setupModernUI() {
                 const modal = document.getElementById('walletModal');
                 if (modal) {
                     modal.style.display = 'flex';
-                    console.log("📂 Окно выбора кошелька открыто");
                 } else {
-                    console.error("❌ Ошибка: Элемент 'walletModal' не найден");
                     if (typeof connectWallet === 'function') await connectWallet();
                 }
             }
@@ -1432,7 +1436,7 @@ function setupModernUI() {
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // 1. Привязка действий к основным кнопкам
+    // 1. Привязка действий к основным кнопкам (с эффектами)
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
@@ -1445,45 +1449,67 @@ function setupModernUI() {
         }
     });
 
-    // 2. АКТИВАЦИЯ ВЫБОРА КОШЕЛЬКА (Те самые красивые кнопки)
-    // Ищем все кнопки внутри модалки по классам
+    // 2. Настройка выбора конкретного кошелька (внутри табло)
     const walletOptions = document.querySelectorAll('.wallet-option, .wallet-option-btn');
     walletOptions.forEach(btn => {
         btn.onclick = (e) => {
             e.preventDefault();
             const walletType = btn.getAttribute('data-wallet');
-            console.log("📡 Подключение к кошельку:", walletType);
-            if (typeof connectToProvider === 'function') {
-                connectToProvider(walletType);
-            }
+            connectToProvider(walletType);
         };
     });
 
-    // 3. АКТИВАЦИЯ КРЕСТИКОВ ЗАКРЫТИЯ
-    const closeSelectors = [
+    // 3. Закрытие модалок (Крестики)
+    const closeHandlers = [
         { btn: 'closeWalletModal', modal: 'walletModal' },
         { btn: 'closeProposalModal', modal: 'createProposalModal' }
     ];
 
-    closeSelectors.forEach(item => {
-        const btn = document.getElementById(item.btn);
-        const modal = document.getElementById(item.modal);
-        if (btn && modal) {
-            btn.onclick = (e) => {
+    closeHandlers.forEach(item => {
+        const btnEl = document.getElementById(item.btn);
+        const modalEl = document.getElementById(item.modal);
+        if (btnEl && modalEl) {
+            btnEl.onclick = (e) => {
                 e.preventDefault();
-                modal.style.display = 'none';
+                modalEl.style.display = 'none';
             };
         }
     });
 
-    // 4. ЗАКРЫТИЕ ПО КЛИКУ ВНЕ ОКНА
-    window.addEventListener('click', (event) => {
+    // 4. Закрытие при клике ВНЕ окон
+    window.onclick = (event) => {
         const wModal = document.getElementById('walletModal');
         const pModal = document.getElementById('createProposalModal');
         if (event.target === wModal) wModal.style.display = 'none';
         if (event.target === pModal) pModal.style.display = 'none';
-    });
+    };
 }
+
+// ФУНКЦИЯ ЗАПУСКА ПРИЛОЖЕНИЯ
+function initializeAurumFoxApp() {
+    console.log("🚀 Система AurumFox запускается...");
+    
+    if (!setupAddresses()) return;
+    
+    if (!window.Buffer) {
+        window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+    }
+
+    cacheUIElements();
+    setupModernUI(); 
+    
+    // Проверка авто-подключения
+    if (window.solana && window.solana.isConnected) {
+        updateWalletDisplay();
+        updateStakingAndBalanceUI();
+    }
+}
+
+// ТОЧКА ВХОДА
+document.addEventListener('DOMContentLoaded', () => {
+    initializeAurumFoxApp();
+});
+
 
 
 
