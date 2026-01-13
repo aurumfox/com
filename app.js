@@ -1620,38 +1620,30 @@ function setupModernUI() {
         };
     });
 
-    // Кнопка закрытия модалки
-    const closeWalletBtn = document.getElementById('closeWalletModal');
-    if (closeWalletBtn) {
-        closeWalletBtn.onclick = () => {
-            document.getElementById('walletModal').style.display = 'none';
-        };
-    }
-}
-
-// 3. Исправленная функция инициализации (БЕЗ самовызова внутри)
-function initializeAurumFoxApp() {
-    console.log("🚀 Инициализация системы...");
     
-    if (!setupAddresses()) return;
-    
-    // Настройка Buffer для Solana
-    if (!window.Buffer) window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
 
-    cacheUIElements();
-    setupModernUI(); // Привязываем кнопки
-    
-    // Если кошелек уже был подключен ранее (Phantom auto-connect)
-    if (window.solana && window.solana.isConnected) {
-        updateWalletDisplay();
-        updateStakingAndBalanceUI();
-    }
-}
 
-// ЗАПУСК ОДИН РАЗ при загрузке страницы
+    // Вызываем инициализацию только один раз при загрузке DOM
 document.addEventListener('DOMContentLoaded', () => {
-    initializeAurumFoxApp();
+    // Проверяем, не запущена ли инициализация уже
+    if (typeof window.isAppInitialized === 'undefined') {
+        initializeAurumFoxApp();
+        window.isAppInitialized = true;
+    }
 });
+
+// Слушатель для смены аккаунта в Phantom
+if (window.solana) {
+    window.solana.on('accountChanged', (publicKey) => {
+        if (publicKey) {
+            appState.walletPublicKey = publicKey;
+            updateWalletDisplay();
+            updateStakingAndBalanceUI();
+        } else {
+            disconnectWallet();
+        }
+    });
+}
 
     
 
