@@ -1155,6 +1155,31 @@ async function connectWallet() {
 
 
 
+
+
+
+const connectBtn = document.getElementById('connectWalletBtn');
+const walletModal = document.getElementById('walletModal');
+const closeBtn = document.getElementById('closeWalletModal');
+
+// Открытие модального окна
+connectBtn.addEventListener('click', () => {
+    walletModal.style.display = 'block';
+});
+
+// Закрытие модального окна
+closeBtn.addEventListener('click', () => {
+    walletModal.style.display = 'none';
+});
+
+// Закрытие при клике вне окна
+window.onclick = function(event) {
+    if (event.target == walletModal) {
+        walletModal.style.display = "none";
+    }
+}
+
+
 // ============================================================
 // ИСПРАВЛЕННЫЙ БЛОК: УПРАВЛЕНИЕ КОШЕЛЬКАМИ И МОДАЛКАМИ
 // ============================================================
