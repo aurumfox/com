@@ -405,35 +405,7 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
-function actionAudit(name, status, detail = "") {
-    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
-    const messages = {
-        process: `${icons.process} ${name}: Transaction started...`,
-        success: `${icons.success} ${name}: Successful! ${detail}`,
-        error: `${icons.error} ${name} Failed: ${detail}`,
-        info: `${icons.info} ${detail}`
-    };
-    showNotification(messages[status], status === 'process' ? 'info' : status);
-    console.log(`[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()} ${detail}`);
-}
 
-
-
-
-// Улучшенная функция статуса кнопок
-function setBtnState(btn, isLoading, text = "Wait...") {
-    if (!btn) return;
-    if (isLoading) {
-        btn.disabled = true;
-        btn.dataset.old = btn.innerHTML;
-        btn.innerHTML = `<span class="spinner"></span> ${text}`;
-        btn.style.opacity = "0.6";
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.old || btn.innerHTML;
-        btn.style.opacity = "1";
-    }
-}
 
 
 
