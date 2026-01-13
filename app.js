@@ -1105,66 +1105,54 @@ async function fetchUserBalances() {
 
 
 
-// ============================================================
-// УНИВЕРСАЛЬНЫЙ БЛОК ПОДКЛЮЧЕНИЯ (WEB, MOBILE, TWITTER)
-// ============================================================
-
 async function connectWallet() {
     try {
-        console.log("🔗 Попытка подключения к кошельку...");
+        console.log("🔗 Поиск доступных кошельков...");
 
-        // 1. Проверка провайдера
-        const provider = window.phantom?.solana || window.solana;
+        // 1. Пытаемся найти любой установленный кошелек (Phantom, Solflare, Backpack и т.д.)
+        // Стандарт Wallet Standard позволяет подключиться к любому расширению одной командой
+        const provider = window.phantom?.solana || window.solflare || window.backpack || window.solana;
 
         if (!provider) {
-            console.warn("❌ Phantom не найден");
-            
-            // Если мы на мобилке — предлагаем открыть через Deep Link
+            console.warn("❌ Кошельки не найдены");
             if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                // Если мобилка — редирект в Phantom Browser
                 const url = encodeURIComponent(window.location.href);
-                const ref = encodeURIComponent(window.location.host);
-                window.open(`https://phantom.app/ul/browse/${url}?ref=${ref}`, '_blank');
-                return;
+                window.open(`https://phantom.app/ul/browse/${url}`, '_blank');
+            } else {
+                showNotification("Установите Phantom или Solflare!", "error");
+                window.open("https://phantom.app/", "_blank");
             }
-            
-            showNotification("Please install Phantom wallet!", "error");
-            window.open("https://phantom.app/", "_blank");
             return;
         }
 
-        // 2. Подключение
-        // standard connection request
+        // 2. Универсальное подключение
         const resp = await provider.connect();
         
-        // 3. Сохранение данных в состояние
+        // 3. Сохраняем данные в ваше текущее состояние appState
         appState.walletPublicKey = resp.publicKey;
         appState.provider = provider;
-        
-        // Пересоздаем соединение с RPC, если оно упало
         appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+
+        console.log("✅ Подключено успешно:", resp.publicKey.toString());
         
-        console.log("✅ Кошелек подключен:", resp.publicKey.toString());
-        
-        // 4. Обновление UI
+        // 4. Обновляем ваш интерфейс (эти функции у вас уже есть)
         updateWalletDisplay();
         await updateStakingAndBalanceUI();
         
-        showNotification("Success: Connected to Fox Ecosystem", "success");
+        showNotification("Кошелек подключен!", "success");
         return resp.publicKey.toString();
 
     } catch (err) {
-        console.error("❌ Ошибка подключения:", err);
-        
-        // Обработка отказа пользователя
+        console.error("❌ Ошибка коннекта:", err);
         if (err.code === 4001) {
-            showNotification("Connection cancelled", "warning");
+            showNotification("Вы отменили подключение", "warning");
         } else {
-            showNotification("Wallet Error: Check if app is trusted", "error");
+            showNotification("Ошибка кошелька", "error");
         }
         throw err;
     }
 }
-
 
 
             
