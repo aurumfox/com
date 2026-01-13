@@ -549,16 +549,21 @@
         </div>
     </footer>
 
-    <div id="walletModal" class="modal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
-        <div class="modal-content" style="background:#1a1a1a; padding:30px; border:2px solid #f39c12; border-radius:15px; text-align:center; min-width:300px; position: relative;">
-            <span id="closeWalletModal" style="color:#fff; position: absolute; right: 15px; top: 10px; cursor:pointer; font-size:28px;">&times;</span>
-            <h3 style="color:#f39c12; margin-bottom:20px;">Select Solana Wallet</h3>
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <button class="wallet-option-btn web3-btn" data-wallet="phantom" style="width:100%; padding: 12px;">Phantom</button>
-                <button class="wallet-option-btn web3-btn" data-wallet="solflare" style="width:100%; padding: 12px;">Solflare</button>
-            </div>
+    <div id="walletModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Выберите кошелек Solana</h2>
+            <span id="closeWalletModal" style="cursor:pointer;">&times;</span>
+        </div>
+        <div class="wallet-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px;">
+            <button class="wallet-option-btn" data-wallet="phantom">Phantom</button>
+            <button class="wallet-option-btn" data-wallet="solflare">Solflare</button>
+            <button class="wallet-option-btn" data-wallet="jupiter">Jupiter</button> <button class="wallet-option-btn" data-wallet="bitget">Bitget</button> <button class="wallet-option-btn" data-wallet="backpack">Backpack</button>
+            <button class="wallet-option-btn" data-wallet="okx">OKX Wallet</button>
         </div>
     </div>
+</div>
+
 
     <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
