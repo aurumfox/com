@@ -1135,26 +1135,79 @@ function setupModernUI() {
 
 
 
-function initializeAurumFoxApp() {
-    console.log("🚀 Инициализация Aurum Fox Core...");
+// ============================================================
+// ЕДИНЫЙ БЛОК УПРАВЛЕНИЯ СОСТОЯНИЕМ И ЗАПУСКА APP
+// ============================================================
 
-    // 1. Инициализация критических данных
-    if (!setupAddresses()) return;
-    if (!window.Buffer) window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+/**
+ * 1. ОБНОВЛЕНИЕ ВИЗУАЛА КНОПКИ (Чтобы адрес не исчезал)
+ */
+function updateWalletDisplay() {
+    const btn = document.getElementById('connectWalletBtn');
+    if (!btn) return;
 
-    // 2. Сбор всех элементов (утилита для кэширования)
-    cacheUIElements();
-
-    // 3. Установка СОВРЕМЕННОЙ логики кнопок (убирает все дубли)
-    setupModernUI();
-
-    // 4. Проверка активной сессии
-    if (window.solana && window.solana.isConnected) {
-        connectWallet(); 
+    if (appState.walletPublicKey) {
+        const base58 = appState.walletPublicKey.toBase58();
+        // Красивое сокращение адреса
+        btn.textContent = base58.slice(0, 4) + '...' + base58.slice(-4);
+        btn.classList.add('connected'); 
+        btn.style.borderColor = '#00ffaa'; // Подсветка при коннекте
+        console.log("📍 [UI]: Кошелек отображен:", base58);
+    } else {
+        btn.textContent = 'Connect Wallet';
+        btn.classList.remove('connected');
+        btn.style.borderColor = '';
+        console.log("📍 [UI]: Кошелек отключен");
     }
 }
 
-// ЗАПУСК ПРИЛОЖЕНИЯ ПРИ ЗАГРУЗКЕ
+/**
+ * 2. ГЛАВНАЯ ФУНКЦИЯ ЗАПУСКА (Aurum Fox Core)
+ */
+function initializeAurumFoxApp() {
+    console.log("🚀 [System]: Старт Aurum Fox Core...");
+
+    // А. Подготовка Buffer и окружения
+    if (!window.Buffer) {
+        window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
+    }
+
+    // Б. Инициализация адресов (возврат, если ошибка)
+    if (!setupAddresses()) {
+        console.error("❌ [System]: Ошибка инициализации адресов!");
+        return;
+    }
+
+    // В. Кэширование элементов UI
+    cacheUIElements();
+
+    // Г. Привязка действий к кнопкам (чистка старых слушателей внутри setupModernUI)
+    setupModernUI();
+
+    // Д. ВОССТАНОВЛЕНИЕ СЕССИИ (Главный фикс "вылетания")
+    // Используем задержку, чтобы Phantom успел пробросить объект solana
+    setTimeout(() => {
+        const provider = window.phantom?.solana || window.solana;
+        if (provider) {
+            console.log("🔍 [System]: Поиск активной сессии...");
+            // Вызываем connectWallet с флагом silent=true
+            // Это подхватит кошелек без открытия окна, если юзер уже залогинен
+            connectWallet(true); 
+        } else {
+            console.log("ℹ️ [System]: Кошелек не обнаружен в браузере.");
+        }
+    }, 1000); 
+}
+
+/**
+ * 3. ЕДИНЫЙ ТОЧКА ВХОДА ПРИ ЗАГРУЗКЕ
+ */
 window.addEventListener('DOMContentLoaded', () => {
+    // Запускаем всё один раз
     initializeAurumFoxApp();
+    
+    // Инициализируем DAO (если функция есть)
+    if (typeof setupDAO === 'function') setupDAO();
 });
+
+// Если в коде остались старые window.onload или другие initializeAurumFoxApp — удали их.
