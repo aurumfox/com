@@ -171,18 +171,12 @@ const STAKING_IDL = {
 ]
 
 
-
-
-
-
-
-let STAKING_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, AFOX_POOL_STATE_PUBKEY;
-let AFOX_POOL_VAULT_PUBKEY, AFOX_REWARDS_VAULT_PUBKEY, DAO_TREASURY_VAULT_PUBKEY;
-let TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, SYSTEM_PROGRAM_ID;
-
+// БЛОК 1: ИНИЦИАЛИЗАЦИЯ АДРЕСОВ (ИСПРАВЛЕНО: добавлены запятые)
+let STAKING_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, AFOX_POOL_STATE_PUBKEY,
+    AFOX_POOL_VAULT_PUBKEY, AFOX_REWARDS_VAULT_PUBKEY, DAO_TREASURY_VAULT_PUBKEY,
+    TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, SYSTEM_PROGRAM_ID;
 
 function setupAddresses() {
-    // Проверка наличия библиотеки перед созданием объектов PublicKey
     if (!window.solanaWeb3) {
         console.error("❌ Критическая ошибка: Библиотека Solana Web3 не загружена!");
         return false;
@@ -191,43 +185,25 @@ function setupAddresses() {
     try {
         const pk = window.solanaWeb3.PublicKey;
         
-        // Основные адреса программы и токена
         STAKING_PROGRAM_ID = new pk('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
         AFOX_TOKEN_MINT_ADDRESS = new pk('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
-        
-        // Стейкинг-аккаунты (Pools & Vaults)
         AFOX_POOL_STATE_PUBKEY = new pk('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
         AFOX_POOL_VAULT_PUBKEY = new pk('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp');
         AFOX_REWARDS_VAULT_PUBKEY = new pk('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
         DAO_TREASURY_VAULT_PUBKEY = new pk('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi');
         
-        // Системные программы
         TOKEN_PROGRAM_ID = new pk('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
         ASSOCIATED_TOKEN_PROGRAM_ID = new pk('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
         SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
         
-        console.log("📍 [System]: Все адреса Solana инициализированы успешно!");
         return true;
     } catch (e) {
-        console.error("❌ Ошибка при создании PublicKey объектов:", e);
+        console.error("❌ Ошибка при создании PublicKey:", e);
         return false;
     }
 }
 
-
-
-
-
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
-
-
-
-
-
-
-
-
-
 
 
 // ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
