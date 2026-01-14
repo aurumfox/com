@@ -171,40 +171,37 @@ const STAKING_IDL = {
 ]
 
 
-// БЛОК 1: БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ (БЕЗ 'LET' СПИСКОМ)
-// Удаляем все 'let STAKING_PROGRAM_ID, ...' и заменяем на объект window
-window.AFOX_CONFIG = {}; 
-
+// Переменные теперь создаются динамически внутри функции, чтобы не злить парсер браузера
 function setupAddresses() {
-    console.log("🛠️ Запуск инициализации адресов...");
+    console.log("🛠️ Попытка инициализации адресов...");
     
     if (!window.solanaWeb3) {
-        console.error("❌ Критическая ошибка: Библиотека Solana Web3 не найдена в window!");
+        console.error("❌ Ошибка: solanaWeb3 не найден!");
         return false;
     }
     
     try {
         const pk = window.solanaWeb3.PublicKey;
         
-        // Назначаем всё сразу в объект window, чтобы не было конфликтов с переменными
-        window.STAKING_PROGRAM_ID = new pk('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-        window.AFOX_TOKEN_MINT_ADDRESS = new pk('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
-        window.AFOX_POOL_STATE_PUBKEY = new pk('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
-        window.AFOX_POOL_VAULT_PUBKEY = new pk('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp');
-        window.AFOX_REWARDS_VAULT_PUBKEY = new pk('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
-        window.DAO_TREASURY_VAULT_PUBKEY = new pk('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi');
-        
-        window.TOKEN_PROGRAM_ID = new pk('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+        // Регистрируем их прямо в глобальное окно
+        window.STAKING_PROGRAM_ID          = new pk('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
+        window.AFOX_TOKEN_MINT_ADDRESS     = new pk('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
+        window.AFOX_POOL_STATE_PUBKEY      = new pk('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
+        window.AFOX_POOL_VAULT_PUBKEY      = new pk('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp');
+        window.AFOX_REWARDS_VAULT_PUBKEY   = new pk('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
+        window.DAO_TREASURY_VAULT_PUBKEY   = new pk('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi');
+        window.TOKEN_PROGRAM_ID            = new pk('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
         window.ASSOCIATED_TOKEN_PROGRAM_ID = new pk('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
-        window.SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
+        window.SYSTEM_PROGRAM_ID           = window.solanaWeb3.SystemProgram.programId;
         
-        console.log("✅ Все адреса Solana успешно инициализированы в window!");
+        console.log("✅ Адреса успешно прописаны в window");
         return true;
     } catch (e) {
-        console.error("❌ Ошибка при создании PublicKey:", e);
+        console.error("❌ Ошибка PublicKey:", e);
         return false;
     }
 }
+
 
 
 
