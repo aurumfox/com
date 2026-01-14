@@ -108,95 +108,67 @@ const STAKING_IDL = {
         {
             "name": "initializeUserStake",
             "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "systemProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
-            ],
-            "args": [{ "name": "poolIndex", "type": "u8" }]
-        },
-        {
-            "name": "deposit",
-            "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "userSourceAta", "isMut": true },
-                { "name": "vault", "isMut": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "tokenProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
-            ],
-            "args": [{ "name": "amount", "type": "u64" }]
-        },
-        {
-            "name": "claimRewards",
-            "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "vault", "isMut": true },
-                { "name": "adminFeeVault", "isMut": true },
-                { "name": "userRewardsAta", "isMut": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "tokenProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
-            ],
-            "args": []
-        },
-        {
-            "name": "unstake",
-            "accounts": [
-                { "name": "poolState", "isMut": true },
-                { "name": "userStaking", "isMut": true },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "vault", "isMut": true },
-                { "name": "daoTreasuryVault", "isMut": true },
-                { "name": "adminFeeVault", "isMut": true },
-                { "name": "userRewardsAta", "isMut": true },
-                { "name": "rewardMint", "isMut": false },
-                { "name": "tokenProgram", "isMut": false },
-                { "name": "clock", "isMut": false }
-            ],
-            "args": [
-                { "name": "amount", "type": "u64" },
-                { "name": "isEarlyExit", "type": "bool" }
+    {
+        "name": "UserStakingAccount",
+        "type": {
+            "kind": "struct",
+            "fields": [
+                { "name": "isInitialized", "type": "bool" },
+                { "name": "stakeBump", "type": "u8" },
+                { "name": "poolIndex", "type": "u8" },
+                { "name": "paddingA", "type": { "array": ["u8", 5] } },
+                { "name": "owner", "type": "publicKey" },
+                { "name": "stakedAmount", "type": "u64" },
+                { "name": "lockupEndTime", "type": "i64" },
+                { "name": "rewardPerShareUser", "type": "u128" },
+                { "name": "rewardsToClaim", "type": "u64" },
+                { "name": "pendingRewardsDueToLimit", "type": "u64" },
+                { "name": "lending", "type": "u64" },
+                { "name": "lendingUnlockTime", "type": "i64" },
+                { "name": "lastUpdateTime", "type": "i64" },
+                { "name": "paddingFinal", "type": { "array": ["u8", 104] } }
             ]
         }
-    ],
-    "accounts": [
-        {
-            "name": "UserStakingAccount",
-            "type": {
-                "kind": "struct",
-                "fields": [
-                    { "name": "owner", "type": "publicKey" },
-                    { "name": "stakedAmount", "type": "u64" },
-                    { "name": "rewardsToClaim", "type": "u64" },
-                    { "name": "lastUpdateTimestamp", "type": "i64" },
-                    { "name": "lockupEndTime", "type": "i64" },
-                    { "name": "poolIndex", "type": "u8" },
-                    { "name": "lending", "type": "u64" },
-                    { "name": "padding", "type": { "array": ["u8", 104] } }
-                ]
-            }
-        },
-        {
-            "name": "PoolState",
-            "type": {
-                "kind": "struct",
-                "fields": [
-                    { "name": "admin", "type": "publicKey" },
-                    { "name": "totalStakedAmount", "type": "u64" },
-                    { "name": "rewardRatePerSec", "type": "u64" }
-                ]
-            }
+    },
+    {
+        "name": "PoolState",
+        "type": {
+            "kind": "struct",
+            "fields": [
+                { "name": "isInitialized", "type": "bool" },
+                { "name": "globalPause", "type": "bool" },
+                { "name": "poolBump", "type": "u8" },
+                { "name": "vaultBump", "type": "u8" },
+                { "name": "adminFeeVaultBump", "type": "u8" },
+                { "name": "daoTreasuryVaultBump", "type": "u8" },
+                { "name": "defaulterTreasuryVaultBump", "type": "u8" },
+                { "name": "paddingParams", "type": { "array": ["u8", 6] } },
+                { "name": "governanceAuthority", "type": "publicKey" },
+                { "name": "adminAuthority", "type": "publicKey" },
+                { "name": "lendingAuthority", "type": "publicKey" },
+                { "name": "pendingGovernanceAuthority", "type": "publicKey" },
+                { "name": "rewardMint", "type": "publicKey" },
+                { "name": "vault", "type": "publicKey" },
+                { "name": "adminFeeVault", "type": "publicKey" },
+                { "name": "daoTreasuryVault", "type": "publicKey" },
+                { "name": "defaulterTreasuryVault", "type": "publicKey" },
+                { "name": "pendingChangeTime", "type": "i64" },
+                { "name": "lastRewardTime", "type": i64 },
+                { "name": "maxDaoWithdrawalAmount", "type": "u64" },
+                { "name": "sweepThreshold", "type": "u64" },
+                { "name": "adminFeeShareBps", "type": "u16" },
+                { "name": "paddingParamsLockup", "type": { "array": ["u8", 6] } },
+                { "name": "lockupSeconds", "type": { "array": ["i64", 3] } },
+                { "name": "rewardPerShareGlobal", "type": "u128" },
+                { "name": "totalStakedAmount", "type": "u64" },
+                { "name": "totalUnclaimedRewards", "type": "u64" },
+                { "name": "daoWithdrawal24hCap", "type": "u64" },
+                { "name": "daoWithdrawalResetTime", "type": "i64" },
+                { "name": "paddingFinal", "type": { "array": ["u8", 96] } }
+            ]
         }
-    ]
-};
-
+    }
+]
 
 
 
@@ -692,21 +664,24 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // ВАЖНО: Для zero_copy аккаунтов используем fetchNullable или fetch
-        // Если выдает "Layout mismatch", значит JS не видит падинги [u8; 104]
+        // 1. Пытаемся получить данные через Anchor (теперь с правильным IDL должно работать)
         const stakingData = await program.account.userStakingAccount.fetch(userPDA);
 
-        appState.userStakingData = {
-            stakedAmount: BigInt(stakingData.stakedAmount.toString()),
-            rewards: BigInt(stakingData.rewardsToClaim.toString()),
-            lockupEndTime: stakingData.lockupEndTime.toNumber(),
-            poolIndex: stakingData.poolIndex,
-            lending: BigInt(stakingData.lending.toString())
-        };
-        
-        console.log("📊 Данные стейкинга обновлены:", appState.userStakingData);
+        if (stakingData) {
+            appState.userStakingData = {
+                stakedAmount: BigInt(stakingData.stakedAmount.toString()),
+                rewards: BigInt(stakingData.rewardsToClaim.toString()) + BigInt(stakingData.pendingRewardsDueToLimit.toString()),
+                lockupEndTime: stakingData.lockupEndTime.toNumber(),
+                poolIndex: stakingData.poolIndex,
+                lending: BigInt(stakingData.lending.toString()),
+                lastUpdate: stakingData.lastUpdateTime.toNumber()
+            };
+            console.log("✅ Данные синхронизированы:", appState.userStakingData);
+        }
     } catch (e) {
-        console.error("⚠️ Ошибка парсинга zero_copy данных:", e.message);
+        console.error("❌ Ошибка парсинга:", e);
+        // Если аккаунт просто не создан — это нормально, обнуляем данные
+        appState.userStakingData = { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n };
     }
 }
 
