@@ -709,33 +709,68 @@ async function handleStakeAfox() {
     const poolIndex = parseInt(uiElements.poolSelector?.value || "0");
 
     if (!amountStr || parseFloat(amountStr) <= 0) {
-        throw new Error("Enter a valid amount");
+        showNotification("Enter a valid amount", "error");
+        return;
     }
 
-    await smartAction(btn, "Staking", "Success!", "📈", async () => {
-        const amount = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userPDA = await getUserStakingPDA(appState.walletPublicKey);
-        
-        // Логика ATA пользователя
-        const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        ).then(res => res[0]);
+    await executeSmartActionWithFullEffects(btn, {
+        name: "Staking",
+        msg: "Success!",
+        fn: async () => {
+            const amount = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
+            const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+            const userPDA = await getUserStakingPDA(appState.walletPublicKey);
+            
+            // 1. Проверяем, существует ли аккаунт пользователя в блокчейне
+            const accountInfo = await appState.connection.getAccountInfo(userPDA);
+            let transaction = new window.solanaWeb3.Transaction();
 
-        return await program.methods.deposit(new window.anchor.BN(amount.toString()))
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userPDA,
-                owner: appState.walletPublicKey,
-                userSourceAta: userAta,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-            }).rpc();
+            // 2. Если аккаунта нет, добавляем инструкцию инициализации
+            if (!accountInfo) {
+                console.log("🆕 Инициализация нового аккаунта стейкинга...");
+                const initIx = await program.methods
+                    .initializeUserStake(poolIndex) // В Rust: pub fn initialize_user_stake
+                    .accounts({
+                        poolState: AFOX_POOL_STATE_PUBKEY,
+                        userStaking: userPDA,
+                        owner: appState.walletPublicKey,
+                        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                        systemProgram: SYSTEM_PROGRAM_ID,
+                        clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+                    })
+                    .instruction();
+                transaction.add(initIx);
+            }
+
+            // 3. Добавляем инструкцию депозита
+            const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
+                [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            ).then(res => res[0]);
+
+            const depositIx = await program.methods
+                .deposit(new window.anchor.BN(amount.toString()))
+                .accounts({
+                    poolState: AFOX_POOL_STATE_PUBKEY,
+                    userStaking: userPDA,
+                    owner: appState.walletPublicKey,
+                    userSourceAta: userAta,
+                    vault: AFOX_POOL_VAULT_PUBKEY,
+                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+                })
+                .instruction();
+            transaction.add(depositIx);
+
+            // 4. Отправляем всё одним пакетом
+            const signature = await appState.provider.sendAndConfirm(transaction);
+            console.log("✅ Транзакция подтверждена:", signature);
+            return signature;
+        }
     });
 }
+
 
 
 
@@ -744,18 +779,34 @@ async function handleUnstakeAfox() {
     const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
     const userPDA = await getUserStakingPDA(appState.walletPublicKey);
 
+    // Используем executeSmartActionWithFullEffects, если ты перешел на новый обработчик, 
+    // или оставляем smartAction (код ниже адаптирован под твою структуру)
     await smartAction(btn, "Unstaking", "Tokens Freed!", "🔓", async () => {
+        // 1. Получаем актуальные данные аккаунта из блокчейна перед транзакцией
         const stakingData = await program.account.userStakingAccount.fetch(userPDA);
+        
+        // 2. Определяем, является ли выход досрочным
         const now = Math.floor(Date.now() / 1000);
         const isEarly = now < stakingData.lockupEndTime.toNumber();
 
-        // ИСПРАВЛЕНО: добавлена приставка window.
+        // 3. Находим ATA пользователя для получения токенов
         const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
+            [
+                appState.walletPublicKey.toBuffer(), 
+                TOKEN_PROGRAM_ID.toBuffer(), 
+                AFOX_TOKEN_MINT_ADDRESS.toBuffer()
+            ],
             ASSOCIATED_TOKEN_PROGRAM_ID
         ).then(res => res[0]);
 
-        return await program.methods.unstake(stakingData.stakedAmount, isEarly)
+        console.log(`📤 Unstaking: ${stakingData.stakedAmount.toString()} (Early: ${isEarly})`);
+
+        // 4. Вызываем метод контракта
+        return await program.methods
+            .unstake(
+                new window.anchor.BN(stakingData.stakedAmount.toString()), // Обязательно BN
+                isEarly                                                   // bool
+            )
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
                 userStaking: userPDA,
@@ -766,10 +817,12 @@ async function handleUnstakeAfox() {
                 userRewardsAta: userAta,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY // ИСПРАВЛЕНО
-            }).rpc();
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+            })
+            .rpc();
     });
 }
+
 
 
 
