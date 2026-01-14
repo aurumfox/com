@@ -161,7 +161,7 @@ const STAKING_IDL = {
     ],
     "accounts": [
         {
-            "name": "userStakingAccount", // Маленькая буква для JS!
+            "name": "UserStakingAccount",
             "type": {
                 "kind": "struct",
                 "fields": [
@@ -177,12 +177,13 @@ const STAKING_IDL = {
                     { "name": "pendingRewardsDueToLimit", "type": "u64" },
                     { "name": "lending", "type": "u64" },
                     { "name": "lendingUnlockTime", "type": "i64" },
-                    { "name": "lastUpdateTime", "type": "i64" }
+                    { "name": "lastUpdateTime", "type": "i64" },
+                    { "name": "paddingFinal", "type": { "array": ["u8", 104] } } // ОБЯЗАТЕЛЬНО
                 ]
             }
         },
         {
-            "name": "poolState",
+            "name": "PoolState",
             "type": {
                 "kind": "struct",
                 "fields": [
@@ -214,12 +215,19 @@ const STAKING_IDL = {
                     { "name": "totalStakedAmount", "type": "u64" },
                     { "name": "totalUnclaimedRewards", "type": "u64" },
                     { "name": "daoWithdrawal24hCap", "type": "u64" },
-                    { "name": "daoWithdrawalResetTime", "type": "i64" }
+                    { "name": "daoWithdrawalResetTime", "type": "i64" },
+                    { "name": "paddingFinal", "type": { "array": ["u8", 96] } } // ОБЯЗАТЕЛЬНО
                 ]
             }
         }
+    ],
+    "errors": [
+        { "code": 6000, "name": "AlreadyInitialized", "msg": "Account already initialized." },
+        { "code": 6022, "name": "DaoLimitReached", "msg": "DAO daily withdrawal limit reached." }
+        // Можно добавить остальные для дебага
     ]
 };
+
 
 
 
