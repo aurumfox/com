@@ -664,41 +664,35 @@ async function executeSmartActionWithFullEffects(btn, config) {
 
     const originalHTML = btn.innerHTML;
     
-    // 1. СТИЛЬ: Вход в состояние загрузки
+    // 1. Состояние загрузки (анимация спиннера)
     btn.classList.add('loading');
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
-    
-    // Аудит в консоль и уведомление
-    actionAudit(config.name, "process", "Connecting to Solana...");
 
     try {
-        // 2. ЛОГИКА: Выполнение Rust-инструкции
+        // 2. Выполнение логики
         await config.fn(); 
 
-        // 3. ФИДБЕК: Успех + Анимация
+        // 3. Анимация УСПЕХА
         btn.classList.remove('loading');
-        btn.classList.add('success-glow');
+        btn.classList.add('success-glow'); // Вспышка кнопки
         btn.innerHTML = `✅ ${config.msg}`;
         
-        // Взрыв иконок (твой фирменный стиль)
-        spawnEmoji(btn, config.icon); 
+        // ТОТ САМЫЙ ВЗРЫВ КУБКОВ И ЭМОДЗИ
+        if (typeof spawnEmoji === 'function') {
+            spawnEmoji(btn, config.icon); 
+        }
 
-        actionAudit(config.name, "success", config.msg);
-        
-        // Глобальное обновление данных
-        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+        showNotification(config.msg, "success");
 
     } catch (err) {
-        // 4. ОШИБКА: Визуальный откат
-        console.error(`[CRITICAL] Error in ${config.name}:`, err);
+        // 4. Анимация ОШИБКИ
         btn.classList.remove('loading');
         btn.innerHTML = `❌ Failed`;
-        btn.classList.add('error-shake'); // Добавь в CSS для тряски
-        
-        actionAudit(config.name, "error", err.message);
+        btn.classList.add('error-shake'); // Тряска кнопки
+        showNotification(err.message, "error");
     } finally {
-        // Сброс через 3.5 секунды
+        // Возврат кнопки в исходный вид
         setTimeout(() => {
             btn.classList.remove('success-glow', 'loading', 'error-shake');
             btn.disabled = false;
@@ -706,6 +700,7 @@ async function executeSmartActionWithFullEffects(btn, config) {
         }, 3500);
     }
 }
+
 
 
 
