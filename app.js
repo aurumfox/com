@@ -171,7 +171,9 @@ const STAKING_IDL = {
 ]
 
 
-// Переменные теперь создаются динамически внутри функции, чтобы не злить парсер браузера
+}; // ЭТА СКОБКА КРИТИЧЕСКИ ВАЖНА, ОНА ЗАКРЫВАЕТ IDL
+
+// Переменные теперь создаются динамически внутри функции
 function setupAddresses() {
     console.log("🛠️ Попытка инициализации адресов...");
     
@@ -183,7 +185,7 @@ function setupAddresses() {
     try {
         const pk = window.solanaWeb3.PublicKey;
         
-        // Регистрируем их прямо в глобальное окно
+        // Регистрируем адреса напрямую в объект window
         window.STAKING_PROGRAM_ID          = new pk('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
         window.AFOX_TOKEN_MINT_ADDRESS     = new pk('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
         window.AFOX_POOL_STATE_PUBKEY      = new pk('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
@@ -201,6 +203,7 @@ function setupAddresses() {
         return false;
     }
 }
+
 
 
 
