@@ -391,100 +391,87 @@ async function updateStakingAndBalanceUI() {
 }
 
 
+
+
 // ============================================================
-// БОГАТОЕ ПОДКЛЮЧЕНИЕ: КЛЮЧИ + БРИЛЛИАНТЫ
+// БОГАТОЕ ПОДКЛЮЧЕНИЕ: С АВТОСОХРАНЕНИЕМ СЕССИИ
 // ============================================================
 
 let isProcessingWallet = false;
 
-async function connectWallet() {
+// Добавлен параметр silent, чтобы при загрузке страницы не выскакивало окно
+async function connectWallet(silent = false) {
     if (isProcessingWallet) return;
     const btn = document.getElementById('connectWalletBtn');
     isProcessingWallet = true;
 
     try {
-        // Эффект нажатия
-        if (btn) btn.style.transform = 'scale(0.9) rotate(-2deg)';
+        if (!silent && btn) btn.style.transform = 'scale(0.9) rotate(-2deg)';
         
         const provider = window.phantom?.solana || window.solana;
         if (!provider) {
-            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            if (!silent && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
                 window.open(`https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`, '_blank');
-                return;
+            } else if (!silent) {
+                showNotification("Please install Phantom!", "error");
             }
-            showNotification("Please install Phantom!", "error");
             return;
         }
 
-        const resp = await provider.connect();
+        // КЛЮЧЕВОЙ МОМЕНТ: onlyIfTrusted позволяет Phantom подключиться автоматически без окна
+        const resp = await provider.connect(silent ? { onlyIfTrusted: true } : {});
+        
         appState.walletPublicKey = resp.publicKey;
         appState.provider = provider;
         appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
 
-        // ЗАПУСК МАГИЧЕСКОЙ АНИМАЦИИ
-        if (btn) {
+        // ЗАПУСК МАГИЧЕСКОЙ АНИМАЦИИ (только если нажал сам)
+        if (!silent && btn) {
             btn.style.transform = 'scale(1.1)';
             spawnConnectEffects(btn); 
+            showNotification("Access Granted! 🔑", "success");
         }
 
         updateWalletDisplay();
         await updateStakingAndBalanceUI();
-        
-        showNotification("Access Granted! 🔑", "success");
 
     } catch (err) {
-        console.error("❌ Error:", err);
-        if (err.code !== 4001) showNotification("Connection Failed", "error");
-        if (btn) btn.style.transform = '';
+        if (!silent) {
+            console.error("❌ Error:", err);
+            if (err.code !== 4001) showNotification("Connection Failed", "error");
+            if (btn) btn.style.transform = '';
+        }
     } finally {
         isProcessingWallet = false;
     }
 }
 
 /**
- * СПЕЦИАЛЬНАЯ АНИМАЦИЯ ДЛЯ КОННЕКТА (КЛЮЧИ И ИСКРЫ)
+ * СПЕЦИАЛЬНАЯ АНИМАЦИЯ ДЛЯ КОННЕКТА (БЕЗ ИЗМЕНЕНИЙ)
  */
 function spawnConnectEffects(el) {
     const rect = el.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    
-    // Набор элементов: Ключи, Бриллианты, Вспышки
     const items = ['🔑', '💎', '✨', '🔓', '⭐'];
     const count = 25; 
 
     for (let i = 0; i < count; i++) {
         const p = document.createElement('span');
         p.textContent = items[Math.floor(Math.random() * items.length)];
-        p.style.cssText = `
-            position: fixed;
-            left: ${centerX}px;
-            top: ${centerY}px;
-            z-index: 10001;
-            pointer-events: none;
-            font-size: ${18 + Math.random() * 24}px;
-            filter: drop-shadow(0 0 10px gold);
-            user-select: none;
-        `;
+        p.style.cssText = `position: fixed; left: ${centerX}px; top: ${centerY}px; z-index: 10001; pointer-events: none; font-size: ${18 + Math.random() * 24}px; filter: drop-shadow(0 0 10px gold); user-select: none;`;
         document.body.appendChild(p);
-
         const angle = Math.random() * Math.PI * 2;
         const velocity = 8 + Math.random() * 12;
         const tx = Math.cos(angle) * (velocity * 20);
         const ty = Math.sin(angle) * (velocity * 20);
-        const rot = Math.random() * 1080 - 540; // Сильное вращение ключей
-
+        const rot = Math.random() * 1080 - 540;
         p.animate([
             { transform: 'translate(-50%, -50%) scale(0) rotate(0deg)', opacity: 1 },
             { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(1.8)`, opacity: 1, offset: 0.8 },
             { transform: `translate(-50%, -50%) translate(${tx * 1.1}px, ${ty * 1.1}px) rotate(${rot * 1.2}deg) scale(0)`, opacity: 0 }
-        ], {
-            duration: 1200 + Math.random() * 800,
-            easing: 'cubic-bezier(0.1, 0.9, 0.2, 1)'
-        }).onfinish = () => p.remove();
+        ], { duration: 1200 + Math.random() * 800, easing: 'cubic-bezier(0.1, 0.9, 0.2, 1)' }).onfinish = () => p.remove();
     }
-    
-    // Дополнительная вспышка экрана
     const flash = document.createElement('div');
     flash.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:white; opacity:0.1; z-index:10000; pointer-events:none;';
     document.body.appendChild(flash);
@@ -492,24 +479,32 @@ function spawnConnectEffects(el) {
 }
 
 /**
- * ОТКЛЮЧЕНИЕ С ЛЕГКИМ ЭФФЕКТОМ "ИСЧЕЗНОВЕНИЯ"
+ * ОТКЛЮЧЕНИЕ (БЕЗ ИЗМЕНЕНИЙ)
  */
 async function disconnectWallet() {
     if (!appState.walletPublicKey) return;
-
     try {
         appState.walletPublicKey = null;
         if (window.solana?.isConnected) await window.solana.disconnect();
-
         updateWalletDisplay();
         if (typeof updateStakingUI === 'function') await updateStakingUI();
-        
         showNotification("Disconnected 🚪", "info");
     } catch (e) { console.error(e); }
 }
 
-   
- 
+// ============================================================
+// АВТО-ВОССТАНОВЛЕНИЕ СЕССИИ ПРИ ЗАГРУЗКЕ
+// ============================================================
+window.addEventListener('load', () => {
+    // Ждем полсекунды, чтобы провайдер точно прогрузился в браузер
+    setTimeout(() => {
+        if (window.phantom?.solana || window.solana) {
+            console.log("🔄 Проверка существующей сессии кошелька...");
+            connectWallet(true); // Запуск в тихом режиме
+        }
+    }, 500);
+});
+
 
 
 
