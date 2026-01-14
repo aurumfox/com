@@ -59,11 +59,9 @@ function formatBigInt(value, decimals) {
 })();
 
 
-
-
-// ==========================================
-// 1. КОНСТАНТЫ (ОБЪЯВЛЯЮТСЯ ТОЛЬКО ОДИН РАЗ!)
-// ==========================================
+// ============================================================
+// 1. КОНСТАНТЫ И КЛЮЧИ (ТОЛЬКО ОДИН РАЗ В ФАЙЛЕ!)
+// ============================================================
 const SOL_DECIMALS = 9;
 const AFOX_DECIMALS = 6;
 const SECONDS_PER_DAY = 86400;
@@ -92,9 +90,9 @@ const AFOX_OFFICIAL_KEYS = {
     DAO_TREASURY:    "6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi"
 };
 
-
-
-// Замени блок STAKING_IDL на этот (фрагмент для корректного маппинга):
+// ============================================================
+// 2. ИСПРАВЛЕННЫЙ STAKING_IDL (С ЗАКРЫТЫМИ СКОБКАМИ)
+// ============================================================
 const STAKING_IDL = {
     "version": "0.1.0",
     "name": "my_new_afox_project",
@@ -102,70 +100,82 @@ const STAKING_IDL = {
         {
             "name": "initializeUserStake",
             "accounts": [
-    {
-        "name": "UserStakingAccount",
-        "type": {
-            "kind": "struct",
-            "fields": [
-                { "name": "isInitialized", "type": "bool" },
-                { "name": "stakeBump", "type": "u8" },
-                { "name": "poolIndex", "type": "u8" },
-                { "name": "paddingA", "type": { "array": ["u8", 5] } },
-                { "name": "owner", "type": "publicKey" },
-                { "name": "stakedAmount", "type": "u64" },
-                { "name": "lockupEndTime", "type": "i64" },
-                { "name": "rewardPerShareUser", "type": "u128" },
-                { "name": "rewardsToClaim", "type": "u64" },
-                { "name": "pendingRewardsDueToLimit", "type": "u64" },
-                { "name": "lending", "type": "u64" },
-                { "name": "lendingUnlockTime", "type": "i64" },
-                { "name": "lastUpdateTime", "type": "i64" },
-                { "name": "paddingFinal", "type": { "array": ["u8", 104] } }
-            ]
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
+                { "name": "owner", "isMut": true, "isSigner": true },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "systemProgram", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
+            ],
+            "args": [{ "name": "poolIndex", "type": "u8" }]
         }
-    },
-    {
-        "name": "PoolState",
-        "type": {
-            "kind": "struct",
-            "fields": [
-                { "name": "isInitialized", "type": "bool" },
-                { "name": "globalPause", "type": "bool" },
-                { "name": "poolBump", "type": "u8" },
-                { "name": "vaultBump", "type": "u8" },
-                { "name": "adminFeeVaultBump", "type": "u8" },
-                { "name": "daoTreasuryVaultBump", "type": "u8" },
-                { "name": "defaulterTreasuryVaultBump", "type": "u8" },
-                { "name": "paddingParams", "type": { "array": ["u8", 6] } },
-                { "name": "governanceAuthority", "type": "publicKey" },
-                { "name": "adminAuthority", "type": "publicKey" },
-                { "name": "lendingAuthority", "type": "publicKey" },
-                { "name": "pendingGovernanceAuthority", "type": "publicKey" },
-                { "name": "rewardMint", "type": "publicKey" },
-                { "name": "vault", "type": "publicKey" },
-                { "name": "adminFeeVault", "type": "publicKey" },
-                { "name": "daoTreasuryVault", "type": "publicKey" },
-                { "name": "defaulterTreasuryVault", "type": "publicKey" },
-                { "name": "pendingChangeTime", "type": "i64" },
-                { "name": "lastRewardTime", "type": i64 },
-                { "name": "maxDaoWithdrawalAmount", "type": "u64" },
-                { "name": "sweepThreshold", "type": "u64" },
-                { "name": "adminFeeShareBps", "type": "u16" },
-                { "name": "paddingParamsLockup", "type": { "array": ["u8", 6] } },
-                { "name": "lockupSeconds", "type": { "array": ["i64", 3] } },
-                { "name": "rewardPerShareGlobal", "type": "u128" },
-                { "name": "totalStakedAmount", "type": "u64" },
-                { "name": "totalUnclaimedRewards", "type": "u64" },
-                { "name": "daoWithdrawal24hCap", "type": "u64" },
-                { "name": "daoWithdrawalResetTime", "type": "i64" },
-                { "name": "paddingFinal", "type": { "array": ["u8", 96] } }
-            ]
+    ],
+    "accounts": [
+        {
+            "name": "UserStakingAccount",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    { "name": "isInitialized", "type": "bool" },
+                    { "name": "stakeBump", "type": "u8" },
+                    { "name": "poolIndex", "type": "u8" },
+                    { "name": "paddingA", "type": { "array": ["u8", 5] } },
+                    { "name": "owner", "type": "publicKey" },
+                    { "name": "stakedAmount", "type": "u64" },
+                    { "name": "lockupEndTime", "type": "i64" },
+                    { "name": "rewardPerShareUser", "type": "u128" },
+                    { "name": "rewardsToClaim", "type": "u64" },
+                    { "name": "pendingRewardsDueToLimit", "type": "u64" },
+                    { "name": "lending", "type": "u64" },
+                    { "name": "lendingUnlockTime", "type": "i64" },
+                    { "name": "lastUpdateTime", "type": "i64" },
+                    { "name": "paddingFinal", "type": { "array": ["u8", 104] } }
+                ]
+            }
+        },
+        {
+            "name": "PoolState",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    { "name": "isInitialized", "type": "bool" },
+                    { "name": "globalPause", "type": "bool" },
+                    { "name": "poolBump", "type": "u8" },
+                    { "name": "vaultBump", "type": "u8" },
+                    { "name": "adminFeeVaultBump", "type": "u8" },
+                    { "name": "daoTreasuryVaultBump", "type": "u8" },
+                    { "name": "defaulterTreasuryVaultBump", "type": "u8" },
+                    { "name": "paddingParams", "type": { "array": ["u8", 6] } },
+                    { "name": "governanceAuthority", "type": "publicKey" },
+                    { "name": "adminAuthority", "type": "publicKey" },
+                    { "name": "lendingAuthority", "type": "publicKey" },
+                    { "name": "pendingGovernanceAuthority", "type": "publicKey" },
+                    { "name": "rewardMint", "type": "publicKey" },
+                    { "name": "vault", "type": "publicKey" },
+                    { "name": "adminFeeVault", "type": "publicKey" },
+                    { "name": "daoTreasuryVault", "type": "publicKey" },
+                    { "name": "defaulterTreasuryVault", "type": "publicKey" },
+                    { "name": "pendingChangeTime", "type": "i64" },
+                    { "name": "lastRewardTime", "type": "i64" }, // ИСПРАВЛЕНО: добавлены кавычки
+                    { "name": "maxDaoWithdrawalAmount", "type": "u64" },
+                    { "name": "sweepThreshold", "type": "u64" },
+                    { "name": "adminFeeShareBps", "type": "u16" },
+                    { "name": "paddingParamsLockup", "type": { "array": ["u8", 6] } },
+                    { "name": "lockupSeconds", "type": { "array": ["i64", 3] } },
+                    { "name": "rewardPerShareGlobal", "type": "u128" },
+                    { "name": "totalStakedAmount", "type": "u64" },
+                    { "name": "totalUnclaimedRewards", "type": "u64" },
+                    { "name": "daoWithdrawal24hCap", "type": "u64" },
+                    { "name": "daoWithdrawalResetTime", "type": "i64" },
+                    { "name": "paddingFinal", "type": { "array": ["u8", 96] } }
+                ]
+            }
         }
-    }
-]
+    ]
+}; // ТУТ ВАЖНО ЗАКРЫТЬ ОБЪЕКТ!
 
 
-}; 
+
 
 // ==========================================
 // БЛОК 3: ИНИЦИАЛИЗАЦИЯ (ПРЕВРАЩАЕМ ТЕКСТ В КЛЮЧИ)
