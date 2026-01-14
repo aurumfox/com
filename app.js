@@ -304,9 +304,35 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
+function actionAudit(name, status, detail = "") {
+    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
+    const messages = {
+        process: `${icons.process} ${name}: Transaction started...`,
+        success: `${icons.success} ${name}: Successful! ${detail}`,
+        error: `${icons.error} ${name} Failed: ${detail}`,
+        info: `${icons.info} ${detail}`
+    };
+    showNotification(messages[status], status === 'process' ? 'info' : status);
+    console.log(`[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()} ${detail}`);
+}
 
 
 
+
+// Улучшенная функция статуса кнопок
+function setBtnState(btn, isLoading, text = "Wait...") {
+    if (!btn) return;
+    if (isLoading) {
+        btn.disabled = true;
+        btn.dataset.old = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner"></span> ${text}`;
+        btn.style.opacity = "0.6";
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.old || btn.innerHTML;
+        btn.style.opacity = "1";
+    }
+}
 
 
 
@@ -664,35 +690,41 @@ async function executeSmartActionWithFullEffects(btn, config) {
 
     const originalHTML = btn.innerHTML;
     
-    // 1. Состояние загрузки (анимация спиннера)
+    // 1. СТИЛЬ: Вход в состояние загрузки
     btn.classList.add('loading');
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
+    
+    // Аудит в консоль и уведомление
+    actionAudit(config.name, "process", "Connecting to Solana...");
 
     try {
-        // 2. Выполнение логики
+        // 2. ЛОГИКА: Выполнение Rust-инструкции
         await config.fn(); 
 
-        // 3. Анимация УСПЕХА
+        // 3. ФИДБЕК: Успех + Анимация
         btn.classList.remove('loading');
-        btn.classList.add('success-glow'); // Вспышка кнопки
+        btn.classList.add('success-glow');
         btn.innerHTML = `✅ ${config.msg}`;
         
-        // ТОТ САМЫЙ ВЗРЫВ КУБКОВ И ЭМОДЗИ
-        if (typeof spawnEmoji === 'function') {
-            spawnEmoji(btn, config.icon); 
-        }
+        // Взрыв иконок (твой фирменный стиль)
+        spawnEmoji(btn, config.icon); 
 
-        showNotification(config.msg, "success");
+        actionAudit(config.name, "success", config.msg);
+        
+        // Глобальное обновление данных
+        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
 
     } catch (err) {
-        // 4. Анимация ОШИБКИ
+        // 4. ОШИБКА: Визуальный откат
+        console.error(`[CRITICAL] Error in ${config.name}:`, err);
         btn.classList.remove('loading');
         btn.innerHTML = `❌ Failed`;
-        btn.classList.add('error-shake'); // Тряска кнопки
-        showNotification(err.message, "error");
+        btn.classList.add('error-shake'); // Добавь в CSS для тряски
+        
+        actionAudit(config.name, "error", err.message);
     } finally {
-        // Возврат кнопки в исходный вид
+        // Сброс через 3.5 секунды
         setTimeout(() => {
             btn.classList.remove('success-glow', 'loading', 'error-shake');
             btn.disabled = false;
@@ -700,7 +732,6 @@ async function executeSmartActionWithFullEffects(btn, config) {
         }, 3500);
     }
 }
-
 
 
 
@@ -768,7 +799,41 @@ document.head.appendChild(style);
 
 
 
+// 1. Восстанавливаем движок транзакций
+async function smartAction(btn, name, msg, icon, fn) {
+    try {
+        if (btn) setBtnState(btn, true, name);
+        const signature = await fn();
+        if (btn) {
+            if (typeof spawnEmoji === 'function') spawnEmoji(btn, icon);
+            showNotification(`${msg} TX: ${signature.slice(0, 8)}...`, "success");
+        }
+        return signature;
+    } catch (e) {
+        console.error(`❌ Ошибка в ${name}:`, e);
+        showNotification(e.message || "Ошибка транзакции", "error");
+        throw e;
+    } finally {
+        if (btn) setBtnState(btn, false);
+    }
+}
 
+// 2. Добавляем анимацию успеха (чтобы код не падал в конце)
+function spawnEmoji(el, emoji) {
+    const rect = el.getBoundingClientRect();
+    for (let i = 0; i < 8; i++) {
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.style.cssText = `position:fixed; left:${rect.left + rect.width/2}px; top:${rect.top}px; z-index:10000; pointer-events:none;`;
+        document.body.appendChild(span);
+        const angle = (Math.random() * Math.PI * 2);
+        const dist = 50 + Math.random() * 50;
+        span.animate([
+            { transform: 'translate(0,0) scale(1)', opacity: 1 },
+            { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(1.5)`, opacity: 0 }
+        ], { duration: 1000 }).onfinish = () => span.remove();
+    }
+}
 
 
 
@@ -875,7 +940,20 @@ function handlePublicKeyChange(newPublicKey) {
     if (newPublicKey) updateStakingAndBalanceUI();
 }
 
-
+function setLoadingState(isLoading, button = null) {
+    if (uiElements.pageLoader) uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
+    const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
+    btns.forEach(btn => { if (btn) btn.disabled = isLoading; });
+    if (button) {
+        button.disabled = isLoading;
+        if (isLoading) {
+            button.dataset.oldText = button.textContent;
+            button.textContent = '...Wait';
+        } else if (button.dataset.oldText) {
+            button.textContent = button.dataset.oldText;
+        }
+    }
+}
 
 /**
  * Получает реальные балансы SOL и AFOX из блокчейна.
@@ -1117,28 +1195,26 @@ if (window.solana) {
 
 function setupModernUI() {
     const actions = [
-        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🦊', fn: connectWallet },
-        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '🏆', fn: handleStakeAfox }, // Кубок летит!
+        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
+        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
-        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards }, // Бриллианты!
+        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
         
         // Открытие модалки DAO
         { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
             const modal = document.getElementById('createProposalModal');
             if(modal) modal.style.display = 'flex'; 
         }},
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '🚀', fn: handleCreateProposal }, // Ракета!
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
-        
-        // Финансы
-        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💰', fn: () => handleLendingAction('Lend') }, // Деньги!
+        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
         { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
         { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // Привязка действий к кнопкам (Твой оригинальный рабочий цикл)
+    // Привязка действий к кнопкам
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
@@ -1146,21 +1222,24 @@ function setupModernUI() {
             el.parentNode.replaceChild(cleanBtn, el);
             cleanBtn.onclick = (e) => {
                 if (e) e.preventDefault();
-                executeSmartActionWithFullEffects(cleanBtn, item); // Вызывает анимацию
+                executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 
-    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ ---
-    const closeBtn = document.getElementById('closeProposalModal');
-    const modal = document.getElementById('createProposalModal');
+    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
+    const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
+    const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
     
+
     if (closeBtn && modal) {
         closeBtn.onclick = (e) => {
             e.preventDefault();
             modal.style.display = 'none';
+            console.log("Модалка DAO закрыта через крестик");
         };
 
+        // Дополнительно: закрытие при клике ВНЕ окна
         window.addEventListener('click', (event) => {
             if (event.target === modal) {
                 modal.style.display = 'none';
@@ -1169,64 +1248,6 @@ function setupModernUI() {
     }
 }
 
-// Твоя функция анимации взрыва
-function spawnEmoji(el, emoji) {
-    if (!el) return;
-    
-    for (let i = 0; i < 12; i++) { // Увеличил до 12 для густоты
-        const span = document.createElement('span');
-        span.textContent = emoji || '✨';
-        span.style.position = 'fixed';
-        span.style.zIndex = '10000'; // Поверх всего
-        span.style.pointerEvents = 'none';
-        span.style.fontSize = '28px'; // Чуть крупнее для красоты
-        
-        const rect = el.getBoundingClientRect();
-        const startX = rect.left + rect.width / 2;
-        const startY = rect.top + rect.height / 2;
-        
-        span.style.left = startX + 'px';
-        span.style.top = startY + 'px';
-        
-        document.body.appendChild(span);
-        
-        const angle = Math.random() * Math.PI * 2;
-        const velocity = 5 + Math.random() * 8;
-        const vx = Math.cos(angle) * velocity;
-        const vy = Math.sin(angle) * velocity;
-        
-        let opacity = 1;
-        let x = startX;
-        let y = startY;
-        
-        function update() {
-            x += vx;
-            y += vy;
-            opacity -= 0.015; // Плавное исчезновение
-            
-            span.style.left = x + 'px';
-            span.style.top = y + 'px';
-            span.style.opacity = opacity;
-            span.style.transform = `rotate(${x}deg)`; // Вращение при полете
-            
-            if (opacity > 0) {
-                requestAnimationFrame(update);
-            } else {
-                span.remove();
-            }
-        }
-        requestAnimationFrame(update);
-    }
-}
-
-function actionAudit(actionName, status, details = "") {
-    const symbols = { process: "⏳", success: "✅", error: "❌" };
-    const color = status === "error" ? "color: #ff4d4d" : "color: #00ffaa";
-    console.log(`%c[${symbols[status] || ""}] ${actionName}: ${status.toUpperCase()} ${details}`, color);
-    
-    // Если хочешь, чтобы уведомления всплывали и здесь:
-    if (status === "error" && details) showNotification(details, "error");
-}
 
 
 function initializeAurumFoxApp() {
