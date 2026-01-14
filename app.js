@@ -171,37 +171,43 @@ const STAKING_IDL = {
 ]
 
 
-// БЛОК 1: ИНИЦИАЛИЗАЦИЯ АДРЕСОВ (ИСПРАВЛЕНО: добавлены запятые)
-let STAKING_PROGRAM_ID, AFOX_TOKEN_MINT_ADDRESS, AFOX_POOL_STATE_PUBKEY,
-    AFOX_POOL_VAULT_PUBKEY, AFOX_REWARDS_VAULT_PUBKEY, DAO_TREASURY_VAULT_PUBKEY,
-    TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, SYSTEM_PROGRAM_ID;
+// БЛОК 1: БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ (БЕЗ 'LET' СПИСКОМ)
+// Удаляем все 'let STAKING_PROGRAM_ID, ...' и заменяем на объект window
+window.AFOX_CONFIG = {}; 
 
 function setupAddresses() {
+    console.log("🛠️ Запуск инициализации адресов...");
+    
     if (!window.solanaWeb3) {
-        console.error("❌ Критическая ошибка: Библиотека Solana Web3 не загружена!");
+        console.error("❌ Критическая ошибка: Библиотека Solana Web3 не найдена в window!");
         return false;
     }
     
     try {
         const pk = window.solanaWeb3.PublicKey;
         
-        STAKING_PROGRAM_ID = new pk('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
-        AFOX_TOKEN_MINT_ADDRESS = new pk('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
-        AFOX_POOL_STATE_PUBKEY = new pk('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
-        AFOX_POOL_VAULT_PUBKEY = new pk('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp');
-        AFOX_REWARDS_VAULT_PUBKEY = new pk('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
-        DAO_TREASURY_VAULT_PUBKEY = new pk('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi');
+        // Назначаем всё сразу в объект window, чтобы не было конфликтов с переменными
+        window.STAKING_PROGRAM_ID = new pk('ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH');
+        window.AFOX_TOKEN_MINT_ADDRESS = new pk('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd');
+        window.AFOX_POOL_STATE_PUBKEY = new pk('DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ');
+        window.AFOX_POOL_VAULT_PUBKEY = new pk('328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp');
+        window.AFOX_REWARDS_VAULT_PUBKEY = new pk('BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF');
+        window.DAO_TREASURY_VAULT_PUBKEY = new pk('6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi');
         
-        TOKEN_PROGRAM_ID = new pk('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-        ASSOCIATED_TOKEN_PROGRAM_ID = new pk('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
-        SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
+        window.TOKEN_PROGRAM_ID = new pk('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+        window.ASSOCIATED_TOKEN_PROGRAM_ID = new pk('ATokenGPvbdQxr7K2mc7fgC6jgvZifv6BAeu6CCYH25');
+        window.SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
         
+        console.log("✅ Все адреса Solana успешно инициализированы в window!");
         return true;
     } catch (e) {
         console.error("❌ Ошибка при создании PublicKey:", e);
         return false;
     }
 }
+
+
+
 
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
