@@ -319,20 +319,7 @@ function actionAudit(name, status, detail = "") {
 
 
 
-// Улучшенная функция статуса кнопок
-function setBtnState(btn, isLoading, text = "Wait...") {
-    if (!btn) return;
-    if (isLoading) {
-        btn.disabled = true;
-        btn.dataset.old = btn.innerHTML;
-        btn.innerHTML = `<span class="spinner"></span> ${text}`;
-        btn.style.opacity = "0.6";
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.old || btn.innerHTML;
-        btn.style.opacity = "1";
-    }
-}
+
 
 
 
