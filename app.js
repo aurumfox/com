@@ -1170,6 +1170,58 @@ function setupModernUI() {
     }
 }
 
+function spawnEmoji(el, emoji) {
+    if (!el) return;
+    
+    // Создаем 8-10 летящих элементов
+    for (let i = 0; i < 10; i++) {
+        const span = document.createElement('span');
+        span.textContent = emoji || '✨';
+        span.style.position = 'fixed';
+        span.style.zIndex = '9999';
+        span.style.pointerEvents = 'none';
+        span.style.fontSize = '24px';
+        
+        // Координаты кнопки
+        const rect = el.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+        
+        span.style.left = startX + 'px';
+        span.style.top = startY + 'px';
+        
+        document.body.appendChild(span);
+        
+        // Рандомное направление полета
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 4 + Math.random() * 6;
+        const vx = Math.cos(angle) * velocity;
+        const vy = Math.sin(angle) * velocity;
+        
+        let opacity = 1;
+        let x = startX;
+        let y = startY;
+        
+        // Анимация полета
+        function update() {
+            x += vx;
+            y += vy;
+            opacity -= 0.02;
+            
+            span.style.left = x + 'px';
+            span.style.top = y + 'px';
+            span.style.opacity = opacity;
+            
+            if (opacity > 0) {
+                requestAnimationFrame(update);
+            } else {
+                span.remove();
+            }
+        }
+        
+        requestAnimationFrame(update);
+    }
+}
 
 
 function initializeAurumFoxApp() {
