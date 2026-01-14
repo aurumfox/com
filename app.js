@@ -1219,6 +1219,14 @@ function spawnEmoji(el, emoji) {
     }
 }
 
+function actionAudit(actionName, status, details = "") {
+    const symbols = { process: "⏳", success: "✅", error: "❌" };
+    const color = status === "error" ? "color: #ff4d4d" : "color: #00ffaa";
+    console.log(`%c[${symbols[status] || ""}] ${actionName}: ${status.toUpperCase()} ${details}`, color);
+    
+    // Если хочешь, чтобы уведомления всплывали и здесь:
+    if (status === "error" && details) showNotification(details, "error");
+}
 
 
 function initializeAurumFoxApp() {
