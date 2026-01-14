@@ -93,6 +93,7 @@ const AFOX_OFFICIAL_KEYS = {
 // ============================================================
 // 2. ИСПРАВЛЕННЫЙ STAKING_IDL (С ЗАКРЫТЫМИ СКОБКАМИ)
 // ============================================================
+
 const STAKING_IDL = {
     "version": "0.1.0",
     "name": "my_new_afox_project",
@@ -108,11 +109,59 @@ const STAKING_IDL = {
                 { "name": "clock", "isMut": false, "isSigner": false }
             ],
             "args": [{ "name": "poolIndex", "type": "u8" }]
+        },
+        {
+            "name": "deposit",
+            "accounts": [
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
+                { "name": "owner", "isMut": true, "isSigner": true },
+                { "name": "userSourceAta", "isMut": true, "isSigner": false },
+                { "name": "vault", "isMut": true, "isSigner": false },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "tokenProgram", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
+            ],
+            "args": [{ "name": "amount", "type": "u64" }]
+        },
+        {
+            "name": "claimRewards",
+            "accounts": [
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
+                { "name": "owner", "isMut": true, "isSigner": true },
+                { "name": "vault", "isMut": true, "isSigner": false },
+                { "name": "adminFeeVault", "isMut": true, "isSigner": false },
+                { "name": "userRewardsAta", "isMut": true, "isSigner": false },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "tokenProgram", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
+            ],
+            "args": []
+        },
+        {
+            "name": "unstake",
+            "accounts": [
+                { "name": "poolState", "isMut": true, "isSigner": false },
+                { "name": "userStaking", "isMut": true, "isSigner": false },
+                { "name": "owner", "isMut": true, "isSigner": true },
+                { "name": "vault", "isMut": true, "isSigner": false },
+                { "name": "daoTreasuryVault", "isMut": true, "isSigner": false },
+                { "name": "adminFeeVault", "isMut": true, "isSigner": false },
+                { "name": "userRewardsAta", "isMut": true, "isSigner": false },
+                { "name": "rewardMint", "isMut": false, "isSigner": false },
+                { "name": "tokenProgram", "isMut": false, "isSigner": false },
+                { "name": "clock", "isMut": false, "isSigner": false }
+            ],
+            "args": [
+                { "name": "amount", "type": "u64" },
+                { "name": "isEarlyExit", "type": "bool" }
+            ]
         }
     ],
     "accounts": [
         {
-            "name": "UserStakingAccount",
+            "name": "userStakingAccount", // Маленькая буква для JS!
             "type": {
                 "kind": "struct",
                 "fields": [
@@ -128,13 +177,12 @@ const STAKING_IDL = {
                     { "name": "pendingRewardsDueToLimit", "type": "u64" },
                     { "name": "lending", "type": "u64" },
                     { "name": "lendingUnlockTime", "type": "i64" },
-                    { "name": "lastUpdateTime", "type": "i64" },
-                    { "name": "paddingFinal", "type": { "array": ["u8", 104] } }
+                    { "name": "lastUpdateTime", "type": "i64" }
                 ]
             }
         },
         {
-            "name": "PoolState",
+            "name": "poolState",
             "type": {
                 "kind": "struct",
                 "fields": [
@@ -156,7 +204,7 @@ const STAKING_IDL = {
                     { "name": "daoTreasuryVault", "type": "publicKey" },
                     { "name": "defaulterTreasuryVault", "type": "publicKey" },
                     { "name": "pendingChangeTime", "type": "i64" },
-                    { "name": "lastRewardTime", "type": "i64" }, // ИСПРАВЛЕНО: добавлены кавычки
+                    { "name": "lastRewardTime", "type": "i64" },
                     { "name": "maxDaoWithdrawalAmount", "type": "u64" },
                     { "name": "sweepThreshold", "type": "u64" },
                     { "name": "adminFeeShareBps", "type": "u16" },
@@ -166,13 +214,12 @@ const STAKING_IDL = {
                     { "name": "totalStakedAmount", "type": "u64" },
                     { "name": "totalUnclaimedRewards", "type": "u64" },
                     { "name": "daoWithdrawal24hCap", "type": "u64" },
-                    { "name": "daoWithdrawalResetTime", "type": "i64" },
-                    { "name": "paddingFinal", "type": { "array": ["u8", 96] } }
+                    { "name": "daoWithdrawalResetTime", "type": "i64" }
                 ]
             }
         }
     ]
-}; // ТУТ ВАЖНО ЗАКРЫТЬ ОБЪЕКТ!
+};
 
 
 
@@ -648,26 +695,37 @@ async function fetchUserStakingData() {
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const userPDA = await getUserStakingPDA(appState.walletPublicKey);
         
-        // 1. Пытаемся получить данные через Anchor (теперь с правильным IDL должно работать)
+        // Проверка: загружена ли библиотека корректно
+        if (!program.account || !program.account.userStakingAccount) {
+            console.error("❌ Anchor Account 'userStakingAccount' not found in IDL. Check casing.");
+            return;
+        }
+
+        // ВАЖНО: для zero_copy используем .fetch()
         const stakingData = await program.account.userStakingAccount.fetch(userPDA);
 
         if (stakingData) {
             appState.userStakingData = {
                 stakedAmount: BigInt(stakingData.stakedAmount.toString()),
+                // Суммируем награды как в вашем Rust коде: rewards_to_claim + pending_rewards_due_to_limit
                 rewards: BigInt(stakingData.rewardsToClaim.toString()) + BigInt(stakingData.pendingRewardsDueToLimit.toString()),
-                lockupEndTime: stakingData.lockupEndTime.toNumber(),
+                lockupEndTime: Number(stakingData.lockupEndTime),
                 poolIndex: stakingData.poolIndex,
                 lending: BigInt(stakingData.lending.toString()),
-                lastUpdate: stakingData.lastUpdateTime.toNumber()
+                lastUpdate: Number(stakingData.lastUpdateTime)
             };
-            console.log("✅ Данные синхронизированы:", appState.userStakingData);
+            console.log("✅ Data sync success:", appState.userStakingData);
         }
     } catch (e) {
-        console.error("❌ Ошибка парсинга:", e);
-        // Если аккаунт просто не создан — это нормально, обнуляем данные
-        appState.userStakingData = { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n };
+        if (e.message.includes("Account does not exist")) {
+             console.log("ℹ️ User staking account not created yet.");
+             appState.userStakingData = { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n };
+        } else {
+             console.error("❌ Parsing Error:", e);
+        }
     }
 }
+
 
 
 
@@ -764,49 +822,43 @@ async function handleUnstakeAfox() {
     const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
     const userPDA = await getUserStakingPDA(appState.walletPublicKey);
 
-    // Используем executeSmartActionWithFullEffects, если ты перешел на новый обработчик, 
-    // или оставляем smartAction (код ниже адаптирован под твою структуру)
-    await smartAction(btn, "Unstaking", "Tokens Freed!", "🔓", async () => {
-        // 1. Получаем актуальные данные аккаунта из блокчейна перед транзакцией
-        const stakingData = await program.account.userStakingAccount.fetch(userPDA);
-        
-        // 2. Определяем, является ли выход досрочным
-        const now = Math.floor(Date.now() / 1000);
-        const isEarly = now < stakingData.lockupEndTime.toNumber();
+    await executeSmartActionWithFullEffects(btn, {
+        name: "Unstaking",
+        msg: "Success!",
+        fn: async () => {
+            const stakingData = await program.account.userStakingAccount.fetch(userPDA);
+            const now = Math.floor(Date.now() / 1000);
+            
+            // Логика: если время лока не вышло, ставим флаг Early Exit
+            const isEarly = now < Number(stakingData.lockupEndTime);
 
-        // 3. Находим ATA пользователя для получения токенов
-        const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [
-                appState.walletPublicKey.toBuffer(), 
-                TOKEN_PROGRAM_ID.toBuffer(), 
-                AFOX_TOKEN_MINT_ADDRESS.toBuffer()
-            ],
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        ).then(res => res[0]);
+            const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
+                [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            ).then(res => res[0]);
 
-        console.log(`📤 Unstaking: ${stakingData.stakedAmount.toString()} (Early: ${isEarly})`);
-
-        // 4. Вызываем метод контракта
-        return await program.methods
-            .unstake(
-                new window.anchor.BN(stakingData.stakedAmount.toString()), // Обязательно BN
-                isEarly                                                   // bool
-            )
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userPDA,
-                owner: appState.walletPublicKey,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardsAta: userAta,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-            })
-            .rpc();
+            return await program.methods
+                .unstake(
+                    new window.anchor.BN(stakingData.stakedAmount.toString()), 
+                    isEarly
+                )
+                .accounts({
+                    poolState: AFOX_POOL_STATE_PUBKEY,
+                    userStaking: userPDA,
+                    owner: appState.walletPublicKey,
+                    vault: AFOX_POOL_VAULT_PUBKEY,
+                    daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+                    adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+                    userRewardsAta: userAta,
+                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+                })
+                .rpc();
+        }
     });
 }
+
 
 
 
