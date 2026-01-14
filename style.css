@@ -513,6 +513,23 @@ li {
    Buttons
 ========================================================================== */
 
+
+.connect-fox-btn {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: linear-gradient(45deg, #f39c12, #f1c40f) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+}
+
+.connect-fox-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.5);
+}
+
+.connect-fox-btn:active {
+    transform: scale(0.95);
+}
+
 /* Эффект вспышки для кнопки */
 .success-glow {
     animation: flash 0.8s ease-out;
