@@ -304,35 +304,6 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
-function actionAudit(name, status, detail = "") {
-    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
-    const messages = {
-        process: `${icons.process} ${name}: Transaction started...`,
-        success: `${icons.success} ${name}: Successful! ${detail}`,
-        error: `${icons.error} ${name} Failed: ${detail}`,
-        info: `${icons.info} ${detail}`
-    };
-    showNotification(messages[status], status === 'process' ? 'info' : status);
-    console.log(`[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()} ${detail}`);
-}
-
-
-
-
-// Улучшенная функция статуса кнопок
-function setBtnState(btn, isLoading, text = "Wait...") {
-    if (!btn) return;
-    if (isLoading) {
-        btn.disabled = true;
-        btn.dataset.old = btn.innerHTML;
-        btn.innerHTML = `<span class="spinner"></span> ${text}`;
-        btn.style.opacity = "0.6";
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.old || btn.innerHTML;
-        btn.style.opacity = "1";
-    }
-}
 
 
 
@@ -683,157 +654,9 @@ function cacheUIElements() {
 }
 
 
-// ЕДИНЫЙ ОБРАБОТЧИК ДЛЯ ВСЕХ КНОПОК
-
-async function executeSmartActionWithFullEffects(btn, config) {
-    if (btn.classList.contains('loading')) return;
-
-    const originalHTML = btn.innerHTML;
-    
-    // 1. СТИЛЬ: Вход в состояние загрузки
-    btn.classList.add('loading');
-    btn.disabled = true;
-    btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
-    
-    // Аудит в консоль и уведомление
-    actionAudit(config.name, "process", "Connecting to Solana...");
-
-    try {
-        // 2. ЛОГИКА: Выполнение Rust-инструкции
-        await config.fn(); 
-
-        // 3. ФИДБЕК: Успех + Анимация
-        btn.classList.remove('loading');
-        btn.classList.add('success-glow');
-        btn.innerHTML = `✅ ${config.msg}`;
-        
-        // Взрыв иконок (твой фирменный стиль)
-        spawnEmoji(btn, config.icon); 
-
-        actionAudit(config.name, "success", config.msg);
-        
-        // Глобальное обновление данных
-        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
-
-    } catch (err) {
-        // 4. ОШИБКА: Визуальный откат
-        console.error(`[CRITICAL] Error in ${config.name}:`, err);
-        btn.classList.remove('loading');
-        btn.innerHTML = `❌ Failed`;
-        btn.classList.add('error-shake'); // Добавь в CSS для тряски
-        
-        actionAudit(config.name, "error", err.message);
-    } finally {
-        // Сброс через 3.5 секунды
-        setTimeout(() => {
-            btn.classList.remove('success-glow', 'loading', 'error-shake');
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-        }, 3500);
-    }
-}
 
 
 
-function showNotification(msg, type = 'info') {
-    // Вывод в консоль для отладки
-    console.log(`[${type.toUpperCase()}] ${msg}`);
-
-    // Находим или создаем контейнер для уведомлений
-    let container = document.getElementById('notification-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'notification-container';
-        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;';
-        document.body.appendChild(container);
-    }
-
-    // Создаем само уведомление
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    
-    // Стилизация в зависимости от типа (success, error, info)
-    const colors = {
-        success: '#00ffaa',
-        error: '#ff4d4d',
-        info: '#00ccff'
-    };
-
-    toast.style.cssText = `
-        background: rgba(20, 20, 20, 0.95);
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        border-left: 4px solid ${colors[type] || colors.info};
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        font-family: 'Inter', sans-serif;
-        font-size: 14px;
-        min-width: 250px;
-        animation: slideIn 0.3s ease forwards;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    `;
-
-    toast.innerHTML = `
-        <span>${msg}</span>
-        <button onclick="this.parentElement.remove()" style="background:none; border:none; color:white; cursor:pointer; margin-left:10px; opacity:0.5;">✕</button>
-    `;
-
-    container.appendChild(toast);
-
-    // Удаляем уведомление через 5 секунд
-    setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease forwards';
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
-}
-
-// Добавим анимации в документ
-const style = document.createElement('style');
-style.innerHTML = `
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-`;
-document.head.appendChild(style);
-
-
-
-// 1. Восстанавливаем движок транзакций
-async function smartAction(btn, name, msg, icon, fn) {
-    try {
-        if (btn) setBtnState(btn, true, name);
-        const signature = await fn();
-        if (btn) {
-            if (typeof spawnEmoji === 'function') spawnEmoji(btn, icon);
-            showNotification(`${msg} TX: ${signature.slice(0, 8)}...`, "success");
-        }
-        return signature;
-    } catch (e) {
-        console.error(`❌ Ошибка в ${name}:`, e);
-        showNotification(e.message || "Ошибка транзакции", "error");
-        throw e;
-    } finally {
-        if (btn) setBtnState(btn, false);
-    }
-}
-
-// 2. Добавляем анимацию успеха (чтобы код не падал в конце)
-function spawnEmoji(el, emoji) {
-    const rect = el.getBoundingClientRect();
-    for (let i = 0; i < 8; i++) {
-        const span = document.createElement('span');
-        span.textContent = emoji;
-        span.style.cssText = `position:fixed; left:${rect.left + rect.width/2}px; top:${rect.top}px; z-index:10000; pointer-events:none;`;
-        document.body.appendChild(span);
-        const angle = (Math.random() * Math.PI * 2);
-        const dist = 50 + Math.random() * 50;
-        span.animate([
-            { transform: 'translate(0,0) scale(1)', opacity: 1 },
-            { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(1.5)`, opacity: 0 }
-        ], { duration: 1000 }).onfinish = () => span.remove();
-    }
-}
 
 
 
@@ -940,20 +763,7 @@ function handlePublicKeyChange(newPublicKey) {
     if (newPublicKey) updateStakingAndBalanceUI();
 }
 
-function setLoadingState(isLoading, button = null) {
-    if (uiElements.pageLoader) uiElements.pageLoader.style.display = isLoading ? 'flex' : 'none';
-    const btns = [uiElements.stakeAfoxBtn, uiElements.claimRewardsBtn, uiElements.unstakeAfoxBtn];
-    btns.forEach(btn => { if (btn) btn.disabled = isLoading; });
-    if (button) {
-        button.disabled = isLoading;
-        if (isLoading) {
-            button.dataset.oldText = button.textContent;
-            button.textContent = '...Wait';
-        } else if (button.dataset.oldText) {
-            button.textContent = button.dataset.oldText;
-        }
-    }
-}
+
 
 /**
  * Получает реальные балансы SOL и AFOX из блокчейна.
@@ -1191,62 +1001,165 @@ if (window.solana) {
 
 
 
+/**
+ * 1. ГЛОБАЛЬНЫЕ СТИЛИ (Анимации и эффекты кнопок)
+ */
+const styleSheet = document.createElement('style');
+styleSheet.innerHTML = `
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse-gold { 0% { box-shadow: 0 0 5px #ffd700; } 100% { box-shadow: 0 0 20px #ffd700; } }
+    
+    .spinner { border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid #fff; border-radius: 50%; width: 14px; height: 14px; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; vertical-align: middle; }
+    .success-glow { animation: pulse-gold 0.5s ease-in-out infinite alternate !important; border-color: #ffd700 !important; color: #ffd700 !important; }
+    .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: #ff4d4d !important; }
+    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+`;
+document.head.appendChild(styleSheet);
 
+/**
+ * 2. СИСТЕМА УВЕДОМЛЕНИЙ И АУДИТА
+ */
+function actionAudit(name, status, detail = "") {
+    const icons = { process: "⏳", success: "✅", error: "❌", info: "ℹ️" };
+    showNotification(`${icons[status] || '🔔'} ${name}: ${detail}`, status === 'process' ? 'info' : status);
+    console.log(`%c[SYSTEM AUDIT] ${name} -> ${status.toUpperCase()}`, 'color: #00ffaa; font-weight: bold;', detail);
+}
 
+function showNotification(msg, type = 'info') {
+    let container = document.getElementById('notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;';
+        document.body.appendChild(container);
+    }
+
+    const colors = { success: '#00ffaa', error: '#ff4d4d', info: '#00ccff' };
+    const toast = document.createElement('div');
+    toast.style.cssText = `background: rgba(10, 10, 10, 0.95); color: white; padding: 12px 20px; border-radius: 8px; border-left: 4px solid ${colors[type] || colors.info}; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: 'Inter', sans-serif; font-size: 14px; min-width: 280px; animation: slideIn 0.3s ease forwards; display: flex; align-items: center; justify-content: space-between;`;
+    
+    toast.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" style="background:none; border:none; color:white; cursor:pointer; opacity:0.5; font-size:16px;">✕</button>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => toast.remove(), 300); }, 5000);
+}
+
+/**
+ * 3. БОГАТАЯ АНИМАЦИЯ (Бриллианты и частицы)
+ */
+function spawnRichParticles(el) {
+    const rect = el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const particles = ['💎', '✨', '🪙', '💰', '⭐'];
+
+    for (let i = 0; i < 15; i++) {
+        const p = document.createElement('span');
+        p.textContent = particles[Math.floor(Math.random() * particles.length)];
+        p.style.cssText = `position:fixed; left:${centerX}px; top:${centerY}px; z-index:10000; pointer-events:none; font-size:${10 + Math.random() * 20}px; user-select:none; filter: drop-shadow(0 0 5px gold);`;
+        document.body.appendChild(p);
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 4 + Math.random() * 8;
+        const tx = Math.cos(angle) * (velocity * 12);
+        const ty = Math.sin(angle) * (velocity * 12);
+        const rot = Math.random() * 360;
+
+        p.animate([
+            { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
+            { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(1.5)`, opacity: 1, offset: 0.6 },
+            { transform: `translate(-50%, -50%) translate(${tx * 1.2}px, ${ty * 1.2}px) rotate(${rot * 2}deg) scale(0)`, opacity: 0 }
+        ], { duration: 800 + Math.random() * 600, easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)' }).onfinish = () => p.remove();
+    }
+}
+
+/**
+ * 4. ЕДИНЫЙ ОБРАБОТЧИК (Кнопки)
+ */
+async function executeSmartActionWithFullEffects(btn, config) {
+    if (btn.classList.contains('loading')) return;
+
+    const originalHTML = btn.innerHTML;
+    btn.classList.add('loading');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
+    
+    actionAudit(config.name, "process", "Connecting to Blockchain...");
+
+    try {
+        // Выполняем саму функцию
+        await config.fn(); 
+
+        // УСПЕХ
+        btn.classList.remove('loading');
+        btn.classList.add('success-glow');
+        btn.innerHTML = `✅ ${config.msg}`;
+        
+        spawnRichParticles(btn); // Взрыв бриллиантов
+        actionAudit(config.name, "success", config.msg);
+        
+        if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+
+    } catch (err) {
+        // ОШИБКА
+        console.error(err);
+        btn.classList.remove('loading');
+        btn.classList.add('error-shake');
+        btn.innerHTML = `❌ Failed`;
+        actionAudit(config.name, "error", err.message || "User rejected");
+    } finally {
+        setTimeout(() => {
+            btn.classList.remove('success-glow', 'loading', 'error-shake');
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }, 3500);
+    }
+}
+
+/**
+ * 5. ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА (Без дубликатов)
+ */
 function setupModernUI() {
     const actions = [
-        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
-        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
-        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
-        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
-        
-        // Открытие модалки DAO
-        { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
-            const modal = document.getElementById('createProposalModal');
-            if(modal) modal.style.display = 'flex'; 
-        }},
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
-        { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
-        { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
-        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
-        { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
-        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
-        { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
+        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '💎', fn: connectWallet },
+        { id: 'stake-afox-btn', name: 'Staking', msg: 'Locked! 📈', icon: '💎', fn: handleStakeAfox },
+        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Withdrawn! 🔓', icon: '💎', fn: handleUnstakeAfox },
+        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Claimed! 🎁', icon: '💎', fn: handleClaimRewards },
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '💎', fn: handleCreateProposal },
+        { id: 'vote-for-btn', name: 'Vote', msg: 'Voted FOR!', icon: '💎', fn: () => handleVote('FOR') },
+        { id: 'vote-against-btn', name: 'Vote', msg: 'Voted AGAINST!', icon: '💎', fn: () => handleVote('AGAINST') },
+        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added!', icon: '💎', fn: () => handleLendingAction('Lend') },
+        { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Freed!', icon: '💎', fn: () => handleLendingAction('Withdraw') },
+        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Taken!', icon: '💎', fn: () => handleLoanAction('Borrow') },
+        { id: 'repay-btn', name: 'Repay', msg: 'Loan Repaid!', icon: '💎', fn: () => handleLoanAction('Repay') }
     ];
 
-    // Привязка действий к кнопкам
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            const cleanBtn = el.cloneNode(true);
+            const cleanBtn = el.cloneNode(true); // Убивает все старые слушатели (чистит дубли)
             el.parentNode.replaceChild(cleanBtn, el);
             cleanBtn.onclick = (e) => {
-                if (e) e.preventDefault();
+                e.preventDefault();
                 executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 
-    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
-    const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
-    const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
+    // Фикс модалок DAO
+    const createBtn = document.getElementById('createProposalBtn');
+    const modal = document.getElementById('createProposalModal');
+    const closeBtn = document.getElementById('closeProposalModal');
+
+    if (createBtn && modal) createBtn.onclick = () => modal.style.display = 'flex';
+    if (closeBtn && modal) closeBtn.onclick = () => modal.style.display = 'none';
     
-
-    if (closeBtn && modal) {
-        closeBtn.onclick = (e) => {
-            e.preventDefault();
-            modal.style.display = 'none';
-            console.log("Модалка DAO закрыта через крестик");
-        };
-
-        // Дополнительно: закрытие при клике ВНЕ окна
-        window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-    }
+    window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 }
+
+
+
 
 
 
