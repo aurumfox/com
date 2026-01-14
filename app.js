@@ -60,34 +60,21 @@ function formatBigInt(value, decimals) {
 
 
 
+
+// ==========================================
+// 1. КОНСТАНТЫ (ОБЪЯВЛЯЮТСЯ ТОЛЬКО ОДИН РАЗ!)
+// ==========================================
 const SOL_DECIMALS = 9;
 const AFOX_DECIMALS = 6;
 const SECONDS_PER_DAY = 86400;
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
 
-
-
-
-
-
 const RPC_ENDPOINTS = [
-    'https://solana-rpc.publicnode.com', // Очень стабильный бесплатный узел
+    'https://solana-rpc.publicnode.com',
     'https://rpc.ankr.com/solana',
     'https://api.mainnet-beta.solana.com'
 ];
-
-// Установите публичный узел как основной
 const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[0]; 
-
-
-
-
-
-
-
-
-
-
 
 const POOLS_CONFIG = {
     0: { name: "Flexible", apr_rate: 500 },
@@ -96,9 +83,6 @@ const POOLS_CONFIG = {
     4: { name: "Legacy", apr_rate: 0 }
 };
 
-// ==========================================
-// БЛОК 1: КОНФИГ КЛЮЧЕЙ (ПРОСТО ТЕКСТ)
-// ==========================================
 const AFOX_OFFICIAL_KEYS = {
     STAKING_PROGRAM: "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH",
     TOKEN_MINT:      "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd",
@@ -107,11 +91,6 @@ const AFOX_OFFICIAL_KEYS = {
     REWARDS_VAULT:   "BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF",
     DAO_TREASURY:    "6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi"
 };
-
-// Константы
-const SOL_DECIMALS = 9;
-const AFOX_DECIMALS = 6;
-
 
 
 
