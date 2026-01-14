@@ -199,19 +199,7 @@ const STAKING_IDL = {
 
 
 
-// Поиск PDA пользователя (строго соответствует Rust seeds)
 
-// ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
-async function getUserStakingPDA(owner) {
-    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-        [
-            owner.toBuffer(), 
-            AFOX_POOL_STATE_PUBKEY.toBuffer() // Это должен быть DfAaH2Xs...
-        ],
-        STAKING_PROGRAM_ID
-    );
-    return pda;
-}
 
 
 
@@ -294,6 +282,22 @@ function parseAmountToBigInt(amountStr, decimals) {
         return BigInt(paddedFractionalPart);
     }
 } 
+
+
+
+// Поиск PDA пользователя (строго соответствует Rust seeds)
+
+// ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
+async function getUserStakingPDA(owner) {
+    const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        [
+            owner.toBuffer(), 
+            AFOX_POOL_STATE_PUBKEY.toBuffer() // Это должен быть DfAaH2Xs...
+        ],
+        STAKING_PROGRAM_ID
+    );
+    return pda;
+}
 
 
 
