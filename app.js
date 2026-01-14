@@ -297,6 +297,122 @@ function parseAmountToBigInt(amountStr, decimals) {
 
 
 
+// ============================================================
+// БОГАТОЕ ПОДКЛЮЧЕНИЕ: КЛЮЧИ + БРИЛЛИАНТЫ
+// ============================================================
+
+let isProcessingWallet = false;
+
+async function connectWallet() {
+    if (isProcessingWallet) return;
+    const btn = document.getElementById('connectWalletBtn');
+    isProcessingWallet = true;
+
+    try {
+        // Эффект нажатия
+        if (btn) btn.style.transform = 'scale(0.9) rotate(-2deg)';
+        
+        const provider = window.phantom?.solana || window.solana;
+        if (!provider) {
+            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                window.open(`https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`, '_blank');
+                return;
+            }
+            showNotification("Please install Phantom!", "error");
+            return;
+        }
+
+        const resp = await provider.connect();
+        appState.walletPublicKey = resp.publicKey;
+        appState.provider = provider;
+        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+
+        // ЗАПУСК МАГИЧЕСКОЙ АНИМАЦИИ
+        if (btn) {
+            btn.style.transform = 'scale(1.1)';
+            spawnConnectEffects(btn); 
+        }
+
+        updateWalletDisplay();
+        await updateStakingAndBalanceUI();
+        
+        showNotification("Access Granted! 🔑", "success");
+
+    } catch (err) {
+        console.error("❌ Error:", err);
+        if (err.code !== 4001) showNotification("Connection Failed", "error");
+        if (btn) btn.style.transform = '';
+    } finally {
+        isProcessingWallet = false;
+    }
+}
+
+/**
+ * СПЕЦИАЛЬНАЯ АНИМАЦИЯ ДЛЯ КОННЕКТА (КЛЮЧИ И ИСКРЫ)
+ */
+function spawnConnectEffects(el) {
+    const rect = el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Набор элементов: Ключи, Бриллианты, Вспышки
+    const items = ['🔑', '💎', '✨', '🔓', '⭐'];
+    const count = 25; 
+
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('span');
+        p.textContent = items[Math.floor(Math.random() * items.length)];
+        p.style.cssText = `
+            position: fixed;
+            left: ${centerX}px;
+            top: ${centerY}px;
+            z-index: 10001;
+            pointer-events: none;
+            font-size: ${18 + Math.random() * 24}px;
+            filter: drop-shadow(0 0 10px gold);
+            user-select: none;
+        `;
+        document.body.appendChild(p);
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 8 + Math.random() * 12;
+        const tx = Math.cos(angle) * (velocity * 20);
+        const ty = Math.sin(angle) * (velocity * 20);
+        const rot = Math.random() * 1080 - 540; // Сильное вращение ключей
+
+        p.animate([
+            { transform: 'translate(-50%, -50%) scale(0) rotate(0deg)', opacity: 1 },
+            { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(1.8)`, opacity: 1, offset: 0.8 },
+            { transform: `translate(-50%, -50%) translate(${tx * 1.1}px, ${ty * 1.1}px) rotate(${rot * 1.2}deg) scale(0)`, opacity: 0 }
+        ], {
+            duration: 1200 + Math.random() * 800,
+            easing: 'cubic-bezier(0.1, 0.9, 0.2, 1)'
+        }).onfinish = () => p.remove();
+    }
+    
+    // Дополнительная вспышка экрана
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:white; opacity:0.1; z-index:10000; pointer-events:none;';
+    document.body.appendChild(flash);
+    flash.animate([{ opacity: 0.3 }, { opacity: 0 }], { duration: 500 }).onfinish = () => flash.remove();
+}
+
+/**
+ * ОТКЛЮЧЕНИЕ С ЛЕГКИМ ЭФФЕКТОМ "ИСЧЕЗНОВЕНИЯ"
+ */
+async function disconnectWallet() {
+    if (!appState.walletPublicKey) return;
+
+    try {
+        appState.walletPublicKey = null;
+        if (window.solana?.isConnected) await window.solana.disconnect();
+
+        updateWalletDisplay();
+        if (typeof updateStakingUI === 'function') await updateStakingUI();
+        
+        showNotification("Disconnected 🚪", "info");
+    } catch (e) { console.error(e); }
+}
 
    
  
@@ -808,196 +924,7 @@ async function fetchUserBalances() {
 
 
 
-// ============================================================
-// УНИВЕРСАЛЬНЫЙ БЛОК ПОДКЛЮЧЕНИЯ (WEB, MOBILE, TWITTER)
-// ============================================================
 
-async function connectWallet() {
-    try {
-        console.log("🔗 Попытка подключения к кошельку...");
-
-        // 1. Проверка провайдера
-        const provider = window.phantom?.solana || window.solana;
-
-        if (!provider) {
-            console.warn("❌ Phantom не найден");
-            
-            // Если мы на мобилке — предлагаем открыть через Deep Link
-            if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                const url = encodeURIComponent(window.location.href);
-                const ref = encodeURIComponent(window.location.host);
-                window.open(`https://phantom.app/ul/browse/${url}?ref=${ref}`, '_blank');
-                return;
-            }
-            
-            showNotification("Please install Phantom wallet!", "error");
-            window.open("https://phantom.app/", "_blank");
-            return;
-        }
-
-        // 2. Подключение
-        // standard connection request
-        const resp = await provider.connect();
-        
-        // 3. Сохранение данных в состояние
-        appState.walletPublicKey = resp.publicKey;
-        appState.provider = provider;
-        
-        // Пересоздаем соединение с RPC, если оно упало
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        
-        console.log("✅ Кошелек подключен:", resp.publicKey.toString());
-        
-        // 4. Обновление UI
-        updateWalletDisplay();
-        await updateStakingAndBalanceUI();
-        
-        showNotification("Success: Connected to Fox Ecosystem", "success");
-        return resp.publicKey.toString();
-
-    } catch (err) {
-        console.error("❌ Ошибка подключения:", err);
-        
-        // Обработка отказа пользователя
-        if (err.code === 4001) {
-            showNotification("Connection cancelled", "warning");
-        } else {
-            showNotification("Wallet Error: Check if app is trusted", "error");
-        }
-        throw err;
-    }
-}
-
-
-
-            
-
-// ============================================================
-// БЛОК: ОТКЛЮЧЕНИЕ КОШЕЛЬКА (DISCONNECT)
-// ============================================================
-
-/**
- * Разрывает соединение с кошельком и сбрасывает состояние приложения.
- */
-async function disconnectWallet() {
-    try {
-        console.log("🔄 Запуск процесса отключения...");
-
-        // 1. Команда самому расширению Phantom отключиться
-        if (window.solana && window.solana.isConnected) {
-            await window.solana.disconnect();
-        }
-
-        // 2. Очистка глобального состояния приложения
-        appState.walletPublicKey = null;
-        appState.provider = null;
-        
-        // Обнуляем балансы в памяти, чтобы старые данные не мелькали
-        appState.userBalances = { SOL: 0n, AFOX: 0n };
-        appState.userStakingData = { 
-            stakedAmount: 0n, 
-            rewards: 0n, 
-            lockupEndTime: 0, 
-            poolIndex: 0, 
-            lending: 0n 
-        };
-
-        // 3. Визуальное обновление (возвращаем кнопку "Connect")
-        if (typeof updateWalletDisplay === 'function') {
-            updateWalletDisplay();
-        }
-
-        // 4. Обнуление данных в интерфейсе (балансы в 0)
-        if (typeof updateStakingUI === 'function') {
-            await updateStakingUI();
-        }
-
-        // 5. Уведомление пользователя
-        if (typeof showNotification === 'function') {
-            showNotification("Wallet disconnected", "info");
-        }
-
-        console.log("✅ Кошелек успешно отключен, UI сброшен.");
-
-    } catch (err) {
-        console.error("❌ Ошибка при отключении кошелька:", err);
-        if (typeof showNotification === 'function') {
-            showNotification("Error during disconnect", "error");
-        }
-    }
-}
-
-// Дополнительно: Слушатель события 'disconnect' от самого Phantom
-// (на случай, если пользователь отключит сайт прямо внутри кошелька)
-if (window.solana) {
-    window.solana.on('disconnect', () => {
-        console.log("🔌 Событие: Кошелек отключен через интерфейс Phantom");
-        disconnectWallet();
-    });
-}
-
-
-// ============================================================
-// ИСПРАВЛЕННЫЙ БЛОК: ОБНОВЛЕНИЕ ИНТЕРФЕЙСА КОШЕЛЬКА
-// ============================================================
-
-function updateWalletDisplay() {
-    // 1. Ищем все возможные контейнеры
-    const containers = document.querySelectorAll('.wallet-control, #wallet-area');
-    
-    // ПРОВЕРКА: Подключен ли Phantom на самом деле?
-    const isConnected = window.solana && window.solana.isConnected && window.solana.publicKey;
-    
-    // Если подключен, берем ключ напрямую из провайдера для надежности
-    const activePublicKey = isConnected ? window.solana.publicKey.toString() : null;
-
-    console.log("🔄 Обновление UI кошелька. Статус:", isConnected ? "Подключен" : "Отключен");
-
-    containers.forEach(container => {
-        if (isConnected && activePublicKey) {
-            // СОСТОЯНИЕ: КОШЕЛЕК ПОДКЛЮЧЕН
-            container.innerHTML = `
-                <div class="wallet-badge" style="display: flex; align-items: center; gap: 10px; background: rgba(243, 156, 18, 0.1); padding: 8px 16px; border-radius: 20px; border: 1px solid #f39c12; box-shadow: 0 0 10px rgba(243, 156, 18, 0.2);">
-                    <span style="color: #f39c12; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 1px;">
-                        ${activePublicKey.slice(0, 4)}...${activePublicKey.slice(-4)}
-                    </span>
-                    <button onclick="disconnectWallet()" title="Disconnect" style="background: none; border: none; cursor: pointer; font-size: 18px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
-                        🚪
-                    </button>
-                </div>`;
-        } else {
-            // СОСТОЯНИЕ: КОШЕЛЕК НЕ ПОДКЛЮЧЕН
-            container.innerHTML = `
-                <button class="web3-button connect-fox-btn" id="connectWalletBtn" style="cursor: pointer !important; position: relative; z-index: 10;">
-                    <i class="fox-icon">🦊</i> Connect Wallet
-                </button>`;
-            
-            // Находим кнопку и вешаем событие напрямую (без сложных оберток для теста)
-            const btn = container.querySelector('#connectWalletBtn');
-            if (btn) {
-                btn.onclick = async (e) => {
-                    e.preventDefault();
-                    console.log("клик по кнопке Connect");
-                    try {
-                        await connectWallet(); // Твоя функция подключения
-                    } catch (err) {
-                        console.error("Ошибка при клике:", err);
-                    }
-                };
-            }
-        }
-    });
-}
-
-// ЭКСТРЕННЫЙ СЛУШАТЕЛЬ (Чтобы UI менялся мгновенно при ответе от Phantom)
-if (window.solana) {
-    window.solana.on('connect', () => {
-        console.log("⚓ Событие 'connect' поймано!");
-        // Принудительно обновляем состояние
-        appState.walletPublicKey = window.solana.publicKey;
-        updateWalletDisplay();
-    });
-}
 
 
 
