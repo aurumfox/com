@@ -250,42 +250,14 @@ function setupAddresses() {
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
 
-/**
- * Converts a string value (user input) into BigInt.
- */
-function parseAmountToBigInt(amountStr, decimals) {
-    if (!amountStr || amountStr.trim() === '') return BigInt(0);
-
-    const cleanedStr = amountStr.trim().replace(/[^\d.]/g, '');
-
-    if (cleanedStr.split('.').length > 2) {
-        throw new Error('Invalid number format: multiple decimal points.');
-    }
-
-    const parts = cleanedStr.split('.');
-    const integerPart = parts[0] || '0';
-    let fractionalPart = parts.length > 1 ? parts[1] : '';
-
-    if (fractionalPart.length > decimals) {
-        fractionalPart = fractionalPart.substring(0, decimals);
-    }
-
-    const paddedFractionalPart = fractionalPart.padEnd(decimals, '0');
-
-    if (integerPart === '0' && paddedFractionalPart.replace(/0/g, '').length === 0) {
-         return BigInt(0);
-    }
-    
-        if (integerPart !== '0') {
-        return BigInt(integerPart + paddedFractionalPart);
-    } else {
-        return BigInt(paddedFractionalPart);
-    }
-} 
 
 
 
-// Поиск PDA пользователя (строго соответствует Rust seeds)
+
+
+
+
+
 
 // ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
 async function getUserStakingPDA(owner) {
@@ -299,6 +271,124 @@ async function getUserStakingPDA(owner) {
     return pda;
 }
 
+
+
+// ============================================================
+// ОПТИМИЗИРОВАННЫЙ МОДУЛЬ ДАННЫХ И RPC (БЕЗ ДУБЛИКАТОВ)
+// ============================================================
+
+/**
+ * 1. УНИВЕРСАЛЬНЫЙ ПАРСЕР ЧИСЕЛ (BigInt)
+ * Очищен от лишних условий, работает быстрее.
+ */
+function parseAmountToBigInt(amountStr, decimals) {
+    if (!amountStr || amountStr.trim() === '') return 0n;
+
+    // Удаляем всё, кроме цифр и одной точки
+    const cleaned = amountStr.trim().replace(/[^\d.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length > 2) throw new Error('Invalid number format');
+
+    const integerPart = parts[0] || '0';
+    let fractionalPart = (parts[1] || '').substring(0, decimals).padEnd(decimals, '0');
+
+    return BigInt(integerPart + fractionalPart);
+}
+
+/**
+ * 2. СТАБИЛЬНОЕ ПОДКЛЮЧЕНИЕ (Robust Connection)
+ * Теперь создает соединение только если его нет, предотвращая утечки памяти.
+ */
+async function getRobustConnection() {
+    if (appState.connection) return appState.connection;
+
+    try {
+        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { 
+            commitment: 'confirmed'
+        });
+        // Проверка живой ли узел одним быстрым запросом
+        await conn.getSlot(); 
+        appState.connection = conn;
+        return conn;
+    } catch (e) {
+        console.error("RPC Error:", e);
+        showNotification("Primary RPC unreachable. Switching...", "warning");
+        // Резервный узел
+        appState.connection = new window.solanaWeb3.Connection(RPC_ENDPOINTS[1], 'confirmed');
+        return appState.connection;
+    }
+}
+
+/**
+ * 3. ОБРАБОТКА СМЕНЫ ПУБЛИЧНОГО КЛЮЧА
+ */
+function handlePublicKeyChange(newPublicKey) {
+    if (appState.walletPublicKey?.toBase58() === newPublicKey?.toBase58()) return; // Защита от повторной обработки того же ключа
+
+    appState.walletPublicKey = newPublicKey;
+    updateWalletDisplay();
+
+    if (newPublicKey) {
+        updateStakingAndBalanceUI();
+    }
+}
+
+/**
+ * 4. ПОЛУЧЕНИЕ БАЛАНСОВ (SOL + AFOX)
+ * Объединено в один поток для экономии лимитов RPC.
+ */
+async function fetchUserBalances() {
+    const pubkey = appState.walletPublicKey;
+    if (!pubkey) return;
+
+    try {
+        const connection = await getRobustConnection();
+        
+        // Запускаем оба запроса одновременно (параллельно)
+        const [solBalance, tokenAccounts] = await Promise.all([
+            connection.getBalance(pubkey),
+            connection.getParsedTokenAccountsByOwner(pubkey, { mint: AFOX_TOKEN_MINT_ADDRESS })
+        ]);
+
+        // Обновляем состояние SOL
+        appState.userBalances.SOL = BigInt(solBalance);
+
+        // Обновляем состояние AFOX
+        if (tokenAccounts.value.length > 0) {
+            const amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
+            appState.userBalances.AFOX = BigInt(amount);
+        } else {
+            appState.userBalances.AFOX = 0n;
+        }
+
+        console.log(`📊 Balances synced: ${formatBigInt(appState.userBalances.SOL, 9)} SOL | ${formatBigInt(appState.userBalances.AFOX, 6)} AFOX`);
+    } catch (error) {
+        console.error("❌ Balance Fetch Error:", error);
+    }
+}
+
+/**
+ * 5. ЕДИНЫЙ ОБРАБОТЧИК ОБНОВЛЕНИЯ UI
+ * Предотвращает множественные вызовы при быстрой смене вкладок.
+ */
+let isUpdatingUI = false;
+async function updateStakingAndBalanceUI() {
+    if (isUpdatingUI) return;
+    isUpdatingUI = true;
+
+    try {
+        await Promise.all([
+            fetchUserBalances(),
+            typeof fetchUserStakingData === 'function' ? fetchUserStakingData() : Promise.resolve()
+        ]);
+        
+        if (typeof updateStakingUI === 'function') updateStakingUI();
+    } catch (e) {
+        console.error("UI Refresh Failed:", e);
+    } finally {
+        isUpdatingUI = false;
+    }
+}
 
 
 // ============================================================
@@ -851,78 +941,7 @@ async function handleCreateProposal(e) {
 }
 
 
-// ============================================================
-// ЕДИНЫЙ МОДУЛЬ УПРАВЛЕНИЯ КОШЕЛЬКОМ И ИНТЕРФЕЙСОМ (FINAL)
-// ============================================================
 
-/**
- * 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И RPC
- */
-async function getRobustConnection() {
-    try {
-        // Use a more reliable RPC if possible, mainnet-beta is often rate-limited
-        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { 
-            commitment: 'confirmed',
-            disableRetryOnRateLimit: false 
-        });
-        await conn.getSlot(); 
-        return conn;
-    } catch (e) {
-        if (e.message.includes('fetch')) {
-            showNotification("Connection blocked by browser (CSP/CORS). Check console.", "error");
-        }
-        throw new Error('RPC endpoint unreachable.');
-    }
-}
-
-
-function handlePublicKeyChange(newPublicKey) {
-    appState.walletPublicKey = newPublicKey;
-    const address = newPublicKey ? newPublicKey.toBase58() : null;
-    updateWalletDisplay(address);
-    if (newPublicKey) updateStakingAndBalanceUI();
-}
-
-
-
-/**
- * Получает реальные балансы SOL и AFOX из блокчейна.
- */
-
-async function fetchUserBalances() {
-    if (!appState.walletPublicKey) return;
-
-    // Гарантируем наличие соединения, если его вдруг нет
-    if (!appState.connection) {
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-    }
-
-    const sender = appState.walletPublicKey;
-
-    try {
-        // 1. Баланс SOL
-        const solBalance = await appState.connection.getBalance(sender, 'confirmed');
-        appState.userBalances.SOL = BigInt(solBalance);
-
-        // 2. Баланс AFOX
-        const tokenAccounts = await appState.connection.getParsedTokenAccountsByOwner(sender, {
-            mint: AFOX_TOKEN_MINT_ADDRESS
-        });
-
-        if (tokenAccounts.value.length > 0) {
-            const amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
-            appState.userBalances.AFOX = BigInt(amount);
-        } else {
-            appState.userBalances.AFOX = 0n;
-        }
-
-        console.log("✅ Balances updated!");
-    } catch (error) {
-        console.error("❌ Ошибка RPC при получении баланса:", error);
-        // Если заблокировали — пробуем переключиться на Ankr
-        appState.connection = new window.solanaWeb3.Connection(RPC_ENDPOINTS[1], 'confirmed');
-    }
-}
 
 
 
