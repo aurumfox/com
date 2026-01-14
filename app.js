@@ -1117,26 +1117,28 @@ if (window.solana) {
 
 function setupModernUI() {
     const actions = [
-        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🔑', fn: connectWallet },
-        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '💰', fn: handleStakeAfox },
+        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '🦊', fn: connectWallet },
+        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Locked! 📈', icon: '🏆', fn: handleStakeAfox }, // Кубок летит!
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🕊️', icon: '🔓', fn: handleUnstakeAfox },
-        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards },
+        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Profit Taken! 🎁', icon: '💎', fn: handleClaimRewards }, // Бриллианты!
         
         // Открытие модалки DAO
         { id: 'createProposalBtn', name: 'DAO', msg: 'Opening...', icon: '✍️', fn: async () => { 
             const modal = document.getElementById('createProposalModal');
             if(modal) modal.style.display = 'flex'; 
         }},
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '📜', fn: handleCreateProposal },
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '🚀', fn: handleCreateProposal }, // Ракета!
         { id: 'vote-for-btn', name: 'Vote FOR', msg: 'Power Used! ⚡', icon: '✅', fn: () => handleVote('FOR') },
         { id: 'vote-against-btn', name: 'Vote AGAINST', msg: 'Opposition! 🛡️', icon: '🚫', fn: () => handleVote('AGAINST') },
-        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💸', fn: () => handleLendingAction('Lend') },
+        
+        // Финансы
+        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added! 🏦', icon: '💰', fn: () => handleLendingAction('Lend') }, // Деньги!
         { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Retained! 💰', icon: '📥', fn: () => handleLendingAction('Withdraw') },
         { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Active! 💳', icon: '💵', fn: () => handleLoanAction('Borrow') },
         { id: 'repay-btn', name: 'Repay', msg: 'Debt Paid! 🏆', icon: '⭐', fn: () => handleLoanAction('Repay') }
     ];
 
-    // Привязка действий к кнопкам
+    // Привязка действий к кнопкам (Твой оригинальный рабочий цикл)
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
@@ -1144,24 +1146,21 @@ function setupModernUI() {
             el.parentNode.replaceChild(cleanBtn, el);
             cleanBtn.onclick = (e) => {
                 if (e) e.preventDefault();
-                executeSmartActionWithFullEffects(cleanBtn, item);
+                executeSmartActionWithFullEffects(cleanBtn, item); // Вызывает анимацию
             };
         }
     });
 
-    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ (ДЛЯ ТВОЕГО HTML) ---
-    const closeBtn = document.getElementById('closeProposalModal'); // Твой ID из HTML
-    const modal = document.getElementById('createProposalModal');   // Твой ID из HTML
+    // --- ФИКС ЗАКРЫТИЯ МОДАЛКИ ---
+    const closeBtn = document.getElementById('closeProposalModal');
+    const modal = document.getElementById('createProposalModal');
     
-
     if (closeBtn && modal) {
         closeBtn.onclick = (e) => {
             e.preventDefault();
             modal.style.display = 'none';
-            console.log("Модалка DAO закрыта через крестик");
         };
 
-        // Дополнительно: закрытие при клике ВНЕ окна
         window.addEventListener('click', (event) => {
             if (event.target === modal) {
                 modal.style.display = 'none';
@@ -1170,19 +1169,18 @@ function setupModernUI() {
     }
 }
 
+// Твоя функция анимации взрыва
 function spawnEmoji(el, emoji) {
     if (!el) return;
     
-    // Создаем 8-10 летящих элементов
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) { // Увеличил до 12 для густоты
         const span = document.createElement('span');
         span.textContent = emoji || '✨';
         span.style.position = 'fixed';
-        span.style.zIndex = '9999';
+        span.style.zIndex = '10000'; // Поверх всего
         span.style.pointerEvents = 'none';
-        span.style.fontSize = '24px';
+        span.style.fontSize = '28px'; // Чуть крупнее для красоты
         
-        // Координаты кнопки
         const rect = el.getBoundingClientRect();
         const startX = rect.left + rect.width / 2;
         const startY = rect.top + rect.height / 2;
@@ -1192,9 +1190,8 @@ function spawnEmoji(el, emoji) {
         
         document.body.appendChild(span);
         
-        // Рандомное направление полета
         const angle = Math.random() * Math.PI * 2;
-        const velocity = 4 + Math.random() * 6;
+        const velocity = 5 + Math.random() * 8;
         const vx = Math.cos(angle) * velocity;
         const vy = Math.sin(angle) * velocity;
         
@@ -1202,15 +1199,15 @@ function spawnEmoji(el, emoji) {
         let x = startX;
         let y = startY;
         
-        // Анимация полета
         function update() {
             x += vx;
             y += vy;
-            opacity -= 0.02;
+            opacity -= 0.015; // Плавное исчезновение
             
             span.style.left = x + 'px';
             span.style.top = y + 'px';
             span.style.opacity = opacity;
+            span.style.transform = `rotate(${x}deg)`; // Вращение при полете
             
             if (opacity > 0) {
                 requestAnimationFrame(update);
@@ -1218,10 +1215,10 @@ function spawnEmoji(el, emoji) {
                 span.remove();
             }
         }
-        
         requestAnimationFrame(update);
     }
 }
+
 
 
 function initializeAurumFoxApp() {
