@@ -509,15 +509,33 @@ function spawnConnectEffects(el) {
  * ОТКЛЮЧЕНИЕ (БЕЗ ИЗМЕНЕНИЙ)
  */
 async function disconnectWallet() {
-    if (!appState.walletPublicKey) return;
     try {
+        const provider = window.phantom?.solana || window.solana;
+        
+        if (provider) {
+            await provider.disconnect();
+        }
+
+        // КРИТИЧЕСКИ ВАЖНО: Обнуляем состояние
         appState.walletPublicKey = null;
-        if (window.solana?.isConnected) await window.solana.disconnect();
+        appState.provider = null;
+
+        // Обновляем интерфейс (кнопка станет "Connect Wallet")
         updateWalletDisplay();
-        if (typeof updateStakingUI === 'function') await updateStakingUI();
+        
+        // Обнуляем данные стейкинга в UI
+        if (typeof updateStakingUI === 'function') {
+            await updateStakingUI();
+        }
+
         showNotification("Disconnected 🚪", "info");
-    } catch (e) { console.error(e); }
+        console.log("🔌 [System]: Сессия закрыта пользователем");
+
+    } catch (err) {
+        console.error(" Ошибка при отключении:", err);
+    }
 }
+
 
 // ============================================================
 // АВТО-ВОССТАНОВЛЕНИЕ СЕССИИ ПРИ ЗАГРУЗКЕ
