@@ -505,13 +505,20 @@ function spawnConnectEffects(el) {
     flash.animate([{ opacity: 0.3 }, { opacity: 0 }], { duration: 500 }).onfinish = () => flash.remove();
 }
 
+
+
 /**
- * ОТКЛЮЧЕНИЕ (БЕЗ ИЗМЕНЕНИЙ)
+ * ОТКЛЮЧЕНИЕ: ТВОЙ БЛОК С ДОБАВЛЕНИЕМ ЭФФЕКТОВ
  */
 async function disconnectWallet() {
     try {
         const provider = window.phantom?.solana || window.solana;
         
+        // --- ДОБАВЛЕНО: ЗАПУСК АНИМАЦИИ ---
+        const btn = document.getElementById('connectWalletBtn');
+        if (btn) spawnDisconnectEffects(btn);
+        // ---------------------------------
+
         if (provider) {
             await provider.disconnect();
         }
@@ -535,6 +542,51 @@ async function disconnectWallet() {
         console.error(" Ошибка при отключении:", err);
     }
 }
+
+/**
+ * КРАСИВАЯ АНИМАЦИЯ ДЛЯ ВЫХОДА (РАСТВОРЕНИЕ)
+ */
+function spawnDisconnectEffects(el) {
+    const rect = el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Эффекты: замок, туман, исчезающие искры
+    const items = ['🔒', '💨', '🌫️', '⚪'];
+    const count = 20; 
+
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('span');
+        p.textContent = items[Math.floor(Math.random() * items.length)];
+        p.style.cssText = `
+            position: fixed;
+            left: ${centerX}px;
+            top: ${centerY}px;
+            z-index: 10001;
+            pointer-events: none;
+            font-size: ${16 + Math.random() * 12}px;
+            filter: grayscale(1);
+            user-select: none;
+        `;
+        document.body.appendChild(p);
+
+        // Частицы летят плавно вверх и в стороны, затухая
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 5 + Math.random() * 10;
+        const tx = Math.cos(angle) * (velocity * 15);
+        const ty = - (50 + Math.random() * 100); // В основном вверх
+        const rot = Math.random() * 360;
+
+        p.animate([
+            { transform: 'translate(-50%, -50%) scale(1) rotate(0deg)', opacity: 1 },
+            { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0)`, opacity: 0 }
+        ], {
+            duration: 1000 + Math.random() * 500,
+            easing: 'ease-out'
+        }).onfinish = () => p.remove();
+    }
+}
+
 
 
 // ============================================================
