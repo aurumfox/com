@@ -398,8 +398,6 @@ async function updateStakingAndBalanceUI() {
 // ============================================================
 
 let isProcessingWallet = false;
-
-// Добавлен параметр silent, чтобы при загрузке страницы не выскакивало окно
 async function connectWallet(silent = false) {
     if (isProcessingWallet) return;
     const btn = document.getElementById('connectWalletBtn');
@@ -418,22 +416,50 @@ async function connectWallet(silent = false) {
             return;
         }
 
-        // КЛЮЧЕВОЙ МОМЕНТ: onlyIfTrusted позволяет Phantom подключиться автоматически без окна
+        // Подключаемся
         const resp = await provider.connect(silent ? { onlyIfTrusted: true } : {});
         
+        // --- ВОТ ЭТО ИСПРАВЛЯЕТ ВЫЛЕТ ---
+        // Принудительно записываем данные в глобальное состояние ДО обновления UI
         appState.walletPublicKey = resp.publicKey;
         appState.provider = provider;
-        appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        
+        // Создаем соединение один раз, если его нет
+        if (!appState.connection) {
+            appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+        }
 
-        // ЗАПУСК МАГИЧЕСКОЙ АНИМАЦИИ (только если нажал сам)
+        // Слушатель: если кошелек захочет "отключиться" сам, мы это блокируем или обрабатываем
+        if (!provider._eventsPatched) {
+            provider.on('accountChanged', (newPublicKey) => {
+                if (newPublicKey) {
+                    appState.walletPublicKey = newPublicKey;
+                    updateWalletDisplay();
+                } else {
+                    // Только здесь мы разрешаем отключение
+                    appState.walletPublicKey = null;
+                    updateWalletDisplay();
+                }
+            });
+            provider._eventsPatched = true;
+        }
+        // ---------------------------------
+
         if (!silent && btn) {
             btn.style.transform = 'scale(1.1)';
             spawnConnectEffects(btn); 
             showNotification("Access Granted! 🔑", "success");
         }
 
+        // Вызываем обновление интерфейса, когда данные уже точно в appState
         updateWalletDisplay();
-        await updateStakingAndBalanceUI();
+        
+        // Оборачиваем в try/catch, чтобы если стейкинг упадет, коннект НЕ слетел
+        try {
+            await updateStakingAndBalanceUI();
+        } catch (e) {
+            console.warn("Балансы не загрузились, но кошелек держим:", e);
+        }
 
     } catch (err) {
         if (!silent) {
@@ -445,6 +471,7 @@ async function connectWallet(silent = false) {
         isProcessingWallet = false;
     }
 }
+
 
 /**
  * СПЕЦИАЛЬНАЯ АНИМАЦИЯ ДЛЯ КОННЕКТА (БЕЗ ИЗМЕНЕНИЙ)
