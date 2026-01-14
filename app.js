@@ -597,23 +597,6 @@ window.addEventListener('load', () => {
 
 
 
-
-/**
- * Updates staking and balance UI elements after a transaction.
- */
-async function updateStakingAndBalanceUI() {
-    try {
-        await Promise.all([
-            fetchUserBalances(),
-            updateStakingUI()
-        ]);
-    } catch (error) {
-        console.error("Error refreshing UI:", error);
-    }
-}
-
-
-
 /**
  * Updates the staking UI elements with current user data (REAL).
  */
