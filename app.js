@@ -543,49 +543,71 @@ async function disconnectWallet() {
     }
 }
 
+
+
 /**
- * КРАСИВАЯ АНИМАЦИЯ ДЛЯ ВЫХОДА (РАСТВОРЕНИЕ)
+ * ИСПРАВЛЕННЫЙ DISCONNECT С АНИМАЦИЕЙ
+ */
+async function disconnectWallet() {
+    try {
+        const provider = window.phantom?.solana || window.solana;
+        
+        // 1. Запуск анимации "исчезновения"
+        const btn = document.getElementById('connectWalletBtn');
+        if (btn) spawnDisconnectEffects(btn);
+
+        // 2. Разрыв соединения с провайдером
+        if (provider) {
+            await provider.disconnect();
+        }
+
+        // 3. Сброс состояния (чтобы авто-вход не сработал сразу)
+        appState.walletPublicKey = null;
+        appState.provider = null;
+
+        // 4. Обновление интерфейса
+        updateWalletDisplay();
+        
+        if (typeof updateStakingUI === 'function') {
+            await updateStakingUI();
+        }
+
+        showNotification("Session Closed 🚪", "info");
+        console.log("🔌 [System]: Кошелек отключен пользователем");
+
+    } catch (err) {
+        console.error("Ошибка при отключении:", err);
+    }
+}
+
+/**
+ * АНИМАЦИЯ РАСТВОРЕНИЯ (Для Disconnect)
  */
 function spawnDisconnectEffects(el) {
     const rect = el.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    
-    // Эффекты: замок, туман, исчезающие искры
-    const items = ['🔒', '💨', '🌫️', '⚪'];
-    const count = 20; 
+    const items = ['🔒', '🌫️', '💨', '⚪']; 
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < 20; i++) {
         const p = document.createElement('span');
         p.textContent = items[Math.floor(Math.random() * items.length)];
-        p.style.cssText = `
-            position: fixed;
-            left: ${centerX}px;
-            top: ${centerY}px;
-            z-index: 10001;
-            pointer-events: none;
-            font-size: ${16 + Math.random() * 12}px;
-            filter: grayscale(1);
-            user-select: none;
-        `;
+        p.style.cssText = `position: fixed; left: ${centerX}px; top: ${centerY}px; z-index: 10001; pointer-events: none; font-size: ${16 + Math.random() * 10}px; filter: grayscale(1); user-select: none;`;
         document.body.appendChild(p);
 
-        // Частицы летят плавно вверх и в стороны, затухая
         const angle = Math.random() * Math.PI * 2;
-        const velocity = 5 + Math.random() * 10;
+        const velocity = 4 + Math.random() * 8;
         const tx = Math.cos(angle) * (velocity * 15);
-        const ty = - (50 + Math.random() * 100); // В основном вверх
+        const ty = - (40 + Math.random() * 80); // Летит вверх
         const rot = Math.random() * 360;
 
         p.animate([
-            { transform: 'translate(-50%, -50%) scale(1) rotate(0deg)', opacity: 1 },
+            { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
             { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0)`, opacity: 0 }
-        ], {
-            duration: 1000 + Math.random() * 500,
-            easing: 'ease-out'
-        }).onfinish = () => p.remove();
+        ], { duration: 1000, easing: 'ease-out' }).onfinish = () => p.remove();
     }
 }
+
 
 
 
@@ -1164,7 +1186,20 @@ async function executeSmartActionWithFullEffects(btn, config) {
  */
 function setupModernUI() {
     const actions = [
-        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! 🦊', icon: '💎', fn: connectWallet },
+        { 
+            id: 'connectWalletBtn', 
+            name: 'Wallet', 
+            msg: 'Action Done! ⚡', 
+            icon: '💎', 
+            // ИСПРАВЛЕННАЯ ЛОГИКА ТУТ:
+            fn: async () => {
+                if (appState.walletPublicKey) {
+                    await disconnectWallet();
+                } else {
+                    await connectWallet();
+                }
+            } 
+        },
         { id: 'stake-afox-btn', name: 'Staking', msg: 'Locked! 📈', icon: '💎', fn: handleStakeAfox },
         { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Withdrawn! 🔓', icon: '💎', fn: handleUnstakeAfox },
         { id: 'claim-rewards-btn', name: 'Claim', msg: 'Claimed! 🎁', icon: '💎', fn: handleClaimRewards },
@@ -1180,16 +1215,17 @@ function setupModernUI() {
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            const cleanBtn = el.cloneNode(true); // Убивает все старые слушатели (чистит дубли)
+            const cleanBtn = el.cloneNode(true); // Чистим дубликаты
             el.parentNode.replaceChild(cleanBtn, el);
             cleanBtn.onclick = (e) => {
                 e.preventDefault();
+                // Запускаем через твой единый обработчик эффектов
                 executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 
-    // Фикс модалок DAO
+    // Фикс модалок DAO (оставляем как было)
     const createBtn = document.getElementById('createProposalBtn');
     const modal = document.getElementById('createProposalModal');
     const closeBtn = document.getElementById('closeProposalModal');
@@ -1199,7 +1235,6 @@ function setupModernUI() {
     
     window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 }
-
 
 
 
