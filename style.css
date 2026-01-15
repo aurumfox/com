@@ -316,24 +316,29 @@ li {
 /* 🛑 УДАЛЕНЫ СТАРЫЕ СТИЛИ ГАМБУРГЕРА, заменены на .hamburger-lines .line */
 
 
+
 /* ==========================================================================
-   Sections and Layout
+   Sections and Layout - ИСПРАВЛЕНО (БЕЛЫЙ ЦВЕТ УДАЛЕН)
 ========================================================================== */
+
 .section, .aurum-fox-section {
     padding: var(--spacing-xl) 0; 
     text-align: center;
-    background-color: var(--color-bg-light);
-    color: var(--text-color-light);
+    background-color: var(--color-bg-dark); /* Изменено на темный */
+    color: var(--text-color-light); /* Изменено на светлый текст */
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .section-alt, .aurum-fox-section-alt {
-    background-color: var(--color-bg-dark);
+    background-color: var(--color-bg-light); /* Темная альтернативная секция */
+    color: var(--text-color-light);
 }
 
 .section:last-of-type {
     border-bottom: none;
 }
+
+/* Hero Section */
 .hero-section {
     background: linear-gradient(135deg, var(--color-bg-dark) 0%, #3a0052 100%);
     color: var(--text-color-white);
@@ -376,6 +381,7 @@ li {
     animation: pulse 2s infinite alternate; 
     transition: transform 0.3s ease-in-out;
 }
+
 .hero-image img:hover {
     transform: translateY(-10px);
 }
@@ -407,40 +413,20 @@ li {
     justify-content: flex-start;
 }
 
-/* Чередующиеся фоны секций для визуального разделения */
-.aurum-fox-section {
-    background-color: var(--background-color-light); 
-    color: var(--text-color-dark); 
-}
-
-.aurum-fox-section-alt {
-    background-color: var(--section-bg-light); 
-    color: var(--text-color-dark); 
-}
-
-.web3-section {
+/* Web3 & Multimedia Sections - ПРИВЕДЕНО К ТЕМНОМУ СТИЛЮ */
+.web3-section, .web3-section-alt {
     background-color: var(--color-bg-input);
     color: var(--text-color-light);
     padding: 60px 0;
 }
 
-.web3-section-alt {
-    background-color: var(--color-bg-dark);
+.multimedia-section, .multimedia-section-alt {
+    background-color: var(--color-bg-dark); /* БЫЛО БЕЛЫМ - ТЕПЕРЬ ТЕМНОЕ */
     color: var(--text-color-light);
     padding: 60px 0;
 }
 
-.multimedia-section {
-    background-color: var(--background-color-light);
-    color: var(--text-color-dark);
-    padding: 60px 0;
-}
-
-.multimedia-section-alt {
-    background-color: var(--section-bg-light);
-    color: var(--text-color-dark);
-}
-
+/* Headings */
 .aurum-heading, .web3-heading, .multimedia-heading, .main-heading {
     text-align: center;
     margin-bottom: var(--spacing-lg);
@@ -450,16 +436,8 @@ li {
     padding-bottom: var(--spacing-sm);
 }
 
-.web3-heading {
-    color: var(--color-blue-web3);
-    font-size: 2.2em;
-}
-
-.multimedia-heading {
-    color: var(--color-orange-multimedia);
-    font-size: 2.2em;
-}
-
+.web3-heading { color: var(--color-blue-web3); font-size: 2.2em; }
+.multimedia-heading { color: var(--color-orange-multimedia); font-size: 2.2em; }
 
 .aurum-heading::after, .web3-heading::after, .multimedia-heading::after, .main-heading::after {
     content: '';
@@ -480,34 +458,19 @@ li {
     color: var(--primary-color);
     text-align: center;
 }
-.web3-subheading {
-    color: var(--color-blue-web3);
-}
-.multimedia-subheading {
-    color: var(--color-orange-multimedia);
-}
-/* Обертка для терминала, чтобы он сливался с остальными карточками */
+
+/* Terminal Wrapper */
 .terminal-container-wrapper {
-    background-color: var(--color-bg-card); /* Ваш цвет карточки */
+    background-color: var(--color-bg-card); 
     padding: var(--spacing-md);
-    border-radius: var(--border-radius);    /* 8px из вашего конфига */
-    box-shadow: var(--shadow-lg);           /* Большая тень для глубины */
-    border: 1px solid rgba(255, 215, 0, 0.2); /* Тонкая золотая рамка */
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255, 215, 0, 0.2); 
     max-width: 440px;
     margin: var(--spacing-lg) auto;
-    backdrop-filter: blur(10px);            /* Эффект как в вашем мобильном меню */
+    backdrop-filter: blur(10px);
 }
 
-/* Настройка шрифтов внутри Jupiter, чтобы соответствовали вашим */
-#integrated-terminal * {
-    font-family: var(--font-secondary) !important; /* Poppins */
-}
-
-/* Если хотите сделать заголовок внутри терминала золотым как ваши H3 */
-#integrated-terminal h3 {
-    color: var(--primary-color) !important;
-    font-family: var(--font-primary) !important; /* Montserrat */
-}
 
 /* ==========================================================================
    Buttons
