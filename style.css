@@ -767,6 +767,55 @@ li {
 /* ==========================================================================
    Specific Section Styles
 ========================================================================== */
+/* Стили для нового блока About */
+.about-flex-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 50px; /* Расстояние между картинкой и текстом */
+    padding: 20px 0;
+}
+
+.about-image-side {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.about-text-side {
+    flex: 1.2; /* Тексту отдаем чуть больше места */
+    text-align: left;
+}
+
+.fox-main-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 30px;
+    /* Золотистое свечение вокруг лисы */
+    filter: drop-shadow(0 0 20px rgba(243, 156, 18, 0.4));
+    transition: transform 0.4s ease;
+}
+
+.fox-main-img:hover {
+    transform: translateY(-10px) rotate(2deg); /* Лиса слегка подпрыгивает при наведении */
+}
+
+/* Адаптация для мобильных телефонов */
+@media (max-width: 850px) {
+    .about-flex-wrapper {
+        flex-direction: column; /* На телефонах картинка будет сверху, текст снизу */
+        text-align: center;
+    }
+    
+    .about-text-side {
+        text-align: center;
+    }
+
+    .fox-main-img {
+        max-width: 80%; /* На мобилках делаем чуть меньше */
+        margin-bottom: 20px;
+    }
+}
 
 /* About AFOX */
 #about-afox p {
