@@ -432,43 +432,146 @@
             <h3 class="web3-subheading" style="margin-top:20px;">Management</h3>
             <div class="input-group">
                 <button id="unstake-afox-btn" class="web3-btn" style="width: 100%;">Unstake</button>
+<section id="dao-section" class="section web3-section-alt">
+    <div class="container">
+        <h2 class="web3-heading">🏛️ Decentralized Autonomous Organization (DAO)</h2>
+        <p class="web3-intro">
+            Participate in Aurum Fox governance! Create proposals, vote, and shape the future of the project. 
+            <strong style="color: #f39c12;">Requires connected wallet.</strong>
+        </p>
+
+        <div class="dao-header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 15px; flex-wrap: wrap;">
+            <button id="createProposalBtn" class="web3-btn" aria-label="Create new DAO proposal">
+                ➕ Create Proposal
+            </button>
+            <div class="dao-filters" style="display: flex; gap: 10px;">
+                <button class="filter-btn active" style="background: #f39c12; color: #000; border: none; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-weight: bold;">Active</button>
+                <button class="filter-btn" style="background: #333; color: #fff; border: none; padding: 5px 15px; border-radius: 20px; cursor: pointer;">Closed</button>
             </div>
-            <button id="claim-rewards-btn" class="web3-btn" style="width:100%; margin-top:10px;">Claim Rewards</button>
         </div>
 
-        <div class="staking-details">
-            <h3 class="web3-subheading">Staking Details</h3>
-            <ul>
-                <li><strong>Lockup period:</strong> <span id="lockup-period">0 days (flexible)</span></li>
-            </ul>
+        <h3 class="web3-subheading">Active Proposals</h3>
+        <div id="active-proposals-list" class="content-area web3-content-area dao-proposals-grid">
+            <div class="dao-proposal-item" data-proposal-id="1">
+                <h4>Proposal #1: Ecosystem Expansion</h4>
+                <p>Description: Allocation of rewards for liquidity providers on Raydium.</p>
+                <div class="dao-stats" style="margin: 10px 0; font-size: 0.9em; color: #ddd;">
+                    <p>Creator: <span class="dao-creator">0xAFox...777</span></p>
+                    <p>Votes For: <span class="dao-votes-for" style="color: #2ecc71;">0 AFOX</span></p>
+                    <p>Votes Against: <span class="dao-votes-against" style="color: #e74c3c;">0 AFOX</span></p>
+                </div>
+                <div class="dao-vote-actions" style="display: flex; gap: 10px;">
+                    <button class="web3-btn dao-vote-btn" data-vote-type="for" style="flex: 1;">Vote FOR</button>
+                    <button class="web3-btn dao-vote-btn" data-vote-type="against" style="flex: 1; background: #c0392b;">Vote AGAINST</button>
+                </div>
+            </div>
         </div>
-    </div>
 
-          
-<section id="lending-section" class="section web3-section-alt">
-    <div class="staking-actions" style="margin-top: 30px;">
-        <h3 class="web3-subheading">Lend AFOX</h3>
-        <div class="input-group">
-            <input type="number" id="lend-amount-input" placeholder="Enter AFOX to lend">
-            <button id="lend-btn" class="web3-btn">Lend</button>
+        <h3 class="web3-subheading" style="margin-top: 40px;">Completed Proposals</h3>
+        <div id="completed-proposals-list" class="content-area web3-content-area dao-proposals-grid">
+            <p class="web3-placeholder">No completed proposals yet.</p>
         </div>
-    </div>
 
-    <div class="staking-actions" style="margin-top: 30px;">
-        <h3 class="web3-subheading">Borrow SOL</h3>
-        <div class="input-group">
-            <input type="number" id="borrow-amount-input" placeholder="Enter SOL to borrow">
-            <button id="borrow-btn" class="web3-btn">Borrow</button>
-        </div>
-        
-        <h3 class="web3-subheading">Repay SOL Loan</h3>
-        <div class="input-group">
-            <input type="number" id="repay-amount-input" placeholder="Enter SOL to repay">
-            <button id="repay-btn" class="web3-btn">Repay Loan</button>
+        <div id="createProposalModal" class="modal" aria-modal="true" role="dialog" style="display:none;">
+            <div class="modal-content" style="background: #1a1a1a; border: 2px solid #f39c12; border-radius: 15px; padding: 25px;">
+                <span class="close-button" id="closeProposalModal" style="cursor: pointer; float: right; font-size: 28px; color: #fff;">&times;</span>
+                <h3 class="web3-heading">New DAO Proposal</h3>
+                <form id="newProposalForm" class="web3-form" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <label for="proposalTitle" style="display: block; color: #f39c12; margin-bottom: 5px;">Title:</label>
+                        <input type="text" id="proposalTitle" placeholder="Ex: Add AFOX/SOL Liquidity" required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #000; color: #fff;">
+                    </div>
+                    <div>
+                        <label for="proposalDescription" style="display: block; color: #f39c12; margin-bottom: 5px;">Description:</label>
+                        <textarea id="proposalDescription" rows="5" placeholder="Explain your idea..." required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #000; color: #fff;"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" id="submitProposalBtn" class="web3-btn" style="flex: 2;">🚀 Submit to Blockchain</button>
+                        <button type="button" id="cancelProposalBtn" class="web3-btn" style="flex: 1; background: #444;">Cancel</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </section>
 
+<section id="staking-section" class="section web3-section">
+    <div class="container">
+        <h2 class="web3-heading">💰 AFOX Staking</h2>
+        <p class="web3-intro">Stake your AFOX tokens to earn passive income!</p>
+        
+        <div class="staking-info-grid">
+            <div class="info-card"><h3>Your Balance</h3><p id="user-afox-balance" class="info-value">0 AFOX</p></div>
+            <div class="info-card"><h3>Staked Amount</h3><p id="user-staked-amount" class="info-value">0 AFOX</p></div>
+            <div class="info-card"><h3>Accrued Rewards</h3><p id="user-rewards-amount" class="info-value" style="color: #f39c12;">0 AFOX</p></div>
+            <div class="info-card"><h3>Current APR</h3><p id="staking-apr" class="info-value">Up to 45%</p></div>
+        </div>
+
+        <div class="staking-actions">
+            <h3 class="web3-subheading">Stake AFOX</h3>
+            <div class="pool-selection-wrapper" style="margin-bottom: 15px;">
+                <label for="pool-selector" style="color: #f39c12; display: block; margin-bottom: 5px;">Choose Plan:</label>
+                <select id="pool-selector" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
+                    <option value="0">Tier 1 (7 days) - 5% APR</option>
+                    <option value="1">Tier 2 (30 days) - 12% APR</option>
+                    <option value="2">Tier 3 (90 days) - 20% APR</option>
+                    <option value="3">Tier 4 (180 days) - 30% APR</option>
+                    <option value="4">Tier 5 (360 days) - 45% APR</option>
+                </select>
+            </div>
+
+            <div class="input-group" style="position: relative; margin-bottom: 15px;">
+                <input type="number" id="stake-amount" step="0.000001" placeholder="0.00" style="width: 100%; padding-right: 70px;">
+                <button id="max-stake-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #f39c12; border: none; padding: 3px 10px; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer;">MAX</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="stake-afox-btn" class="web3-btn" style="flex: 1;">Stake</button>
+                <button id="claim-rewards-btn" class="web3-btn" style="flex: 1; background: linear-gradient(45deg, #d4af37, #f39c12);">Claim Rewards</button>
+            </div>
+
+            <h3 class="web3-subheading" style="margin-top:25px;">Management</h3>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+                <label style="font-size: 0.8em; color: #aaa; display: block; margin-bottom: 10px;">
+                    <input type="checkbox" id="early-exit-checkbox"> Confirm Early Exit (Penalty applies)
+                </label>
+                <button id="unstake-afox-btn" class="web3-btn" style="width: 100%; background: #333;">Unstake AFOX</button>
+            </div>
+        </div>
+
+        <div class="staking-details" style="margin-top: 20px;">
+            <ul><li><strong>Lockup period:</strong> <span id="lockup-period">Depends on Tier</span></li></ul>
+        </div>
+    </div>
+</section>
+
+<section id="lending-section" class="section web3-section-alt">
+    <div class="container">
+        <h2 class="web3-heading">🏦 Lending & Borrowing</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+            <div class="staking-actions">
+                <h3 class="web3-subheading">Lend AFOX</h3>
+                <div class="input-group" style="position: relative; margin-bottom: 15px;">
+                    <input type="number" id="lend-amount-input" placeholder="Amount to lend" style="width: 100%;">
+                    <button class="max-btn-lending" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: 1px solid #f39c12; color: #f39c12; padding: 2px 5px; font-size: 0.7em; cursor: pointer;">MAX</button>
+                </div>
+                <button id="lend-btn" class="web3-btn" style="width: 100%; margin-bottom: 10px;">Supply Assets</button>
+                <button id="withdraw-lend-btn" class="web3-btn" style="width: 100%; background: #222; border: 1px solid #444;">Withdraw My Supply</button>
+            </div>
+
+            <div class="staking-actions">
+                <h3 class="web3-subheading">Borrow SOL</h3>
+                <input type="number" id="borrow-amount-input" placeholder="Enter SOL to borrow" style="width: 100%; margin-bottom: 15px;">
+                <button id="borrow-btn" class="web3-btn" style="width: 100%; margin-bottom: 25px;">Borrow SOL</button>
+                
+                <h3 class="web3-subheading">Repay Loan</h3>
+                <input type="number" id="repay-amount-input" placeholder="Enter SOL to repay" style="width: 100%; margin-bottom: 15px;">
+                <button id="repay-btn" class="web3-btn" style="width: 100%; background: #2ecc71;">Repay & Close Loan</button>
+            </div>
+        </div>
+    </div>
+</section>
 
         
         </main>
