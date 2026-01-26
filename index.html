@@ -405,14 +405,24 @@
         <div class="staking-actions">
             <h3 class="web3-subheading">Stake AFOX</h3>
 
-            <div class="pool-selection-wrapper" style="margin-bottom: 15px;">
-                <label for="pool-selector" style="color: #f39c12; display: block; margin-bottom: 5px;">Choose Plan:</label>
-                <select id="pool-selector" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
-                    <option value="0">Flexible (0 days) - 5% APR</option>
-                    <option value="1">Standard (30 days) - 12% APR</option>
-                    <option value="2">Max Boost (90 days) - 25% APR</option>
-                </select>
-            </div>
+           <div class="pool-selection-wrapper" style="margin-bottom: 15px;">
+    <label for="pool-selector" style="color: #f39c12; display: block; margin-bottom: 5px;">Choose Plan (5 Tiers):</label>
+    <select id="pool-selector" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
+        <option value="0">Tier 1 (7 days) - Low APR</option>
+        <option value="1">Tier 2 (30 days) - Standard APR</option>
+        <option value="2">Tier 3 (90 days) - Boosted APR</option>
+        <option value="3">Tier 4 (180 days) - High APR</option>
+        <option value="4">Tier 5 (360 days) - Whale APR</option>
+    </select>
+</div>
+
+<div class="input-group" style="margin-top:20px; flex-direction: column; align-items: flex-start;">
+    <label style="font-size: 0.8em; color: #aaa; margin-bottom: 10px; cursor: pointer;">
+        <input type="checkbox" id="early-exit-checkbox"> I want to exit early (with penalty fee)
+    </label>
+    <button id="unstake-afox-btn" class="web3-btn" style="width: 100%;">Unstake AFOX</button>
+</div>
+
 
             <div class="input-group">
                 <input type="number" id="stake-amount" min="0.000001" step="0.000001" placeholder="Enter AFOX amount">
