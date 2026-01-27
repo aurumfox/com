@@ -1,56 +1,56 @@
 /* ==========================================================================
-   CSS Variables (Design Tokens) - Объединены и очищены
+   CSS Variables (Design Tokens) - Очищены от дубликатов
    ========================================================================== */
 :root {
     /* Brand Colors */
-    --primary-color: #ffd700; /* Gold */
-    --secondary-color: #8b0000; /* Dark Red/Fox */
-    --accent-color: #007bff; /* E.g., for buttons, links (blue for web3, original for others) */
+    --primary-color: #ffd700;
+    --secondary-color: #8b0000;
+    --accent-color: #007bff;
 
     /* Text Colors */
-    --text-color-light: #E0E0E0; /* For dark backgrounds */
-    --text-color-dark: #333; /* For light backgrounds (e.g., specific cards or sections) */
-    --link-color: var(--primary-color); /* Gold for links */
-    --link-hover-color: #FFCC00; /* Slightly darker gold on hover */
-    --text-color-dimmed: #B0B0B0; /* Dimmed text */
-    --text-color-white: #fff; /* Pure white text */
+    --text-color-light: #E0E0E0;
+    --text-color-dark: #333;
+    --link-color: var(--primary-color);
+    --link-hover-color: #FFCC00;
+    --text-color-dimmed: #B0B0B0;
+    --text-color-white: #fff;
 
     /* Background Colors */
-    --background-color-light: #ffffff; /* Light primary background (used for specific light elements) */
-    --background-color-dark: #2c2c2c; /* Dark background for some sections/elements */
-    --section-bg-light: #f9f9f9; /* Slightly darker than primary light */
-    --section-bg-dark: #222222; /* Slightly lighter than primary dark */
-    --color-bg-dark: #1a1a2e; /* Deep blue/purple for primary dark background */
-    --color-bg-light: #2c2c4d; /* Slightly lighter dark blue for alternate dark sections */
-    --color-bg-card: #3a3a5e; /* Dark background for elements/cards */
-    --color-bg-input: #2a2a3a; /* Background for inputs and some content areas */
+    --background-color-light: #ffffff;
+    --background-color-dark: #2c2c2c;
+    --section-bg-light: #f9f9f9;
+    --section-bg-dark: #222222;
+    --color-bg-dark: #1a1a2e;
+    --color-bg-light: #2c2c4d;
+    --color-bg-card: #3a3a5e;
+    --color-bg-input: #2a2a3a;
     --color-modal-overlay: rgba(0,0,0,0.7);
 
     /* State Colors */
-    --success-color: #28a745; /* Green */
-    --error-color: #dc3545; /* Red */
-    --info-color: #17a2b8; /* Light Blue */
-    --warning-color: #ffc107; /* Orange */
+    --success-color: #28a745;
+    --error-color: #dc3545;
+    --info-color: #17a2b8;
+    --warning-color: #ffc107;
     --color-green-success: #28a745;
     --color-green-success-hover: color-mix(in srgb, var(--color-green-success) 90%, black);
     --color-red-danger: #dc3545;
     --color-red-danger-hover: color-mix(in srgb, var(--color-red-danger) 90%, black);
-    --color-blue-info: #007bff; /* Blue for informational notifications */
-    --color-purple-transfer: #8e44ad; /* Purple for "Transfer" button */
+    --color-blue-info: #007bff;
+    --color-purple-transfer: #8e44ad;
     --color-purple-transfer-hover: color-mix(in srgb, var(--color-purple-transfer) 90%, black);
 
-    /* Colors for specific sections */
-    --color-blue-web3: #8cacec; /* Bluish for Web3 headings/labels */
-    --color-orange-multimedia: #ff9933; /* Orangish for Multimedia headings/labels */
-    --color-highlight-green: #39FF14; /* Bright green for "Revoked" */
-    --color-wallet-address: #9aff9a; /* Light green for wallet address */
+    /* Specific sections */
+    --color-blue-web3: #8cacec;
+    --color-orange-multimedia: #ff9933;
+    --color-highlight-green: #39FF14;
+    --color-wallet-address: #9aff9a;
 
     /* Fonts */
     --font-primary: 'Montserrat', sans-serif;
     --font-secondary: 'Poppins', sans-serif;
     --font-size-base: 16px;
 
-    /* Spacing and Sizes */
+    /* Spacing */
     --spacing-xs: 5px;
     --spacing-sm: 10px;
     --spacing-md: 20px;
@@ -68,15 +68,14 @@
     --box-shadow-item: 0 4px 10px rgba(0,0,0,0.2);
     --box-shadow-item-hover: 0 6px 15px rgba(0,0,0,0.15);
 
-
-    /* Border Radius */
+    /* Borders */
     --border-radius: 8px;
     --border-radius-base: 8px;
     --border-radius-small: 5px;
 }
 
 /* ==========================================================================
-   Base Styles (СБРОС, ТИПОГРАФИКА, ДОСТУПНОСТЬ)
+   Base Styles
 ========================================================================== */
 * {
     box-sizing: border-box;
@@ -85,43 +84,39 @@
 }
 
 html {
-    scroll-behavior: smooth; /* Плавная прокрутка к якорям */
+    scroll-behavior: smooth;
 }
 
 body {
     font-family: var(--font-secondary);
     line-height: 1.6;
-    color: var(--text-color-light); /* Светлый текст по умолчанию */
-    background-color: var(--color-bg-dark); /* Темный фон по умолчанию */
-    overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+    color: var(--text-color-light);
+    background-color: var(--color-bg-dark);
+    overflow-x: hidden;
 }
 
-/* 🛑 ИСПРАВЛЕНИЕ: Блокировка прокрутки основного контента при открытии модального окна или меню */
 body.modal-open,
 body.menu-open { 
-    overflow: hidden; /* Блокировка прокрутки */
-    /* Добавляем фиксированную позицию для предотвращения скачков на iOS */
+    overflow: hidden;
     position: fixed; 
     width: 100%; 
     height: 100%; 
 }
 
-/* A11Y: Focus States (Улучшенная доступность для клавиатуры) */
 a:focus-visible, 
 button:focus-visible, 
 .btn:focus-visible, 
 input:focus-visible, 
 textarea:focus-visible {
-    outline: 3px solid var(--accent-color); /* Используем яркий акцентный цвет */
+    outline: 3px solid var(--accent-color);
     outline-offset: 3px;
     border-radius: var(--border-radius-small);
 }
 
-
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md); /* 20px по бокам */
+    padding: 0 var(--spacing-md);
 }
 
 a {
@@ -132,55 +127,49 @@ a {
 
 a:hover {
     color: var(--link-hover-color);
-    text-decoration: none;
 }
 
 img {
     max-width: 100%;
     height: auto;
-    display: block; /* Убирает дополнительный отступ под изображением */
+    display: block;
 }
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-primary);
-    color: var(--primary-color); /* Золотой для заголовков */
-    margin-bottom: var(--spacing-md); /* Общий отступ для заголовков */
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
     line-height: 1.2;
-    text-align: center; /* Центрировать заголовки по умолчанию */
+    text-align: center;
 }
 
-h1 { font-size: 3.5em; font-weight: 700;}
-h2 { font-size: 2.5em; font-weight: 600;}
-h3 { font-size: 1.8em; font-weight: 600; margin-bottom: var(--spacing-sm);}
-h4 { font-size: 1.3em; font-weight: 600; color: var(--primary-color);}
+h1 { font-size: 3.5em; font-weight: 700; }
+h2 { font-size: 2.5em; font-weight: 600; }
+h3 { font-size: 1.8em; font-weight: 600; margin-bottom: var(--spacing-sm); }
+h4 { font-size: 1.3em; font-weight: 600; }
 
-
-p {
-    margin-bottom: var(--spacing-sm);
-}
+p { margin-bottom: var(--spacing-sm); }
 
 ul, ol {
     margin-bottom: var(--spacing-sm);
-    padding-left: var(--spacing-lg); /* Отступ для маркеров/номеров */
+    padding-left: var(--spacing-lg);
 }
 
-li {
-    margin-bottom: var(--spacing-xs);
-}
+li { margin-bottom: var(--spacing-xs); }
 
 /* ==========================================================================
-   Header and Navigation (ОБНОВЛЕННЫЙ БЛОК)
+   Header and Navigation
 ========================================================================== */
 .header {
-    background-color: rgba(18, 18, 30, 0.9); /* Темный фон хедера с небольшой прозрачностью */
+    background-color: rgba(18, 18, 30, 0.9);
     padding: var(--spacing-md) 0;
     color: var(--text-color-white);
     box-shadow: var(--box-shadow-light);
-    position: sticky; /* Липкий хедер */
+    position: sticky;
     top: 0;
     left: 0;
     width: 100%;
-    z-index: 1000; /* Хедер над контентом */
+    z-index: 1000;
 }
 
 .header .container {
@@ -197,7 +186,7 @@ li {
 }
 
 .logo-img {
-    height: 40px; /* Размер логотипа */
+    height: 40px;
     width: auto;
 }
 
@@ -208,20 +197,15 @@ li {
     color: var(--primary-color);
 }
 
-/* Скрываем мобильный оверлей по умолчанию на десктопе */
-.nav-mobile-overlay {
-    display: none; 
-}
+.nav-mobile-overlay { display: none; }
 
-
-/* Навигация для десктопа */
 .nav ul.main-nav {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: flex; /* Flexbox для горизонтального расположения */
-    gap: 15px; /* Отступ между элементами */
-    transition: transform 0.3s ease-in-out; /* Анимация для мобильного меню */
+    display: flex;
+    gap: 15px;
+    transition: transform 0.3s ease-in-out;
 }
 
 .nav ul.main-nav li a {
@@ -229,7 +213,7 @@ li {
     font-family: var(--font-primary);
     font-weight: bold;
     padding: 8px 15px;
-    position: relative; /* Для подчеркивания при наведении */
+    position: relative;
     border-radius: var(--border-radius-small);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -239,7 +223,6 @@ li {
     background-color: var(--primary-color);
 }
 
-/* Анимация подчеркивания при наведении */
 .nav ul.main-nav li a::after {
     content: '';
     position: absolute;
@@ -256,36 +239,30 @@ li {
     width: 100%;
 }
 
-/* 🦊 ОБНОВЛЕННЫЕ СТИЛИ ГАМБУРГЕРА (ЧАСТЬ 2: АНИМАЦИЯ ЛИНИЙ) 🦊 */
-
 .menu-toggle {
-    display: none; /* Скрыт на десктопе */
     cursor: pointer;
     z-index: 1004;
-    padding: 10px; /* Удобная зона нажатия */
+    padding: 10px;
     background: transparent;
     border: none;
     outline: none;
     position: relative;
-    width: 50px; /* Общий размер для кнопки */
+    width: 50px;
     height: 50px;
-    display: flex; /* Для центрирования линий */
+    display: none; /* Desktop hidden */
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
 }
 
-.menu-toggle:hover {
-    opacity: 0.8;
-}
+.menu-toggle:hover { opacity: 0.8; }
 
-/* Контейнер для линий гамбургера */
 .hamburger-lines {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    width: 30px; /* Ширина линий */
-    height: 20px; /* Общая высота для 3 линий */
+    width: 30px;
+    height: 20px;
     position: relative;
 }
 
@@ -293,57 +270,37 @@ li {
     display: block;
     height: 3px;
     width: 100%;
-    background-color: var(--primary-color); /* Золотой цвет */
+    background-color: var(--primary-color);
     border-radius: 2px;
-    transition: transform 0.3s cubic-bezier(0.7, 0, 0.3, 1), 
-                opacity 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.3s ease;
 }
 
-/* Анимация гамбургера в крестик (Класс .open добавляется JS) */
-.menu-toggle.open .line1 {
-    transform: translateY(8.5px) rotate(45deg);
-}
-
-.menu-toggle.open .line2 {
-    opacity: 0; /* Средняя линия исчезает */
-}
-
-.menu-toggle.open .line3 {
-    transform: translateY(-8.5px) rotate(-45deg);
-}
-
-/* 🛑 УДАЛЕНА КНОПКА ЗАКРЫТИЯ (close-menu-button), теперь используется анимация гамбургера */
-/* 🛑 УДАЛЕНЫ СТАРЫЕ СТИЛИ ГАМБУРГЕРА, заменены на .hamburger-lines .line */
-
-
+.menu-toggle.open .line1 { transform: translateY(8.5px) rotate(45deg); }
+.menu-toggle.open .line2 { opacity: 0; }
+.menu-toggle.open .line3 { transform: translateY(-8.5px) rotate(-45deg); }
 
 /* ==========================================================================
-   Sections and Layout - ИСПРАВЛЕНО (БЕЛЫЙ ЦВЕТ УДАЛЕН)
+   Sections and Layout
 ========================================================================== */
-
 .section, .aurum-fox-section {
     padding: var(--spacing-xl) 0; 
     text-align: center;
-    background-color: var(--color-bg-dark); /* Изменено на темный */
-    color: var(--text-color-light); /* Изменено на светлый текст */
+    background-color: var(--color-bg-dark);
+    color: var(--text-color-light);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .section-alt, .aurum-fox-section-alt {
-    background-color: var(--color-bg-light); /* Темная альтернативная секция */
+    background-color: var(--color-bg-light);
     color: var(--text-color-light);
 }
 
-.section:last-of-type {
-    border-bottom: none;
-}
+.section:last-of-type { border-bottom: none; }
 
-/* Hero Section */
 .hero-section {
     background: linear-gradient(135deg, var(--color-bg-dark) 0%, #3a0052 100%);
     color: var(--text-color-white);
     padding: var(--spacing-xl) 0;
-    text-align: center;
     min-height: 80vh; 
     display: flex;
     align-items: center;
@@ -375,16 +332,13 @@ li {
 
 .hero-image img {
     max-width: 100%; 
-    height: auto;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     animation: pulse 2s infinite alternate; 
     transition: transform 0.3s ease-in-out;
 }
 
-.hero-image img:hover {
-    transform: translateY(-10px);
-}
+.hero-image img:hover { transform: translateY(-10px); }
 
 @keyframes pulse {
     0% { transform: scale(1); }
@@ -413,7 +367,6 @@ li {
     justify-content: flex-start;
 }
 
-/* Web3 & Multimedia Sections - ПРИВЕДЕНО К ТЕМНОМУ СТИЛЮ */
 .web3-section, .web3-section-alt {
     background-color: var(--color-bg-input);
     color: var(--text-color-light);
@@ -421,12 +374,11 @@ li {
 }
 
 .multimedia-section, .multimedia-section-alt {
-    background-color: var(--color-bg-dark); /* БЫЛО БЕЛЫМ - ТЕПЕРЬ ТЕМНОЕ */
+    background-color: var(--color-bg-dark);
     color: var(--text-color-light);
     padding: 60px 0;
 }
 
-/* Headings */
 .aurum-heading, .web3-heading, .multimedia-heading, .main-heading {
     text-align: center;
     margin-bottom: var(--spacing-lg);
@@ -459,7 +411,6 @@ li {
     text-align: center;
 }
 
-/* Terminal Wrapper */
 .terminal-container-wrapper {
     background-color: var(--color-bg-card); 
     padding: var(--spacing-md);
@@ -471,12 +422,9 @@ li {
     backdrop-filter: blur(10px);
 }
 
-
 /* ==========================================================================
    Buttons
 ========================================================================== */
-
-
 .connect-fox-btn {
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     background: linear-gradient(45deg, #f39c12, #f1c40f) !important;
@@ -489,11 +437,8 @@ li {
     box-shadow: 0 8px 25px rgba(243, 156, 18, 0.5);
 }
 
-.connect-fox-btn:active {
-    transform: scale(0.95);
-}
+.connect-fox-btn:active { transform: scale(0.95); }
 
-/* Эффект вспышки для кнопки */
 .success-glow {
     animation: flash 0.8s ease-out;
     border-color: #00ffaa !important;
@@ -501,18 +446,13 @@ li {
 }
 
 @keyframes flash {
-    0% { transform: scale(1); }
+    0%, 100% { transform: scale(1); }
     50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
 }
 
-
-
-
-/* Общий стиль модалки */
 .modern-ui {
     background: rgba(20, 20, 30, 0.9) !important;
-    backdrop-filter: blur(15px); /* Размытие фона */
+    backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 24px !important;
     padding: 30px !important;
@@ -520,28 +460,12 @@ li {
     max-width: 450px !important;
 }
 
-.modal-title {
-    color: #fff;
-    font-size: 24px;
-    margin-bottom: 5px;
-    text-align: center;
-}
-
-.modal-subtitle {
-    color: #888;
-    font-size: 14px;
-    text-align: center;
-    margin-bottom: 25px;
-}
-
-/* Сетка кнопок */
 .wallet-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* В две колонки */
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
 }
 
-/* Современная кнопка */
 .wallet-btn.modern {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -557,32 +481,23 @@ li {
     cursor: pointer;
 }
 
-/* Эффект при наведении */
 .wallet-btn.modern:hover {
     background: rgba(255, 255, 255, 0.15);
-    border-color: #6d4aff; /* Цвет бренда Solana (фиолетовый) */
-    transform: translateY(-3px); /* Легкий прыжок вверх */
+    border-color: #6d4aff;
+    transform: translateY(-3px);
     box-shadow: 0 10px 20px rgba(109, 74, 255, 0.2);
 }
 
-.wallet-btn.modern .icon {
-    font-size: 20px;
+.error-shake { 
+    animation: shake 0.3s ease-in-out 0s 2; 
+    border-color: #ff4d4d !important; 
 }
-
-/* Кнопка Jupiter (выделяем её цветом) */
-.wallet-btn.modern[data-wallet="jupiter"] {
-    background: linear-gradient(90deg, rgba(191, 255, 0, 0.1), rgba(0, 0, 0, 0));
-    border-color: rgba(191, 255, 0, 0.3);
-}
-
 
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
 }
-.error-shake { animation: shake 0.3s ease-in-out 0s 2; border-color: #ff4d4d !important; }
-
 
 .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .social-btn {
     display: inline-block;
@@ -592,7 +507,6 @@ li {
     font-size: 1em;
     cursor: pointer;
     text-align: center;
-    text-decoration: none;
     transition: all 0.3s ease;
     border: 2px solid transparent;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -605,7 +519,8 @@ li {
     border-color: var(--primary-color);
 }
 
-.btn-primary:hover, .primary-btn:hover {
+.btn-primary:hover, .primary-btn:hover,
+.btn-secondary:hover, .secondary-btn:hover {
     background-color: var(--link-hover-color);
     color: var(--text-color-dark);
     transform: translateY(-3px);
@@ -618,98 +533,49 @@ li {
     border-color: var(--primary-color);
 }
 
-.btn-secondary:hover, .secondary-btn:hover {
-    background-color: var(--primary-color);
-    color: var(--text-color-dark);
-    transform: translateY(-3px);
-    box-shadow: var(--box-shadow-hover);
-}
-
-/* Web3 Buttons */
 .web3-btn {
     background-color: var(--accent-color);
     color: var(--text-color-light);
     border: none;
     padding: var(--spacing-sm) var(--spacing-md);
     border-radius: var(--border-radius);
-    cursor: pointer;
     font-family: var(--font-primary);
     font-weight: 600;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
-    text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--spacing-xs);
 }
 
-.web3-btn:hover {
-    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
-}
+.web3-btn:hover { background-color: color-mix(in srgb, var(--accent-color) 90%, black); }
 
 .web3-btn.green-btn, .web3-btn.buy-btn, #stakeAfoxBtn, #claimRewardsBtn {
     background-color: var(--success-color);
-    border-color: var(--success-color);
     color: var(--text-color-white);
 }
 
-.web3-btn.green-btn:hover, .web3-btn.buy-btn:hover, #stakeAfoxBtn:hover, #claimRewardsBtn:hover {
-    background-color: var(--color-green-success-hover);
-}
+.web3-btn.green-btn:hover, #stakeAfoxBtn:hover { background-color: var(--color-green-success-hover); }
 
 .web3-btn.red-btn, .web3-btn.danger-btn, #unstakeAfoxBtn {
     background-color: var(--error-color);
-    border-color: var(--error-color);
     color: var(--text-color-white);
 }
 
-.web3-btn.red-btn:hover, .web3-btn.danger-btn:hover, #unstakeAfoxBtn:hover {
-    background-color: var(--color-red-danger-hover);
-}
+.web3-btn.red-btn:hover, #unstakeAfoxBtn:hover { background-color: var(--color-red-danger-hover); }
 
-.web3-btn.sell-btn {
-    background-color: #f39c12;
-    color: var(--text-color-white);
-}
-.web3-btn.sell-btn:hover {
-    background-color: color-mix(in srgb, #f39c12 90%, black);
-}
+.web3-btn.sell-btn { background-color: #f39c12; color: var(--text-color-white); }
+.web3-btn.transfer-btn { background-color: var(--color-purple-transfer); color: var(--text-color-white); }
 
-.web3-btn.transfer-btn {
-    background-color: var(--color-purple-transfer);
-    color: var(--text-color-white);
-}
-.web3-btn.transfer-btn:hover {
-    background-color: var(--color-purple-transfer-hover);
-}
-
-
-.web3-btn.small-btn {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.85em;
-}
-
-/* Multimedia Buttons */
 .multimedia-btn {
     background-color: var(--secondary-color);
     color: var(--text-color-light);
     border: none;
     padding: var(--spacing-sm) var(--spacing-md);
     border-radius: var(--border-radius);
-    cursor: pointer;
     font-family: var(--font-primary);
     font-weight: 600;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
-    display: inline-block;
 }
 
-.multimedia-btn:hover {
-    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
-}
-
-/* Copy Button */
 .copy-btn {
     background-color: var(--accent-color);
     color: var(--text-color-light);
@@ -719,20 +585,12 @@ li {
     cursor: pointer;
     font-size: 0.9em;
     margin-left: 10px;
-    transition: background-color 0.3s ease;
-}
-
-.copy-btn:hover {
-    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
-    transform: translateY(-2px);
+    transition: all 0.3s ease;
 }
 
 /* ==========================================================================
-   Specific Section Styles
+   Section Specific Styles
 ========================================================================== */
-
-
-/* Tokenomics */
 .tokenomics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -749,11 +607,6 @@ li {
     border-top: 5px solid var(--primary-color);
 }
 
-.tokenomics-item h3 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-sm);
-}
-
 .tokenomics-item .highlight {
     font-size: 1.8em;
     font-weight: 700;
@@ -762,107 +615,45 @@ li {
     display: block;
 }
 
-.tokenomics-item .highlight-text-small {
-    font-weight: 600;
-    color: var(--color-highlight-green);
-    font-size: 1.2em;
-    margin-top: var(--spacing-xs);
-    display: block;
-}
-
-.tokenomics-item ul {
-    list-style: disc;
-    padding-left: var(--spacing-md);
-}
-
-.tokenomics-item ul li {
-    margin-bottom: 8px;
-}
-
-.table-responsive {
-    overflow-x: auto; /* Для таблиц на маленьких экранах */
-    margin-top: var(--spacing-md);
-}
-
 .tokenomics-item table {
     width: 100%;
     border-collapse: collapse;
     margin-top: var(--spacing-sm);
-    font-size: 0.95em;
     color: var(--text-color-light);
 }
 
-.tokenomics-item th,
-.tokenomics-item td {
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+.tokenomics-item th, .tokenomics-item td {
+    border: 1px solid var(--section-bg-dark);
     padding: 12px 15px;
-    text-align: left;
 }
 
 .tokenomics-item th {
-    background-color: var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    background-color: var(--section-bg-dark);
     color: var(--primary-color);
-    font-weight: 600;
-}
-.tokenomics-item tr:nth-child(even) {
-    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-.tokenomics-item tr:hover {
-    background-color: var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
-.tokenomics-item .small-text {
-    font-size: 0.9em;
-    color: var(--text-color-dimmed);
-    margin-top: var(--spacing-md);
-}
+.tokenomics-item tr:nth-child(even) { background-color: var(--color-bg-input); }
 
 .contract-address {
     text-align: center;
-    margin-top: var(--spacing-lg);
     background-color: var(--color-bg-input); 
     padding: var(--spacing-md);
     border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: var(--spacing-sm);
-    font-size: 1.1em;
     font-weight: 600;
-    color: var(--text-color-light);
-}
-
-.contract-address p {
-    margin: 0;
-    font-size: 1.1em;
-    font-weight: 600;
-}
-
-.contract-address .highlight-text {
-    color: var(--primary-color); 
-    word-break: break-all; 
-}
-
-/* How to Buy */
-.buy-steps, .how-to-list {
-    list-style: none; 
-    padding: 0;
-    max-width: 900px;
-    margin: 0 auto;
 }
 
 .buy-steps li, .how-to-list li {
     background-color: var(--color-bg-card);
-    padding: 25px;
+    padding: 25px 25px 25px 60px;
     margin-bottom: var(--spacing-md);
     border-radius: var(--border-radius-base);
-    box-shadow: var(--box-shadow-medium);
-    position: relative;
-    padding-left: 60px; 
     border-left: 5px solid var(--primary-color);
-    color: var(--text-color-light);
+    position: relative;
 }
 
 .buy-steps li::before {
@@ -879,1700 +670,33 @@ li {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2em;
     font-weight: 700;
 }
 
-.buy-steps h3 {
-    color: var(--accent-color);
-    margin-top: 0;
-}
-
-.buy-steps ul, .how-to-list ul { 
-    list-style: disc;
-    margin-top: var(--spacing-sm);
-    padding-left: var(--spacing-md);
-}
-.buy-steps li ul li, .how-to-list li ul li {
-    background-color: transparent;
-    box-shadow: none;
-    border-left: none;
-    padding: 0;
-}
-
-.tip {
-    font-style: italic;
-    color: var(--text-color-dimmed);
-    margin-top: var(--spacing-md);
-    text-align: center;
-}
-
-/* NFT Showcase */
-.nft-showcase {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
-    justify-content: center;
-}
-
-.nft-card {
-    background-color: var(--color-bg-card); 
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow-item); 
-    text-align: center;
-    transition: transform 0.3s ease;
-    color: var(--text-color-light); 
-}
-
-.nft-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--box-shadow-item-hover);
-}
-
-.nft-card img {
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--border-radius);
-    margin-bottom: var(--spacing-sm);
-    border: 1px solid var(--color-bg-light); /* Используем переменную */
-}
-
-.nft-card h4 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-xs);
-}
-
-/* Aurum NFC */
-#aurum-nfc {
-    background-color: var(--color-bg-light);
-    color: var(--text-color-light);
-    padding: var(--spacing-xl) 0;
-}
-#aurum-nfc h2 {
-    color: var(--primary-color);
-}
-
-.nfc-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
-    text-align: center;
-}
-
-.nfc-item {
-    background-color: var(--color-bg-card);
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-base);
-    box-shadow: var(--box-shadow-medium);
-    color: var(--text-color-light);
-    border-top: 5px solid var(--primary-color);
-}
-
-.nfc-item h3 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-sm);
-}
-
-.nfc-icon {
-    width: 100px;
-    height: auto;
-    margin: 0 auto var(--spacing-md);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-.nfc-note {
-    font-style: italic;
-    color: var(--text-color-dimmed);
-    margin-top: var(--spacing-lg);
-    text-align: center;
-}
-
-/* Roadmap */
-.roadmap-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
-}
-
-.roadmap-item {
-    background-color: var(--color-bg-card);
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-base);
-    box-shadow: var(--box-shadow-medium);
-    text-align: left;
-    border-bottom: 5px solid var(--primary-color);
-}
-
-.roadmap-item h3 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-sm);
-}
-
-.roadmap-item ul {
-    list-style: none;
-    padding-left: 0;
-}
-
-.roadmap-item li {
-    position: relative;
-    padding-left: 25px;
-    margin-bottom: var(--spacing-xs);
-    color: var(--text-color-light);
-}
-.roadmap-item li::before {
-    content: '✅';
-    position: absolute;
-    left: 0;
-    color: var(--primary-color);
-}
-
-.roadmap-item strong {
-    color: var(--accent-color);
-}
-
-.roadmap-disclaimer {
-    text-align: center;
-    font-style: italic;
-    color: var(--text-color-dimmed);
-    margin-top: var(--spacing-lg);
-    font-size: 0.95em;
-}
-
-/* News and Announcements */
-#aurum-announcements .container {
-    background-color: var(--color-bg-light);
-    padding: 30px;
-    border-radius: var(--border-radius-base);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 900px;
-    margin-top: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-}
-#aurum-announcements h2, #aurum-announcements h3 {
-    color: var(--primary-color);
-    text-align: center;
-    margin-bottom: var(--spacing-md);
-}
-
-.news-list, .announcements-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
-}
-
-.news-item, .announcement-item {
-    background-color: var(--color-bg-card);
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-base);
-    box-shadow: var(--box-shadow-item);
-    border: 1px solid var(--color-bg-light); /* Используем переменную */
-    font-size: 1em;
-    line-height: 1.5;
-    color: var(--text-color-light);
-    word-wrap: break-word;
-}
-
-.news-item h4, .announcement-item h4 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-xs);
-}
-
-.news-item small, .announcement-item small, .announcement-date {
-    display: block;
-    margin-top: var(--spacing-xs);
-    color: var(--text-color-dimmed);
-    font-size: 0.9em;
-    font-style: italic;
-    text-align: right;
-}
-.announcement-item p {
-    margin: 0 0 5px 0;
-}
-
-.admin-announcement-section {
-    background-color: var(--color-bg-card);
-    padding: 25px;
-    border-radius: var(--border-radius-base);
-    margin-top: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-    box-shadow: var(--box-shadow-medium);
-    border-left: 5px solid var(--primary-color);
-}
-
-.admin-announcement-section h3 {
-    text-align: center;
-    margin-bottom: var(--spacing-md);
-    color: var(--primary-color); 
-}
-
-.admin-announcement-section textarea, textarea#announcementInput {
-    width: 100%;
-    padding: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
-    border: 1px solid var(--color-bg-light); /* Используем переменную */
-    border-radius: var(--border-radius-base);
-    min-height: 120px;
-    font-family: inherit;
-    font-size: 1em;
-    background-color: var(--color-bg-input); /* Используем переменную */
-    color: var(--text-color-light);
-    box-shadow: var(--box-shadow-inset);
-    resize: vertical;
-}
-
-.admin-announcement-section textarea::placeholder, textarea#announcementInput::placeholder {
-    color: var(--text-color-dimmed);
-}
-
-.admin-announcement-section button, button#publishButton {
-    width: auto;
-    padding: var(--spacing-sm);
-    font-size: 1.1em;
-    background-color: var(--primary-color);
-    color: var(--color-bg-dark);
-    border: none;
-    border-radius: var(--border-radius-base);
-    cursor: pointer;
-    font-weight: 700;
-    display: block;
-    margin: 0 auto;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-}
-.admin-announcement-section button:hover, button#publishButton:hover {
-    background-color: var(--link-hover-color);
-    transform: translateY(-3px);
-    box-shadow: var(--box-shadow-hover);
-}
-
-hr {
-    border: none;
-    border-top: 1px solid var(--color-bg-light); /* Используем переменную */
-    margin: var(--spacing-lg) 0;
-}
-
-
-/* Community */
-.social-links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
-}
-
-.social-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: 12px 25px;
-    border-radius: var(--border-radius-base);
-    color: var(--text-color-light);
-    font-weight: 600;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    background-color: var(--color-bg-card); /* Используем переменную */
-    border: 1px solid var(--text-color-light);
-}
-
-.social-btn:hover {
-    text-decoration: none;
-    transform: translateY(-3px);
-    background-color: var(--primary-color);
-    color: var(--color-bg-dark);
-    box-shadow: var(--box-shadow-hover);
-}
-
-.social-icon {
-    width: 24px;
-    height: 24px;
-    fill: currentColor; /* Использует цвет текста кнопки */
-    margin-right: var(--spacing-xs);
-}
-
-.discord-btn { background-color: #7289DA; color: var(--text-color-white); border: none;}
-.discord-btn:hover { background-color: color-mix(in srgb, #7289DA 90%, black); }
-
-.telegram-btn { background-color: #0088cc; color: var(--text-color-white); border: none;}
-.telegram-btn:hover { background-color: color-mix(in srgb, #0088cc 90%, black); }
-
-.twitter-btn { background-color: #1DA1F2; color: var(--text-color-white); border: none;}
-.twitter-btn:hover { background-color: color-mix(in srgb, #1DA1F2 90%, black); }
-
-.solscan-btn { background-color: #8C52FF; color: var(--text-color-white); border: none;} 
-.solscan-btn:hover { background-color: color-mix(in srgb, #8C52FF 90%, black); }
-
-.news-btn { background-color: #f7b731; color: var(--color-bg-dark); border: none;} 
-.news-btn:hover { background-color: color-mix(in srgb, #f7b731 90%, black); }
-
-
-/* Contact Us */
-.contact-section {
-    background-color: var(--section-bg-dark);
-    color: var(--text-color-light);
-    padding-bottom: var(--spacing-xl); 
-}
-
-.contact-info {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-    margin-top: var(--spacing-md);
-    font-size: 1.1em;
-}
-
-.contact-info p {
-    font-size: 1.1em;
-    margin-bottom: var(--spacing-xs);
-}
-
-.contact-info a {
-    color: var(--primary-color);
-}
-
-.contact-form {
-    max-width: 600px;
-    margin: 0 auto;
-    background-color: var(--background-color-dark); 
-    padding: var(--spacing-lg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-lg);
-}
-
-.contact-form label {
-    display: block;
-    margin-bottom: var(--spacing-xs);
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.contact-form input[type="text"],
-.contact-form input[type="email"],
-.contact-form textarea {
-    width: 100%;
-    padding: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    border-radius: 5px;
-    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    color: var(--text-color-light);
-    font-family: inherit;
-    font-size: 1em;
-}
-
-.contact-form input[type="text"]::placeholder,
-.contact-form input[type="email"]::placeholder,
-.contact-form textarea::placeholder {
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.contact-form button[type="submit"] {
-    width: 100%;
-    padding: var(--spacing-md);
-    font-size: 1.2em;
-}
-
-.disclaimer {
-    text-align: center;
-    margin-top: var(--spacing-lg);
-    font-size: 0.9em;
-    color: rgba(255, 255, 255, 0.7);
-    font-style: italic;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-
-/* 💻 ОТОБРАЖЕНИЕ АДРЕСА: УЛУЧШЕНИЕ ВИДИМОСТИ */
-.web3-wallet-display {
-    text-align: center;
-    margin-top: var(--spacing-md);
-    font-size: 1.1em;
-    color: var(--text-color-light); 
-    background-color: var(--color-bg-input); /* Чуть светлее, чем карточка */
-    padding: 15px;
-    border-radius: var(--border-radius-base);
-    display: inline-block;
-    font-family: 'Courier New', monospace;
-    word-break: break-all;
-    border: 1px solid var(--color-blue-web3); /* Акцент Web3 */
-    box-shadow: var(--box-shadow-inset);
-}
-.web3-wallet-display span {
-    font-weight: bold;
-    color: var(--color-wallet-address);
-}
-/* -------------------------------------------------------------------------- */
-
-
-.web3-intro {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-    font-size: 1.1em;
-    color: #ccc;
-    max-width: 700px;
-    margin: 0 auto var(--spacing-lg) auto;
-}
-
-
-.web3-features-grid,
-.games-grid,
-.nft-grid,
-.ad-list,
-.dao-proposals-grid {
+.nft-showcase, .nfc-grid, .roadmap-grid, .news-list, .announcements-list, 
+.web3-features-grid, .dao-proposals-grid, .staking-info-grid, 
+.multimedia-features-grid, .gallery, .posts, .games {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
 }
-.nft-grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-md);
-}
 
-.feature-card,
-.placeholder-item {
+.nft-card, .nfc-item, .roadmap-item, .news-item, .feature-card, .info-card, .multimedia-item {
     background-color: var(--color-bg-card);
     padding: var(--spacing-md);
     border-radius: var(--border-radius-base);
-    box-shadow: var(--box-shadow-medium);
-    text-align: center;
-    color: var(--text-color-light);
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.feature-card:hover {
+.nft-card:hover, .feature-card:hover, .info-card:hover, .multimedia-item:hover, .dao-proposal-item:hover {
     transform: translateY(-5px);
     box-shadow: var(--box-shadow-hover);
 }
 
-.feature-card h3 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-sm);
-}
-
-.feature-card .web3-link {
-    display: inline-block;
-    margin-top: var(--spacing-md);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: var(--accent-color);
-    color: var(--text-color-light);
-    border-radius: 5px;
-    font-weight: 600;
-}
-
-.feature-card .web3-link:hover {
-    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
-    text-decoration: none;
-}
-
-.web3-content-area, .content-area {
-    min-height: 200px;
-    background-color: var(--color-bg-input);
-    padding: 15px;
-    border-radius: var(--border-radius-small);
-    margin-top: var(--spacing-md);
-    border: 1px dashed var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: flex-start;
-    justify-content: flex-start;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
-}
-.web3-placeholder {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: 10px 15px;
-    border-radius: var(--border-radius-small);
-    font-style: italic;
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-
-/* NFT Specific Styles */
-.nft-actions {
-    text-align: center;
-    margin-top: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--spacing-md);
-}
-
-.nft-item {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: var(--box-shadow-item);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    color: var(--text-color-light);
-}
-
-.nft-item:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--box-shadow-item-hover);
-}
-
-.nft-item img {
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--border-radius-base);
-    margin-bottom: 10px;
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.nft-item h4 {
-    font-size: 1.1em;
-    color: var(--primary-color);
-    margin-bottom: 5px;
-    word-break: break-word;
-}
-
-.nft-item p {
-    font-size: 0.9em;
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    margin: 2px 0;
-    word-break: break-word;
-}
-
-
-.nft-form-container {
-    max-width: 500px;
-    margin: var(--spacing-lg) auto;
-    background-color: var(--color-bg-input);
-    padding: var(--spacing-lg);
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-    color: var(--text-color-light);
-    text-align: left;
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.web3-form label {
-    display: block;
-    margin-bottom: var(--spacing-xs);
-    font-weight: 600;
-    color: var(--color-blue-web3);
-}
-
-.web3-form input[type="text"],
-.web3-form input[type="number"],
-.web3-form textarea,
-.web3-form select {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: var(--spacing-md);
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    border-radius: 6px;
-    background-color: var(--color-bg-input);
-    color: var(--text-color-light);
-    font-family: inherit;
-    font-size: 1em;
-}
-
-.web3-form input[type="file"] {
-    width: 100%;
-    padding: 0;
-    margin-bottom: var(--spacing-md);
-    border: none;
-    background-color: transparent;
-    color: var(--text-color-light);
-    font-size: 1em;
-}
-
-.web3-form input[type="text"]::placeholder,
-.web3-form input[type="number"]::placeholder,
-.web3-form textarea::placeholder {
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.web3-form .form-help-text {
-    font-size: 0.9em;
-    color: var(--text-color-dimmed);
-    margin-top: -10px;
-    margin-bottom: var(--spacing-md);
-    display: block;
-}
-
-.nft-detail-view {
-    text-align: left;
-    padding: var(--spacing-md);
-    color: var(--text-color-light); 
-}
-
-.nft-detail-image {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto var(--spacing-md);
-    border-radius: var(--border-radius-base);
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.nft-detail-view h3 {
-    color: var(--primary-color);
-    text-align: center;
-    font-size: 2em;
-    margin-bottom: var(--spacing-sm);
-}
-
-.nft-detail-view p {
-    font-size: 1.1em;
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    margin-bottom: 8px;
-}
-.nft-detail-view p strong {
-    color: var(--text-color-white);
-}
-
-.nft-detail-view #nftDetailMint,
-.nft-detail-view #nftDetailOwner {
-    font-size: 0.95em;
-    word-break: break-all;
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: 5px 10px;
-    border-radius: var(--border-radius-small);
-    display: inline-block;
-    margin-top: 5px;
-}
-
-#attributesList {
-    list-style: none;
-    padding: 0;
-    margin-top: var(--spacing-sm);
-}
-
-#attributesList li {
-    background-color: var(--color-bg-card);
-    padding: 8px 12px;
-    margin-bottom: 5px;
-    border-radius: var(--border-radius-small);
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.95em;
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    color: var(--text-color-light);
-}
-
-.nft-detail-actions {
-    margin-top: var(--spacing-lg);
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--spacing-md);
-}
-
-.ad-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-md);
-}
-.placeholder-item.ad {
-    padding: 15px;
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    border-radius: var(--border-radius-small);
-    text-align: center;
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    font-style: italic;
-    margin-bottom: 10px;
-}
-.placeholder-item.ad img {
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--border-radius-small);
-    margin-top: 10px;
-}
-
-
-/* DAO Section */
-#dao-section {
-    background-color: var(--color-bg-light);
-    color: var(--text-color-light);
-    padding: 60px 0;
-}
-#dao-section .web3-intro {
-    margin-bottom: var(--spacing-md);
-}
-
-.dao-actions {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-    margin-top: var(--spacing-md);
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.dao-proposals-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 25px;
-    margin-top: var(--spacing-md);
-}
-
-.dao-proposal-item {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: var(--spacing-md);
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    color: var(--text-color-light);
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-.dao-proposal-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-}
-
-.dao-proposal-item h4 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-xs);
-    font-size: 1.3em;
-}
-
-.dao-proposal-item p {
-    font-size: 0.95em;
-    margin-bottom: var(--spacing-sm);
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    line-height: 1.5;
-}
-
-.dao-proposal-item .dao-creator {
-    font-family: monospace; 
-    color: var(--color-wallet-address);
-    font-weight: 600;
-    word-break: break-all;
-}
-
-.dao-proposal-item .dao-votes-for {
-    color: var(--success-color);
-    font-weight: 700;
-}
-.dao-proposal-item .dao-votes-against {
-    color: var(--error-color);
-    font-weight: 700;
-}
-
-.dao-vote-btn {
-    margin-right: var(--spacing-sm);
-    margin-top: var(--spacing-sm);
-    width: 100%;
-    padding: 12px;
-    font-size: 1em;
-    border-radius: var(--border-radius-small);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-.dao-vote-btn[data-vote-type="for"] {
-    background-color: var(--success-color);
-    border: 1px solid var(--success-color);
-    color: var(--text-color-white);
-}
-
-.dao-vote-btn[data-vote-type="for"]:hover {
-    background-color: var(--color-green-success-hover);
-}
-
-.dao-vote-btn[data-vote-type="against"] {
-    background-color: var(--error-color);
-    border: 1px solid var(--error-color);
-    color: var(--text-color-white);
-}
-
-.dao-vote-btn[data-vote-type="against"]:hover {
-    background-color: var(--color-red-danger-hover);
-}
-
-
-/* Staking Section */
-#staking-section {
-    padding: 60px 0;
-    background-color: var(--color-bg-input);
-    color: var(--text-color-light);
-}
-#staking-section .web3-intro {
-    margin-bottom: var(--spacing-lg);
-}
-
-.staking-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-}
-
-.info-card {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    color: var(--text-color-light);
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    transition: transform 0.2s ease-in-out;
-}
-.info-card:hover {
-    transform: translateY(-5px);
-}
-
-.info-card h3 {
-    color: var(--primary-color);
-    font-size: 1.2em;
-    margin-bottom: var(--spacing-xs);
-}
-
-.info-card .info-value {
-    font-size: 1.8em;
-    font-weight: 700;
-    color: var(--text-color-light);
-    margin: 0;
-}
-
-.staking-actions {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    color: var(--text-color-light);
-    margin-bottom: var(--spacing-lg);
-}
-.staking-actions .web3-subheading {
-    margin-top: 0;
-    margin-bottom: 25px;
-    color: var(--primary-color);
-    font-size: 1.5em;
-}
-
-.staking-actions .input-group {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 25px;
-    flex-wrap: wrap; 
-}
-
-.staking-actions input[type="number"] {
-    flex-grow: 1;
-    max-width: 300px;
-    padding: 12px 15px;
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    border-radius: 5px;
-    background-color: var(--color-bg-input);
-    color: var(--text-color-light);
-    font-family: inherit;
-    font-size: 1em;
-}
-
-.staking-actions .button-group {
-    display: flex;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.staking-details {
-    background-color: var(--color-bg-input);
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    color: var(--text-color-light);
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-.staking-details .web3-subheading {
-    color: var(--primary-color);
-    margin-top: 0;
-    margin-bottom: var(--spacing-md);
-    font-size: 1.5em;
-}
-
-.staking-details ul {
-    list-style: none;
-    padding: 0;
-    margin-top: var(--spacing-md);
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    line-height: 1.8;
-}
-
-.staking-details li {
-    margin-bottom: var(--spacing-sm);
-    font-size: 1.1em;
-}
-
-.staking-details li strong {
-    color: var(--primary-color);
-}
-
-.staking-details .web3-note {
-    font-style: italic;
-    font-size: 0.9em;
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    text-align: center;
-    margin-top: var(--spacing-md);
-}
-
-
 /* ==========================================================================
-   Multimedia Hub Sections
+   Web3 Portal & DAO
 ========================================================================== */
-.multimedia-portal-container {
-    text-align: center; 
-    color: var(--text-color-light); 
-    background: var(--color-bg-dark); 
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-base);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-/* Переопределение цветов для темных мультимедийных разделов */
-.multimedia-section-alt .multimedia-heading,
-.multimedia-section-alt .multimedia-intro,
-.multimedia-section-alt .multimedia-subheading,
-.multimedia-section-alt .item,
-.multimedia-section-alt .placeholder-item {
-    color: var(--text-color-light); 
-}
-
-.multimedia-features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
-}
-
-/* Стили карточек функций переиспользуются, просто убедитесь, что цвета соответствуют разделу */
-.multimedia-features-grid .feature-card {
-    background-color: var(--color-bg-card); 
-    color: var(--text-color-light);
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.multimedia-features-grid .feature-card h3 {
-    color: var(--primary-color); 
-}
-
-.multimedia-features-grid .feature-card .multimedia-link {
-    background-color: var(--secondary-color);
-    color: var(--text-color-light);
-    border-radius: 5px;
-    font-weight: 600;
-}
-
-.multimedia-features-grid .feature-card .multimedia-link:hover {
-    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
-}
-
-.upload-form {
-    max-width: 700px;
-    margin: var(--spacing-lg) auto;
-    background-color: var(--color-bg-input); 
-    padding: var(--spacing-lg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-md);
-    text-align: left; 
-    color: var(--text-color-light); 
-}
-
-.upload-form label {
-    display: block;
-    margin-bottom: var(--spacing-xs);
-    font-weight: 600;
-    color: var(--primary-color); 
-}
-
-.upload-form input[type="text"],
-.upload-form input[type="file"],
-.upload-form textarea {
-    width: 100%;
-    padding: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    border: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    border-radius: 5px;
-    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    color: var(--text-color-light);
-    font-family: inherit;
-    font-size: 1em;
-}
-
-.upload-form input[type="file"] {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    border: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.upload-form input[type="text"]::placeholder,
-.upload-form textarea::placeholder {
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.upload-form button[type="submit"] {
-    width: 100%;
-    padding: var(--spacing-md);
-    font-size: 1.1em;
-}
-
-.gallery, .posts, .games, .multimedia-grid, .photo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
-    justify-content: center;
-}
-
-.multimedia-item {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-small);
-    box-shadow: var(--box-shadow-item);
-    text-align: center;
-    transition: transform 0.2s ease;
-    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    color: var(--text-color-light);
-}
-
-.multimedia-item:hover {
-    transform: translateY(-3px);
-}
-
-.multimedia-item img {
-    max-width: 100%;
-    height: 150px; 
-    object-fit: cover;
-    border-radius: 4px;
-    margin-bottom: var(--spacing-sm);
-    transition: transform 0.2s ease-in-out;
-}
-.multimedia-item img:hover {
-    transform: scale(1.05);
-}
-
-.multimedia-item h3 {
-    color: var(--color-orange-multimedia);
-    margin-bottom: var(--spacing-xs);
-    margin-top: var(--spacing-sm);
-}
-
-.multimedia-item p {
-    font-size: 0.9em;
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.multimedia-item small {
-    display: block;
-    margin-top: var(--spacing-xs);
-    color: var(--text-color-dimmed);
-    font-size: 0.8em;
-}
-
-.game-content {
-    margin-top: var(--spacing-md);
-}
-
-.game-content input[type="number"] {
-    width: calc(100% - 100px); 
-    padding: var(--spacing-sm);
-    border: 1px solid var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    border-radius: 5px;
-    margin-right: var(--spacing-sm);
-    text-align: center;
-    background-color: var(--color-bg-input); 
-    color: var(--text-color-light);
-}
-
-.game-content button {
-    margin-top: var(--spacing-sm); 
-}
-
-.multimedia-link {
-    display: inline-block;
-    margin-top: 15px;
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: bold;
-    transition: color 0.2s ease;
-}
-
-.multimedia-link:hover {
-    color: var(--link-hover-color);
-}
-
-.post-list {
-    display: grid;
-    gap: var(--spacing-md);
-}
-
-.placeholder-item.post {
-    text-align: left;
-    height: auto;
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    padding: 25px;
-    border-radius: var(--border-radius-base);
-    color: var(--text-color-light);
-}
-
-.placeholder-item.post h3 {
-    color: var(--color-orange-multimedia);
-    margin-top: 0;
-    margin-bottom: var(--spacing-sm);
-}
-
-.placeholder-item.post small {
-    display: block;
-    margin-top: var(--spacing-sm);
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.portal-games-grid, .games-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-md);
-}
-
-.placeholder-item.portal-game, .placeholder-item.game {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    text-align: left;
-    height: auto;
-    padding: 25px;
-    border-radius: var(--border-radius-base);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    color: var(--text-color-light);
-}
-
-.placeholder-item.portal-game h3, .placeholder-item.game h3 {
-    color: var(--color-orange-multimedia);
-    margin-top: 0;
-    margin-bottom: var(--spacing-sm);
-}
-
-.placeholder-item.portal-game .multimedia-btn, .placeholder-item.game .multimedia-btn {
-    align-self: flex-start;
-    margin-top: 15px;
-}
-
-
-/* ==========================================================================
-   Footer
-========================================================================== */
-.footer {
-    background-color: #10101a;
-    color: var(--text-color-dimmed);
-    text-align: center;
-    padding: 30px 0;
-    border-top: 1px solid var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    font-size: 0.9em;
-}
-
-.footer p {
-    margin: var(--spacing-xs) 0;
-    font-size: 0.9em;
-}
-
-.footer .copy-btn {
-    background-color: var(--secondary-color); 
-}
-
-.footer .copy-btn:hover {
-    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
-}
-
-.footer .highlight-text {
-    color: var(--primary-color);
-}
-
-/* ==========================================================================
-   Modals
-========================================================================== */
-.modal {
-    display: none; 
-    position: fixed; 
-    z-index: 2000; 
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--color-modal-overlay); 
-    padding-top: 0; 
-}
-
-/* Класс, который ваш JS должен добавлять для отображения модального окна */
-.modal.is-open {
-    display: flex; 
-    align-items: center;
-    justify-content: center;
-    overflow-y: auto; 
-    padding: var(--spacing-md) 0; 
-}
-
-.modal-content {
-    background-color: var(--color-bg-input);
-    margin: auto;
-    padding: var(--spacing-lg);
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    position: relative;
-    max-width: 700px;
-    width: 90%; 
-    animation: fadeInScale 0.3s ease-out; 
-    color: var(--text-color-light); 
-    max-height: 90vh;
-    overflow-y: auto; 
-    border: 1px solid var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-}
-
-.modal-content h3 {
-    color: var(--primary-color);
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-}
-
-.modal-content .web3-form {
-    background: none; 
-    box-shadow: none; 
-    padding: 0; 
-}
-
-.modal-content .modal-nft-image {
-    max-width: 80%;
-    height: auto;
-    display: block;
-    margin: 0 auto var(--spacing-md);
-    border-radius: var(--border-radius);
-}
-
-.close-button {
-    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 36px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-.close-button:hover,
-.close-button:focus {
-    color: var(--text-color-light);
-    text-decoration: none;
-    cursor: pointer;
-}
-
-/* Keyframes для анимации модального окна */
-@keyframes fadeInScale {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-/* ==========================================================================
-   Notification Container
-========================================================================== */
-#notificationContainer {
-    position: fixed;
-    top: var(--spacing-md);
-    right: var(--spacing-md);
-    z-index: 10000; 
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    pointer-events: none; 
-}
-
-.notification {
-    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
-    color: var(--text-color-light);
-    padding: 15px 20px;
-    border-radius: var(--border-radius-base);
-    box-shadow: var(--shadow-md);
-    opacity: 0;
-    transform: translateX(100%);
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    min-width: 280px; 
-    text-align: center;
-    pointer-events: all; 
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.95em;
-}
-
-.notification.show {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.notification.info {
-    background-color: var(--info-color);
-}
-
-.notification.success {
-    background-color: var(--success-color);
-}
-
-.notification.error {
-    background-color: var(--error-color);
-}
-
-@keyframes fadeInSlideUp {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ==========================================================================
-   Media Queries for Responsiveness (ОБНОВЛЕННЫЙ БЛОК: Мобильное меню)
-========================================================================== */
-@media (max-width: 992px) {
-    h1 { font-size: 2.5em; }
-    h2 { font-size: 2em; }
-    .hero-content h1 { font-size: 3em; }
-
-    .nav ul.main-nav {
-        gap: var(--spacing-sm);
-    }
-}
-
-@media (max-width: 768px) {
-    /* ----------------------------------------------------- */
-    /* 🦊 МОБИЛЬНОЕ МЕНЮ (ЧАСТЬ 3: Web3-стиль с размытием) 🦊 */
-    /* ----------------------------------------------------- */
-    
-    .menu-toggle {
-        display: flex; /* Показываем гамбургер на мобильном */
-        position: relative;
-    }
-    
-    .nav ul.main-nav { 
-        display: flex; 
-        flex-direction: column;
-        position: fixed;
-        top: 0;
-        right: 0; 
-        width: 100%; 
-        max-width: 300px; /* Чуть уже для элегантности */
-        height: 100%;
-        
-        /* 🛑 ЭФФЕКТ WEB3: Размытый фон */
-        background-color: rgba(26, 26, 46, 0.95); /* Deep dark blue с прозрачностью */
-        backdrop-filter: blur(10px); /* Эффект матового стекла */
-        -webkit-backdrop-filter: blur(10px); /* Для Safari */
-        
-        padding: 80px var(--spacing-md) var(--spacing-md);
-        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
-        
-        transform: translateX(100%); 
-        opacity: 0; 
-        visibility: hidden; 
-        transition: transform 0.4s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.4s ease-in-out; 
-        
-        z-index: 1001;
-        overflow-y: auto;
-        align-items: flex-start; 
-        gap: 0; 
-        border-left: 1px solid rgba(255, 215, 0, 0.1); /* Тонкая золотая линия слева */
-    }
-    
-    .nav ul.main-nav.active {
-        transform: translateX(0);
-        opacity: 1; 
-        visibility: visible; 
-    }
-    
-    /* СТИЛИ ПУНКТОВ МЕНЮ */
-    .nav ul.main-nav li {
-        width: 100%;
-        text-align: left;
-        margin-bottom: 0; 
-        border-bottom: 1px solid rgba(255, 215, 0, 0.08); /* Очень тонкая золотая разделительная линия */
-    }
-
-    .nav ul.main-nav li:last-child {
-        border-bottom: none; 
-    }
-
-    .nav ul.main-nav li a {
-        font-family: var(--font-primary); 
-        font-size: 1.3em; 
-        display: block;
-        padding: 18px 20px; /* Больший тач-таргет */
-        color: var(--text-color-white); 
-        font-weight: 600; 
-        transition: all 0.2s ease-out;
-        letter-spacing: 0.5px; 
-    }
-    
-    .nav ul.main-nav li a:hover,
-    .nav ul.main-nav li a.active {
-        background-color: var(--color-bg-card);
-        color: var(--primary-color);
-        border-left: 5px solid var(--primary-color);
-        padding-left: 25px; 
-    }
-    
-    /* Убираем подчеркивание */
-    .nav ul.main-nav li a::after {
-        display: none;
-    }
-    
-    /* ----------------------------------------------------- */
-    /* ВАШИ ОСТАЛЬНЫЕ СТИЛИ ДЛЯ 768PX */
-    /* ----------------------------------------------------- */
-
-    .header .container {
-        flex-wrap: wrap;
-        justify-content: space-between; 
-        text-align: left;
-        gap: 0; 
-    }
-
-    .logo {
-        margin-bottom: 0; 
-        width: auto;
-        justify-content: flex-start;
-    }
-    
-    .nav {
-        width: auto; 
-        display: block;
-        justify-content: flex-end;
-    }
-
-    /* Корректировка героической секции */
-    .hero-section .container {
-        flex-direction: column;
-        gap: var(--spacing-md);
-    }
-
-    .hero-content {
-        text-align: center;
-        order: 2; 
-    }
-    .hero-content h1, .hero-content .tagline {
-        text-align: center; 
-    }
-
-
-    .hero-image {
-        order: 1; 
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .call-to-action, .hero-buttons {
-        justify-content: center; 
-    }
-    .hero-buttons .btn, .hero-buttons .primary-btn {
-        width: 100%; 
-    }
-
-    h1 { font-size: 2.8em; }
-    h2 { font-size: 2em; }
-    .hero-content h1 { font-size: 2.8em; }
-    .aurum-heading, .web3-heading, .multimedia-heading {
-        font-size: 1.8em;
-    }
-
-    .hero-section, .section, .web3-section, .multimedia-section {
-        padding: 60px 0;
-    }
-
-    /* Одиночная колонка для всех Grid-элементов */
-    .tokenomics-grid,
-    .nft-showcase,
-    .nfc-grid,
-    .roadmap-grid,
-    .news-list,
-    .announcements-list,
-    .web3-features-grid,
-    .games-grid,
-    .nft-grid,
-    .ad-list,
-    .dao-proposals-grid,
-    .staking-info-grid,
-    .multimedia-features-grid,
-    .gallery,
-    .posts,
-    .games {
-        grid-template-columns: 1fr; 
-    }
-    
-    /* Дополнительная адаптация roadmap для читабельности */
-    .roadmap-grid {
-        border-left: none; 
-    }
-    
-    .roadmap-item {
-        padding-left: var(--spacing-md);
-        text-align: left;
-    }
-    
-    .buy-steps li {
-        padding: 20px;
-    }
-
-    /* Адаптация формы и контейнеров */
-    .contact-form, .nft-form-container, .upload-form {
-        padding: var(--spacing-md);
-    }
-    #aurum-announcements .container, .multimedia-portal-container {
-        padding: var(--spacing-md);
-    }
-    textarea#announcementInput {
-        width: 100%;
-        padding: 10px;
-    }
-    button#publishButton {
-        width: 100%;
-    }
-    .multimedia-form input, .multimedia-form textarea {
-        width: 100%;
-    }
-    .multimedia-btn {
-        width: 100%;
-    }
-
-    .staking-actions .input-group {
-        flex-direction: column; 
-        align-items: center;
-        gap: 10px;
-    }
-
-    .staking-actions input[type="number"] {
-        max-width: 100%; 
-        margin-right: 0;
-        margin-bottom: var(--spacing-sm);
-    }
-
-    .modal-content {
-        width: 95%;
-        padding: var(--spacing-md);
-    }
-    
-    /* Адаптация социальных ссылок */
-    .social-links {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .social-btn {
-        width: 100%;
-        justify-content: center;
-    }
-}
-
-/* ==========================================================================
-   МОБІЛЬНА АДАПТИВНІСТЬ ДЛЯ СІТОК ТА ТАБЛИЦЬ (MAX-WIDTH: 600PX)
-   ========================================================================== */
-@media (max-width: 600px) {
-    /* Основні сітки на всю ширину (стовпчик), вже були 1fr, але для надійності */
-    .tokenomics-grid,
-    .web3-features-grid,
-    .dao-proposals-grid,
-    .nft-showcase,
-    .nfc-grid,
-    .games-grid,
-    .staking-info-grid,
-    .ad-list,
-    .multimedia-features-grid,
-    .gallery,
-    .posts,
-    .games {
-        grid-template-columns: 1fr; 
-        gap: 25px; 
-    }
-    
-    .nft-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-    }
-
-    /* Адаптация таблиці токеноміки (Horizontal Scrolling або Card View) */
-    .tokenomics-item table {
-        width: 100%;
-        display: block;
-        overflow-x: auto; 
-    }
-    
-    .dao-vote-btn {
-        width: calc(50% - 7.5px); 
-        margin: 5px 0;
-    }
-    .dao-actions {
-        gap: 10px;
-    }
-}
-
-
-/* ==========================================================================
-   Media Queries for Responsiveness (The smallest screens - Original)
-========================================================================== */
-@media (max-width: 480px) {
-    h1 { font-size: 2em; }
-    h2 { font-size: 1.6em; }
-    .hero-content h1 { font-size: 2.4em; }
-    .hero-content .tagline { font-size: 1.1em; }
-    
-    .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .web3-button {
-        padding: var(--spacing-sm);
-        font-size: 0.9em;
-    }
-    .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .web3-button {
-        width: 100%; 
-        justify-content: center;
-        padding: 12px 20px;
-        margin: 5px 0;
-    }
-    
-    .container {
-        padding: 0 var(--spacing-sm); 
-    }
-    .section {
-        padding: var(--spacing-lg) var(--spacing-sm);
-    }
-    .nft-item img {
-        height: 150px;
-    }
-    
-    .dao-vote-btn {
-        width: 100%; 
-    }
-    
-    .tokenomics-item .highlight {
-        font-size: 1.4em; 
-    }
-}
-/* ==========================================================================
-   Web3 Connect Wallet Button (ОПТИМИЗИРОВАНО)
-========================================================================== */
-
-/* 1. БАЗОВЫЙ СТИЛЬ (Единый для всех состояний) */
 .web3-button {
     display: inline-flex;
     align-items: center;
@@ -2580,73 +704,161 @@ hr {
     padding: 14px 30px;
     border-radius: 30px;
     font-weight: 700;
-    font-size: 1.1em;
     cursor: pointer;
-    text-decoration: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease-in-out;
     border: none;
-    position: relative;
-    z-index: 1;
     text-transform: uppercase;
     letter-spacing: 1px;
-    white-space: nowrap;
+    z-index: 1;
 }
 
-/* 2. СОСТОЯНИЕ: CONNECT (Золотой премиальный стиль) */
 .web3-button.connect-fox-btn {
-    background: linear-gradient(145deg, var(--color-bg-card) 0%, var(--color-bg-dark) 100%); 
-    color: var(--primary-color); 
-    border: 2px solid var(--primary-color); 
+    background: linear-gradient(145deg, var(--color-bg-card) 0%, var(--color-bg-dark) 100%);
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
     box-shadow: 0 0 5px var(--primary-color), 0 8px 15px rgba(0, 0, 0, 0.6);
 }
 
-.web3-button.connect-fox-btn:hover {
-    background: linear-gradient(145deg, var(--color-bg-dark) 0%, var(--color-bg-card) 100%); 
-    color: var(--text-color-white); 
-    transform: translateY(-4px) scale(1.02); 
-    box-shadow: 0 0 15px var(--primary-color), 0 12px 25px rgba(0, 0, 0, 0.8);
-    border-color: var(--link-hover-color);
-}
-
-/* 3. СОСТОЯНИЕ: CONNECTED (Зеленый статус-стиль) */
 .web3-button.connected {
-    background: var(--color-bg-input); 
-    color: var(--color-wallet-address); 
-    border: 2px solid var(--success-color); 
-    box-shadow: 0 0 15px rgba(40, 167, 69, 0.4); 
-    text-transform: none; /* Адрес кошелька не должен быть капсом */
-    padding: 10px 22px;
-    font-size: 1em;
+    background: var(--color-bg-input);
+    color: var(--color-wallet-address);
+    border: 2px solid var(--success-color);
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.8);
+    padding: 10px 20px;
 }
 
-.web3-button.connected:hover {
+.dao-proposal-item {
     background-color: var(--color-bg-card);
-    box-shadow: 0 0 25px rgba(40, 167, 69, 0.7);
-    transform: translateY(-2px);
+    padding: var(--spacing-md);
+    border-radius: 10px;
+    border: 1px solid var(--section-bg-dark);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-/* 4. ЭЛЕМЕНТЫ ВНУТРИ (Иконки) */
-.web3-button .fox-icon {
-    fill: var(--primary-color);
-    width: 26px;
-    height: 26px;
-    margin-right: 12px;
-    transition: transform 0.3s ease, fill 0.3s ease;
+.dao-vote-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--border-radius-small);
+    margin-top: var(--spacing-sm);
 }
 
-.web3-button.connect-fox-btn:hover .fox-icon {
-    transform: rotate(10deg) scale(1.1);
-    fill: var(--text-color-white);
+/* ==========================================================================
+   Multimedia & Upload
+========================================================================== */
+.upload-form {
+    max-width: 700px;
+    margin: var(--spacing-lg) auto;
+    background-color: var(--color-bg-input);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    text-align: left;
 }
 
-.web3-button .connected-icon {
-    margin-right: 8px;
-    font-size: 1.2em;
+.upload-form input[type="text"], .upload-form textarea, .upload-form input[type="file"] {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border-radius: 5px;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    border: 1px solid var(--color-bg-light);
 }
 
-/* Эффект нажатия для обоих состояний */
-.web3-button:active {
-    transform: translateY(0) scale(0.97);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+/* ==========================================================================
+   Modals & Notifications
+========================================================================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-modal-overlay);
 }
 
+.modal.is-open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--color-bg-input);
+    padding: var(--spacing-lg);
+    border-radius: 10px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    border: 1px solid var(--text-color-dimmed);
+}
+
+#notificationContainer {
+    position: fixed;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.notification {
+    background-color: var(--color-bg-card);
+    padding: 15px 20px;
+    border-radius: var(--border-radius-base);
+    transform: translateX(100%);
+    transition: all 0.5s ease-out;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* ==========================================================================
+   Media Queries
+========================================================================== */
+@media (max-width: 768px) {
+    .menu-toggle { display: flex; }
+    
+    .nav ul.main-nav {
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 100%;
+        max-width: 300px;
+        height: 100%;
+        background-color: rgba(26, 26, 46, 0.95);
+        backdrop-filter: blur(10px);
+        padding-top: 80px;
+        transform: translateX(100%);
+        visibility: hidden;
+    }
+
+    .nav ul.main-nav.active {
+        transform: translateX(0);
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .hero-section .container { flex-direction: column; }
+    .hero-content { text-align: center; order: 2; }
+    .hero-image { order: 1; }
+
+    .tokenomics-grid, .nft-showcase, .roadmap-grid, .dao-proposals-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 { font-size: 2em; }
+    .hero-content h1 { font-size: 2.4em; }
+    .social-btn, .web3-button { width: 100%; }
+}
