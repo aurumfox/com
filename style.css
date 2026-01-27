@@ -1,139 +1,2111 @@
-/* 1. ГЛОБАЛЬНЫЕ НАСТРОЙКИ */
+/* ==========================================================================
+   CSS Variables (Design Tokens) - Объединены и очищены
+   ========================================================================== */
 :root {
-    --bg-main: #060714;
-    --bg-card: #0e1025;
-    --gold: #ffcc00;
-    --gold-dark: #b8860b;
-    --gold-gradient: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
-    --blue-gradient: linear-gradient(135deg, #0052ff 0%, #002db3 100%);
-    --text-main: #ffffff;
-    --text-dim: #a0a0b8;
-    --shadow-gold: 0 0 20px rgba(255, 204, 0, 0.3);
-    --radius: 16px;
-    --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Brand Colors */
+    --primary-color: #ffd700; /* Gold */
+    --secondary-color: #8b0000; /* Dark Red/Fox */
+    --accent-color: #007bff; /* E.g., for buttons, links (blue for web3, original for others) */
+
+    /* Text Colors */
+    --text-color-light: #E0E0E0; /* For dark backgrounds */
+    --text-color-dark: #333; /* For light backgrounds (e.g., specific cards or sections) */
+    --link-color: var(--primary-color); /* Gold for links */
+    --link-hover-color: #FFCC00; /* Slightly darker gold on hover */
+    --text-color-dimmed: #B0B0B0; /* Dimmed text */
+    --text-color-white: #fff; /* Pure white text */
+
+    /* Background Colors */
+    --background-color-light: #ffffff; /* Light primary background (used for specific light elements) */
+    --background-color-dark: #2c2c2c; /* Dark background for some sections/elements */
+    --section-bg-light: #f9f9f9; /* Slightly darker than primary light */
+    --section-bg-dark: #222222; /* Slightly lighter than primary dark */
+    --color-bg-dark: #1a1a2e; /* Deep blue/purple for primary dark background */
+    --color-bg-light: #2c2c4d; /* Slightly lighter dark blue for alternate dark sections */
+    --color-bg-card: #3a3a5e; /* Dark background for elements/cards */
+    --color-bg-input: #2a2a3a; /* Background for inputs and some content areas */
+    --color-modal-overlay: rgba(0,0,0,0.7);
+
+    /* State Colors */
+    --success-color: #28a745; /* Green */
+    --error-color: #dc3545; /* Red */
+    --info-color: #17a2b8; /* Light Blue */
+    --warning-color: #ffc107; /* Orange */
+    --color-green-success: #28a745;
+    --color-green-success-hover: color-mix(in srgb, var(--color-green-success) 90%, black);
+    --color-red-danger: #dc3545;
+    --color-red-danger-hover: color-mix(in srgb, var(--color-red-danger) 90%, black);
+    --color-blue-info: #007bff; /* Blue for informational notifications */
+    --color-purple-transfer: #8e44ad; /* Purple for "Transfer" button */
+    --color-purple-transfer-hover: color-mix(in srgb, var(--color-purple-transfer) 90%, black);
+
+    /* Colors for specific sections */
+    --color-blue-web3: #8cacec; /* Bluish for Web3 headings/labels */
+    --color-orange-multimedia: #ff9933; /* Orangish for Multimedia headings/labels */
+    --color-highlight-green: #39FF14; /* Bright green for "Revoked" */
+    --color-wallet-address: #9aff9a; /* Light green for wallet address */
+
+    /* Fonts */
+    --font-primary: 'Montserrat', sans-serif;
+    --font-secondary: 'Poppins', sans-serif;
+    --font-size-base: 16px;
+
+    /* Spacing and Sizes */
+    --spacing-xs: 5px;
+    --spacing-sm: 10px;
+    --spacing-md: 20px;
+    --spacing-lg: 40px;
+    --spacing-xl: 80px;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 5px 15px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+    --box-shadow-light: 0 2px 10px rgba(0, 0, 0, 0.5);
+    --box-shadow-medium: 0 5px 15px rgba(0, 0, 0, 0.3);
+    --box-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.4);
+    --box-shadow-inset: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+    --box-shadow-item: 0 4px 10px rgba(0,0,0,0.2);
+    --box-shadow-item-hover: 0 6px 15px rgba(0,0,0,0.15);
+
+
+    /* Border Radius */
+    --border-radius: 8px;
+    --border-radius-base: 8px;
+    --border-radius-small: 5px;
+}
+
+/* ==========================================================================
+   Base Styles (СБРОС, ТИПОГРАФИКА, ДОСТУПНОСТЬ)
+========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth; /* Плавная прокрутка к якорям */
 }
 
 body {
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    font-family: 'Poppins', sans-serif;
-    margin: 0;
+    font-family: var(--font-secondary);
+    line-height: 1.6;
+    color: var(--text-color-light); /* Светлый текст по умолчанию */
+    background-color: var(--color-bg-dark); /* Темный фон по умолчанию */
+    overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
+}
+
+/* 🛑 ИСПРАВЛЕНИЕ: Блокировка прокрутки основного контента при открытии модального окна или меню */
+body.modal-open,
+body.menu-open { 
+    overflow: hidden; /* Блокировка прокрутки */
+    /* Добавляем фиксированную позицию для предотвращения скачков на iOS */
+    position: fixed; 
+    width: 100%; 
+    height: 100%; 
+}
+
+/* A11Y: Focus States (Улучшенная доступность для клавиатуры) */
+a:focus-visible, 
+button:focus-visible, 
+.btn:focus-visible, 
+input:focus-visible, 
+textarea:focus-visible {
+    outline: 3px solid var(--accent-color); /* Используем яркий акцентный цвет */
+    outline-offset: 3px;
+    border-radius: var(--border-radius-small);
+}
+
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md); /* 20px по бокам */
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Убирает дополнительный отступ под изображением */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-primary);
+    color: var(--primary-color); /* Золотой для заголовков */
+    margin-bottom: var(--spacing-md); /* Общий отступ для заголовков */
+    line-height: 1.2;
+    text-align: center; /* Центрировать заголовки по умолчанию */
+}
+
+h1 { font-size: 3.5em; font-weight: 700;}
+h2 { font-size: 2.5em; font-weight: 600;}
+h3 { font-size: 1.8em; font-weight: 600; margin-bottom: var(--spacing-sm);}
+h4 { font-size: 1.3em; font-weight: 600; color: var(--primary-color);}
+
+
+p {
+    margin-bottom: var(--spacing-sm);
+}
+
+ul, ol {
+    margin-bottom: var(--spacing-sm);
+    padding-left: var(--spacing-lg); /* Отступ для маркеров/номеров */
+}
+
+li {
+    margin-bottom: var(--spacing-xs);
+}
+
+/* ==========================================================================
+   Header and Navigation (ОБНОВЛЕННЫЙ БЛОК)
+========================================================================== */
+.header {
+    background-color: rgba(18, 18, 30, 0.9); /* Темный фон хедера с небольшой прозрачностью */
+    padding: var(--spacing-md) 0;
+    color: var(--text-color-white);
+    box-shadow: var(--box-shadow-light);
+    position: sticky; /* Липкий хедер */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* Хедер над контентом */
+}
+
+.header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.logo-img {
+    height: 40px; /* Размер логотипа */
+    width: auto;
+}
+
+.logo-text {
+    font-family: var(--font-primary);
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Скрываем мобильный оверлей по умолчанию на десктопе */
+.nav-mobile-overlay {
+    display: none; 
+}
+
+
+/* Навигация для десктопа */
+.nav ul.main-nav {
+    list-style: none;
     padding: 0;
-    overflow-x: hidden;
+    margin: 0;
+    display: flex; /* Flexbox для горизонтального расположения */
+    gap: 15px; /* Отступ между элементами */
+    transition: transform 0.3s ease-in-out; /* Анимация для мобильного меню */
 }
 
-/* 2. КНОПКА CONNECT WALLET (Яркая и анимированная) */
-.connect-wallet {
-    background: var(--gold-gradient);
-    border: none;
-    padding: 12px 28px;
-    border-radius: 50px;
-    color: #000;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: var(--shadow-gold);
-    transition: var(--transition);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+.nav ul.main-nav li a {
+    color: var(--text-color-light);
+    font-family: var(--font-primary);
+    font-weight: bold;
+    padding: 8px 15px;
+    position: relative; /* Для подчеркивания при наведении */
+    border-radius: var(--border-radius-small);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.connect-wallet:hover {
-    transform: scale(1.1) rotate(-2deg); /* Эффект вылета с легким наклоном */
-    box-shadow: 0 0 35px rgba(255, 204, 0, 0.6);
+.nav ul.main-nav li a:hover {
+    color: var(--color-bg-dark);
+    background-color: var(--primary-color);
 }
 
-/* 3. КАРТОЧКИ (Staking, Balance) */
-.card-fox {
-    background: var(--bg-card);
-    border: 1px solid rgba(255, 204, 0, 0.15);
-    border-radius: var(--radius);
-    padding: 25px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    transition: var(--transition);
-}
-
-.card-fox:hover {
-    transform: translateY(-10px); /* Карточка вылетает вверх */
-    border-color: var(--gold);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-}
-
-.card-fox::before {
+/* Анимация подчеркивания при наведении */
+.nav ul.main-nav li a::after {
     content: '';
     position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: radial-gradient(circle, rgba(255,204,0,0.05) 0%, transparent 70%);
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease-out;
 }
 
-.card-label {
-    color: var(--gold);
+.nav ul.main-nav li a:hover::after,
+.nav ul.main-nav li a.active::after {
+    width: 100%;
+}
+
+
+
+
+
+/* ==========================================================================
+   Sections and Layout - ИСПРАВЛЕНО (БЕЛЫЙ ЦВЕТ УДАЛЕН)
+========================================================================== */
+
+.section, .aurum-fox-section {
+    padding: var(--spacing-xl) 0; 
+    text-align: center;
+    background-color: var(--color-bg-dark); /* Изменено на темный */
+    color: var(--text-color-light); /* Изменено на светлый текст */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.section-alt, .aurum-fox-section-alt {
+    background-color: var(--color-bg-light); /* Темная альтернативная секция */
+    color: var(--text-color-light);
+}
+
+.section:last-of-type {
+    border-bottom: none;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--color-bg-dark) 0%, #3a0052 100%);
+    color: var(--text-color-white);
+    padding: var(--spacing-xl) 0;
+    text-align: center;
+    min-height: 80vh; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-section .container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap; 
+}
+
+.hero-content {
+    flex: 1;
+    min-width: 300px;
+    text-align: left;
+}
+
+.hero-image {
+    flex: 1;
+    min-width: 250px;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+}
+
+.hero-image img {
+    max-width: 100%; 
+    height: auto;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: pulse 2s infinite alternate; 
+    transition: transform 0.3s ease-in-out;
+}
+
+.hero-image img:hover {
+    transform: translateY(-10px);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+}
+
+.hero-content h1 {
+    font-size: 4em;
+    margin-bottom: var(--spacing-sm);
+    color: var(--primary-color);
+    text-align: left;
+}
+
+.hero-content .tagline {
+    font-size: 1.5em;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-color-light);
+    opacity: 0.9;
+    text-align: left;
+}
+
+.call-to-action, .hero-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+/* Web3 & Multimedia Sections - ПРИВЕДЕНО К ТЕМНОМУ СТИЛЮ */
+.web3-section, .web3-section-alt {
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+
+.multimedia-section, .multimedia-section-alt {
+    background-color: var(--color-bg-dark); /* БЫЛО БЕЛЫМ - ТЕПЕРЬ ТЕМНОЕ */
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+
+/* Headings */
+.aurum-heading, .web3-heading, .multimedia-heading, .main-heading {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    font-size: 2.5em;
+    color: var(--primary-color);
+    position: relative;
+    padding-bottom: var(--spacing-sm);
+}
+
+.web3-heading { color: var(--color-blue-web3); font-size: 2.2em; }
+.multimedia-heading { color: var(--color-orange-multimedia); font-size: 2.2em; }
+
+.aurum-heading::after, .web3-heading::after, .multimedia-heading::after, .main-heading::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0;
+    width: 60px;
+    height: 4px;
+    background-color: var(--secondary-color);
+    border-radius: 2px;
+}
+
+.web3-subheading, .multimedia-subheading {
+    font-size: 1.6em;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+    text-align: center;
+}
+
+/* Terminal Wrapper */
+.terminal-container-wrapper {
+    background-color: var(--color-bg-card); 
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255, 215, 0, 0.2); 
+    max-width: 440px;
+    margin: var(--spacing-lg) auto;
+    backdrop-filter: blur(10px);
+}
+
+
+/* ==========================================================================
+   Buttons
+========================================================================== */
+
+
+.connect-fox-btn {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: linear-gradient(45deg, #f39c12, #f1c40f) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+}
+
+.connect-fox-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.5);
+}
+
+.connect-fox-btn:active {
+    transform: scale(0.95);
+}
+
+/* Эффект вспышки для кнопки */
+.success-glow {
+    animation: flash 0.8s ease-out;
+    border-color: #00ffaa !important;
+    box-shadow: 0 0 25px rgba(0, 255, 170, 0.7) !important;
+}
+
+@keyframes flash {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+
+
+
+/* Общий стиль модалки */
+.modern-ui {
+    background: rgba(20, 20, 30, 0.9) !important;
+    backdrop-filter: blur(15px); /* Размытие фона */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px !important;
+    padding: 30px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    max-width: 450px !important;
+}
+
+.modal-title {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.modal-subtitle {
+    color: #888;
     font-size: 14px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+/* Сетка кнопок */
+.wallet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* В две колонки */
+    gap: 12px;
+}
+
+/* Современная кнопка */
+.wallet-btn.modern {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    color: #fff;
+    padding: 15px;
+    font-size: 15px;
     font-weight: 600;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-}
-
-.card-value {
-    font-size: 28px;
-    font-weight: 900;
-    background: #fff;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-image: linear-gradient(to bottom, #fff, #a0a0b8);
-}
-
-/* 4. КНОПКИ ДЕЙСТВИЙ (Сочные цвета) */
-.btn-modern {
-    width: 100%;
-    padding: 15px;
-    border-radius: 12px;
-    border: none;
-    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
     cursor: pointer;
-    transition: var(--transition);
-    color: white;
-    text-transform: uppercase;
-    margin-top: 10px;
 }
 
-.btn-primary { background: var(--blue-gradient); box-shadow: 0 10px 20px rgba(0, 82, 255, 0.3); }
-.btn-success { background: linear-gradient(135deg, #00c853 0%, #007e33 100%); box-shadow: 0 10px 20px rgba(0, 200, 83, 0.3); }
-.btn-danger { background: linear-gradient(135deg, #ff3333 0%, #990000 100%); box-shadow: 0 10px 20px rgba(255, 51, 51, 0.3); }
-
-.btn-modern:hover {
-    transform: translateY(-5px);
-    filter: brightness(1.2);
-    letter-spacing: 2px;
+/* Эффект при наведении */
+.wallet-btn.modern:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #6d4aff; /* Цвет бренда Solana (фиолетовый) */
+    transform: translateY(-3px); /* Легкий прыжок вверх */
+    box-shadow: 0 10px 20px rgba(109, 74, 255, 0.2);
 }
 
-/* 5. ПОЛЯ ВВОДА (Прозрачный неон) */
-.input-fox {
-    background: rgba(255, 255, 255, 0.03);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 15px;
-    color: white;
+.wallet-btn.modern .icon {
+    font-size: 20px;
+}
+
+/* Кнопка Jupiter (выделяем её цветом) */
+.wallet-btn.modern[data-wallet="jupiter"] {
+    background: linear-gradient(90deg, rgba(191, 255, 0, 0.1), rgba(0, 0, 0, 0));
+    border-color: rgba(191, 255, 0, 0.3);
+}
+
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+.error-shake { animation: shake 0.3s ease-in-out 0s 2; border-color: #ff4d4d !important; }
+
+
+.btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .social-btn {
+    display: inline-block;
+    padding: 15px 30px;
+    border-radius: var(--border-radius-base);
+    font-weight: 700;
+    font-size: 1em;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    margin: 10px;
+}
+
+.btn-primary, .primary-btn {
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover, .primary-btn:hover {
+    background-color: var(--link-hover-color);
+    color: var(--text-color-dark);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.btn-secondary, .secondary-btn {
+    background-color: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-secondary:hover, .secondary-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+/* Web3 Buttons */
+.web3-btn {
+    background-color: var(--accent-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.web3-btn:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
+}
+
+.web3-btn.green-btn, .web3-btn.buy-btn, #stakeAfoxBtn, #claimRewardsBtn {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--text-color-white);
+}
+
+.web3-btn.green-btn:hover, .web3-btn.buy-btn:hover, #stakeAfoxBtn:hover, #claimRewardsBtn:hover {
+    background-color: var(--color-green-success-hover);
+}
+
+.web3-btn.red-btn, .web3-btn.danger-btn, #unstakeAfoxBtn {
+    background-color: var(--error-color);
+    border-color: var(--error-color);
+    color: var(--text-color-white);
+}
+
+.web3-btn.red-btn:hover, .web3-btn.danger-btn:hover, #unstakeAfoxBtn:hover {
+    background-color: var(--color-red-danger-hover);
+}
+
+.web3-btn.sell-btn {
+    background-color: #f39c12;
+    color: var(--text-color-white);
+}
+.web3-btn.sell-btn:hover {
+    background-color: color-mix(in srgb, #f39c12 90%, black);
+}
+
+.web3-btn.transfer-btn {
+    background-color: var(--color-purple-transfer);
+    color: var(--text-color-white);
+}
+.web3-btn.transfer-btn:hover {
+    background-color: var(--color-purple-transfer-hover);
+}
+
+
+.web3-btn.small-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85em;
+}
+
+/* Multimedia Buttons */
+.multimedia-btn {
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    display: inline-block;
+}
+
+.multimedia-btn:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+/* Copy Button */
+.copy-btn {
+    background-color: var(--accent-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: 8px 15px;
+    border-radius: var(--border-radius-small);
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.copy-btn:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   Specific Section Styles
+========================================================================== */
+
+
+/* Tokenomics */
+.tokenomics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    text-align: left;
+}
+
+.tokenomics-item {
+    background-color: var(--color-bg-card);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    border-top: 5px solid var(--primary-color);
+}
+
+.tokenomics-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.tokenomics-item .highlight {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text-color-white);
+    margin-bottom: var(--spacing-sm);
+    display: block;
+}
+
+.tokenomics-item .highlight-text-small {
+    font-weight: 600;
+    color: var(--color-highlight-green);
+    font-size: 1.2em;
+    margin-top: var(--spacing-xs);
+    display: block;
+}
+
+.tokenomics-item ul {
+    list-style: disc;
+    padding-left: var(--spacing-md);
+}
+
+.tokenomics-item ul li {
+    margin-bottom: 8px;
+}
+
+.table-responsive {
+    overflow-x: auto; /* Для таблиц на маленьких экранах */
+    margin-top: var(--spacing-md);
+}
+
+.tokenomics-item table {
     width: 100%;
-    box-sizing: border-box;
-    transition: var(--transition);
+    border-collapse: collapse;
+    margin-top: var(--spacing-sm);
+    font-size: 0.95em;
+    color: var(--text-color-light);
 }
 
-.input-fox:focus {
-    border-color: var(--gold);
-    background: rgba(255, 204, 0, 0.05);
-    outline: none;
-    box-shadow: inset 0 0 10px rgba(255, 204, 0, 0.1);
+.tokenomics-item th,
+.tokenomics-item td {
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 12px 15px;
+    text-align: left;
 }
 
-/* 6. АНИМАЦИЯ ПОЯВЛЕНИЯ ЭЛЕМЕНТОВ */
-.fade-in {
-    animation: fadeInSlide 0.8s ease-out forwards;
+.tokenomics-item th {
+    background-color: var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--primary-color);
+    font-weight: 600;
+}
+.tokenomics-item tr:nth-child(even) {
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+.tokenomics-item tr:hover {
+    background-color: var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
-@keyframes fadeInSlide {
-    0% { opacity: 0; transform: translateY(30px); }
-    100% { opacity: 1; transform: translateY(0); }
+.tokenomics-item .small-text {
+    font-size: 0.9em;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-md);
+}
+
+.contract-address {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    background-color: var(--color-bg-input); 
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--text-color-light);
+}
+
+.contract-address p {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.contract-address .highlight-text {
+    color: var(--primary-color); 
+    word-break: break-all; 
+}
+
+/* How to Buy */
+.buy-steps, .how-to-list {
+    list-style: none; 
+    padding: 0;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.buy-steps li, .how-to-list li {
+    background-color: var(--color-bg-card);
+    padding: 25px;
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    position: relative;
+    padding-left: 60px; 
+    border-left: 5px solid var(--primary-color);
+    color: var(--text-color-light);
+}
+
+.buy-steps li::before {
+    counter-increment: step-counter;
+    content: counter(step-counter);
+    position: absolute;
+    left: var(--spacing-md);
+    top: var(--spacing-md);
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.buy-steps h3 {
+    color: var(--accent-color);
+    margin-top: 0;
+}
+
+.buy-steps ul, .how-to-list ul { 
+    list-style: disc;
+    margin-top: var(--spacing-sm);
+    padding-left: var(--spacing-md);
+}
+.buy-steps li ul li, .how-to-list li ul li {
+    background-color: transparent;
+    box-shadow: none;
+    border-left: none;
+    padding: 0;
+}
+
+.tip {
+    font-style: italic;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-md);
+    text-align: center;
+}
+
+
+
+.roadmap-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    text-align: left;
+    border-bottom: 5px solid var(--primary-color);
+}
+
+.roadmap-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.roadmap-item ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.roadmap-item li {
+    position: relative;
+    padding-left: 25px;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-color-light);
+}
+.roadmap-item li::before {
+    content: '✅';
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+}
+
+.roadmap-item strong {
+    color: var(--accent-color);
+}
+
+.roadmap-disclaimer {
+    text-align: center;
+    font-style: italic;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-lg);
+    font-size: 0.95em;
+}
+
+
+
+hr {
+    border: none;
+    border-top: 1px solid var(--color-bg-light); /* Используем переменную */
+    margin: var(--spacing-lg) 0;
+}
+
+
+/* Community */
+.social-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.social-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 12px 25px;
+    border-radius: var(--border-radius-base);
+    color: var(--text-color-light);
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    background-color: var(--color-bg-card); /* Используем переменную */
+    border: 1px solid var(--text-color-light);
+}
+
+.social-btn:hover {
+    text-decoration: none;
+    transform: translateY(-3px);
+    background-color: var(--primary-color);
+    color: var(--color-bg-dark);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.social-icon {
+    width: 24px;
+    height: 24px;
+    fill: currentColor; /* Использует цвет текста кнопки */
+    margin-right: var(--spacing-xs);
+}
+
+.discord-btn { background-color: #7289DA; color: var(--text-color-white); border: none;}
+.discord-btn:hover { background-color: color-mix(in srgb, #7289DA 90%, black); }
+
+.telegram-btn { background-color: #0088cc; color: var(--text-color-white); border: none;}
+.telegram-btn:hover { background-color: color-mix(in srgb, #0088cc 90%, black); }
+
+.twitter-btn { background-color: #1DA1F2; color: var(--text-color-white); border: none;}
+.twitter-btn:hover { background-color: color-mix(in srgb, #1DA1F2 90%, black); }
+
+.solscan-btn { background-color: #8C52FF; color: var(--text-color-white); border: none;} 
+.solscan-btn:hover { background-color: color-mix(in srgb, #8C52FF 90%, black); }
+
+.news-btn { background-color: #f7b731; color: var(--color-bg-dark); border: none;} 
+.news-btn:hover { background-color: color-mix(in srgb, #f7b731 90%, black); }
+
+
+/* Contact Us */
+.contact-section {
+    background-color: var(--section-bg-dark);
+    color: var(--text-color-light);
+    padding-bottom: var(--spacing-xl); 
+}
+
+.contact-info {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+.contact-info p {
+    font-size: 1.1em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.contact-info a {
+    color: var(--primary-color);
+}
+
+.contact-form {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: var(--background-color-dark); 
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+}
+
+.contact-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 5px;
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.contact-form input[type="text"]::placeholder,
+.contact-form input[type="email"]::placeholder,
+.contact-form textarea::placeholder {
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.contact-form button[type="submit"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1.2em;
+}
+
+.disclaimer {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ==========================================================================
+   Web3 Portal Sections (ОБНОВЛЕННЫЙ БЛОК)
+========================================================================== */
+
+
+
+/* -------------------------------------------------------------------------- */
+
+
+/* 💻 ОТОБРАЖЕНИЕ АДРЕСА: УЛУЧШЕНИЕ ВИДИМОСТИ */
+.web3-wallet-display {
+    text-align: center;
+    margin-top: var(--spacing-md);
+    font-size: 1.1em;
+    color: var(--text-color-light); 
+    background-color: var(--color-bg-input); /* Чуть светлее, чем карточка */
+    padding: 15px;
+    border-radius: var(--border-radius-base);
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+    border: 1px solid var(--color-blue-web3); /* Акцент Web3 */
+    box-shadow: var(--box-shadow-inset);
+}
+.web3-wallet-display span {
+    font-weight: bold;
+    color: var(--color-wallet-address);
+}
+/* -------------------------------------------------------------------------- */
+
+
+
+
+
+/* DAO Section */
+#dao-section {
+    background-color: var(--color-bg-light);
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+#dao-section .web3-intro {
+    margin-bottom: var(--spacing-md);
+}
+
+.dao-actions {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.dao-proposals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: var(--spacing-md);
+}
+
+.dao-proposal-item {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: var(--spacing-md);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.dao-proposal-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dao-proposal-item h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+    font-size: 1.3em;
+}
+
+.dao-proposal-item p {
+    font-size: 0.95em;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    line-height: 1.5;
+}
+
+.dao-proposal-item .dao-creator {
+    font-family: monospace; 
+    color: var(--color-wallet-address);
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.dao-proposal-item .dao-votes-for {
+    color: var(--success-color);
+    font-weight: 700;
+}
+.dao-proposal-item .dao-votes-against {
+    color: var(--error-color);
+    font-weight: 700;
+}
+
+.dao-vote-btn {
+    margin-right: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    width: 100%;
+    padding: 12px;
+    font-size: 1em;
+    border-radius: var(--border-radius-small);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.dao-vote-btn[data-vote-type="for"] {
+    background-color: var(--success-color);
+    border: 1px solid var(--success-color);
+    color: var(--text-color-white);
+}
+
+.dao-vote-btn[data-vote-type="for"]:hover {
+    background-color: var(--color-green-success-hover);
+}
+
+.dao-vote-btn[data-vote-type="against"] {
+    background-color: var(--error-color);
+    border: 1px solid var(--error-color);
+    color: var(--text-color-white);
+}
+
+.dao-vote-btn[data-vote-type="against"]:hover {
+    background-color: var(--color-red-danger-hover);
+}
+
+
+/* Staking Section */
+#staking-section {
+    padding: 60px 0;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+}
+#staking-section .web3-intro {
+    margin-bottom: var(--spacing-lg);
+}
+
+.staking-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.info-card {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    transition: transform 0.2s ease-in-out;
+}
+.info-card:hover {
+    transform: translateY(-5px);
+}
+
+.info-card h3 {
+    color: var(--primary-color);
+    font-size: 1.2em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.info-card .info-value {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text-color-light);
+    margin: 0;
+}
+
+.staking-actions {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    color: var(--text-color-light);
+    margin-bottom: var(--spacing-lg);
+}
+.staking-actions .web3-subheading {
+    margin-top: 0;
+    margin-bottom: 25px;
+    color: var(--primary-color);
+    font-size: 1.5em;
+}
+
+.staking-actions .input-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap; 
+}
+
+.staking-actions input[type="number"] {
+    flex-grow: 1;
+    max-width: 300px;
+    padding: 12px 15px;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 5px;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.staking-actions .button-group {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.staking-details {
+    background-color: var(--color-bg-input);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+.staking-details .web3-subheading {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+    font-size: 1.5em;
+}
+
+.staking-details ul {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--spacing-md);
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    line-height: 1.8;
+}
+
+.staking-details li {
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.1em;
+}
+
+.staking-details li strong {
+    color: var(--primary-color);
+}
+
+.staking-details .web3-note {
+    font-style: italic;
+    font-size: 0.9em;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    text-align: center;
+    margin-top: var(--spacing-md);
+}
+
+
+/* ==========================================================================
+   Multimedia Hub Sections
+========================================================================== */
+.multimedia-portal-container {
+    text-align: center; 
+    color: var(--text-color-light); 
+    background: var(--color-bg-dark); 
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Переопределение цветов для темных мультимедийных разделов */
+.multimedia-section-alt .multimedia-heading,
+.multimedia-section-alt .multimedia-intro,
+.multimedia-section-alt .multimedia-subheading,
+.multimedia-section-alt .item,
+.multimedia-section-alt .placeholder-item {
+    color: var(--text-color-light); 
+}
+
+.multimedia-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+/* Стили карточек функций переиспользуются, просто убедитесь, что цвета соответствуют разделу */
+.multimedia-features-grid .feature-card {
+    background-color: var(--color-bg-card); 
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.multimedia-features-grid .feature-card h3 {
+    color: var(--primary-color); 
+}
+
+.multimedia-features-grid .feature-card .multimedia-link {
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.multimedia-features-grid .feature-card .multimedia-link:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+.upload-form {
+    max-width: 700px;
+    margin: var(--spacing-lg) auto;
+    background-color: var(--color-bg-input); 
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    text-align: left; 
+    color: var(--text-color-light); 
+}
+
+.upload-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--primary-color); 
+}
+
+.upload-form input[type="text"],
+.upload-form input[type="file"],
+.upload-form textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 5px;
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.upload-form input[type="file"] {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.upload-form input[type="text"]::placeholder,
+.upload-form textarea::placeholder {
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.upload-form button[type="submit"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+.gallery, .posts, .games, .multimedia-grid, .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    justify-content: center;
+}
+
+.multimedia-item {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-small);
+    box-shadow: var(--box-shadow-item);
+    text-align: center;
+    transition: transform 0.2s ease;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+}
+
+.multimedia-item:hover {
+    transform: translateY(-3px);
+}
+
+.multimedia-item img {
+    max-width: 100%;
+    height: 150px; 
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: var(--spacing-sm);
+    transition: transform 0.2s ease-in-out;
+}
+.multimedia-item img:hover {
+    transform: scale(1.05);
+}
+
+.multimedia-item h3 {
+    color: var(--color-orange-multimedia);
+    margin-bottom: var(--spacing-xs);
+    margin-top: var(--spacing-sm);
+}
+
+.multimedia-item p {
+    font-size: 0.9em;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.multimedia-item small {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--text-color-dimmed);
+    font-size: 0.8em;
+}
+
+.game-content {
+    margin-top: var(--spacing-md);
+}
+
+.game-content input[type="number"] {
+    width: calc(100% - 100px); 
+    padding: var(--spacing-sm);
+    border: 1px solid var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 5px;
+    margin-right: var(--spacing-sm);
+    text-align: center;
+    background-color: var(--color-bg-input); 
+    color: var(--text-color-light);
+}
+
+.game-content button {
+    margin-top: var(--spacing-sm); 
+}
+
+.multimedia-link {
+    display: inline-block;
+    margin-top: 15px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.multimedia-link:hover {
+    color: var(--link-hover-color);
+}
+
+.post-list {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.placeholder-item.post {
+    text-align: left;
+    height: auto;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 25px;
+    border-radius: var(--border-radius-base);
+    color: var(--text-color-light);
+}
+
+.placeholder-item.post h3 {
+    color: var(--color-orange-multimedia);
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.placeholder-item.post small {
+    display: block;
+    margin-top: var(--spacing-sm);
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.portal-games-grid, .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.placeholder-item.portal-game, .placeholder-item.game {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    text-align: left;
+    height: auto;
+    padding: 25px;
+    border-radius: var(--border-radius-base);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--text-color-light);
+}
+
+.placeholder-item.portal-game h3, .placeholder-item.game h3 {
+    color: var(--color-orange-multimedia);
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.placeholder-item.portal-game .multimedia-btn, .placeholder-item.game .multimedia-btn {
+    align-self: flex-start;
+    margin-top: 15px;
+}
+
+
+/* ==========================================================================
+   Footer
+========================================================================== */
+.footer {
+    background-color: #10101a;
+    color: var(--text-color-dimmed);
+    text-align: center;
+    padding: 30px 0;
+    border-top: 1px solid var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    font-size: 0.9em;
+}
+
+.footer p {
+    margin: var(--spacing-xs) 0;
+    font-size: 0.9em;
+}
+
+.footer .copy-btn {
+    background-color: var(--secondary-color); 
+}
+
+.footer .copy-btn:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+.footer .highlight-text {
+    color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Modals
+========================================================================== */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 2000; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-modal-overlay); 
+    padding-top: 0; 
+}
+
+/* Класс, который ваш JS должен добавлять для отображения модального окна */
+.modal.is-open {
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto; 
+    padding: var(--spacing-md) 0; 
+}
+
+.modal-content {
+    background-color: var(--color-bg-input);
+    margin: auto;
+    padding: var(--spacing-lg);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    position: relative;
+    max-width: 700px;
+    width: 90%; 
+    animation: fadeInScale 0.3s ease-out; 
+    color: var(--text-color-light); 
+    max-height: 90vh;
+    overflow-y: auto; 
+    border: 1px solid var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.modal-content h3 {
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.modal-content .web3-form {
+    background: none; 
+    box-shadow: none; 
+    padding: 0; 
+}
+
+.modal-content .modal-nft-image {
+    max-width: 80%;
+    height: auto;
+    display: block;
+    margin: 0 auto var(--spacing-md);
+    border-radius: var(--border-radius);
+}
+
+.close-button {
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 36px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: var(--text-color-light);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Keyframes для анимации модального окна */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ==========================================================================
+   Notification Container
+========================================================================== */
+#notificationContainer {
+    position: fixed;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 10000; 
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    pointer-events: none; 
+}
+
+.notification {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+    padding: 15px 20px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    min-width: 280px; 
+    text-align: center;
+    pointer-events: all; 
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95em;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.info {
+    background-color: var(--info-color);
+}
+
+.notification.success {
+    background-color: var(--success-color);
+}
+
+.notification.error {
+    background-color: var(--error-color);
+}
+
+@keyframes fadeInSlideUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   Media Queries for Responsiveness (ОБНОВЛЕННЫЙ БЛОК: Мобильное меню)
+========================================================================== */
+@media (max-width: 992px) {
+    h1 { font-size: 2.5em; }
+    h2 { font-size: 2em; }
+    .hero-content h1 { font-size: 3em; }
+
+    .nav ul.main-nav {
+        gap: var(--spacing-sm);
+    }
+}
+
+@media (max-width: 768px) {
+    /* ----------------------------------------------------- */
+    /* 🦊 МОБИЛЬНОЕ МЕНЮ (ЧАСТЬ 3: Web3-стиль с размытием) 🦊 */
+    /* ----------------------------------------------------- */
+    
+    .menu-toggle {
+        display: flex; /* Показываем гамбургер на мобильном */
+        position: relative;
+    }
+    
+    .nav ul.main-nav { 
+        display: flex; 
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        right: 0; 
+        width: 100%; 
+        max-width: 300px; /* Чуть уже для элегантности */
+        height: 100%;
+        
+        /* 🛑 ЭФФЕКТ WEB3: Размытый фон */
+        background-color: rgba(26, 26, 46, 0.95); /* Deep dark blue с прозрачностью */
+        backdrop-filter: blur(10px); /* Эффект матового стекла */
+        -webkit-backdrop-filter: blur(10px); /* Для Safari */
+        
+        padding: 80px var(--spacing-md) var(--spacing-md);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+        
+        transform: translateX(100%); 
+        opacity: 0; 
+        visibility: hidden; 
+        transition: transform 0.4s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.4s ease-in-out; 
+        
+        z-index: 1001;
+        overflow-y: auto;
+        align-items: flex-start; 
+        gap: 0; 
+        border-left: 1px solid rgba(255, 215, 0, 0.1); /* Тонкая золотая линия слева */
+    }
+    
+    .nav ul.main-nav.active {
+        transform: translateX(0);
+        opacity: 1; 
+        visibility: visible; 
+    }
+    
+    /* СТИЛИ ПУНКТОВ МЕНЮ */
+    .nav ul.main-nav li {
+        width: 100%;
+        text-align: left;
+        margin-bottom: 0; 
+        border-bottom: 1px solid rgba(255, 215, 0, 0.08); /* Очень тонкая золотая разделительная линия */
+    }
+
+    .nav ul.main-nav li:last-child {
+        border-bottom: none; 
+    }
+
+    .nav ul.main-nav li a {
+        font-family: var(--font-primary); 
+        font-size: 1.3em; 
+        display: block;
+        padding: 18px 20px; /* Больший тач-таргет */
+        color: var(--text-color-white); 
+        font-weight: 600; 
+        transition: all 0.2s ease-out;
+        letter-spacing: 0.5px; 
+    }
+    
+    .nav ul.main-nav li a:hover,
+    .nav ul.main-nav li a.active {
+        background-color: var(--color-bg-card);
+        color: var(--primary-color);
+        border-left: 5px solid var(--primary-color);
+        padding-left: 25px; 
+    }
+    
+    /* Убираем подчеркивание */
+    .nav ul.main-nav li a::after {
+        display: none;
+    }
+    
+    /* ----------------------------------------------------- */
+    /* ВАШИ ОСТАЛЬНЫЕ СТИЛИ ДЛЯ 768PX */
+    /* ----------------------------------------------------- */
+
+    .header .container {
+        flex-wrap: wrap;
+        justify-content: space-between; 
+        text-align: left;
+        gap: 0; 
+    }
+
+    .logo {
+        margin-bottom: 0; 
+        width: auto;
+        justify-content: flex-start;
+    }
+    
+    .nav {
+        width: auto; 
+        display: block;
+        justify-content: flex-end;
+    }
+
+    /* Корректировка героической секции */
+    .hero-section .container {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .hero-content {
+        text-align: center;
+        order: 2; 
+    }
+    .hero-content h1, .hero-content .tagline {
+        text-align: center; 
+    }
+
+
+    .hero-image {
+        order: 1; 
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .call-to-action, .hero-buttons {
+        justify-content: center; 
+    }
+    .hero-buttons .btn, .hero-buttons .primary-btn {
+        width: 100%; 
+    }
+
+    h1 { font-size: 2.8em; }
+    h2 { font-size: 2em; }
+    .hero-content h1 { font-size: 2.8em; }
+    .aurum-heading, .web3-heading, .multimedia-heading {
+        font-size: 1.8em;
+    }
+
+    .hero-section, .section, .web3-section, .multimedia-section {
+        padding: 60px 0;
+    }
+
+    /* Одиночная колонка для всех Grid-элементов */
+    .tokenomics-grid,
+    .nft-showcase,
+    .nfc-grid,
+    .roadmap-grid,
+    .news-list,
+    .announcements-list,
+    .web3-features-grid,
+    .games-grid,
+    .nft-grid,
+    .ad-list,
+    .dao-proposals-grid,
+    .staking-info-grid,
+    .multimedia-features-grid,
+    .gallery,
+    .posts,
+    .games {
+        grid-template-columns: 1fr; 
+    }
+    
+    /* Дополнительная адаптация roadmap для читабельности */
+    .roadmap-grid {
+        border-left: none; 
+    }
+    
+    .roadmap-item {
+        padding-left: var(--spacing-md);
+        text-align: left;
+    }
+    
+    .buy-steps li {
+        padding: 20px;
+    }
+
+    /* Адаптация формы и контейнеров */
+    .contact-form, .nft-form-container, .upload-form {
+        padding: var(--spacing-md);
+    }
+    #aurum-announcements .container, .multimedia-portal-container {
+        padding: var(--spacing-md);
+    }
+    textarea#announcementInput {
+        width: 100%;
+        padding: 10px;
+    }
+    button#publishButton {
+        width: 100%;
+    }
+    .multimedia-form input, .multimedia-form textarea {
+        width: 100%;
+    }
+    .multimedia-btn {
+        width: 100%;
+    }
+
+    .staking-actions .input-group {
+        flex-direction: column; 
+        align-items: center;
+        gap: 10px;
+    }
+
+    .staking-actions input[type="number"] {
+        max-width: 100%; 
+        margin-right: 0;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: var(--spacing-md);
+    }
+    
+    /* Адаптация социальных ссылок */
+    .social-links {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .social-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
+   МОБІЛЬНА АДАПТИВНІСТЬ ДЛЯ СІТОК ТА ТАБЛИЦЬ (MAX-WIDTH: 600PX)
+   ========================================================================== */
+@media (max-width: 600px) {
+    /* Основні сітки на всю ширину (стовпчик), вже були 1fr, але для надійності */
+    .tokenomics-grid,
+    .web3-features-grid,
+    .dao-proposals-grid,
+    .nft-showcase,
+    .nfc-grid,
+    .games-grid,
+    .staking-info-grid,
+    .ad-list,
+    .multimedia-features-grid,
+    .gallery,
+    .posts,
+    .games {
+        grid-template-columns: 1fr; 
+        gap: 25px; 
+    }
+    
+    .nft-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+    }
+
+    /* Адаптация таблиці токеноміки (Horizontal Scrolling або Card View) */
+    .tokenomics-item table {
+        width: 100%;
+        display: block;
+        overflow-x: auto; 
+    }
+    
+    .dao-vote-btn {
+        width: calc(50% - 7.5px); 
+        margin: 5px 0;
+    }
+    .dao-actions {
+        gap: 10px;
+    }
+}
+
+
+/* ==========================================================================
+   Media Queries for Responsiveness (The smallest screens - Original)
+========================================================================== */
+@media (max-width: 480px) {
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.6em; }
+    .hero-content h1 { font-size: 2.4em; }
+    .hero-content .tagline { font-size: 1.1em; }
+    
+    .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .web3-button {
+        padding: var(--spacing-sm);
+        font-size: 0.9em;
+    }
+    .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .web3-button {
+        width: 100%; 
+        justify-content: center;
+        padding: 12px 20px;
+        margin: 5px 0;
+    }
+    
+    .container {
+        padding: 0 var(--spacing-sm); 
+    }
+    .section {
+        padding: var(--spacing-lg) var(--spacing-sm);
+    }
+    .nft-item img {
+        height: 150px;
+    }
+    
+    .dao-vote-btn {
+        width: 100%; 
+    }
+    
+    .tokenomics-item .highlight {
+        font-size: 1.4em; 
+    }
+}
+
+
+/* ==========================================================================
+   🦊 ОПТИМИЗИРОВАННЫЕ СТИЛИ КНОПКИ CONNECT WALLET 🦊
+   ========================================================================== */
+
+/* 1. БАЗОВЫЕ СТИЛИ (Общие для обоих состояний) */
+.web3-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px 25px !important; 
+    border-radius: 30px !important; 
+    font-weight: 700 !important;
+    font-size: 1.1em !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease-in-out !important;
+    text-decoration: none !important;
+    border: 2px solid transparent !important;
+}
+
+/* 2. СОСТОЯНИЕ: CONNECT WALLET (Как на первом фото) */
+.web3-button.connect-fox-btn {
+    /* Темный фон с градиентом */
+    background: linear-gradient(145deg, #1a1a1a 0%, #000000 100%) !important; 
+    color: var(--primary-color) !important; 
+    border-color: var(--primary-color) !important; 
+    
+    /* Золотистое свечение */
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.4), 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+}
+
+.web3-button.connect-fox-btn:hover {
+    transform: translateY(-2px) scale(1.02) !important;
+    box-shadow: 0 0 20px var(--primary-color) !important;
+    color: #fff !important;
+}
+
+/* Иконка лисы внутри кнопки */
+.web3-button .fox-icon {
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 10px !important;
+    fill: var(--primary-color) !important;
+    transition: transform 0.3s ease !important;
+}
+
+.web3-button.connect-fox-btn:hover .fox-icon {
+    transform: rotate(15deg) scale(1.1) !important;
+    fill: #fff !important;
+}
+
+/* 3. СОСТОЯНИЕ: КОШЕЛЕК ПОДКЛЮЧЕН (Как на втором фото) */
+.web3-button.connected {
+    background: #1e2329 !important; /* Темный графит */
+    color: #2ecc71 !important;    /* Зеленый текст адреса */
+    border-color: #2ecc71 !important; 
+    text-transform: none !important; /* Отключаем капс для адреса */
+    
+    /* Зеленое свечение */
+    box-shadow: 0 0 15px rgba(46, 204, 113, 0.6) !important;
+}
+
+.web3-button.connected:hover {
+    background: #252a30 !important;
+    box-shadow: 0 0 25px rgba(46, 204, 113, 0.8) !important;
+}
+
+/* Эффект нажатия для обеих кнопок */
+.web3-button:active {
+    transform: translateY(1px) scale(0.98) !important;
 }
