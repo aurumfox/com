@@ -76,7 +76,7 @@
 }
 
 /* ==========================================================================
-   Base Styles (ОПТИМИЗИРОВАНО)
+   Base Styles (СБРОС, ТИПОГРАФИКА, ДОСТУПНОСТЬ)
 ========================================================================== */
 * {
     box-sizing: border-box;
@@ -85,584 +85,2489 @@
 }
 
 html {
-    scroll-behavior: smooth;
+    scroll-behavior: smooth; /* Плавная прокрутка к якорям */
 }
 
 body {
     font-family: var(--font-secondary);
     line-height: 1.6;
-    color: var(--text-color-light);
-    background-color: var(--color-bg-dark);
-    overflow-x: hidden;
-    /* Убираем лишние свойства позиционирования, оставляем только блокировку */
+    color: var(--text-color-light); /* Светлый текст по умолчанию */
+    background-color: var(--color-bg-dark); /* Темный фон по умолчанию */
+    overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
 }
 
-/* 🛑 Состояние блокировки (меню/модалки) — объединено */
+/* 🛑 ИСПРАВЛЕНИЕ: Блокировка прокрутки основного контента при открытии модального окна или меню */
 body.modal-open,
 body.menu-open { 
-    overflow: hidden;
-    touch-action: none; /* Блокирует прокрутку на тач-скринах эффективнее position: fixed */
+    overflow: hidden; /* Блокировка прокрутки */
+    /* Добавляем фиксированную позицию для предотвращения скачков на iOS */
+    position: fixed; 
+    width: 100%; 
+    height: 100%; 
 }
 
-/* --- ТИПОГРАФИКА (Удалены дублирующиеся margin) --- */
-h1, h2, h3, h4, .section-title {
-    font-family: var(--font-primary);
-    color: var(--primary-color);
-    text-align: center;
-    line-height: 1.2;
-    margin-bottom: var(--spacing-md); /* Единый стандарт отступа */
+/* A11Y: Focus States (Улучшенная доступность для клавиатуры) */
+a:focus-visible, 
+button:focus-visible, 
+.btn:focus-visible, 
+input:focus-visible, 
+textarea:focus-visible {
+    outline: 3px solid var(--accent-color); /* Используем яркий акцентный цвет */
+    outline-offset: 3px;
+    border-radius: var(--border-radius-small);
 }
 
-h1 { font-size: clamp(2.5rem, 8vw, 3.5rem); font-weight: 700; } /* Адаптивный размер через clamp */
-h2 { font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 600; }
-h3 { font-size: 1.8rem; }
-h4 { font-size: 1.3rem; }
-
-p, ul, ol { 
-    margin-bottom: var(--spacing-sm); 
-}
-
-/* --- ИНТЕРФЕЙС И ДОСТУПНОСТЬ --- */
-a {
-    color: inherit; /* Наследует цвет текста, чтобы не плодить --link-color */
-    text-decoration: none;
-    transition: var(--transition-base, 0.3s ease);
-}
-
-a:hover {
-    color: var(--primary-color);
-}
-
-/* Универсальный фокус для всего (Клавиатурная навигация) */
-:focus-visible {
-    outline: 3px solid var(--primary-color);
-    outline-offset: 4px;
-}
-
-/* --- ГРАФИКА И КОНТЕЙНЕР --- */
-img {
-    max-width: 100%;
-    height: auto;
-    display: inline-block;
-    vertical-align: middle;
-}
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md);
+    padding: 0 var(--spacing-md); /* 20px по бокам */
 }
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Убирает дополнительный отступ под изображением */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-primary);
+    color: var(--primary-color); /* Золотой для заголовков */
+    margin-bottom: var(--spacing-md); /* Общий отступ для заголовков */
+    line-height: 1.2;
+    text-align: center; /* Центрировать заголовки по умолчанию */
+}
+
+h1 { font-size: 3.5em; font-weight: 700;}
+h2 { font-size: 2.5em; font-weight: 600;}
+h3 { font-size: 1.8em; font-weight: 600; margin-bottom: var(--spacing-sm);}
+h4 { font-size: 1.3em; font-weight: 600; color: var(--primary-color);}
+
+
+p {
+    margin-bottom: var(--spacing-sm);
+}
+
+ul, ol {
+    margin-bottom: var(--spacing-sm);
+    padding-left: var(--spacing-lg); /* Отступ для маркеров/номеров */
+}
+
+li {
+    margin-bottom: var(--spacing-xs);
+}
+
 /* ==========================================================================
-   Header and Navigation (CLEAN VERSION)
+   Header and Navigation (ОБНОВЛЕННЫЙ БЛОК)
 ========================================================================== */
 .header {
-    background-color: rgba(18, 18, 30, 0.95);
-    backdrop-filter: blur(10px); /* Добавляет современный эффект стекла */
-    -webkit-backdrop-filter: blur(10px);
-    padding: 10px 0;
-    position: sticky;
+    background-color: rgba(18, 18, 30, 0.9); /* Темный фон хедера с небольшой прозрачностью */
+    padding: var(--spacing-md) 0;
+    color: var(--text-color-white);
+    box-shadow: var(--box-shadow-light);
+    position: sticky; /* Липкий хедер */
     top: 0;
+    left: 0;
     width: 100%;
-    z-index: 1000;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000; /* Хедер над контентом */
 }
 
 .header .container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
 }
 
-/* --- LOGO --- */
 .logo {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--spacing-sm);
+}
+
+.logo-img {
+    height: 40px; /* Размер логотипа */
+    width: auto;
 }
 
 .logo-text {
     font-family: var(--font-primary);
-    font-size: 1.5rem; /* rem лучше em для стабильности */
+    font-size: 1.8em;
     font-weight: 700;
     color: var(--primary-color);
-    letter-spacing: 1px;
 }
 
-/* --- DESKTOP NAV --- */
+/* Скрываем мобильный оверлей по умолчанию на десктопе */
+.nav-mobile-overlay {
+    display: none; 
+}
+
+
+/* Навигация для десктопа */
 .nav ul.main-nav {
     list-style: none;
-    display: flex;
-    gap: 10px;
-    align-items: center;
+    padding: 0;
+    margin: 0;
+    display: flex; /* Flexbox для горизонтального расположения */
+    gap: 15px; /* Отступ между элементами */
+    transition: transform 0.3s ease-in-out; /* Анимация для мобильного меню */
 }
 
 .nav ul.main-nav li a {
     color: var(--text-color-light);
     font-family: var(--font-primary);
-    font-weight: 600;
-    padding: 8px 16px;
+    font-weight: bold;
+    padding: 8px 15px;
+    position: relative; /* Для подчеркивания при наведении */
     border-radius: var(--border-radius-small);
-    transition: all 0.3s ease;
-    position: relative;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Оставляем один эффект: либо фон, либо линия. Рекомендую фон для Web3 стиля: */
-.nav ul.main-nav li a:hover,
-.nav ul.main-nav li a.active {
-    color: #000;
+.nav ul.main-nav li a:hover {
+    color: var(--color-bg-dark);
     background-color: var(--primary-color);
 }
 
-/* --- HAMBURGER TOGGLE --- */
-.menu-toggle {
-    display: none; /* Скрыт на десктопе, включится в Media Queries */
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 10px;
-    z-index: 1010;
+/* Анимация подчеркивания при наведении */
+.nav ul.main-nav li a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease-out;
 }
 
+.nav ul.main-nav li a:hover::after,
+.nav ul.main-nav li a.active::after {
+    width: 100%;
+}
+
+/* 🦊 ОБНОВЛЕННЫЕ СТИЛИ ГАМБУРГЕРА (ЧАСТЬ 2: АНИМАЦИЯ ЛИНИЙ) 🦊 */
+
+.menu-toggle {
+    display: none; /* Скрыт на десктопе */
+    cursor: pointer;
+    z-index: 1004;
+    padding: 10px; /* Удобная зона нажатия */
+    background: transparent;
+    border: none;
+    outline: none;
+    position: relative;
+    width: 50px; /* Общий размер для кнопки */
+    height: 50px;
+    display: flex; /* Для центрирования линий */
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.menu-toggle:hover {
+    opacity: 0.8;
+}
+
+/* Контейнер для линий гамбургера */
 .hamburger-lines {
-    width: 28px;
-    height: 18px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    width: 30px; /* Ширина линий */
+    height: 20px; /* Общая высота для 3 линий */
+    position: relative;
 }
 
 .hamburger-lines .line {
+    display: block;
     height: 3px;
     width: 100%;
-    background-color: var(--primary-color);
+    background-color: var(--primary-color); /* Золотой цвет */
     border-radius: 2px;
-    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.7, 0, 0.3, 1), 
+                opacity 0.3s ease;
 }
 
-/* Анимация крестика */
-.menu-toggle.open .line1 { transform: translateY(7.5px) rotate(45deg); }
-.menu-toggle.open .line2 { opacity: 0; }
-.menu-toggle.open .line3 { transform: translateY(-7.5px) rotate(-45deg); }
+/* Анимация гамбургера в крестик (Класс .open добавляется JS) */
+.menu-toggle.open .line1 {
+    transform: translateY(8.5px) rotate(45deg);
+}
+
+.menu-toggle.open .line2 {
+    opacity: 0; /* Средняя линия исчезает */
+}
+
+.menu-toggle.open .line3 {
+    transform: translateY(-8.5px) rotate(-45deg);
+}
+
+/* 🛑 УДАЛЕНА КНОПКА ЗАКРЫТИЯ (close-menu-button), теперь используется анимация гамбургера */
+/* 🛑 УДАЛЕНЫ СТАРЫЕ СТИЛИ ГАМБУРГЕРА, заменены на .hamburger-lines .line */
+
+
+
 /* ==========================================================================
-   Sections and Layout (Оптимизировано: База + Модификаторы)
+   Sections and Layout - ИСПРАВЛЕНО (БЕЛЫЙ ЦВЕТ УДАЛЕН)
 ========================================================================== */
 
-/* Универсальная база для ВСЕХ секций */
-.section {
-    padding: clamp(60px, 10vw, 100px) 0; 
+.section, .aurum-fox-section {
+    padding: var(--spacing-xl) 0; 
     text-align: center;
-    background-color: var(--color-bg-dark);
-    color: var(--text-color-light);
+    background-color: var(--color-bg-dark); /* Изменено на темный */
+    color: var(--text-color-light); /* Изменено на светлый текст */
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Модификаторы фона (удаляем уникальные классы для Web3/Multimedia) */
-.section--alt { background-color: var(--color-bg-light); }
-.section--input-bg { background-color: var(--color-bg-input); }
+.section-alt, .aurum-fox-section-alt {
+    background-color: var(--color-bg-light); /* Темная альтернативная секция */
+    color: var(--text-color-light);
+}
 
-.section:last-of-type { border-bottom: none; }
+.section:last-of-type {
+    border-bottom: none;
+}
 
-/* --- HERO SECTION --- */
+/* Hero Section */
 .hero-section {
-    background: linear-gradient(135deg, var(--color-bg-dark) 0%, #1a0029 100%);
-    min-height: 85vh; 
+    background: linear-gradient(135deg, var(--color-bg-dark) 0%, #3a0052 100%);
+    color: var(--text-color-white);
+    padding: var(--spacing-xl) 0;
+    text-align: center;
+    min-height: 80vh; 
     display: flex;
     align-items: center;
+    justify-content: center;
 }
 
 .hero-section .container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 40px;
+    display: flex;
+    flex-direction: row;
     align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap; 
+}
+
+.hero-content {
+    flex: 1;
+    min-width: 300px;
     text-align: left;
 }
 
-.hero-image img {
-    max-width: 100%;
-    border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-    animation: heroFloat 4s ease-in-out infinite;
+.hero-image {
+    flex: 1;
+    min-width: 250px;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
 }
 
-@keyframes heroFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+.hero-image img {
+    max-width: 100%; 
+    height: auto;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: pulse 2s infinite alternate; 
+    transition: transform 0.3s ease-in-out;
+}
+
+.hero-image img:hover {
+    transform: translateY(-10px);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
 }
 
 .hero-content h1 {
-    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-size: 4em;
+    margin-bottom: var(--spacing-sm);
     color: var(--primary-color);
-    line-height: 1.1;
-    margin-bottom: 20px;
+    text-align: left;
 }
 
-.hero-buttons {
+.hero-content .tagline {
+    font-size: 1.5em;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-color-light);
+    opacity: 0.9;
+    text-align: left;
+}
+
+.call-to-action, .hero-buttons {
     display: flex;
-    gap: 15px;
-    margin-top: 30px;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    justify-content: flex-start;
 }
 
-/* --- HEADINGS (Объединены в один функциональный блок) --- */
-.section-title {
-    font-size: 2.5rem;
+/* Web3 & Multimedia Sections - ПРИВЕДЕНО К ТЕМНОМУ СТИЛЮ */
+.web3-section, .web3-section-alt {
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+
+.multimedia-section, .multimedia-section-alt {
+    background-color: var(--color-bg-dark); /* БЫЛО БЕЛЫМ - ТЕПЕРЬ ТЕМНОЕ */
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+
+/* Headings */
+.aurum-heading, .web3-heading, .multimedia-heading, .main-heading {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    font-size: 2.5em;
     color: var(--primary-color);
-    margin-bottom: 50px;
     position: relative;
-    padding-bottom: 15px;
+    padding-bottom: var(--spacing-sm);
 }
 
-/* Цветные акценты для заголовков через классы-цвета */
-.text-web3 { color: var(--color-blue-web3) !important; }
-.text-multimedia { color: var(--color-orange-multimedia) !important; }
+.web3-heading { color: var(--color-blue-web3); font-size: 2.2em; }
+.multimedia-heading { color: var(--color-orange-multimedia); font-size: 2.2em; }
 
-.section-title::after {
+.aurum-heading::after, .web3-heading::after, .multimedia-heading::after, .main-heading::after {
     content: '';
     position: absolute;
     left: 50%;
-    bottom: 0;
     transform: translateX(-50%);
+    bottom: 0;
     width: 60px;
     height: 4px;
     background-color: var(--secondary-color);
     border-radius: 2px;
 }
 
-/* --- TERMINAL / CARD WRAPPER --- */
-.terminal-card {
-    background: var(--color-bg-card); 
-    padding: 25px;
-    border-radius: 15px;
-    border: 1px solid rgba(255, 215, 0, 0.1); 
-    backdrop-filter: blur(10px);
-    max-width: 500px;
-    margin: 40px auto;
+.web3-subheading, .multimedia-subheading {
+    font-size: 1.6em;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+    text-align: center;
+}
+
+/* Terminal Wrapper */
+.terminal-container-wrapper {
+    background-color: var(--color-bg-card); 
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
     box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255, 215, 0, 0.2); 
+    max-width: 440px;
+    margin: var(--spacing-lg) auto;
+    backdrop-filter: blur(10px);
 }
+
+
 /* ==========================================================================
-   1. БАЗОВАЯ КНОПКА (Универсальный фундамент)
+   Buttons
 ========================================================================== */
-.btn, .web3-btn, .multimedia-btn, .wallet-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 24px;
-    border-radius: var(--border-radius-base, 12px);
-    font-weight: 700;
-    font-family: var(--font-primary);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: none;
-    text-decoration: none;
-    font-size: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
 
-.btn:hover, .web3-btn:hover {
-    transform: translateY(-3px);
-    filter: brightness(1.1);
-}
 
-.btn:active { transform: scale(0.96); }
-
-/* --- ВАРИАНТЫ ЦВЕТОВ (Только отличия) --- */
-.btn-primary { background: var(--primary-color); color: var(--text-color-dark); }
-.btn-secondary { background: transparent; border: 2px solid var(--primary-color); color: var(--primary-color); }
-
-.btn-success, .buy-btn, #stakeAfoxBtn { background: var(--success-color); color: #fff; }
-.btn-danger, .sell-btn, #unstakeAfoxBtn { background: var(--error-color); color: #fff; }
-.btn-transfer { background: var(--color-purple-transfer); color: #fff; }
-
-/* Специальная кнопка CONNECT FOX */
 .connect-fox-btn {
-    background: linear-gradient(45deg, #f39c12, #f1c40f);
-    color: #fff;
-    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: linear-gradient(45deg, #f39c12, #f1c40f) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
 }
 
-/* --- МОДАЛЬНОЕ ОКНО (Modern UI) --- */
+.connect-fox-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.5);
+}
+
+.connect-fox-btn:active {
+    transform: scale(0.95);
+}
+
+/* Эффект вспышки для кнопки */
+.success-glow {
+    animation: flash 0.8s ease-out;
+    border-color: #00ffaa !important;
+    box-shadow: 0 0 25px rgba(0, 255, 170, 0.7) !important;
+}
+
+@keyframes flash {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+
+
+
+/* Общий стиль модалки */
 .modern-ui {
-    background: rgba(15, 15, 25, 0.95) !important;
-    backdrop-filter: blur(20px);
+    background: rgba(20, 20, 30, 0.9) !important;
+    backdrop-filter: blur(15px); /* Размытие фона */
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 24px !important;
     padding: 30px !important;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    max-width: 450px !important;
 }
 
+.modal-title {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.modal-subtitle {
+    color: #888;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+/* Сетка кнопок */
 .wallet-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1fr 1fr; /* В две колонки */
     gap: 12px;
-    margin-top: 20px;
 }
 
+/* Современная кнопка */
 .wallet-btn.modern {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
     color: #fff;
     padding: 15px;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
+/* Эффект при наведении */
 .wallet-btn.modern:hover {
-    background: rgba(109, 74, 255, 0.15);
-    border-color: #6d4aff;
-    box-shadow: 0 8px 20px rgba(109, 74, 255, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #6d4aff; /* Цвет бренда Solana (фиолетовый) */
+    transform: translateY(-3px); /* Легкий прыжок вверх */
+    box-shadow: 0 10px 20px rgba(109, 74, 255, 0.2);
 }
 
-/* --- АНИМАЦИИ (Объединены) --- */
-@keyframes flash-glow {
-    0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 170, 0.5); }
-    50% { box-shadow: 0 0 25px rgba(0, 255, 170, 0.8); transform: scale(1.05); }
+.wallet-btn.modern .icon {
+    font-size: 20px;
 }
 
-.success-glow { animation: flash-glow 0.8s ease-in-out; border: 2px solid #00ffaa !important; }
+/* Кнопка Jupiter (выделяем её цветом) */
+.wallet-btn.modern[data-wallet="jupiter"] {
+    background: linear-gradient(90deg, rgba(191, 255, 0, 0.1), rgba(0, 0, 0, 0));
+    border-color: rgba(191, 255, 0, 0.3);
+}
 
-.error-shake { animation: shake 0.4s ease-in-out; border-color: var(--error-color) !important; }
 
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-6px); }
-    75% { transform: translateX(6px); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
+.error-shake { animation: shake 0.3s ease-in-out 0s 2; border-color: #ff4d4d !important; }
+
+
+.btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .social-btn {
+    display: inline-block;
+    padding: 15px 30px;
+    border-radius: var(--border-radius-base);
+    font-weight: 700;
+    font-size: 1em;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    margin: 10px;
+}
+
+.btn-primary, .primary-btn {
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover, .primary-btn:hover {
+    background-color: var(--link-hover-color);
+    color: var(--text-color-dark);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.btn-secondary, .secondary-btn {
+    background-color: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-secondary:hover, .secondary-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+/* Web3 Buttons */
+.web3-btn {
+    background-color: var(--accent-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.web3-btn:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
+}
+
+.web3-btn.green-btn, .web3-btn.buy-btn, #stakeAfoxBtn, #claimRewardsBtn {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--text-color-white);
+}
+
+.web3-btn.green-btn:hover, .web3-btn.buy-btn:hover, #stakeAfoxBtn:hover, #claimRewardsBtn:hover {
+    background-color: var(--color-green-success-hover);
+}
+
+.web3-btn.red-btn, .web3-btn.danger-btn, #unstakeAfoxBtn {
+    background-color: var(--error-color);
+    border-color: var(--error-color);
+    color: var(--text-color-white);
+}
+
+.web3-btn.red-btn:hover, .web3-btn.danger-btn:hover, #unstakeAfoxBtn:hover {
+    background-color: var(--color-red-danger-hover);
+}
+
+.web3-btn.sell-btn {
+    background-color: #f39c12;
+    color: var(--text-color-white);
+}
+.web3-btn.sell-btn:hover {
+    background-color: color-mix(in srgb, #f39c12 90%, black);
+}
+
+.web3-btn.transfer-btn {
+    background-color: var(--color-purple-transfer);
+    color: var(--text-color-white);
+}
+.web3-btn.transfer-btn:hover {
+    background-color: var(--color-purple-transfer-hover);
+}
+
+
+.web3-btn.small-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85em;
+}
+
+/* Multimedia Buttons */
+.multimedia-btn {
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    display: inline-block;
+}
+
+.multimedia-btn:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+/* Copy Button */
+.copy-btn {
+    background-color: var(--accent-color);
+    color: var(--text-color-light);
+    border: none;
+    padding: 8px 15px;
+    border-radius: var(--border-radius-small);
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.copy-btn:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
+    transform: translateY(-2px);
+}
+
 /* ==========================================================================
-   УНИВЕРСАЛЬНАЯ СЕТКА И КАРТОЧКА (Основа для всех разделов)
+   Specific Section Styles
 ========================================================================== */
-.content-grid {
+
+
+/* Tokenomics */
+.tokenomics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    text-align: left;
+}
+
+.tokenomics-item {
+    background-color: var(--color-bg-card);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    border-top: 5px solid var(--primary-color);
+}
+
+.tokenomics-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.tokenomics-item .highlight {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text-color-white);
+    margin-bottom: var(--spacing-sm);
+    display: block;
+}
+
+.tokenomics-item .highlight-text-small {
+    font-weight: 600;
+    color: var(--color-highlight-green);
+    font-size: 1.2em;
+    margin-top: var(--spacing-xs);
+    display: block;
+}
+
+.tokenomics-item ul {
+    list-style: disc;
+    padding-left: var(--spacing-md);
+}
+
+.tokenomics-item ul li {
+    margin-bottom: 8px;
+}
+
+.table-responsive {
+    overflow-x: auto; /* Для таблиц на маленьких экранах */
+    margin-top: var(--spacing-md);
+}
+
+.tokenomics-item table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-sm);
+    font-size: 0.95em;
+    color: var(--text-color-light);
+}
+
+.tokenomics-item th,
+.tokenomics-item td {
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 12px 15px;
+    text-align: left;
+}
+
+.tokenomics-item th {
+    background-color: var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--primary-color);
+    font-weight: 600;
+}
+.tokenomics-item tr:nth-child(even) {
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+.tokenomics-item tr:hover {
+    background-color: var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.tokenomics-item .small-text {
+    font-size: 0.9em;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-md);
+}
+
+.contract-address {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    background-color: var(--color-bg-input); 
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--text-color-light);
+}
+
+.contract-address p {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.contract-address .highlight-text {
+    color: var(--primary-color); 
+    word-break: break-all; 
+}
+
+/* How to Buy */
+.buy-steps, .how-to-list {
+    list-style: none; 
+    padding: 0;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.buy-steps li, .how-to-list li {
+    background-color: var(--color-bg-card);
+    padding: 25px;
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    position: relative;
+    padding-left: 60px; 
+    border-left: 5px solid var(--primary-color);
+    color: var(--text-color-light);
+}
+
+.buy-steps li::before {
+    counter-increment: step-counter;
+    content: counter(step-counter);
+    position: absolute;
+    left: var(--spacing-md);
+    top: var(--spacing-md);
+    background-color: var(--primary-color);
+    color: var(--text-color-dark);
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.buy-steps h3 {
+    color: var(--accent-color);
+    margin-top: 0;
+}
+
+.buy-steps ul, .how-to-list ul { 
+    list-style: disc;
+    margin-top: var(--spacing-sm);
+    padding-left: var(--spacing-md);
+}
+.buy-steps li ul li, .how-to-list li ul li {
+    background-color: transparent;
+    box-shadow: none;
+    border-left: none;
+    padding: 0;
+}
+
+.tip {
+    font-style: italic;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-md);
+    text-align: center;
+}
+
+/* NFT Showcase */
+.nft-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    justify-content: center;
+}
+
+.nft-card {
+    background-color: var(--color-bg-card); 
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-item); 
+    text-align: center;
+    transition: transform 0.3s ease;
+    color: var(--text-color-light); 
+}
+
+.nft-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow-item-hover);
+}
+
+.nft-card img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid var(--color-bg-light); /* Используем переменную */
+}
+
+.nft-card h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Aurum NFC */
+#aurum-nfc {
+    background-color: var(--color-bg-light);
+    color: var(--text-color-light);
+    padding: var(--spacing-xl) 0;
+}
+#aurum-nfc h2 {
+    color: var(--primary-color);
+}
+
+.nfc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    text-align: center;
+}
+
+.nfc-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    color: var(--text-color-light);
+    border-top: 5px solid var(--primary-color);
+}
+
+.nfc-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.nfc-icon {
+    width: 100px;
+    height: auto;
+    margin: 0 auto var(--spacing-md);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.nfc-note {
+    font-style: italic;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-lg);
+    text-align: center;
+}
+
+/* Roadmap */
+.roadmap-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
 }
 
-.base-card {
+.roadmap-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    text-align: left;
+    border-bottom: 5px solid var(--primary-color);
+}
+
+.roadmap-item h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.roadmap-item ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.roadmap-item li {
+    position: relative;
+    padding-left: 25px;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-color-light);
+}
+.roadmap-item li::before {
+    content: '✅';
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+}
+
+.roadmap-item strong {
+    color: var(--accent-color);
+}
+
+.roadmap-disclaimer {
+    text-align: center;
+    font-style: italic;
+    color: var(--text-color-dimmed);
+    margin-top: var(--spacing-lg);
+    font-size: 0.95em;
+}
+
+/* News and Announcements */
+#aurum-announcements .container {
+    background-color: var(--color-bg-light);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 900px;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+#aurum-announcements h2, #aurum-announcements h3 {
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.news-list, .announcements-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.news-item, .announcement-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-item);
+    border: 1px solid var(--color-bg-light); /* Используем переменную */
+    font-size: 1em;
+    line-height: 1.5;
+    color: var(--text-color-light);
+    word-wrap: break-word;
+}
+
+.news-item h4, .announcement-item h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.news-item small, .announcement-item small, .announcement-date {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--text-color-dimmed);
+    font-size: 0.9em;
+    font-style: italic;
+    text-align: right;
+}
+.announcement-item p {
+    margin: 0 0 5px 0;
+}
+
+.admin-announcement-section {
     background-color: var(--color-bg-card);
     padding: 25px;
     border-radius: var(--border-radius-base);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
     box-shadow: var(--box-shadow-medium);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    color: var(--text-color-light);
-    height: 100%;
+    border-left: 5px solid var(--primary-color);
 }
 
-.base-card:hover {
+.admin-announcement-section h3 {
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color); 
+}
+
+.admin-announcement-section textarea, textarea#announcementInput {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid var(--color-bg-light); /* Используем переменную */
+    border-radius: var(--border-radius-base);
+    min-height: 120px;
+    font-family: inherit;
+    font-size: 1em;
+    background-color: var(--color-bg-input); /* Используем переменную */
+    color: var(--text-color-light);
+    box-shadow: var(--box-shadow-inset);
+    resize: vertical;
+}
+
+.admin-announcement-section textarea::placeholder, textarea#announcementInput::placeholder {
+    color: var(--text-color-dimmed);
+}
+
+.admin-announcement-section button, button#publishButton {
+    width: auto;
+    padding: var(--spacing-sm);
+    font-size: 1.1em;
+    background-color: var(--primary-color);
+    color: var(--color-bg-dark);
+    border: none;
+    border-radius: var(--border-radius-base);
+    cursor: pointer;
+    font-weight: 700;
+    display: block;
+    margin: 0 auto;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+.admin-announcement-section button:hover, button#publishButton:hover {
+    background-color: var(--link-hover-color);
+    transform: translateY(-3px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--color-bg-light); /* Используем переменную */
+    margin: var(--spacing-lg) 0;
+}
+
+
+/* Community */
+.social-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.social-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 12px 25px;
+    border-radius: var(--border-radius-base);
+    color: var(--text-color-light);
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    background-color: var(--color-bg-card); /* Используем переменную */
+    border: 1px solid var(--text-color-light);
+}
+
+.social-btn:hover {
+    text-decoration: none;
+    transform: translateY(-3px);
+    background-color: var(--primary-color);
+    color: var(--color-bg-dark);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.social-icon {
+    width: 24px;
+    height: 24px;
+    fill: currentColor; /* Использует цвет текста кнопки */
+    margin-right: var(--spacing-xs);
+}
+
+.discord-btn { background-color: #7289DA; color: var(--text-color-white); border: none;}
+.discord-btn:hover { background-color: color-mix(in srgb, #7289DA 90%, black); }
+
+.telegram-btn { background-color: #0088cc; color: var(--text-color-white); border: none;}
+.telegram-btn:hover { background-color: color-mix(in srgb, #0088cc 90%, black); }
+
+.twitter-btn { background-color: #1DA1F2; color: var(--text-color-white); border: none;}
+.twitter-btn:hover { background-color: color-mix(in srgb, #1DA1F2 90%, black); }
+
+.solscan-btn { background-color: #8C52FF; color: var(--text-color-white); border: none;} 
+.solscan-btn:hover { background-color: color-mix(in srgb, #8C52FF 90%, black); }
+
+.news-btn { background-color: #f7b731; color: var(--color-bg-dark); border: none;} 
+.news-btn:hover { background-color: color-mix(in srgb, #f7b731 90%, black); }
+
+
+/* Contact Us */
+.contact-section {
+    background-color: var(--section-bg-dark);
+    color: var(--text-color-light);
+    padding-bottom: var(--spacing-xl); 
+}
+
+.contact-info {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+.contact-info p {
+    font-size: 1.1em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.contact-info a {
+    color: var(--primary-color);
+}
+
+.contact-form {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: var(--background-color-dark); 
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+}
+
+.contact-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 5px;
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.contact-form input[type="text"]::placeholder,
+.contact-form input[type="email"]::placeholder,
+.contact-form textarea::placeholder {
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.contact-form button[type="submit"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1.2em;
+}
+
+.disclaimer {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+
+/* 💻 ОТОБРАЖЕНИЕ АДРЕСА: УЛУЧШЕНИЕ ВИДИМОСТИ */
+.web3-wallet-display {
+    text-align: center;
+    margin-top: var(--spacing-md);
+    font-size: 1.1em;
+    color: var(--text-color-light); 
+    background-color: var(--color-bg-input); /* Чуть светлее, чем карточка */
+    padding: 15px;
+    border-radius: var(--border-radius-base);
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+    border: 1px solid var(--color-blue-web3); /* Акцент Web3 */
+    box-shadow: var(--box-shadow-inset);
+}
+.web3-wallet-display span {
+    font-weight: bold;
+    color: var(--color-wallet-address);
+}
+/* -------------------------------------------------------------------------- */
+
+
+.web3-intro {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    font-size: 1.1em;
+    color: #ccc;
+    max-width: 700px;
+    margin: 0 auto var(--spacing-lg) auto;
+}
+
+
+.web3-features-grid,
+.games-grid,
+.nft-grid,
+.ad-list,
+.dao-proposals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+.nft-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.feature-card,
+.placeholder-item {
+    background-color: var(--color-bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--box-shadow-medium);
+    text-align: center;
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.feature-card h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+.feature-card .web3-link {
+    display: inline-block;
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--accent-color);
+    color: var(--text-color-light);
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.feature-card .web3-link:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 90%, black);
+    text-decoration: none;
+}
+
+.web3-content-area, .content-area {
+    min-height: 200px;
+    background-color: var(--color-bg-input);
+    padding: 15px;
+    border-radius: var(--border-radius-small);
+    margin-top: var(--spacing-md);
+    border: 1px dashed var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+}
+.web3-placeholder {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 10px 15px;
+    border-radius: var(--border-radius-small);
+    font-style: italic;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+
+/* NFT Specific Styles */
+.nft-actions {
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.nft-item {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: var(--box-shadow-item);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+}
+
+.nft-item:hover {
     transform: translateY(-5px);
     box-shadow: var(--box-shadow-item-hover);
 }
 
-/* --- МОДИФИКАТОРЫ (Уникальные фишки разделов) --- */
-.card--tokenomics { border-top: 5px solid var(--primary-color); text-align: left; }
-.card--roadmap { border-bottom: 5px solid var(--primary-color); text-align: left; }
-.card--nfc { border-top: 5px solid var(--primary-color); text-align: center; }
-.card--nft { text-align: center; padding: 15px; }
-
-/* --- СПЕЦИФИКА ВНУТРИ КАРТОЧЕК --- */
-.base-card h3, .base-card h4 {
-    color: var(--primary-color);
-    margin-bottom: 15px;
+.nft-item img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius-base);
+    margin-bottom: 10px;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
 }
 
-.base-card ul {
+.nft-item h4 {
+    font-size: 1.1em;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    word-break: break-word;
+}
+
+.nft-item p {
+    font-size: 0.9em;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    margin: 2px 0;
+    word-break: break-word;
+}
+
+
+.nft-form-container {
+    max-width: 500px;
+    margin: var(--spacing-lg) auto;
+    background-color: var(--color-bg-input);
+    padding: var(--spacing-lg);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    color: var(--text-color-light);
+    text-align: left;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.web3-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--color-blue-web3);
+}
+
+.web3-form input[type="text"],
+.web3-form input[type="number"],
+.web3-form textarea,
+.web3-form select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 6px;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.web3-form input[type="file"] {
+    width: 100%;
+    padding: 0;
+    margin-bottom: var(--spacing-md);
+    border: none;
+    background-color: transparent;
+    color: var(--text-color-light);
+    font-size: 1em;
+}
+
+.web3-form input[type="text"]::placeholder,
+.web3-form input[type="number"]::placeholder,
+.web3-form textarea::placeholder {
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.web3-form .form-help-text {
+    font-size: 0.9em;
+    color: var(--text-color-dimmed);
+    margin-top: -10px;
+    margin-bottom: var(--spacing-md);
+    display: block;
+}
+
+.nft-detail-view {
+    text-align: left;
+    padding: var(--spacing-md);
+    color: var(--text-color-light); 
+}
+
+.nft-detail-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.nft-detail-view h3 {
+    color: var(--primary-color);
+    text-align: center;
+    font-size: 2em;
+    margin-bottom: var(--spacing-sm);
+}
+
+.nft-detail-view p {
+    font-size: 1.1em;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    margin-bottom: 8px;
+}
+.nft-detail-view p strong {
+    color: var(--text-color-white);
+}
+
+.nft-detail-view #nftDetailMint,
+.nft-detail-view #nftDetailOwner {
+    font-size: 0.95em;
+    word-break: break-all;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 5px 10px;
+    border-radius: var(--border-radius-small);
+    display: inline-block;
+    margin-top: 5px;
+}
+
+#attributesList {
     list-style: none;
     padding: 0;
+    margin-top: var(--spacing-sm);
 }
 
-/* Иконка галочки для Roadmap */
-.roadmap-item li::before {
-    content: '✅';
-    margin-right: 10px;
-}
-
-/* --- ТАБЛИЦЫ ТОКЕНОМИКИ (Чистый код) --- */
-.table-responsive { overflow-x: auto; margin-top: 20px; }
-
-table.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.95rem;
-}
-
-.data-table th, .data-table td {
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    text-align: left;
-}
-
-.data-table th { background: var(--color-bg-dark); color: var(--primary-color); }
-.data-table tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
-
-/* --- БЛОК АДРЕСА КОНТРАКТА --- */
-.contract-wrapper {
-    background: var(--color-bg-input);
-    padding: 20px;
-    border-radius: 12px;
+#attributesList li {
+    background-color: var(--color-bg-card);
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: var(--border-radius-small);
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-top: 30px;
-    border: 1px dashed var(--primary-color);
+    justify-content: space-between;
+    font-size: 0.95em;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
 }
 
-.contract-address { font-family: monospace; color: var(--primary-color); font-weight: 700; }
-
-/* --- СОЦИАЛЬНЫЕ КНОПКИ (Удалены дубли цветов) --- */
-.social-links {
+.nft-detail-actions {
+    margin-top: var(--spacing-lg);
     display: flex;
-    justify-content: center;
-    gap: 15px;
     flex-wrap: wrap;
-    margin-top: 30px;
+    justify-content: center;
+    gap: var(--spacing-md);
 }
 
-.social-btn {
-    padding: 12px 20px;
-    border-radius: 10px;
-    color: #fff;
-    font-weight: 600;
-    transition: 0.3s;
-    min-width: 140px;
+.ad-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+.placeholder-item.ad {
+    padding: 15px;
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: var(--border-radius-small);
     text-align: center;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    font-style: italic;
+    margin-bottom: 10px;
+}
+.placeholder-item.ad img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius-small);
+    margin-top: 10px;
 }
 
-/* Используем фильтр вместо прописывания hover-цветов вручную */
-.social-btn:hover { transform: translateY(-3px); filter: brightness(1.2); }
 
-.bg-discord { background: #7289DA; }
-.bg-telegram { background: #0088cc; }
-.bg-twitter { background: #1DA1F2; }
-.bg-solscan { background: #8C52FF; }
+/* DAO Section */
+#dao-section {
+    background-color: var(--color-bg-light);
+    color: var(--text-color-light);
+    padding: 60px 0;
+}
+#dao-section .web3-intro {
+    margin-bottom: var(--spacing-md);
+}
 
-/* --- ФОРМА ОБРАТНОЙ СВЯЗИ --- */
-.form-group { margin-bottom: 20px; text-align: left; }
+.dao-actions {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
 
-.input-field {
+.dao-proposals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: var(--spacing-md);
+}
+
+.dao-proposal-item {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: var(--spacing-md);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.dao-proposal-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dao-proposal-item h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+    font-size: 1.3em;
+}
+
+.dao-proposal-item p {
+    font-size: 0.95em;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    line-height: 1.5;
+}
+
+.dao-proposal-item .dao-creator {
+    font-family: monospace; 
+    color: var(--color-wallet-address);
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.dao-proposal-item .dao-votes-for {
+    color: var(--success-color);
+    font-weight: 700;
+}
+.dao-proposal-item .dao-votes-against {
+    color: var(--error-color);
+    font-weight: 700;
+}
+
+.dao-vote-btn {
+    margin-right: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
     width: 100%;
     padding: 12px;
-    background: var(--color-bg-input);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #fff;
-    outline: none;
+    font-size: 1em;
+    border-radius: var(--border-radius-small);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.dao-vote-btn[data-vote-type="for"] {
+    background-color: var(--success-color);
+    border: 1px solid var(--success-color);
+    color: var(--text-color-white);
 }
 
-.input-field:focus { border-color: var(--primary-color); }
+.dao-vote-btn[data-vote-type="for"]:hover {
+    background-color: var(--color-green-success-hover);
+}
 
-/* --- 1. УНИВЕРСАЛЬНЫЕ СЕТКИ (Объединяем всё в один блок) --- */
-.web3-grid, .games-grid, .ad-list, .dao-proposals-grid, .nft-grid {
+.dao-vote-btn[data-vote-type="against"] {
+    background-color: var(--error-color);
+    border: 1px solid var(--error-color);
+    color: var(--text-color-white);
+}
+
+.dao-vote-btn[data-vote-type="against"]:hover {
+    background-color: var(--color-red-danger-hover);
+}
+
+
+/* Staking Section */
+#staking-section {
+    padding: 60px 0;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+}
+#staking-section .web3-intro {
+    margin-bottom: var(--spacing-lg);
+}
+
+.staking-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.info-card {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    transition: transform 0.2s ease-in-out;
+}
+.info-card:hover {
+    transform: translateY(-5px);
+}
+
+.info-card h3 {
+    color: var(--primary-color);
+    font-size: 1.2em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.info-card .info-value {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--text-color-light);
+    margin: 0;
+}
+
+.staking-actions {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    color: var(--text-color-light);
+    margin-bottom: var(--spacing-lg);
+}
+.staking-actions .web3-subheading {
+    margin-top: 0;
+    margin-bottom: 25px;
+    color: var(--primary-color);
+    font-size: 1.5em;
+}
+
+.staking-actions .input-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap; 
+}
+
+.staking-actions input[type="number"] {
+    flex-grow: 1;
+    max-width: 300px;
+    padding: 12px 15px;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 5px;
+    background-color: var(--color-bg-input);
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.staking-actions .button-group {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.staking-details {
+    background-color: var(--color-bg-input);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+.staking-details .web3-subheading {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+    font-size: 1.5em;
+}
+
+.staking-details ul {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--spacing-md);
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    line-height: 1.8;
+}
+
+.staking-details li {
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.1em;
+}
+
+.staking-details li strong {
+    color: var(--primary-color);
+}
+
+.staking-details .web3-note {
+    font-style: italic;
+    font-size: 0.9em;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    text-align: center;
+    margin-top: var(--spacing-md);
+}
+
+
+/* ==========================================================================
+   Multimedia Hub Sections
+========================================================================== */
+.multimedia-portal-container {
+    text-align: center; 
+    color: var(--text-color-light); 
+    background: var(--color-bg-dark); 
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Переопределение цветов для темных мультимедийных разделов */
+.multimedia-section-alt .multimedia-heading,
+.multimedia-section-alt .multimedia-intro,
+.multimedia-section-alt .multimedia-subheading,
+.multimedia-section-alt .item,
+.multimedia-section-alt .placeholder-item {
+    color: var(--text-color-light); 
+}
+
+.multimedia-features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
 }
 
-/* NFT чуть меньше по размеру, поэтому переопределяем только колонки */
-.nft-grid { 
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+/* Стили карточек функций переиспользуются, просто убедитесь, что цвета соответствуют разделу */
+.multimedia-features-grid .feature-card {
+    background-color: var(--color-bg-card); 
+    color: var(--text-color-light);
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.multimedia-features-grid .feature-card h3 {
+    color: var(--primary-color); 
+}
+
+.multimedia-features-grid .feature-card .multimedia-link {
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.multimedia-features-grid .feature-card .multimedia-link:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+.upload-form {
+    max-width: 700px;
+    margin: var(--spacing-lg) auto;
+    background-color: var(--color-bg-input); 
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    text-align: left; 
+    color: var(--text-color-light); 
+}
+
+.upload-form label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--primary-color); 
+}
+
+.upload-form input[type="text"],
+.upload-form input[type="file"],
+.upload-form textarea {
+    width: 100%;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 5px;
+    background-color: var(--color-bg-input); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.upload-form input[type="file"] {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border: 1px solid var(--color-bg-light); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.upload-form input[type="text"]::placeholder,
+.upload-form textarea::placeholder {
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.upload-form button[type="submit"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1.1em;
+}
+
+.gallery, .posts, .games, .multimedia-grid, .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    justify-content: center;
+}
+
+.multimedia-item {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-small);
+    box-shadow: var(--box-shadow-item);
+    text-align: center;
+    transition: transform 0.2s ease;
+    border: 1px solid var(--section-bg-dark); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+}
+
+.multimedia-item:hover {
+    transform: translateY(-3px);
+}
+
+.multimedia-item img {
+    max-width: 100%;
+    height: 150px; 
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: var(--spacing-sm);
+    transition: transform 0.2s ease-in-out;
+}
+.multimedia-item img:hover {
+    transform: scale(1.05);
+}
+
+.multimedia-item h3 {
+    color: var(--color-orange-multimedia);
+    margin-bottom: var(--spacing-xs);
+    margin-top: var(--spacing-sm);
+}
+
+.multimedia-item p {
+    font-size: 0.9em;
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.multimedia-item small {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--text-color-dimmed);
+    font-size: 0.8em;
+}
+
+.game-content {
+    margin-top: var(--spacing-md);
+}
+
+.game-content input[type="number"] {
+    width: calc(100% - 100px); 
+    padding: var(--spacing-sm);
+    border: 1px solid var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    border-radius: 5px;
+    margin-right: var(--spacing-sm);
+    text-align: center;
+    background-color: var(--color-bg-input); 
+    color: var(--text-color-light);
+}
+
+.game-content button {
+    margin-top: var(--spacing-sm); 
+}
+
+.multimedia-link {
+    display: inline-block;
+    margin-top: 15px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.multimedia-link:hover {
+    color: var(--link-hover-color);
+}
+
+.post-list {
+    display: grid;
     gap: var(--spacing-md);
 }
 
-/* --- 2. УНИВЕРСАЛЬНАЯ КАРТОЧКА (База для NFT, Фич и Объявлений) --- */
-.feature-card, .nft-item, .placeholder-item, .ad-item, #attributesList li {
-    background-color: var(--color-bg-card);
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-base);
-    border: 1px solid var(--section-bg-dark);
-    box-shadow: var(--box-shadow-medium);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    color: var(--text-color-light);
-    text-align: center;
-}
-
-.feature-card:hover, .nft-item:hover, .ad-item:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--box-shadow-hover);
-}
-
-/* Картинки внутри карточек */
-.nft-item img, .ad-item img, .nft-detail-image {
-    max-width: 100%;
+.placeholder-item.post {
+    text-align: left;
     height: auto;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    border: 1px solid var(--section-bg-dark);
-}
-
-/* --- 3. ФОРМЫ (Web3 & NFT Mint) --- */
-.web3-form-container {
-    max-width: 550px;
-    margin: var(--spacing-lg) auto;
-    background-color: var(--color-bg-input);
-    padding: var(--spacing-lg);
-    border-radius: 12px;
-    border: 1px solid var(--section-bg-dark);
-}
-
-.web3-form label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: var(--color-blue-web3);
-}
-
-.web3-form input:not([type="file"]), 
-.web3-form textarea, 
-.web3-form select {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: var(--spacing-md);
-    border: 1px solid var(--section-bg-dark);
-    border-radius: 8px;
-    background-color: var(--color-bg-input);
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    padding: 25px;
+    border-radius: var(--border-radius-base);
     color: var(--text-color-light);
-    font-family: inherit;
 }
 
-.web3-form input::placeholder { color: var(--text-color-dimmed); }
+.placeholder-item.post h3 {
+    color: var(--color-orange-multimedia);
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+}
 
-/* --- 4. КОНТЕНТНЫЕ ЗОНЫ (Drop-зоны и плейсхолдеры) --- */
-.content-area-styled {
-    min-height: 200px;
-    background-color: var(--color-bg-input);
-    padding: 20px;
-    border-radius: 12px;
-    border: 2px dashed var(--text-color-dimmed);
+.placeholder-item.post small {
+    display: block;
+    margin-top: var(--spacing-sm);
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.portal-games-grid, .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.placeholder-item.portal-game, .placeholder-item.game {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    text-align: left;
+    height: auto;
+    padding: 25px;
+    border-radius: var(--border-radius-base);
     display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--text-color-light);
 }
 
-.web3-placeholder-tag {
-    background-color: var(--color-bg-card);
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-style: italic;
-    font-size: 0.9em;
+.placeholder-item.portal-game h3, .placeholder-item.game h3 {
+    color: var(--color-orange-multimedia);
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.placeholder-item.portal-game .multimedia-btn, .placeholder-item.game .multimedia-btn {
+    align-self: flex-start;
+    margin-top: 15px;
+}
+
+
+/* ==========================================================================
+   Footer
+========================================================================== */
+.footer {
+    background-color: #10101a;
     color: var(--text-color-dimmed);
+    text-align: center;
+    padding: 30px 0;
+    border-top: 1px solid var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    font-size: 0.9em;
 }
 
-/* --- 5. ДЕТАЛЬНЫЙ ПРОСМОТР NFT --- */
-.nft-detail-view h3 {
+.footer p {
+    margin: var(--spacing-xs) 0;
+    font-size: 0.9em;
+}
+
+.footer .copy-btn {
+    background-color: var(--secondary-color); 
+}
+
+.footer .copy-btn:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 90%, black);
+}
+
+.footer .highlight-text {
+    color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Modals
+========================================================================== */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 2000; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-modal-overlay); 
+    padding-top: 0; 
+}
+
+/* Класс, который ваш JS должен добавлять для отображения модального окна */
+.modal.is-open {
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto; 
+    padding: var(--spacing-md) 0; 
+}
+
+.modal-content {
+    background-color: var(--color-bg-input);
+    margin: auto;
+    padding: var(--spacing-lg);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    position: relative;
+    max-width: 700px;
+    width: 90%; 
+    animation: fadeInScale 0.3s ease-out; 
+    color: var(--text-color-light); 
+    max-height: 90vh;
+    overflow-y: auto; 
+    border: 1px solid var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+}
+
+.modal-content h3 {
     color: var(--primary-color);
     text-align: center;
-    font-size: 2rem;
+    margin-bottom: var(--spacing-lg);
 }
 
-.nft-detail-info p { margin-bottom: 10px; font-size: 1.1rem; }
-.nft-detail-info strong { color: #fff; }
-
-#nftDetailMint, #nftDetailOwner {
-    font-family: monospace;
-    background: var(--color-bg-card);
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    word-break: break-all;
+.modal-content .web3-form {
+    background: none; 
+    box-shadow: none; 
+    padding: 0; 
 }
 
+.modal-content .modal-nft-image {
+    max-width: 80%;
+    height: auto;
+    display: block;
+    margin: 0 auto var(--spacing-md);
+    border-radius: var(--border-radius);
+}
+
+.close-button {
+    color: var(--text-color-dimmed); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 36px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: var(--text-color-light);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Keyframes для анимации модального окна */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ==========================================================================
+   Notification Container
+========================================================================== */
+#notificationContainer {
+    position: fixed;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 10000; 
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    pointer-events: none; 
+}
+
+.notification {
+    background-color: var(--color-bg-card); /* ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ */
+    color: var(--text-color-light);
+    padding: 15px 20px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    min-width: 280px; 
+    text-align: center;
+    pointer-events: all; 
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95em;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.info {
+    background-color: var(--info-color);
+}
+
+.notification.success {
+    background-color: var(--success-color);
+}
+
+.notification.error {
+    background-color: var(--error-color);
+}
+
+@keyframes fadeInSlideUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   Media Queries for Responsiveness (ОБНОВЛЕННЫЙ БЛОК: Мобильное меню)
+========================================================================== */
+@media (max-width: 992px) {
+    h1 { font-size: 2.5em; }
+    h2 { font-size: 2em; }
+    .hero-content h1 { font-size: 3em; }
+
+    .nav ul.main-nav {
+        gap: var(--spacing-sm);
+    }
+}
+
+@media (max-width: 768px) {
+    /* ----------------------------------------------------- */
+    /* 🦊 МОБИЛЬНОЕ МЕНЮ (ЧАСТЬ 3: Web3-стиль с размытием) 🦊 */
+    /* ----------------------------------------------------- */
+    
+    .menu-toggle {
+        display: flex; /* Показываем гамбургер на мобильном */
+        position: relative;
+    }
+    
+    .nav ul.main-nav { 
+        display: flex; 
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        right: 0; 
+        width: 100%; 
+        max-width: 300px; /* Чуть уже для элегантности */
+        height: 100%;
+        
+        /* 🛑 ЭФФЕКТ WEB3: Размытый фон */
+        background-color: rgba(26, 26, 46, 0.95); /* Deep dark blue с прозрачностью */
+        backdrop-filter: blur(10px); /* Эффект матового стекла */
+        -webkit-backdrop-filter: blur(10px); /* Для Safari */
+        
+        padding: 80px var(--spacing-md) var(--spacing-md);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+        
+        transform: translateX(100%); 
+        opacity: 0; 
+        visibility: hidden; 
+        transition: transform 0.4s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.4s ease-in-out; 
+        
+        z-index: 1001;
+        overflow-y: auto;
+        align-items: flex-start; 
+        gap: 0; 
+        border-left: 1px solid rgba(255, 215, 0, 0.1); /* Тонкая золотая линия слева */
+    }
+    
+    .nav ul.main-nav.active {
+        transform: translateX(0);
+        opacity: 1; 
+        visibility: visible; 
+    }
+    
+    /* СТИЛИ ПУНКТОВ МЕНЮ */
+    .nav ul.main-nav li {
+        width: 100%;
+        text-align: left;
+        margin-bottom: 0; 
+        border-bottom: 1px solid rgba(255, 215, 0, 0.08); /* Очень тонкая золотая разделительная линия */
+    }
+
+    .nav ul.main-nav li:last-child {
+        border-bottom: none; 
+    }
+
+    .nav ul.main-nav li a {
+        font-family: var(--font-primary); 
+        font-size: 1.3em; 
+        display: block;
+        padding: 18px 20px; /* Больший тач-таргет */
+        color: var(--text-color-white); 
+        font-weight: 600; 
+        transition: all 0.2s ease-out;
+        letter-spacing: 0.5px; 
+    }
+    
+    .nav ul.main-nav li a:hover,
+    .nav ul.main-nav li a.active {
+        background-color: var(--color-bg-card);
+        color: var(--primary-color);
+        border-left: 5px solid var(--primary-color);
+        padding-left: 25px; 
+    }
+    
+    /* Убираем подчеркивание */
+    .nav ul.main-nav li a::after {
+        display: none;
+    }
+    
+    /* ----------------------------------------------------- */
+    /* ВАШИ ОСТАЛЬНЫЕ СТИЛИ ДЛЯ 768PX */
+    /* ----------------------------------------------------- */
+
+    .header .container {
+        flex-wrap: wrap;
+        justify-content: space-between; 
+        text-align: left;
+        gap: 0; 
+    }
+
+    .logo {
+        margin-bottom: 0; 
+        width: auto;
+        justify-content: flex-start;
+    }
+    
+    .nav {
+        width: auto; 
+        display: block;
+        justify-content: flex-end;
+    }
+
+    /* Корректировка героической секции */
+    .hero-section .container {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .hero-content {
+        text-align: center;
+        order: 2; 
+    }
+    .hero-content h1, .hero-content .tagline {
+        text-align: center; 
+    }
+
+
+    .hero-image {
+        order: 1; 
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .call-to-action, .hero-buttons {
+        justify-content: center; 
+    }
+    .hero-buttons .btn, .hero-buttons .primary-btn {
+        width: 100%; 
+    }
+
+    h1 { font-size: 2.8em; }
+    h2 { font-size: 2em; }
+    .hero-content h1 { font-size: 2.8em; }
+    .aurum-heading, .web3-heading, .multimedia-heading {
+        font-size: 1.8em;
+    }
+
+    .hero-section, .section, .web3-section, .multimedia-section {
+        padding: 60px 0;
+    }
+
+    /* Одиночная колонка для всех Grid-элементов */
+    .tokenomics-grid,
+    .nft-showcase,
+    .nfc-grid,
+    .roadmap-grid,
+    .news-list,
+    .announcements-list,
+    .web3-features-grid,
+    .games-grid,
+    .nft-grid,
+    .ad-list,
+    .dao-proposals-grid,
+    .staking-info-grid,
+    .multimedia-features-grid,
+    .gallery,
+    .posts,
+    .games {
+        grid-template-columns: 1fr; 
+    }
+    
+    /* Дополнительная адаптация roadmap для читабельности */
+    .roadmap-grid {
+        border-left: none; 
+    }
+    
+    .roadmap-item {
+        padding-left: var(--spacing-md);
+        text-align: left;
+    }
+    
+    .buy-steps li {
+        padding: 20px;
+    }
+
+    /* Адаптация формы и контейнеров */
+    .contact-form, .nft-form-container, .upload-form {
+        padding: var(--spacing-md);
+    }
+    #aurum-announcements .container, .multimedia-portal-container {
+        padding: var(--spacing-md);
+    }
+    textarea#announcementInput {
+        width: 100%;
+        padding: 10px;
+    }
+    button#publishButton {
+        width: 100%;
+    }
+    .multimedia-form input, .multimedia-form textarea {
+        width: 100%;
+    }
+    .multimedia-btn {
+        width: 100%;
+    }
+
+    .staking-actions .input-group {
+        flex-direction: column; 
+        align-items: center;
+        gap: 10px;
+    }
+
+    .staking-actions input[type="number"] {
+        max-width: 100%; 
+        margin-right: 0;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: var(--spacing-md);
+    }
+    
+    /* Адаптация социальных ссылок */
+    .social-links {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .social-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
+   МОБІЛЬНА АДАПТИВНІСТЬ ДЛЯ СІТОК ТА ТАБЛИЦЬ (MAX-WIDTH: 600PX)
+   ========================================================================== */
+@media (max-width: 600px) {
+    /* Основні сітки на всю ширину (стовпчик), вже були 1fr, але для надійності */
+    .tokenomics-grid,
+    .web3-features-grid,
+    .dao-proposals-grid,
+    .nft-showcase,
+    .nfc-grid,
+    .games-grid,
+    .staking-info-grid,
+    .ad-list,
+    .multimedia-features-grid,
+    .gallery,
+    .posts,
+    .games {
+        grid-template-columns: 1fr; 
+        gap: 25px; 
+    }
+    
+    .nft-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+    }
+
+    /* Адаптация таблиці токеноміки (Horizontal Scrolling або Card View) */
+    .tokenomics-item table {
+        width: 100%;
+        display: block;
+        overflow-x: auto; 
+    }
+    
+    .dao-vote-btn {
+        width: calc(50% - 7.5px); 
+        margin: 5px 0;
+    }
+    .dao-actions {
+        gap: 10px;
+    }
+}
+
+
+/* ==========================================================================
+   Media Queries for Responsiveness (The smallest screens - Original)
+========================================================================== */
+@media (max-width: 480px) {
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.6em; }
+    .hero-content h1 { font-size: 2.4em; }
+    .hero-content .tagline { font-size: 1.1em; }
+    
+    .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .web3-button {
+        padding: var(--spacing-sm);
+        font-size: 0.9em;
+    }
+    .social-btn, .btn, .primary-btn, .secondary-btn, .web3-btn, .multimedia-btn, .web3-button {
+        width: 100%; 
+        justify-content: center;
+        padding: 12px 20px;
+        margin: 5px 0;
+    }
+    
+    .container {
+        padding: 0 var(--spacing-sm); 
+    }
+    .section {
+        padding: var(--spacing-lg) var(--spacing-sm);
+    }
+    .nft-item img {
+        height: 150px;
+    }
+    
+    .dao-vote-btn {
+        width: 100%; 
+    }
+    
+    .tokenomics-item .highlight {
+        font-size: 1.4em; 
+    }
+}
 /* ==========================================================================
    Web3 Connect Wallet Button (ОПТИМИЗИРОВАНО)
 ========================================================================== */
@@ -744,793 +2649,4 @@ table.data-table {
     transform: translateY(0) scale(0.97);
     box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
-/* -------------------------------------------------------------------------- */
 
-
-/* 💻 ОТОБРАЖЕНИЕ АДРЕСА: УЛУЧШЕНИЕ ВИДИМОСТИ */
-.web3-wallet-display {
-    text-align: center;
-    margin-top: var(--spacing-md);
-    font-size: 1.1em;
-    color: var(--text-color-light); 
-    background-color: var(--color-bg-input); /* Чуть светлее, чем карточка */
-    padding: 15px;
-    border-radius: var(--border-radius-base);
-    display: inline-block;
-    font-family: 'Courier New', monospace;
-    word-break: break-all;
-    border: 1px solid var(--color-blue-web3); /* Акцент Web3 */
-    box-shadow: var(--box-shadow-inset);
-}
-.web3-wallet-display span {
-    font-weight: bold;
-    color: var(--color-wallet-address);
-}
-/* -------------------------------------------------------------------------- */
-
-/* ==========================================================================
-   DAO Section (ОПТИМИЗИРОВАНО)
-========================================================================== */
-
-/* Используем нашу общую сетку .web3-grid или .content-grid вместо создания новой */
-.dao-proposals-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 25px;
-    margin-top: var(--spacing-md);
-}
-
-/* Наследуем стили от базовой карточки .base-card, если ты ее добавил в HTML, 
-   либо оставляем этот сжатый вариант: */
-.dao-proposal-item {
-    background-color: var(--color-bg-card);
-    padding: var(--spacing-md);
-    border-radius: 12px;
-    border: 1px solid var(--section-bg-dark);
-    box-shadow: var(--box-shadow-medium);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    transition: transform 0.3s ease;
-}
-
-.dao-proposal-item:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--box-shadow-hover);
-}
-
-/* Детали предложения */
-.dao-creator {
-    font-family: monospace;
-    color: var(--color-wallet-address);
-    font-size: 0.9em;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 4px 8px;
-    border-radius: 4px;
-    word-break: break-all;
-}
-
-.dao-stats {
-    display: flex;
-    justify-content: space-between;
-    font-weight: 700;
-    margin-top: 10px;
-}
-
-.dao-votes-for { color: var(--success-color); }
-.dao-votes-against { color: var(--error-color); }
-
-/* Кнопки голосования (наследуют базу .btn) */
-.dao-vote-btn {
-    width: 100%;
-    margin-top: 10px;
-    padding: 12px;
-    font-weight: 700;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-/* Модификаторы цветов через атрибуты */
-.dao-vote-btn[data-vote-type="for"] {
-    background-color: var(--success-color);
-    color: #fff;
-}
-
-.dao-vote-btn[data-vote-type="against"] {
-    background-color: var(--error-color);
-    color: #fff;
-}
-
-.dao-vote-btn:hover {
-    filter: brightness(1.2);
-    transform: translateY(-2px);
-}
-/* ==========================================================================
-   Staking Section (CLEAN & DEFI STYLE)
-========================================================================== */
-
-#staking-section {
-    padding: 60px 0;
-    background-color: var(--color-bg-input);
-}
-
-/* 1. СЕТКА ПОКАЗАТЕЛЕЙ (APR, TVL, My Stake) */
-.staking-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
-    margin: 30px 0;
-}
-
-/* Используем базу карточки, добавляя специфику значений */
-.info-card {
-    background-color: var(--color-bg-card);
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid var(--section-bg-dark);
-    text-align: center;
-    transition: transform 0.3s ease;
-}
-
-.info-card:hover { transform: translateY(-5px); }
-
-.info-card h3 {
-    color: var(--primary-color);
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-}
-
-.info-card .info-value {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #fff; /* Яркий белый для цифр */
-}
-
-/* 2. ПАНЕЛЬ ДЕЙСТВИЙ (Stake/Unstake) */
-.staking-actions {
-    background-color: var(--color-bg-card);
-    padding: 40px;
-    border-radius: 16px;
-    border: 1px solid var(--primary-color); /* Выделяем главную зону рамкой */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    text-align: center;
-    margin-bottom: 40px;
-}
-
-.staking-actions .input-group {
-    display: flex;
-    max-width: 500px;
-    margin: 0 auto 25px;
-    gap: 10px;
-}
-
-/* Современный стиль инпута для цифр */
-.staking-actions input[type="number"] {
-    flex: 1;
-    padding: 14px 20px;
-    background: var(--color-bg-input);
-    border: 1px solid var(--section-bg-dark);
-    border-radius: 10px;
-    color: #fff;
-    font-size: 1.2rem;
-    font-weight: 600;
-    outline: none;
-    transition: border-color 0.3s;
-}
-
-.staking-actions input[type="number"]:focus {
-    border-color: var(--primary-color);
-}
-
-/* 3. ИНФОРМАЦИОННЫЙ БЛОК (Details) */
-.staking-details {
-    background-color: rgba(255, 255, 255, 0.02);
-    padding: 30px;
-    border-radius: 12px;
-    border-left: 4px solid var(--primary-color);
-}
-
-.staking-details ul {
-    list-style: none;
-    padding: 0;
-}
-
-.staking-details li {
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    justify-content: space-between;
-}
-
-.staking-details li:last-child { border-bottom: none; }
-
-.staking-details li strong { color: var(--primary-color); }
-/* ==========================================================================
-   Multimedia Hub (Оптимизировано)
-========================================================================== */
-
-/* Универсальный контейнер портала */
-.multimedia-portal-container {
-    background: var(--color-bg-dark); 
-    padding: var(--spacing-lg);
-    border-radius: var(--border-radius-base);
-    box-shadow: var(--shadow-lg);
-    text-align: center;
-}
-
-/* Единая сетка для всего: галереи, игр, постов и фич */
-.multimedia-grid, 
-.multimedia-features-grid, 
-.gallery, .posts, .games, .photo-grid, .portal-games-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
-}
-
-/* Универсальная карточка мультимедиа (База для всего) */
-.multimedia-item, .feature-card, .placeholder-item.post, .placeholder-item.game {
-    background-color: var(--color-bg-card);
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-base);
-    border: 1px solid var(--section-bg-dark);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    color: var(--text-color-light);
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-}
-
-.multimedia-item:hover, .feature-card:hover, .placeholder-item:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--box-shadow-hover);
-}
-
-/* Заголовки в мультимедиа */
-.multimedia-item h3, .placeholder-item h3 {
-    color: var(--color-orange-multimedia);
-    margin: 15px 0 10px;
-}
-
-/* Изображения контента */
-.multimedia-item img {
-    width: 100%;
-    height: 180px; 
-    object-fit: cover;
-    border-radius: 8px;
-    transition: transform 0.3s ease;
-}
-
-.multimedia-item img:hover { transform: scale(1.03); }
-
-/* --- ФОРМА ЗАГРУЗКИ (Наследует общие стили форм) --- */
-.upload-form {
-    max-width: 600px;
-    margin: 40px auto;
-    background: var(--color-bg-input);
-    padding: 30px;
-    border-radius: 15px;
-    text-align: left;
-}
-
-.upload-form label {
-    display: block;
-    color: var(--primary-color);
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.upload-form input, .upload-form textarea {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 20px;
-    background: var(--color-bg-card);
-    border: 1px solid var(--section-bg-dark);
-    border-radius: 8px;
-    color: #fff;
-}
-
-/* Специфика игр (мини-инпуты) */
-.game-controls {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 15px;
-}
-
-.game-controls input[type="number"] {
-    width: 80px;
-    text-align: center;
-    border-radius: 6px;
-}
-
-/* Ссылки-кнопки */
-.multimedia-link {
-    display: inline-block;
-    margin-top: auto; /* Прижимает кнопку к низу карточки */
-    padding: 10px 20px;
-    background: var(--secondary-color);
-    color: #fff;
-    border-radius: 6px;
-    font-weight: 700;
-    transition: 0.3s;
-}
-
-.multimedia-link:hover {
-    filter: brightness(1.2);
-    transform: translateY(-2px);
-}
-/* ==========================================================================
-   Footer (Минимализм и чистота)
-========================================================================== */
-.footer {
-    background-color: #0d0d14; /* Чуть глубже основной темы */
-    color: var(--text-color-dimmed);
-    text-align: center;
-    padding: 40px 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 0.9rem;
-}
-
-.footer p {
-    margin: 8px 0;
-}
-
-.footer .highlight-text {
-    color: var(--primary-color);
-    font-weight: 600;
-}
-
-/* Кнопки в футере теперь используют общую логику фильтра яркости */
-.footer .copy-btn {
-    background-color: var(--secondary-color);
-    margin-top: 10px;
-}
-
-.footer .copy-btn:hover {
-    filter: brightness(1.2);
-}
-
-/* ==========================================================================
-   Modals (Modern Glassmorphism Style)
-========================================================================== */
-.modal {
-    display: none;
-    position: fixed;
-    inset: 0; /* Заменяет top, left, width, height: 100% */
-    z-index: 2000;
-    background-color: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px); /* Эффект размытия заднего фона */
-}
-
-.modal.is-open {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.3s ease;
-}
-
-.modal-content {
-    background-color: var(--color-bg-card);
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    position: relative;
-    width: 90%;
-    max-width: 650px;
-    max-height: 85vh;
-    overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    animation: slideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    color: var(--text-color-light);
-}
-
-.modal-content h3 {
-    color: var(--primary-color);
-    font-size: 1.8rem;
-    margin-bottom: 25px;
-}
-
-/* Изображение NFT в модалке */
-.modal-nft-image {
-    width: 100%;
-    max-width: 400px;
-    height: auto;
-    border-radius: 15px;
-    margin: 0 auto 20px;
-    display: block;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-}
-
-/* Кнопка закрытия */
-.close-button {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 28px;
-    color: var(--text-color-dimmed);
-    cursor: pointer;
-    transition: transform 0.2s, color 0.2s;
-}
-
-.close-button:hover {
-    color: #fff;
-    transform: rotate(90deg);
-}
-
-/* ==========================================================================
-   Animations
-========================================================================== */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-/* ==========================================================================
-   Notification System (Оптимизировано)
-========================================================================== */
-#notificationContainer {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    pointer-events: none;
-}
-
-.notification {
-    background: var(--color-bg-card);
-    color: #fff;
-    padding: 16px 24px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    opacity: 0;
-    transform: translateX(50px);
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    min-width: 300px;
-    pointer-events: all;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-left: 5px solid var(--primary-color); /* Дефолтный цвет */
-}
-
-.notification.show {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-/* Цветовые акценты (только левая полоса) */
-.notification.info { border-left-color: #3498db; }
-.notification.success { border-left-color: var(--success-color); }
-.notification.error { border-left-color: var(--error-color); }
-/* ==========================================================================
-   Mobile Navigation (Glassmorphism & Web3 Style)
-========================================================================== */
-
-/* Кнопка гамбургера */
-.menu-toggle {
-    display: flex;
-    position: relative;
-    z-index: 1002; /* Выше меню */
-    cursor: pointer;
-}
-
-/* Сама выезжающая панель */
-.nav ul.main-nav { 
-    display: flex; 
-    flex-direction: column;
-    position: fixed;
-    top: 0;
-    right: 0; 
-    width: 280px; /* Фиксированная ширина для предсказуемости */
-    height: 100vh;
-    
-    /* Эффект матового стекла */
-    background: rgba(13, 13, 23, 0.9); 
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    
-    padding: 80px 0 30px 0; /* Убираем боковой паддинг у контейнера для кликабельности во всю ширину */
-    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
-    border-left: 1px solid rgba(255, 215, 0, 0.1); 
-    
-    /* Анимация появления */
-    transform: translateX(100%); 
-    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    z-index: 1001;
-    overflow-y: auto;
-}
-
-/* Состояние при открытии */
-.nav ul.main-nav.active {
-    transform: translateX(0);
-}
-
-/* Пункты меню */
-.nav ul.main-nav li {
-    width: 100%;
-    list-style: none;
-}
-
-.nav ul.main-nav li a {
-    display: block;
-    padding: 16px 25px;
-    font-size: 1.15rem;
-    color: var(--text-color-white);
-    font-weight: 600;
-    text-decoration: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-    transition: all 0.3s ease;
-    letter-spacing: 0.5px;
-}
-
-/* Эффект при наведении/активности */
-.nav ul.main-nav li a:hover,
-.nav ul.main-nav li a.active {
-    background: rgba(255, 215, 0, 0.05); /* Легкий золотой отблеск */
-    color: var(--primary-color);
-    padding-left: 35px; /* Плавный сдвиг вправо */
-}
-
-/* Удаляем последнюю линию */
-.nav ul.main-nav li:last-child a {
-    border-bottom: none;
-}
-/* ==========================================================================
-   Responsive Design (Mobile & Tablet Optimization)
-========================================================================== */
-
-@media (max-width: 768px) {
-    /* 1. HEADER & NAVIGATION */
-    .header .container {
-        flex-wrap: nowrap; /* Держим лого и меню в одной строке */
-        justify-content: space-between;
-        padding: 0 20px;
-    }
-
-    .logo {
-        width: auto;
-        margin: 0;
-    }
-
-    /* 2. HERO SECTION (Реверсивный порядок для мобильных) */
-    .hero-section .container {
-        flex-direction: column;
-        text-align: center;
-        padding-top: 20px;
-    }
-
-    .hero-image {
-        order: -1; /* Картинка теперь ПЕРЕД текстом на мобилках */
-        width: 100%;
-        max-width: 300px;
-        margin: 0 auto var(--spacing-lg);
-    }
-
-    .hero-content {
-        width: 100%;
-    }
-
-    .hero-buttons {
-        flex-direction: column;
-        width: 100%;
-        gap: 12px;
-    }
-
-    .hero-buttons .btn, 
-    .hero-buttons .primary-btn, 
-    .web3-button {
-        width: 100% !important; /* Кнопки на всю ширину для удобства нажатия */
-        display: flex;
-    }
-
-    /* 3. УНИВЕРСАЛЬНЫЕ СЕТКИ (Одной колонкой) */
-    .tokenomics-grid,
-    .roadmap-grid,
-    .web3-grid,
-    .nft-grid,
-    .dao-proposals-grid,
-    .multimedia-grid,
-    .staking-info-grid,
-    .news-list,
-    .gallery,
-    .posts {
-        grid-template-columns: 1fr !important;
-        gap: 20px;
-    }
-
-    /* 4. СПЕЦИФИЧЕСКИЕ ЭЛЕМЕНТЫ (Staking & DAO) */
-    .staking-actions .input-group {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .staking-actions input[type="number"] {
-        max-width: 100%;
-        width: 100%;
-        margin: 0 0 10px 0;
-    }
-
-    .dao-vote-btn {
-        width: 100%;
-        margin-right: 0;
-    }
-
-    /* 5. ТИПОГРАФИКА (Уменьшаем для экранов смартфонов) */
-    h1, .hero-content h1 { font-size: 2.2rem; }
-    h2, .web3-heading { font-size: 1.8rem; }
-    .tagline { font-size: 1rem; }
-
-    /* 6. ФОРМЫ И МОДАЛКИ */
-    .contact-form, 
-    .nft-form-container, 
-    .upload-form, 
-    .modal-content {
-        width: 92%;
-        padding: 20px;
-        margin: 10px auto;
-    }
-
-    .social-links {
-        display: grid;
-        grid-template-columns: 1fr 1fr; /* Соцсети в две колонки для компактности */
-        gap: 10px;
-    }
-
-    .social-btn {
-        width: 100%;
-        padding: 10px;
-    }
-}
-/* ==========================================================================
-   Mobile Optimization (Extra Small Screens < 600px)
-========================================================================== */
-
-@media (max-width: 600px) {
-    /* 1. Глобальні налаштування відступів */
-    .container {
-        padding-left: 15px;
-        padding-right: 15px;
-    }
-
-    /* 2. Покращена сітка NFT (2 в ряд на дуже малих екранах) */
-    .nft-grid {
-        /* minmax(140px) дозволяє вмістити 2 картки на екранах від 320px */
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-        gap: 12px;
-    }
-
-    .nft-item {
-        padding: 10px;
-    }
-
-    .nft-item img {
-        height: 120px; /* Фіксована висота для вирівнювання сітки */
-    }
-
-    /* 3. Адаптація таблиць (Метод адаптивного скролу) */
-    .tokenomics-item {
-        overflow: hidden; /* Запобігає виходу за межі контейнера */
-    }
-
-    .tokenomics-item table {
-        display: block;
-        width: 100%;
-        overflow-x: auto; /* Дозволяє горизонтальний свайп таблиці */
-        -webkit-overflow-scrolling: touch;
-        white-space: nowrap; /* Не дає тексту переноситися, зберігаючи структуру рядка */
-        border-collapse: collapse;
-    }
-
-    /* 4. DAO Кнопки та Голосування */
-    .dao-actions {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .dao-vote-btn {
-        width: 100%; /* На малих екранах кнопки краще робити на всю ширину */
-        margin: 4px 0;
-        font-size: 0.95rem;
-    }
-
-    /* 5. Налаштування тексту та заголовків */
-    h1 { font-size: 1.8rem; }
-    h2 { font-size: 1.5rem; }
-    
-    .info-card .info-value {
-        font-size: 1.5rem; /* Зменшуємо цифри в стейкінгу, щоб не вилазили */
-    }
-
-    /* 6. Покращення форм */
-    .web3-form input, 
-    .web3-form textarea, 
-    .upload-form input {
-        font-size: 16px; /* Запобігає автоматичному зуму в Safari на iOS */
-        padding: 10px;
-    }
-}
-/* ==========================================================================
-   Responsiveness (Extra Small Devices < 480px)
-========================================================================== */
-
-@media (max-width: 480px) {
-    /* 1. ТИПОГРАФІКА (Компактність без втрати читабельності) */
-    h1, .hero-content h1 { 
-        font-size: 1.8rem; 
-        line-height: 1.2;
-    }
-    
-    h2 { font-size: 1.5rem; }
-    
-    .hero-content .tagline { 
-        font-size: 1rem; 
-        margin-bottom: 20px;
-    }
-
-    /* 2. КНОПКИ (Максимальна зручність для натискання) */
-    .btn, 
-    .primary-btn, 
-    .secondary-btn, 
-    .web3-btn, 
-    .multimedia-btn, 
-    .web3-button, 
-    .social-btn, 
-    .dao-vote-btn {
-        width: 100% !important; 
-        display: flex;
-        justify-content: center;
-        padding: 14px 20px; /* Збільшений вертикальний тап-зону */
-        font-size: 0.95rem;
-        margin: 8px 0;
-        box-sizing: border-box;
-    }
-
-    /* 3. КОНТЕЙНЕРИ ТА ВІДСТУПИ */
-    .container {
-        padding-left: 15px;
-        padding-right: 15px;
-    }
-
-    .section, 
-    .web3-section, 
-    .multimedia-section {
-        padding: 40px 0; /* Зменшуємо вертикальні відступи секцій */
-    }
-
-    /* 4. СПЕЦИФІКАЦІЯ ЕЛЕМЕНТІВ */
-    .nft-item img {
-        height: 130px; /* Оптимально для iPhone SE та аналогів */
-        object-fit: cover;
-    }
-
-    .tokenomics-item .highlight {
-        font-size: 1.25rem; 
-        display: block;
-        margin-top: 5px;
-    }
-
-    /* Вирівнювання іконок всередині кнопок */
-    .web3-button .fox-icon {
-        width: 22px;
-        height: 22px;
-        margin-right: 8px;
-    }
-}
