@@ -1203,60 +1203,103 @@ async function executeSmartActionWithFullEffects(btn, config) {
 }
 
 /**
- * 5. ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА (Без дубликатов)
+ * ============================================================
+ * ИСПРАВЛЕННЫЙ БЛОК УПРАВЛЕНИЯ КНОПКАМИ (AURUM FOX CORE)
+ * ============================================================
  */
 function setupModernUI() {
+    console.log("🎯 [System]: Регистрация всех кнопок экосистемы...");
+
     const actions = [
-        { 
-            id: 'connectWalletBtn', 
-            name: 'Wallet', 
-            msg: 'Action Done! ⚡', 
-            icon: '💎', 
-            // ИСПРАВЛЕННАЯ ЛОГИКА ТУТ:
-            fn: async () => {
-                if (appState.walletPublicKey) {
-                    await disconnectWallet();
-                } else {
-                    await connectWallet();
-                }
-            } 
-        },
-        { id: 'stake-afox-btn', name: 'Staking', msg: 'Locked! 📈', icon: '💎', fn: handleStakeAfox },
-        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Withdrawn! 🔓', icon: '💎', fn: handleUnstakeAfox },
-        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Claimed! 🎁', icon: '💎', fn: handleClaimRewards },
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Created! 🚀', icon: '💎', fn: handleCreateProposal },
-        { id: 'vote-for-btn', name: 'Vote', msg: 'Voted FOR!', icon: '💎', fn: () => handleVote('FOR') },
-        { id: 'vote-against-btn', name: 'Vote', msg: 'Voted AGAINST!', icon: '💎', fn: () => handleVote('AGAINST') },
-        { id: 'lend-btn', name: 'Lend', msg: 'Liquidity Added!', icon: '💎', fn: () => handleLendingAction('Lend') },
-        { id: 'withdraw-btn', name: 'Withdraw', msg: 'Assets Freed!', icon: '💎', fn: () => handleLendingAction('Withdraw') },
-        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Taken!', icon: '💎', fn: () => handleLoanAction('Borrow') },
-        { id: 'repay-btn', name: 'Repay', msg: 'Loan Repaid!', icon: '💎', fn: () => handleLoanAction('Repay') }
+        // --- Wallet ---
+        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Action Done! ⚡', fn: async () => {
+            if (appState.walletPublicKey) await disconnectWallet();
+            else await connectWallet();
+        }},
+
+        // --- Staking ---
+        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Staked! 📈', fn: handleStakeAfox },
+        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🔓', fn: handleUnstakeAfox },
+        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Rewards Received! 🎁', fn: handleClaimRewards },
+
+        // --- DAO ---
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Proposal Active! 🚀', fn: handleCreateProposal },
+        // Голосование через делегирование (для динамических кнопок)
+        { id: 'filterActiveBtn', name: 'Filter', msg: 'Showing Active', fn: async () => console.log("Filtering...") },
+        { id: 'filterClosedBtn', name: 'Filter', msg: 'Showing Closed', fn: async () => console.log("Filtering...") },
+
+        // --- Lending & Borrowing ---
+        { id: 'lend-btn', name: 'Lending', msg: 'Assets Supplied! 🏦', fn: () => handleLendingAction('Lend') },
+        { id: 'withdraw-lend-btn', name: 'Withdraw', msg: 'Assets Withdrawn! 💸', fn: () => handleLendingAction('Withdraw') },
+        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Processed! 💰', fn: () => handleLoanAction('Borrow') },
+        { id: 'repay-btn', name: 'Repay', msg: 'Loan Repaid! ✅', fn: () => handleLoanAction('Repay') }
     ];
 
+    // Привязываем каждую кнопку к эффектам и логике
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            const cleanBtn = el.cloneNode(true); // Чистим дубликаты
+            // Очистка старых слушателей (клонирование)
+            const cleanBtn = el.cloneNode(true);
             el.parentNode.replaceChild(cleanBtn, el);
+            
             cleanBtn.onclick = (e) => {
                 e.preventDefault();
-                // Запускаем через твой единый обработчик эффектов
+                if (!appState.walletPublicKey && item.id !== 'connectWalletBtn') {
+                    showNotification("Connect wallet first! 🦊", "error");
+                    return;
+                }
                 executeSmartActionWithFullEffects(cleanBtn, item);
             };
         }
     });
 
-    // Фикс модалок DAO (оставляем как было)
-    const createBtn = document.getElementById('createProposalBtn');
-    const modal = document.getElementById('createProposalModal');
-    const closeBtn = document.getElementById('closeProposalModal');
+    // --- ДОПОЛНИТЕЛЬНАЯ ЛОГИКА ДЛЯ КНОПОК MAX ---
+    const maxStakeBtn = document.getElementById('max-stake-btn');
+    if (maxStakeBtn) {
+        maxStakeBtn.onclick = () => {
+            if (appState.userBalances.AFOX > 0n) {
+                const amount = formatBigInt(appState.userBalances.AFOX, AFOX_DECIMALS);
+                document.getElementById('stake-amount').value = amount;
+                showNotification(`Max amount set: ${amount} AFOX`, "info");
+            }
+        };
+    }
 
-    if (createBtn && modal) createBtn.onclick = () => modal.style.display = 'flex';
-    if (closeBtn && modal) closeBtn.onclick = () => modal.style.display = 'none';
-    
-    window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
+    // --- КНОПКИ ГОЛОСОВАНИЯ ВНУТРИ КАРТОЧЕК (DAO) ---
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('dao-vote-btn')) {
+            const type = e.target.getAttribute('data-vote-type'); // "for" или "against"
+            executeSmartActionWithFullEffects(e.target, {
+                name: "Voting",
+                msg: `Voted ${type.toUpperCase()}!`,
+                fn: async () => {
+                    console.log(`Voting ${type} on proposal...`);
+                    await new Promise(r => setTimeout(r, 1500)); // Симуляция
+                }
+            });
+        }
+    });
+
+    // --- ОБРАБОТКА МОДАЛЬНОГО ОКНА DAO ---
+    const modal = document.getElementById('createProposalModal');
+    const openBtn = document.getElementById('createProposalBtn');
+    const closeBtn = document.getElementById('closeProposalModal');
+    const cancelBtn = document.getElementById('cancelProposalBtn');
+
+    if (openBtn) openBtn.onclick = () => modal.style.display = 'flex';
+    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+    if (cancelBtn) cancelBtn.onclick = () => modal.style.display = 'none';
 }
 
+// Переинициализация при загрузке
+window.addEventListener('DOMContentLoaded', () => {
+    // Ждем секунду для прогрузки всех стилей и скриптов
+    setTimeout(() => {
+        setupModernUI();
+        console.log("✅ [System]: Все блоки HTML синхронизированы с JavaScript.");
+    }, 1000);
+});
 
 
 
