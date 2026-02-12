@@ -274,19 +274,25 @@
             </div>
         </section>
 
-       <section id="web3-site-home" class="section web3-section-alt">
+     <section id="web3-site-home" class="section web3-section-alt">
     <div class="container">
         <h2 class="web3-heading">⚡ AFOX DeFi Dashboard</h2>
         <p class="web3-intro">
             Access decentralized finance tools: participate in <strong>governance</strong>, 
             stake your <strong>AFOX</strong>, and explore <strong>lending</strong> opportunities. 
         </p>
-        
-        <div class="wallet-control-box" style="margin: 20px 0; padding: 15px; border: 1px dashed #f39c12; border-radius: 8px;">
-    <p class="web3-wallet-display">Status:</p>
-    <div class="wallet-control"></div>
-</div>
 
+        <div class="wallet-control-box" style="margin: 20px 0; padding: 15px; border: 1px dashed #f39c12; border-radius: 8px;">
+            <p class="web3-wallet-display">Status:</p>
+            <div class="wallet-control">
+                <div id="wallet-manage-area" style="display:none; gap: 10px; align-items: center; margin-top: 10px;">
+                    <span id="network-indicator" style="font-size: 0.8em; color: #2ecc71;">● Solana Mainnet</span>
+                    <button id="disconnectWalletBtn" class="web3-button" style="background: #333; padding: 5px 10px; border: 1px solid #444; border-radius: 5px; color: white; cursor: pointer;">
+                        ✖ Disconnect
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <div class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
              <div class="feature-card">
@@ -307,7 +313,6 @@
         </div>
     </div>
 </section>
-
 
 <section id="dao-section" class="section web3-section-alt">
     <div class="container">
@@ -340,6 +345,12 @@
                 <div class="dao-vote-actions" style="display: flex; gap: 10px;">
                     <button class="web3-btn dao-vote-btn" data-vote-type="for" style="flex: 1;">Vote FOR</button>
                     <button class="web3-btn dao-vote-btn" data-vote-type="against" style="flex: 1; background: #c0392b;">Vote AGAINST</button>
+                </div>
+
+                <div class="dao-execution-zone" style="margin-top: 20px; border-top: 1px solid #333; padding-top: 10px;">
+                    <button id="executeProposalBtn" class="web3-btn" style="width: 100%; background: #8e44ad;" title="Выполнить принятое решение в блокчейне">
+                        ⚖️ Execute Approved Proposal
+                    </button>
                 </div>
             </div>
         </div>
@@ -392,8 +403,17 @@
 
         <div class="staking-actions" style="max-width: 600px; margin: 0 auto; background: #111; padding: 25px; border-radius: 15px; border: 1px solid #333;">
             <h3 class="web3-subheading">Stake AFOX</h3>
+            
+            <div class="security-notice" style="background: rgba(243, 156, 18, 0.1); border: 1px solid #f39c12; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                <p style="font-size: 0.85em; margin-bottom: 8px; color: #fff;">1. Сначала разрешите доступ к токенам:</p>
+                <button id="approve-staking-btn" class="web3-btn" style="width: 100%; background: #e67e22;">
+                    🛡️ Approve AFOX for Staking
+                </button>
+                <p style="font-size: 0.7em; color: #aaa; margin-top: 5px;">* Это безопасно: вы разрешаете только ту сумму, которую хотите внести.</p>
+            </div>
+
             <div class="pool-selection-wrapper" style="margin-bottom: 15px;">
-                <label for="pool-selector" style="color: #f39c12; display: block; margin-bottom: 5px;">Choose Plan:</label>
+                <label for="pool-selector" style="color: #f39c12; display: block; margin-bottom: 5px;">2. Choose Plan:</label>
                 <select id="pool-selector" style="width: 100%; background: #1a1a1a; color: white; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
                     <option value="0">Tier 1 (7 days) - 5% APR</option>
                     <option value="1">Tier 2 (30 days) - 12% APR</option>
@@ -407,7 +427,7 @@
                 <input type="number" id="stake-amount" step="0.000001" placeholder="0.00" style="width: 100%; padding: 12px; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px;">
                 <button id="max-stake-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #f39c12; border: none; padding: 3px 10px; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer;">MAX</button>
             </div>
-            
+
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <button id="stake-afox-btn" class="web3-btn" style="flex: 1;">Stake</button>
                 <button id="claim-rewards-btn" class="web3-btn" style="flex: 1; background: linear-gradient(45deg, #d4af37, #f39c12);">Claim Rewards</button>
@@ -426,6 +446,18 @@
 <section id="lending-section" class="section web3-section-alt">
     <div class="container">
         <h2 class="web3-heading">🏦 Lending & Borrowing</h2>
+
+        <div class="risk-indicator-box" style="max-width: 600px; margin: 0 auto 30px auto; background: #000; padding: 15px; border: 1px solid #444; border-radius: 10px;">
+            <div style="display: flex; justify-content: space-between; color: #fff;">
+                <span>Индикатор безопасности (Health Factor):</span>
+                <span id="health-factor-value" style="font-weight: bold; color: #2ecc71;">Safe</span>
+            </div>
+            <div style="width: 100%; background: #222; height: 8px; border-radius: 4px; margin-top: 10px; overflow: hidden;">
+                <div id="health-bar" style="width: 100%; background: linear-gradient(to right, #e74c3c, #f1c40f, #2ecc71); height: 100%;"></div>
+            </div>
+            <p style="font-size: 0.75em; color: #888; margin-top: 5px;">Если шкала станет красной, ваш залог может быть ликвидирован.</p>
+        </div>
+
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
             <div class="staking-actions" style="background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333;">
                 <h3 class="web3-subheading">Lend AFOX</h3>
@@ -441,7 +473,7 @@
                 <h3 class="web3-subheading">Borrow SOL</h3>
                 <input type="number" id="borrow-amount-input" placeholder="Enter SOL to borrow" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #000; color: #fff; border: 1px solid #444;">
                 <button id="borrow-btn" class="web3-btn" style="width: 100%; margin-bottom: 25px;">Borrow SOL</button>
-                
+
                 <h3 class="web3-subheading">Repay Loan</h3>
                 <input type="number" id="repay-amount-input" placeholder="Enter SOL to repay" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #000; color: #fff; border: 1px solid #444;">
                 <button id="repay-btn" class="web3-btn" style="width: 100%; background: #2ecc71;">Repay & Close Loan</button>
