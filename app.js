@@ -1160,19 +1160,29 @@ function spawnRichParticles(el) {
 }
 
 /**
- * 4. ЕДИНЫЙ ОБРАБОТЧИК (Кнопки)
+ * УЛУЧШЕННЫЙ ОБРАБОТЧИК ДЕЙСТВИЙ С ЗАЩИТОЙ ОТ ОШИБОК PHANTOM
  */
 async function executeSmartActionWithFullEffects(btn, config) {
     if (btn.classList.contains('loading')) return;
+
+    // 1. ПРОВЕРКА СВЯЗИ С КОШЕЛЬКОМ
+    const provider = window.phantom?.solana || window.solana;
+    if (!provider || !provider.isPhantom) {
+        showNotification("Phantom wallet not found or disconnected", "error");
+        return;
+    }
 
     const originalHTML = btn.innerHTML;
     btn.classList.add('loading');
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
-    
+
     actionAudit(config.name, "process", "Connecting to Blockchain...");
 
     try {
+        // Добавляем небольшую задержку, чтобы избежать ошибки "Receiving end does not exist"
+        await new Promise(r => setTimeout(r, 100));
+
         // Выполняем саму функцию
         await config.fn(); 
 
@@ -1180,19 +1190,24 @@ async function executeSmartActionWithFullEffects(btn, config) {
         btn.classList.remove('loading');
         btn.classList.add('success-glow');
         btn.innerHTML = `✅ ${config.msg}`;
-        
-        spawnRichParticles(btn); // Взрыв бриллиантов
+        spawnRichParticles(btn);
         actionAudit(config.name, "success", config.msg);
-        
+
         if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
 
     } catch (err) {
-        // ОШИБКА
-        console.error(err);
+        console.error("Smart Action Error:", err);
+        
+        // Обработка специфической ошибки Phantom
+        let errorMsg = err.message || "User rejected";
+        if (errorMsg.includes("Could not establish connection")) {
+            errorMsg = "Wallet connection lost. Please refresh page.";
+        }
+
         btn.classList.remove('loading');
         btn.classList.add('error-shake');
         btn.innerHTML = `❌ Failed`;
-        actionAudit(config.name, "error", err.message || "User rejected");
+        actionAudit(config.name, "error", errorMsg);
     } finally {
         setTimeout(() => {
             btn.classList.remove('success-glow', 'loading', 'error-shake');
@@ -1201,6 +1216,7 @@ async function executeSmartActionWithFullEffects(btn, config) {
         }, 3500);
     }
 }
+
 
 /**
  * ============================================================
