@@ -291,6 +291,10 @@
             Participate in Aurum Fox governance! Create proposals, vote, and shape the future of the project. 
             <strong style="color: #FFD700;">Requires connected wallet.</strong>
         </p>
+        
+        <p style="color: #ff4d4d; font-size: 0.85em; margin-top: 10px; border-left: 2px solid #ff4d4d; padding-left: 10px;">
+            <strong>Notice:</strong> Governance decisions are final and executed via smart contracts. Ensure you understand the proposal impact before voting.
+        </p>
 
         <div class="dao-header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 15px; flex-wrap: wrap;">
             <button id="createProposalBtn" class="web3-btn" style="background: #FFD700; color: #000; font-weight: bold; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
@@ -406,6 +410,9 @@
                     <input type="checkbox" id="early-exit-checkbox"> Confirm Early Exit (Penalty applies)
                 </label>
                 <button id="unstake-afox-btn" class="web3-btn" style="width: 100%; background: #FFD700; border: none; color: #000; font-weight: bold; padding: 10px; border-radius: 8px; cursor: pointer;">Unstake AFOX</button>
+                <p style="color: #ff4d4d; font-size: 0.75em; margin-top: 10px; text-align: center;">
+                    ⚠️ Warning: Early withdrawal results in a 15% penalty fee and loss of pending rewards.
+                </p>
             </div>
         </div>
     </div>
@@ -414,6 +421,13 @@
 <section id="lending-section" class="section web3-section-alt" style="background: #040814; padding: 40px 0;">
     <div class="container">
         <h2 class="web3-heading" style="color: #fff;">🏦 Lending & Borrowing</h2>
+        
+        <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+            <p style="color: #ff4d4d; font-weight: bold; margin: 0;">⚠️ COLLATERAL RISK NOTICE</p>
+            <p style="color: #ccc; font-size: 0.85em; margin: 5px 0 0 0;">
+                If your Health Factor drops below 1.0 due to price volatility, your collateral will be <strong>liquidated</strong>. Assets may not be returned if the loan is not repaid.
+            </p>
+        </div>
 
         <div class="risk-indicator-box" style="max-width: 500px; margin: 0 auto 30px auto; background: #060b1a; padding: 20px; border: 1px solid #1a2a44; border-radius: 15px;">
             <div style="display: flex; justify-content: space-between; color: #fff; font-size: 0.9em;">
@@ -448,6 +462,7 @@
         </div>
     </div>
 </section>
+
 
 
 
