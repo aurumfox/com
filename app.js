@@ -808,11 +808,11 @@ async function executeSmartActionWithFullEffects(btn, config) {
 }
 
 /**
- * 🦊 AURUM FOX: ULTIMATE CONCRETE ENGINE v11.0
- * Полная автономия для DAO, Staking & Lending
+ * 🦊 AURUM FOX: UNIFIED ECOSYSTEM ENGINE v14.0
+ * Глубокий анализ HTML + Автономный контроль всех кнопок
  */
 
-const AfoxSmartEngine = {
+const AfoxEngine = {
     state: {
         isConnected: false,
         pubkey: null,
@@ -820,19 +820,23 @@ const AfoxSmartEngine = {
         isBusy: false
     },
 
-    // 1. СТАРТ - ГЛУБОКОЕ СКАНЕР-ПОГРУЖЕНИЕ
+    // 1. ИНИЦИАЛИЗАЦИЯ
     init() {
-        console.log("🚀 AFOX Engine: Глубокое сканирование HTML...");
+        console.log("🚀 AFOX Engine v14.0: Запуск тотального сканирования...");
         this.injectStyles();
-        this.scanAndBindAll();
-        this.checkSession();
         
-        // Живой монитор: если в HTML что-то изменится, движок подцепит это
-        const observer = new MutationObserver(() => this.scanAndBindAll());
+        // Перехватываем все клики на странице (самый надежный метод)
+        document.addEventListener('click', (e) => this.router(e), true);
+        
+        // Следим за изменениями в DOM
+        const observer = new MutationObserver(() => this.updateUI());
         observer.observe(document.body, { childList: true, subtree: true });
+
+        this.checkSession();
+        this.updateUI();
     },
 
-    // 2. ПОИСК ПРОВАЙДЕРА
+    // 2. ПОИСК ПРОВАЙДЕРА (SOLANA)
     getProvider() {
         if ("solana" in window) {
             return window.solana.isOptional ? window.solana.providers[0] : window.solana;
@@ -840,39 +844,38 @@ const AfoxSmartEngine = {
         return window.phantom?.solana || window.solflare || null;
     },
 
-    // 3. ТОТАЛЬНЫЙ СКАНЕР (От А до Я)
-    scanAndBindAll() {
-        // Ищем все, что может быть кнопкой
-        const allInteractive = document.querySelectorAll('button, a.btn, .royal-btn, .web3-btn, .dao-vote-btn, #connectWalletBtn');
-        
-        allInteractive.forEach(el => {
-            if (el.dataset.afoxManaged) return; // Пропуск если уже под контролем
+    // 3. РОУТЕР КЛИКОВ (Анализ от А до Я)
+    router(e) {
+        const el = e.target.closest('button, a, .royal-btn, .dao-vote-btn, .social-btn');
+        if (!el) return;
 
-            const id = (el.id || "").toLowerCase();
-            const txt = (el.innerText || "").toLowerCase();
-            const cls = el.className.toLowerCase();
+        const txt = (el.innerText || "").toLowerCase();
+        const id = (el.id || "").toLowerCase();
+        const cls = (el.className || "").toString().toLowerCase();
 
-            // Логика кнопки CONNECT / DISCONNECT
-            if (id.includes("connect") || cls.includes("connect-fox-btn")) {
-                el.onclick = (e) => { e.preventDefault(); this.toggleConnection(); };
-                el.dataset.afoxRole = "auth";
-            } 
-            // Логика ВСЕХ Web3 кнопок (Stake, Borrow, Vote, Claim, Approve, Lend, Repay)
-            else if (this.identifyAction(id, txt, cls)) {
-                el.onclick = (e) => { e.preventDefault(); this.executeWeb3Action(el); };
-                el.dataset.afoxRole = "action";
-            }
+        // А) ЛОГИКА КОШЕЛЬКА (Connect / Disconnect / Exit)
+        if (id.includes("connect") || cls.includes("connect-fox-btn") || txt.includes("exit") || txt.includes("connect wallet")) {
+            e.preventDefault();
+            this.toggleConnection();
+            return;
+        }
 
-            el.dataset.afoxManaged = "true";
-        });
+        // Б) ЛОГИКА DEFI & DAO (Глубокий захват всех кнопок из твоего HTML)
+        const actions = [
+            'stake', 'claim', 'approve', 'unstake', 'collect', 'max',
+            'vote', 'proposal', 'execute', 'filter', 'submit',
+            'lend', 'borrow', 'repay', 'withdraw', 'trade'
+        ];
+
+        const isWeb3Action = actions.some(key => txt.includes(key) || id.includes(key) || cls.includes(key));
+
+        if (isWeb3Action) {
+            e.preventDefault();
+            this.executeAction(el, txt.toUpperCase());
+        }
     },
 
-    identifyAction(id, txt, cls) {
-        const keywords = ['stake', 'claim', 'borrow', 'lend', 'vote', 'repay', 'withdraw', 'unstake', 'approve', 'submit', 'trade', 'enter'];
-        return keywords.some(key => id.includes(key) || txt.includes(key) || cls.includes(key));
-    },
-
-    // 4. УМНЫЙ ВХОД И ВЫХОД (С УВЕДОМЛЕНИЯМИ)
+    // 4. УМНЫЙ КОННЕКТ (С АВТО-ВОЗВРАТОМ)
     async toggleConnection() {
         if (this.state.isBusy) return;
         const provider = this.getProvider();
@@ -884,112 +887,95 @@ const AfoxSmartEngine = {
         }
 
         try {
-            this.setBtnState(document.querySelector('[data-afox-role="auth"]'), true, "WAIT...");
+            this.state.isBusy = true;
             
             if (!this.state.isConnected) {
                 // ВХОД
                 const resp = await provider.connect();
                 this.state.pubkey = resp.publicKey.toString();
-                this.state.provider = provider;
                 this.state.isConnected = true;
-                this.notify("🦊 ДОБРО ПОЖАЛОВАТЬ В AURUM FOX!", "success");
+                
+                this.notify("🦊 ДОБРО ПОЖАЛОВАТЬ В AURUM FOX", "success");
+                
+                // АВТО-ВОЗВРАТ: Скроллим к началу стейкинга/DAO после входа
+                setTimeout(() => {
+                    document.getElementById('staking-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 800);
+
             } else {
                 // ВЫХОД
                 if (provider.disconnect) await provider.disconnect();
                 this.state.isConnected = false;
                 this.state.pubkey = null;
-                this.notify("🔒 ВЫ УСПЕШНО ОТСОЕДИНИЛИСЬ", "info");
+                this.notify("🔒 ВЫ ВЫШЛИ ИЗ СИСТЕМЫ", "info");
             }
             this.updateUI();
         } catch (err) {
-            this.notify("❌ Ошибка соединения", "error");
+            this.notify("❌ Ошибка авторизации", "error");
         } finally {
-            this.setBtnState(document.querySelector('[data-afox-role="auth"]'), false);
+            this.state.isBusy = false;
         }
     },
 
-    // 5. ВЫПОЛНЕНИЕ ЛЮБОГО ДЕЙСТВИЯ (DEFI / DAO)
-    async executeWeb3Action(btn) {
+    // 5. ВЫПОЛНЕНИЕ ЛЮБОЙ ОПЕРАЦИИ (DAO, Staking, Lending)
+    async executeAction(btn, name) {
         if (!this.state.isConnected) {
-            this.notify("🔒 СНАЧАЛА ВОЙДИТЕ В КОШЕЛЕК", "error");
-            this.highlightAuth();
+            this.notify("🔒 СНАЧАЛА ПОДКЛЮЧИТЕ КОШЕЛЕК", "error");
+            document.getElementById('connectWalletBtn')?.scrollIntoView({ behavior: 'smooth' });
             return;
         }
-
         if (this.state.isBusy) return;
 
-        const actionName = btn.innerText.split('\n')[0].toUpperCase();
-        const originalHTML = btn.innerHTML;
-
         try {
-            this.setBtnState(btn, true, "SIGNING...");
-            this.notify(`Транзакция [${actionName}] отправлена...`, "info");
+            this.setBtnState(btn, true, "WAIT...");
+            this.notify(`Транзакция [${name.split('\n')[0]}] в обработке...`, "info");
 
-            // ИМИТАЦИЯ БЛОКЧЕЙНА (Anchor call placeholder)
+            // ИМИТАЦИЯ СМАРТ-КОНТРАКТА
             await new Promise(r => setTimeout(r, 2000));
 
-            this.notify(`✅ ${actionName} ВЫПОЛНЕНО УСПЕШНО!`, "success");
+            this.notify(`✅ ${name.split('\n')[0]} УСПЕШНО ВЫПОЛНЕНО!`, "success");
         } catch (err) {
-            this.notify("❌ Ошибка подписи", "error");
+            this.notify("❌ Ошибка транзакции", "error");
         } finally {
-            this.setBtnState(btn, false, originalHTML);
+            this.setBtnState(btn, false);
         }
     },
 
-    // ИНСТРУМЕНТАРИЙ
+    // ОБНОВЛЕНИЕ ИНТЕРФЕЙСА (Connect/Disconnect)
     updateUI() {
-        const authBtn = document.querySelector('[data-afox-role="auth"]');
-        if (!authBtn) return;
-
-        if (this.state.isConnected) {
-            const short = this.state.pubkey.slice(0,4) + "..." + this.state.pubkey.slice(-4);
-            authBtn.innerHTML = `🦊 ${short} (EXIT)`;
-            authBtn.style.border = "1px solid #FFD700";
-            authBtn.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.4)";
-        } else {
-            authBtn.innerHTML = `🦊 Connect Wallet`;
-            authBtn.style.boxShadow = "none";
-        }
+        const connectBtns = document.querySelectorAll('#connectWalletBtn, .connect-fox-btn');
+        connectBtns.forEach(btn => {
+            if (this.state.isConnected) {
+                const short = this.state.pubkey.slice(0,4) + "..." + this.state.pubkey.slice(-4);
+                btn.innerHTML = `🦊 ${short} (EXIT)`;
+                btn.style.background = "linear-gradient(90deg, #FFD700, #b8860b)";
+            } else {
+                btn.innerHTML = `🦊 Connect Wallet`;
+                btn.style.background = "";
+            }
+        });
     },
 
     setBtnState(btn, loading, text) {
-        if (!btn) return;
         this.state.isBusy = loading;
         if (loading) {
             btn.dataset.old = btn.innerHTML;
-            btn.innerHTML = `<span class="afox-spin"></span> ${text}`;
+            btn.innerHTML = `<span class="afox-loader"></span> ${text}`;
             btn.style.pointerEvents = "none";
-            btn.style.opacity = "0.8";
         } else {
             btn.innerHTML = btn.dataset.old || btn.innerHTML;
             btn.style.pointerEvents = "auto";
-            btn.style.opacity = "1";
         }
     },
 
     notify(msg, type) {
         const container = document.getElementById('notification-container');
         if (!container) return;
-        
         const toast = document.createElement('div');
         toast.className = `afox-toast ${type}`;
         toast.innerHTML = `<b>${msg}</b>`;
         container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(50px)';
-            setTimeout(() => toast.remove(), 500);
-        }, 3500);
-    },
-
-    highlightAuth() {
-        const btn = document.querySelector('[data-afox-role="auth"]');
-        if (btn) {
-            btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            btn.classList.add('afox-pulse');
-            setTimeout(() => btn.classList.remove('afox-pulse'), 2000);
-        }
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3500);
     },
 
     async checkSession() {
@@ -1007,38 +993,28 @@ const AfoxSmartEngine = {
     },
 
     injectStyles() {
-        if (document.getElementById('afox-engine-styles')) return;
+        if (document.getElementById('afox-v14-css')) return;
         const s = document.createElement('style');
-        s.id = 'afox-engine-styles';
+        s.id = 'afox-v14-css';
         s.innerHTML = `
             .afox-toast { 
                 background: #060b1a; color: #fff; padding: 15px 25px; border-radius: 12px; 
-                border-right: 4px solid #FFD700; box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
-                margin-bottom: 10px; animation: afoxSlideIn 0.4s ease forwards;
-                font-family: 'Inter', sans-serif; min-width: 280px;
+                border-left: 5px solid #FFD700; box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
+                margin-bottom: 10px; animation: afoxIn 0.4s ease forwards; font-family: 'Inter', sans-serif;
             }
-            .afox-toast.success { border-right-color: #00ff7f; color: #00ff7f; }
-            .afox-toast.error { border-right-color: #ff4d4d; color: #ff4d4d; }
-            .afox-toast.info { border-right-color: #00f0ff; color: #00f0ff; }
-            
-            @keyframes afoxSlideIn {
-                from { transform: translateX(100px); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            
-            .afox-spin { 
+            .afox-toast.success { border-left-color: #00ff7f; color: #00ff7f; }
+            .afox-toast.error { border-left-color: #ff4d4d; color: #ff4d4d; }
+            .afox-toast.info { border-left-color: #00f0ff; color: #00f0ff; }
+            @keyframes afoxIn { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            .afox-loader { 
                 border: 2px solid rgba(255,215,0,0.2); border-top: 2px solid #FFD700; 
                 border-radius: 50%; width: 14px; height: 14px; display: inline-block; 
-                animation: afoxRotation 1s linear infinite; margin-right: 10px;
+                animation: afoxSpin 1s linear infinite; margin-right: 10px;
             }
-            @keyframes afoxRotation { 100% { transform: rotate(360deg); } }
-            
-            .afox-pulse { animation: afoxPulse 0.5s infinite alternate; }
-            @keyframes afoxPulse { from { transform: scale(1); box-shadow: 0 0 0 #ff4d4d; } to { transform: scale(1.05); box-shadow: 0 0 20px #ff4d4d; } }
+            @keyframes afoxSpin { 100% { transform: rotate(360deg); } }
         `;
         document.head.appendChild(s);
     }
 };
 
-// ЗАПУСК СИСТЕМЫ
-document.addEventListener('DOMContentLoaded', () => AfoxSmartEngine.init());
+window.addEventListener('load', () => AfoxEngine.init());
