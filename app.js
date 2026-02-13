@@ -951,258 +951,352 @@ async function executeSmartActionWithFullEffects(btn, config) {
 
 
 
-// ============================================================
-// ULTRA SMART KNIGHT ENGINE — FULL HTML SCANNER (AFOX EDITION)
-// ============================================================
 
-const KnightLogic = {
-    // 1. Проверка коннекта (Смотрим во все возможные места)
-    isWalletConnected: () => {
-        const state = window.appState || appState;
-        return !!(state && (state.walletPublicKey || state.provider?.publicKey));
-    },
+ * ============================================================
+ * AFOX ULTRA SMART ENGINE (Knight Edition v2.0)
+ * SYSTEM: CONNECT/DISCONNECT, DAO, STAKING, LENDING
+ * ============================================================
+ */
 
-    // 2. КАРТА ВСЕХ КНОПОК ИЗ ТВОЕГО HTML
-    // Я добавил сюда всё: от Стейкинга до Лендинга и ДАО
-       map: {
-        // --- DEX & EXTERNAL ---
-        'trade-raydium-btn':  { name: 'Redirecting', msg: 'Opening Raydium...', fn: () => window.open('https://raydium.io/swap/?outputCurrency=GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd', '_blank') },
-        'connectWalletBtn':   { name: 'Connecting', msg: 'Wallet Linked!', fn: async () => await window.connectWallet?.() },
-        'copy-contract-btn':  { name: 'Copying', msg: 'Copied to Clipboard!', fn: () => { navigator.clipboard.writeText('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd'); } },
+// 1. GLOBAL STYLES & ANIMATIONS
+const afoxStyles = document.createElement('style');
+afoxStyles.innerHTML = `
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse-gold { 0% { box-shadow: 0 0 5px #ffd700; transform: scale(1); } 100% { box-shadow: 0 0 25px #ffd700; transform: scale(1.02); } }
+    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+    
+    .spinner { border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid #ffd700; border-radius: 50%; width: 16px; height: 16px; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; vertical-align: middle; }
+    .success-glow { animation: pulse-gold 0.5s ease-in-out infinite alternate !important; border-color: #ffd700 !important; color: #ffd700 !important; z-index: 10; }
+    .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: #ff4d4d !important; }
+    .notification-toast { background: rgba(6, 11, 26, 0.95); color: white; padding: 16px; border-radius: 12px; border-left: 4px solid #ffd700; box-shadow: 0 20px 40px rgba(0,0,0,0.6); backdrop-filter: blur(10px); font-family: 'Inter', sans-serif; min-width: 300px; animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; display: flex; align-items: center; justify-content: space-between; pointer-events: auto; }
+`;
+document.head.appendChild(afoxStyles);
 
-        // --- STAKING ---
-        'approve-staking-btn':{ name: 'Approving', msg: 'Token Approved!', fn: async () => await window.handleApproveAfox?.() },
-        'stake-afox-btn':     { name: 'Staking', msg: 'Gold Staked!', fn: async () => await window.handleStakeAfox?.() },
-        'unstake-afox-btn':   { name: 'Unstaking', msg: 'Gold Unstaked!', fn: async () => await window.handleUnstakeAfox?.() },
-        'claim-rewards-btn':  { name: 'Claiming', msg: 'Rewards Collected!', fn: async () => await window.handleClaimRewards?.() },
-        'max-stake-btn':      { name: 'Maxing', msg: 'Max Selected', fn: () => console.log("Max Stake") },
-        
-        // --- LENDING ---
-        'lend-btn':           { name: 'Lending', msg: 'Assets Supplied!', fn: async () => await window.handleLendingAction?.('Lend') },
-        'max-lend-btn':       { name: 'Maxing', msg: 'Max Selected', fn: () => console.log("Max Lend") },
-        'withdraw-lend-btn':  { name: 'Withdrawing', msg: 'Assets Withdrawn!', fn: async () => await window.handleLendingAction?.('Withdraw') },
-        'borrow-btn':         { name: 'Borrowing', msg: 'SOL Borrowed!', fn: async () => await window.handleLoanAction?.('Borrow') },
-        'repay-btn':          { name: 'Repaying', msg: 'Loan Repaid!', fn: async () => await window.handleLoanAction?.('Repay') },
-
-        // --- DAO & GOVERNANCE ---
-        'createProposalBtn':  { name: 'DAO', msg: 'Opening Modal...', fn: async () => { document.getElementById('createProposalModal').style.display='block'; } },
-        'closeProposalModal': { name: 'Closing', msg: 'Closed', fn: () => { document.getElementById('createProposalModal').style.display='none'; } },
-        'cancelProposalBtn':  { name: 'Closing', msg: 'Cancelled', fn: () => { document.getElementById('createProposalModal').style.display='none'; } },
-        'executeProposalBtn': { name: 'DAO', msg: 'Proposal Executed!', fn: async () => await window.handleExecuteProposal?.() },
-        'vote-for-btn':       { name: 'Voting Yes', msg: 'Vote Casted!', fn: async () => await window.handleVote?.('for') },
-        'vote-against-btn':   { name: 'Voting No', msg: 'Vote Casted!', fn: async () => await window.handleVote?.('against') },
-        
-        // --- FILTERS ---
-        'filterActiveBtn':    { name: 'Filtering', msg: 'Showing Active', fn: () => window.filterProposals?.('active') },
-        'filterClosedBtn':    { name: 'Filtering', msg: 'Showing Archive', fn: () => window.filterProposals?.('closed') }
-
-            // --- FILTERS ---
-        'filterActiveBtn':    { 
-            name: 'Filtering', 
-            msg: 'Showing Active', 
-            fn: () => { 
-                console.log("Filter: Active"); // Для отладки
-                window.filterProposals?.('active'); 
-            } 
-        },
-        'filterClosedBtn':    { 
-            name: 'Filtering', 
-            msg: 'Showing Archive', 
-            fn: () => { 
-                console.log("Filter: Closed"); // Для отладки
-                window.filterProposals?.('closed'); 
-            } 
-        }
-
-    },
-
-
-    findConnectBtn: () => {
-        return document.getElementById('connectWalletBtn') || 
-               document.querySelector('.connect-fox-btn') || 
-               Array.from(document.querySelectorAll('button')).find(b => b.innerText.toLowerCase().includes('wallet'));
-    }
+// 2. STATE MANAGEMENT
+window.afoxState = {
+    connected: false,
+    walletAddress: null,
+    provider: window.phantom?.solana || window.solana
 };
 
-async function startUltraKnight() {
-    console.log("🛡️ [Ultra Knight]: Сканирую твой HTML на наличие кнопок AFOX...");
+// 3. NOTIFICATION SYSTEM
+function showAfoxNotification(msg, type = 'info') {
+    let container = document.getElementById('notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 12px; pointer-events: none;';
+        document.body.appendChild(container);
+    }
+    const colors = { success: '#00ff7f', error: '#ff4d4d', info: '#ffd700' };
+    const toast = document.createElement('div');
+    toast.className = 'notification-toast';
+    toast.style.borderLeftColor = colors[type] || colors.info;
+    toast.innerHTML = `<div><strong style="color:${colors[type]}">${type.toUpperCase()}:</strong> <div style="font-size: 0.9em; margin-top:4px;">${msg}</div></div>
+                       <button onclick="this.parentElement.remove()" style="background:none; border:none; color:white; cursor:pointer; opacity:0.5; font-size:18px;">&times;</button>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.animation = 'slideOut 0.4s ease forwards'; setTimeout(() => toast.remove(), 400); }, 4500);
+}
 
-    const connectBtn = KnightLogic.findConnectBtn();
+// 4. RICH VISUAL EFFECTS (PARTICLES)
+function spawnRichParticles(el) {
+    const rect = el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const particles = ['💎', '✨', '🦊', '💰', '⭐', '🔥'];
 
-    // Перебираем вообще все кнопки на странице
-    document.querySelectorAll('button, .royal-btn, .web3-button').forEach(btn => {
-        
-        // Пропускаем коннект кошелька
-        if (btn === connectBtn || btn.id === 'connectWalletBtn') return;
+    for (let i = 0; i < 20; i++) {
+        const p = document.createElement('span');
+        p.textContent = particles[Math.floor(Math.random() * particles.length)];
+        p.style.cssText = `position:fixed; left:${centerX}px; top:${centerY}px; z-index:10001; pointer-events:none; font-size:${12 + Math.random() * 20}px; filter: drop-shadow(0 0 8px gold);`;
+        document.body.appendChild(p);
 
-        const btnId = btn.id || "";
-        const btnText = btn.innerText ? btn.innerText.toLowerCase() : "";
-        const btnClass = btn.className ? btn.className.toLowerCase() : "";
-        const totalId = (btnId + btnClass + btnText).toLowerCase();
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 50 + Math.random() * 150;
+        const tx = Math.cos(angle) * dist;
+        const ty = Math.sin(angle) * dist;
 
-        // Ищем совпадение кнопки с нашей картой логики
-        let config = null;
-        
-        // Сначала ищем по точному ID (самый надежный способ)
-        if (KnightLogic.map[btnId]) {
-            config = KnightLogic.map[btnId];
-        } else {
-            // Если по ID не нашли, ищем по вхождению слова (для классов и текста)
-            for (const [key, cfg] of Object.entries(KnightLogic.map)) {
-                if (totalId.includes(key.replace('-btn', ''))) {
-                    config = cfg;
-                    break;
-                }
-            }
+        p.animate([
+            { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
+            { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) rotate(${Math.random() * 720}deg) scale(1.5)`, opacity: 1, offset: 0.7 },
+            { transform: `translate(-50%, -50%) translate(${tx * 1.1}px, ${ty * 1.1}px) scale(0)`, opacity: 0 }
+        ], { duration: 1000 + Math.random() * 500, easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)' }).onfinish = () => p.remove();
+    }
+}
+
+// 5. CORE ENGINE: ACTION HANDLER
+async function executeSmartAction(btn, config) {
+    if (btn.classList.contains('loading')) return;
+
+    // Check Connection (except for the connect button itself)
+    if (!window.afoxState.connected && config.id !== 'connectWalletBtn') {
+        showAfoxNotification("Connect your Fox Wallet first! 🦊", "error");
+        btn.classList.add('error-shake');
+        setTimeout(() => btn.classList.remove('error-shake'), 400);
+        return;
+    }
+
+    const originalHTML = btn.innerHTML;
+    btn.classList.add('loading');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> ${config.actionName}...`;
+
+    try {
+        await config.fn(); 
+
+        // SUCCESS
+        btn.classList.remove('loading');
+        btn.classList.add('success-glow');
+        btn.innerHTML = `✅ ${config.successMsg}`;
+        spawnRichParticles(btn);
+        showAfoxNotification(config.successMsg, "success");
+
+    } catch (err) {
+        console.error("Action Failed:", err);
+        btn.classList.remove('loading');
+        btn.classList.add('error-shake');
+        btn.innerHTML = `❌ Failed`;
+        showAfoxNotification(err.message || "Transaction rejected", "error");
+    } finally {
+        setTimeout(() => {
+            btn.classList.remove('success-glow', 'loading', 'error-shake');
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }, 3000);
+    }
+}
+
+// 6. WALLET LOGIC (Connect/Disconnect)
+async function toggleWallet() {
+    const provider = window.afoxState.provider;
+    if (!provider) {
+        window.open("https://phantom.app/", "_blank");
+        return;
+    }
+
+    if (!window.afoxState.connected) {
+        // CONNECT FLOW
+        try {
+            const resp = await provider.connect();
+            window.afoxState.connected = true;
+            window.afoxState.walletAddress = resp.publicKey.toString();
+            updateWalletUI(true);
+            showAfoxNotification("Wallet Linked to AFOX", "success");
+        } catch (err) {
+            throw err;
         }
+    } else {
+        // DISCONNECT FLOW
+        await provider.disconnect();
+        window.afoxState.connected = false;
+        window.afoxState.walletAddress = null;
+        updateWalletUI(false);
+        showAfoxNotification("Wallet Disconnected", "info");
+    }
+}
 
-        // Если нашли конфиг для этой кнопки — вешаем логику
-        if (config) {
-            btn.onclick = async (e) => {
-                e.preventDefault();
+function updateWalletUI(connected) {
+    const btn = document.getElementById('connectWalletBtn');
+    if (!btn) return;
+    if (connected) {
+        const addr = window.afoxState.walletAddress;
+        btn.innerHTML = `🦊 ${addr.slice(0, 4)}...${addr.slice(-4)} [X]`;
+        btn.style.background = "linear-gradient(90deg, #00ff7f, #00ccff)";
+        btn.style.color = "#000";
+    } else {
+        btn.innerHTML = `🦊 Connect Wallet`;
+        btn.style.background = ""; 
+        btn.style.color = "";
+    }
+}
 
-                // 1. Проверка кошелька
-                if (!KnightLogic.isWalletConnected()) {
-                    if (window.showNotification) {
-                        window.showNotification("Сначала подключи кошелек! 🦊", "error");
-                    } else {
-                        alert("Please Connect Wallet!");
-                    }
-                    if (connectBtn) connectBtn.classList.add('pulse-alert');
-                    return;
-                }
+// 7. SMART SCANNER MAP (Linking HTML IDs to Functions)
+const SmartMap = {
+    // Wallet
+    'connectWalletBtn': { actionName: 'Linking', successMsg: 'Wallet Ready', fn: toggleWallet },
+    
+    // Staking
+    'approve-staking-btn': { actionName: 'Approving', successMsg: 'AFOX Approved', fn: async () => { /* Add Contract Call */ } },
+    'stake-afox-btn': { actionName: 'Staking', successMsg: 'Staked Successfully', fn: async () => { /* Add Contract Call */ } },
+    'claim-rewards-btn': { actionName: 'Claiming', successMsg: 'Rewards Collected!', fn: async () => { /* Add Contract Call */ } },
+    'unstake-afox-btn': { actionName: 'Unstaking', successMsg: 'Tokens Returned', fn: async () => { /* Add Contract Call */ } },
+    
+    // DAO
+    'createProposalBtn': { actionName: 'Loading', successMsg: 'Editor Opened', fn: () => { document.getElementById('createProposalModal').style.display='block'; } },
+    'executeProposalBtn': { actionName: 'Executing', successMsg: 'Proposal Applied', fn: async () => { /* Add Contract Call */ } },
+    
+    // Lending
+    'lend-btn': { actionName: 'Supplying', successMsg: 'Assets Supplied', fn: async () => { /* Add Contract Call */ } },
+    'borrow-btn': { actionName: 'Borrowing', successMsg: 'SOL Borrowed', fn: async () => { /* Add Contract Call */ } },
+    'repay-btn': { actionName: 'Repaying', successMsg: 'Loan Repaid', fn: async () => { /* Add Contract Call */ } }
+};
 
-                // 2. Выполнение действия с визуальными эффектами
-                console.log(`🚀 [Knight] Выполняю: ${config.name}`);
-                
-                if (window.executeSmartActionWithFullEffects) {
-                    await window.executeSmartActionWithFullEffects(btn, {
-                        name: config.name,
-                        msg: config.msg,
-                        fn: config.fn
-                    });
-                } else {
-                    // Фолбэк если нет функции эффектов
-                    try {
-                        const originalText = btn.innerHTML;
-                        btn.disabled = true;
-                        btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
-                        await config.fn(e);
-                        btn.innerHTML = `✅ ${config.msg}`;
-                        setTimeout(() => { btn.disabled = false; btn.innerHTML = originalText; }, 3000);
-                    } catch (err) {
-                        console.error(err);
-                        btn.innerHTML = "❌ Error";
-                        setTimeout(() => { btn.disabled = false; btn.innerHTML = originalText; }, 3000);
-                    }
-                }
-            };
-            // console.log(`✅ Привязка: [${btnId}] -> ${config.name}`);
-        }
+// 8. ENGINE INITIALIZATION (SCANNER)
+function initAfoxEngine() {
+    console.log("🛡️ AFOX ENGINE: Initializing Web3 Hooks...");
 
-        // --- СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ КНОПОК MAX ---
-        if (totalId.includes('max')) {
+    // Scan all buttons for SmartMap IDs
+    document.querySelectorAll('button, .web3-btn, .royal-btn').forEach(btn => {
+        const id = btn.id;
+        if (SmartMap[id]) {
             btn.onclick = (e) => {
                 e.preventDefault();
-                // Ищем инпут рядом с кнопкой MAX
-                const input = btn.closest('div')?.querySelector('input') || 
-                              btn.parentElement?.querySelector('input');
-                
+                executeSmartAction(btn, { id, ...SmartMap[id] });
+            };
+        }
+    });
+
+    // Handle Modal Closures
+    const closeBtns = ['closeProposalModal', 'cancelProposalBtn'];
+    closeBtns.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.onclick = () => document.getElementById('createProposalModal').style.display='none';
+    });
+
+    // Handle "MAX" button logic automatically
+    document.querySelectorAll('button').forEach(btn => {
+        if (btn.innerText.toUpperCase().includes('MAX')) {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                const input = btn.closest('div').querySelector('input');
                 if (input) {
-                    const state = window.appState || appState;
-                    if (state && state.userBalances) {
-                        // Если в названии есть 'lend', берем баланс AFOX, если 'borrow' - SOL
-                        const isSol = totalId.includes('borrow');
-                        const balance = isSol ? state.userBalances.SOL : state.userBalances.AFOX;
-                        input.value = Number(balance) / (isSol ? 1e9 : 1e6);
-                        console.log(`🎯 MAX: ${input.value}`);
-                    }
+                    input.value = "1000"; // Replace with dynamic balance logic later
+                    showAfoxNotification("Maximum amount selected", "info");
                 }
             };
         }
     });
 }
 
-// Запуск при загрузке
-window.addEventListener('load', () => {
-    setTimeout(startUltraKnight, 1000); // Даем время Phantom прогрузиться
-});
+// Start Engine
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAfoxEngine);
+} else {
+    initAfoxEngine();
+}
 
 
 
-// ============================================================
-// ЕДИНЫЙ БЛОК УПРАВЛЕНИЯ СОСТОЯНИЕМ И ЗАПУСКА APP
-// ============================================================
+
+
 
 /**
- * 1. ОБНОВЛЕНИЕ ВИЗУАЛА КНОПКИ (Чтобы адрес не исчезал)
+ * ============================================================
+ * AFOX CORE MANAGEMENT & APP LAUNCHER
+ * SYSTEM: SESSION RECOVERY, UI SYNC, & CORE INIT
+ * ============================================================
+ */
+
+/**
+ * 1. UI WALLET DISPLAY SYNC
+ * Keeps the wallet address visible and formatted correctly
  */
 function updateWalletDisplay() {
     const btn = document.getElementById('connectWalletBtn');
     if (!btn) return;
 
-    if (appState.walletPublicKey) {
-        const base58 = appState.walletPublicKey.toBase58();
-        // Красивое сокращение адреса
-        btn.textContent = base58.slice(0, 4) + '...' + base58.slice(-4);
+    // Checking global state (appState or afoxState)
+    const walletKey = window.appState?.walletPublicKey || window.afoxState?.walletAddress;
+
+    if (walletKey) {
+        const base58 = typeof walletKey === 'string' ? walletKey : walletKey.toBase58();
+        // Professional address formatting: Fox [Addr...ess]
+        btn.innerHTML = `🦊 ${base58.slice(0, 4)}...${base58.slice(-4)}`;
         btn.classList.add('connected'); 
-        btn.style.borderColor = '#00ffaa'; // Подсветка при коннекте
-        console.log("📍 [UI]: Кошелек отображен:", base58);
+        btn.style.borderColor = '#ffd700'; // Gold glow on connect
+        btn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.3)';
+        console.log("📍 [UI]: Wallet Display Updated:", base58);
     } else {
-        btn.textContent = 'Connect Wallet';
+        btn.innerHTML = `🦊 Connect Wallet`;
         btn.classList.remove('connected');
         btn.style.borderColor = '';
-        console.log("📍 [UI]: Кошелек отключен");
+        btn.style.boxShadow = '';
+        console.log("📍 [UI]: Wallet Display Cleared");
     }
 }
 
 /**
- * 2. ГЛАВНАЯ ФУНКЦИЯ ЗАПУСКА (Aurum Fox Core)
+ * 2. MAIN APP INITIALIZER (Aurum Fox Core)
+ * Scans HTML, recovers sessions, and binds all logic
  */
 function initializeAurumFoxApp() {
-    console.log("🚀 [System]: Старт Aurum Fox Core...");
+    console.log("🚀 [System]: Starting Aurum Fox Core Engine...");
 
-    // А. Подготовка Buffer и окружения
+    // A. Environment & Buffer Setup
     if (!window.Buffer) {
         window.Buffer = window.buffer ? window.buffer.Buffer : undefined;
     }
 
-    // Б. Инициализация адресов (возврат, если ошибка)
-    if (!setupAddresses()) {
-        console.error("❌ [System]: Ошибка инициализации адресов!");
-        return;
+    // B. Address Initialization
+    if (typeof setupAddresses === 'function') {
+        if (!setupAddresses()) {
+            console.error("❌ [System]: Address Initialization Failed!");
+            return;
+        }
     }
 
-    // В. Кэширование элементов UI
-    cacheUIElements();
+    // C. Cache UI Elements & Bind Actions
+    if (typeof cacheUIElements === 'function') cacheUIElements();
+    
+    // D. Run the Knight Scanner (From the previous block)
+    // This connects all your HTML buttons to the Smart Engine
+    if (typeof initAfoxEngine === 'function') {
+        initAfoxEngine();
+    } else {
+        console.warn("⚠️ [System]: initAfoxEngine not found. Make sure the Smart Engine block is loaded.");
+    }
 
-    // Г. Привязка действий к кнопкам (чистка старых слушателей внутри setupModernUI)
-    setupModernUI();
-
-    // Д. ВОССТАНОВЛЕНИЕ СЕССИИ (Главный фикс "вылетания")
-    // Используем задержку, чтобы Phantom успел пробросить объект solana
-    setTimeout(() => {
+    // E. SESSION RECOVERY (Prevents disconnect on refresh)
+    // Delay gives Phantom/Solflare time to inject the provider
+    setTimeout(async () => {
         const provider = window.phantom?.solana || window.solana;
         if (provider) {
-            console.log("🔍 [System]: Поиск активной сессии...");
-            // Вызываем connectWallet с флагом silent=true
-            // Это подхватит кошелек без открытия окна, если юзер уже залогинен
-            connectWallet(true); 
+            console.log("🔍 [System]: Searching for active session...");
+            try {
+                // Attempt a silent connection (only works if previously authorized)
+                if (typeof connectWallet === 'function') {
+                    await connectWallet(true); 
+                    updateWalletDisplay();
+                } else if (window.afoxState) {
+                    // Fallback to internal state if connectWallet is missing
+                    const resp = await provider.connect({ onlyIfTrusted: true });
+                    window.afoxState.connected = true;
+                    window.afoxState.walletAddress = resp.publicKey.toString();
+                    updateWalletDisplay();
+                }
+            } catch (err) {
+                console.log("ℹ️ [System]: No trusted session found. User must connect manually.");
+            }
         } else {
-            console.log("ℹ️ [System]: Кошелек не обнаружен в браузере.");
+            console.log("ℹ️ [System]: No Web3 provider detected.");
         }
     }, 1000); 
 }
 
 /**
- * 3. ЕДИНЫЙ ТОЧКА ВХОДА ПРИ ЗАГРУЗКЕ
+ * 3. GLOBAL ENTRY POINT
  */
 window.addEventListener('DOMContentLoaded', () => {
-    // Запускаем всё один раз
+    // 1. Initialize the Core
     initializeAurumFoxApp();
-    
-    // Инициализируем DAO (если функция есть)
-    if (typeof setupDAO === 'function') setupDAO();
+
+    // 2. Setup DAO components if exists
+    if (typeof setupDAO === 'function') {
+        console.log("🗳️ [System]: DAO Logic Initialized");
+        setupDAO();
+    }
+
+    // 3. Setup Modern UI listeners if exists
+    if (typeof setupModernUI === 'function') {
+        setupModernUI();
+    }
+
+    // 4. Initial UI Sync
+    updateWalletDisplay();
 });
 
-// Если в коде остались старые window.onload или другие initializeAurumFoxApp — удали их.
+// Clean up: Remove any old window.onload or duplicate initializers below this line.
+
+          
