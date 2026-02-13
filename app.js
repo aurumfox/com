@@ -1219,46 +1219,63 @@ async function executeSmartActionWithFullEffects(btn, config) {
 
 
 // ============================================================
-// SMART INTERFACE KNIGHT (АВТОМАТИЧЕСКИЙ ДИСПЕТЧЕР)
+// SMART INTERFACE KNIGHT V2 (FIXED CONNECT & ERROR HANDLING)
 // ============================================================
 async function setupSmartKnightUI() {
-    console.log("⚔️ [Knight]: X..");
+    console.log("⚔️ [Knight]: X!");
 
-    // 1. Карта соответствия: Ключевое слово в ID -> Функция и Сообщение
+    // 1. Сначала чиним КОШЕЛЕК
+    const connectBtn = document.getElementById('connectWalletBtn');
+    if (connectBtn) {
+        connectBtn.onclick = async (e) => {
+            e.preventDefault();
+            console.log("🦊 [Knight]: Попытка связи с кошельком...");
+            try {
+                if (typeof appState !== 'undefined' && appState.walletPublicKey) {
+                    await disconnectWallet();
+                } else {
+                    await connectWallet();
+                }
+            } catch (err) {
+                console.error("Connect error:", err);
+            }
+        };
+    }
+
+    // 2. Карта функций (теперь с проверкой на существование)
     const actionMap = {
-        'stake-afox':  { name: 'Staking', msg: 'Tokens Staked!', fn: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : null },
-        'unstake-afox':{ name: 'Unstaking', msg: 'Tokens Freed!', fn: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : null },
-        'claim-reward':{ name: 'Claiming', msg: 'Rewards Collected!', fn: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : null },
-        'lend':         { name: 'Lending', msg: 'Assets Lent!', fn: async () => typeof handleLendingAction !== 'undefined' ? await handleLendingAction('Lend') : console.log("Lending...") },
-        'withdraw-lend':{ name: 'Withdrawing', msg: 'Assets Back!', fn: async () => typeof handleLendingAction !== 'undefined' ? await handleLendingAction('Withdraw') : console.log("Withdrawing...") },
-        'borrow':       { name: 'Borrowing', msg: 'Loan Received!', fn: async () => typeof handleLoanAction !== 'undefined' ? await handleLoanAction('Borrow') : console.log("Borrowing...") },
-        'repay':        { name: 'Repaying', msg: 'Loan Closed!', fn: async () => typeof handleLoanAction !== 'undefined' ? await handleLoanAction('Repay') : console.log("Repaying...") },
-        'submit-proposal': { name: 'DAO', msg: 'Proposal Created!', fn: typeof handleCreateProposal !== 'undefined' ? handleCreateProposal : null }
+        'stake-afox':  { name: 'Staking', msg: 'Staked!', fn: () => window.handleStakeAfox?.() },
+        'unstake-afox':{ name: 'Unstaking', msg: 'Freed!', fn: () => window.handleUnstakeAfox?.() },
+        'claim-reward':{ name: 'Claiming', msg: 'Claimed!', fn: () => window.handleClaimRewards?.() },
+        'lend':         { name: 'Lending', msg: 'Lent!', fn: () => window.handleLendingAction?.('Lend') },
+        'withdraw-lend':{ name: 'Withdrawing', msg: 'Back!', fn: () => window.handleLendingAction?.('Withdraw') },
+        'borrow':       { name: 'Borrowing', msg: 'Borrowed!', fn: () => window.handleLoanAction?.('Borrow') },
+        'repay':        { name: 'Repaying', msg: 'Repaid!', fn: () => window.handleLoanAction?.('Repay') },
+        'submit-proposal': { name: 'DAO', msg: 'Created!', fn: (e) => window.handleCreateProposal?.(e) }
     };
 
-    // 2. Универсальный исполнитель (Движок кнопки)
+    // 3. Универсальный движок кнопок
     const knightExecute = async (btn, config) => {
-        if (!config.fn || btn.disabled) return;
-        
+        if (btn.disabled) return;
         const originalHTML = btn.innerHTML;
-        btn.disabled = true;
-        btn.classList.add('processing');
-        btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
-
+        
         try {
-            await config.fn(); // Запуск логики
+            btn.disabled = true;
+            btn.classList.add('processing');
+            btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
+
+            const result = await config.fn(); 
             
-            // Эффект победы
             btn.innerHTML = `✅ ${config.msg}`;
             btn.style.borderColor = "#00ffaa";
-            if (typeof spawnRichParticles === 'function') spawnRichParticles(btn);
-            if (typeof showNotification === 'function') showNotification(config.msg, "success");
+            window.spawnRichParticles?.(btn);
+            window.showNotification?.(config.msg, "success");
             
         } catch (err) {
-            console.error(`[Knight Error] ${config.name}:`, err);
-            btn.innerHTML = `❌ Failed`;
+            console.error(`[Knight Error]:`, err);
+            btn.innerHTML = `❌ Error`;
             btn.style.borderColor = "#ff4d4d";
-            if (typeof showNotification === 'function') showNotification(err.message || "Transaction failed", "error");
+            window.showNotification?.(err.message || "Transaction failed", "error");
         } finally {
             setTimeout(() => {
                 btn.innerHTML = originalHTML;
@@ -1269,51 +1286,46 @@ async function setupSmartKnightUI() {
         }
     };
 
-    // 3. АВТО-ПОИСК: Рыцарь проходит по всем кнопкам в документе
+    // 4. Оживляем кнопки действий
     document.querySelectorAll('button[id]').forEach(btn => {
+        if (btn.id === 'connectWalletBtn') return; // Коннект мы уже оживили выше
+
         const id = btn.id.toLowerCase();
-        
-        // Проверка: есть ли для этого ID инструкция в нашей карте?
         for (const [key, config] of Object.entries(actionMap)) {
             if (id.includes(key)) {
                 btn.onclick = (e) => {
                     e.preventDefault();
-                    // Защита: если это не коннект, проверяем кошелек
-                    if (!appState.walletPublicKey) {
-                        showNotification("Connect Wallet First! 🦊", "error");
+                    if (typeof appState === 'undefined' || !appState.walletPublicKey) {
+                        window.showNotification?.("Connect Wallet First! 🦊", "error");
                         return;
                     }
                     knightExecute(btn, config);
                 };
-                console.log(`✅ [Knight]: Привязал логику к #${btn.id}`);
+                console.log(`✅ [Knight]: Связал #${btn.id} с логикой ${config.name}`);
             }
         }
     });
 
-    // 4. СПЕЦИАЛЬНЫЕ СЛУШАТЕЛИ (MAX Кнопки)
-    document.querySelectorAll('[id*="max"]').forEach(maxBtn => {
-        maxBtn.onclick = (e) => {
-            e.preventDefault();
-            const isSol = maxBtn.id.toLowerCase().includes('sol');
-            const targetInput = maxBtn.parentElement.querySelector('input') || document.querySelector(`input[id*="${maxBtn.id.split('-')[1]}"]`);
-            
-            if (targetInput) {
-                const balance = isSol ? appState.userBalances.SOL : appState.userBalances.AFOX;
-                targetInput.value = formatBigInt(balance, isSol ? 9 : 6);
-                console.log(`✅ [Knight]: Установил MAX для ${targetInput.id}`);
-            }
-        };
+    // 5. MAX Кнопки (сканируем по ID и по тексту)
+    document.querySelectorAll('button').forEach(btn => {
+        if (btn.id.toLowerCase().includes('max') || btn.innerText.includes('MAX')) {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                const parent = btn.parentElement;
+                const input = parent.querySelector('input');
+                if (input && typeof appState !== 'undefined') {
+                    const isSol = btn.id.includes('sol') || input.id.includes('sol');
+                    const balance = isSol ? appState.userBalances.SOL : appState.userBalances.AFOX;
+                    input.value = typeof formatBigInt !== 'undefined' ? formatBigInt(balance, isSol ? 9 : 6) : (Number(balance)/1e6);
+                }
+            };
+        }
     });
-
-    // 5. Кнопка Коннекта (отдельная логика)
-    const connectBtn = document.getElementById('connectWalletBtn');
-    if (connectBtn) {
-        connectBtn.onclick = () => appState.walletPublicKey ? disconnectWallet() : connectWallet();
-    }
 }
 
-// Заменяем запуск
-window.addEventListener('DOMContentLoaded', setupSmartKnightUI);
+// Запуск (используем и DOMContentLoaded и load для надежности)
+window.addEventListener('load', setupSmartKnightUI);
+
 
 
 
