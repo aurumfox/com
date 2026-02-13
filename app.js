@@ -880,185 +880,206 @@ async function executeSmartActionWithFullEffects(btn, config) {
 }
 
 
-/**
- * ============================================================
- * AURUM FOX UNIFIED SMART ENGINE v3.0
- * Система: Авто-сканирование HTML, Wallet, DAO, Staking, Lending
- * ============================================================
- */
+// ============================================================
+// AURUM FOX ULTIMATE WEB3 ENGINE v6.0 (Interactive & Pro)
+// ============================================================
 
-// 1. ИНИЦИАЛИЗАЦИЯ СОСТОЯНИЯ
-window.afoxState = {
+window.AfoxEngine = {
+    wallet: null,
     connected: false,
-    walletAddress: null,
-    provider: null,
-    contractAddress: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd"
-};
+    pubkey: null,
+    isProcessing: false,
 
-// 2. УМНЫЙ СКАНЕР И КАРТА ДЕЙСТВИЙ (Все ID из твоего HTML)
-const ActionMap = {
-    // Кошелек
-    'connectWalletBtn': { name: 'Connection', fn: toggleWallet },
-    
-    // Стейкинг
-    'approve-staking-btn': { name: 'Approval', msg: 'AFOX Approved!', fn: async () => { console.log("Approve AFOX..."); } },
-    'stake-afox-btn': { name: 'Staking', msg: 'Tokens Staked!', fn: async () => { console.log("Staking..."); } },
-    'unstake-afox-btn': { name: 'Unstaking', msg: 'Tokens Returned!', fn: async () => { console.log("Unstaking..."); } },
-    'max-stake-btn': { name: 'Max', msg: 'Max Selected', fn: () => fillMax('stake-amount') },
-    'claim-rewards-btn': { name: 'Claiming', msg: 'Rewards Collected!', fn: async () => await handleClaimRewards() },
+    // 1. Умный поиск любого кошелька (Phantom, Solflare, Backpack и др.)
+    getProvider() {
+        if ("solana" in window) {
+            const provider = window.solana.isOptional ? window.solana.providers[0] : window.solana;
+            if (provider) return provider;
+        }
+        if (window.phantom?.solana) return window.phantom.solana;
+        if (window.solflare?.isSolflare) return window.solflare;
+        return null;
+    },
 
-    // DAO
-    'createProposalBtn': { name: 'DAO', msg: 'Opening Editor...', fn: () => toggleModal('createProposalModal', true) },
-    'executeProposalBtn': { name: 'Execution', msg: 'Proposal Executed!', fn: async () => { console.log("Executing DAO..."); } },
-    'closeProposalModal': { name: 'Close', fn: () => toggleModal('createProposalModal', false) },
-    'cancelProposalBtn': { name: 'Cancel', fn: () => toggleModal('createProposalModal', false) },
-    'filterActiveBtn': { name: 'Filter', fn: () => console.log("Filter: Active") },
-    'filterClosedBtn': { name: 'Filter', fn: () => console.log("Filter: Closed") },
+    // 2. Универсальный обработчик (Вход / Выход)
+    async toggleWallet() {
+        if (this.isProcessing) return; // Защита от спам-кликов
+        
+        const provider = this.getProvider();
+        if (!provider) {
+            this.notify("🦊 Wallet not found! Redirecting to Phantom...", "error");
+            setTimeout(() => window.open("https://phantom.app/", "_blank"), 2000);
+            return;
+        }
 
-    // Лендинг (Кредитование)
-    'lend-btn': { name: 'Supplying', msg: 'Liquidity Added!', fn: async () => { console.log("Lending..."); } },
-    'withdraw-lend-btn': { name: 'Withdraw', msg: 'Assets Withdrawn!', fn: async () => { console.log("Withdrawing..."); } },
-    'borrow-btn': { name: 'Borrowing', msg: 'SOL Borrowed!', fn: async () => { console.log("Borrowing SOL..."); } },
-    'repay-btn': { name: 'Repaying', msg: 'Loan Closed!', fn: async () => { console.log("Repaying SOL..."); } },
-    'max-lend-btn': { name: 'Max', msg: 'Max Selected', fn: () => fillMax('lend-amount-input') }
-};
+        const btn = document.getElementById('connectWalletBtn');
+        this.setLoading(btn, true);
 
-// 3. ФУНКЦИЯ УПРАВЛЕНИЯ КОШЕЛЬКОМ
-async function toggleWallet() {
-    const provider = window.phantom?.solana || window.solana;
-    if (!provider) {
-        showAfoxNotify("Phantom/Solana wallet not found!", "error");
-        window.open("https://phantom.app/", "_blank");
-        return;
-    }
+        try {
+            if (!this.connected) {
+                // ПОДКЛЮЧЕНИЕ
+                const resp = await provider.connect();
+                this.wallet = provider;
+                this.pubkey = resp.publicKey.toString();
+                this.connected = true;
+                
+                // Сохраняем для Anchor и других систем
+                window.appState = { ...window.appState, provider, walletPublicKey: resp.publicKey };
 
-    try {
-        if (!window.afoxState.connected) {
-            const resp = await provider.connect();
-            window.afoxState.connected = true;
-            window.afoxState.walletAddress = resp.publicKey.toString();
-            updateWalletUI(true);
-            showAfoxNotify("Wallet Linked!", "success");
+                this.updateUI(true);
+                this.notify("🚀 Successfully connected!", "success");
+            } else {
+                // ВЫХОД (Полная очистка)
+                if (this.wallet && this.wallet.disconnect) {
+                    await this.wallet.disconnect();
+                }
+                this.wallet = null;
+                this.pubkey = null;
+                this.connected = false;
+                window.appState.walletPublicKey = null;
+                
+                this.updateUI(false);
+                this.notify("🔒 Disconnected. See you soon, Fox!", "info");
+            }
+        } catch (err) {
+            console.error("Web3 Error:", err);
+            this.notify(err.message || "User cancelled request", "error");
+        } finally {
+            this.setLoading(btn, false);
+        }
+    },
+
+    // 3. Управление состоянием кнопок (Загрузка)
+    setLoading(btn, isLoading) {
+        this.isProcessing = isLoading;
+        if (!btn) return;
+        
+        if (isLoading) {
+            btn.dataset.originalText = btn.innerHTML;
+            btn.innerHTML = `<span class="spinner"></span> Processing...`;
+            btn.style.opacity = "0.7";
+            btn.style.pointerEvents = "none";
         } else {
-            await provider.disconnect();
-            window.afoxState.connected = false;
-            window.afoxState.walletAddress = null;
-            updateWalletUI(false);
-            showAfoxNotify("Wallet Disconnected", "info");
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
         }
-    } catch (err) {
-        showAfoxNotify(err.message, "error");
-    }
-}
+    },
 
-// 4. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА КОШЕЛЬКА
-function updateWalletUI(connected) {
-    const btn = document.getElementById('connectWalletBtn');
-    if (!btn) return;
+    // 4. Обновление интерфейса
+    updateUI(isConnected) {
+        const btn = document.getElementById('connectWalletBtn');
+        if (!btn) return;
 
-    if (connected) {
-        const addr = window.afoxState.walletAddress;
-        btn.innerHTML = `🦊 ${addr.slice(0, 4)}...${addr.slice(-4)}`;
-        btn.style.background = "linear-gradient(90deg, #00ff7f, #00ccff)";
-        btn.style.color = "#000";
-    } else {
-        btn.innerHTML = `🦊 Connect Wallet`;
-        btn.style.background = "";
-        btn.style.color = "";
-    }
-}
-
-// 5. ГЛАВНЫЙ ОБРАБОТЧИК ДЕЙСТВИЙ (С анимациями)
-async function handleAction(btn, config) {
-    if (btn.disabled) return;
-    
-    // Проверка коннекта (кроме кнопки коннекта)
-    if (!window.afoxState.connected && btn.id !== 'connectWalletBtn') {
-        showAfoxNotify("Please connect your wallet first!", "error");
-        btn.classList.add('error-shake');
-        setTimeout(() => btn.classList.remove('error-shake'), 500);
-        return;
-    }
-
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<span>⏳</span> ${config.name}...`;
-
-    try {
-        await config.fn();
-        if (config.msg) showAfoxNotify(config.msg, "success");
-    } catch (err) {
-        showAfoxNotify("Action failed", "error");
-        console.error(err);
-    } finally {
-        setTimeout(() => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        }, 1500);
-    }
-}
-
-// 6. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-function fillMax(inputId) {
-    const input = document.getElementById(inputId);
-    if (input) input.value = "100.00"; // Тут потом будет динамический баланс
-}
-
-function toggleModal(id, show) {
-    const modal = document.getElementById(id);
-    if (modal) modal.style.display = show ? 'block' : 'none';
-}
-
-function showAfoxNotify(msg, type = 'info') {
-    const container = document.getElementById('notification-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = 'notification-toast';
-    toast.style.cssText = `background:#060b1a; color:white; padding:15px; border-radius:10px; border-left:4px solid ${type==='success'?'#00ff7f':'#ffd700'}; margin-top:10px; box-shadow:0 10px 30px rgba(0,0,0,0.5);`;
-    toast.innerHTML = `<strong>${type.toUpperCase()}:</strong> ${msg}`;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-}
-
-// 7. ЗАПУСК ДВИЖКА (СКАНЕР)
-function initAfoxEngine() {
-    console.log("🛡️ AFOX Engine: Scanning HTML for IDs...");
-
-    // Сканируем все кнопки из нашей карты ActionMap
-    Object.keys(ActionMap).forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.onclick = (e) => {
-                e.preventDefault();
-                handleAction(element, ActionMap[id]);
-            };
-            console.log(`✅ Bound: ${id}`);
+        if (isConnected) {
+            const shortAddr = this.pubkey.slice(0, 4) + "..." + this.pubkey.slice(-4);
+            btn.innerHTML = `<span>🦊</span> ${shortAddr} (Logout)`;
+            btn.classList.add('connected');
+        } else {
+            btn.innerHTML = `<span>🦊</span> Connect Wallet`;
+            btn.classList.remove('connected');
         }
-    });
+    },
 
-    // Обработка клика по кнопке "Vote FOR/AGAINST" (они по классу)
-    document.querySelectorAll('.dao-vote-btn').forEach(btn => {
-        btn.onclick = () => {
-            const type = btn.getAttribute('data-vote-type');
-            showAfoxNotify(`Voted ${type.toUpperCase()}!`, "success");
+    // 5. Умный сканер HTML (Вешает события на все кнопки)
+    scanAndBind() {
+        console.log("🚀 AFOX Engine: Binding Smart Actions...");
+        
+        const actionMap = {
+            'connectWalletBtn': () => this.toggleWallet(),
+            'stake-afox-btn': () => this.runAction('Staking'),
+            'claim-rewards-btn': () => this.runAction('Rewards Claim'),
+            'unstake-afox-btn': () => this.runAction('Unstaking'),
+            'max-stake-btn': () => {
+                const inp = document.getElementById('stake-amount');
+                if (inp) {
+                    inp.value = "1000000";
+                    this.notify("Max amount selected", "info");
+                }
+            }
         };
-    });
 
-    // Авто-коннект если уже была сессия
-    setTimeout(async () => {
-        const provider = window.phantom?.solana || window.solana;
-        if (provider?.isPhantom) {
-            try {
-                const resp = await provider.connect({ onlyIfTrusted: true });
-                window.afoxState.connected = true;
-                window.afoxState.walletAddress = resp.publicKey.toString();
-                updateWalletUI(true);
-            } catch (e) { /* Сессия не найдена */ }
+        Object.keys(actionMap).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.onclick = (e) => {
+                    e.preventDefault();
+                    actionMap[id]();
+                };
+            }
+        });
+    },
+
+    // 6. Выполнение действий с защитой
+    runAction(name) {
+        if (!this.connected) {
+            this.notify(`❌ Action Denied: Connect wallet to ${name}`, "error");
+            // Тряска кнопки коннекта, чтобы юзер заметил
+            const cBtn = document.getElementById('connectWalletBtn');
+            cBtn.classList.add('shake-anim');
+            setTimeout(() => cBtn.classList.remove('shake-anim'), 500);
+            return;
         }
-    }, 500);
-}
+        this.notify(`⚙️ ${name} transaction initialized...`, "success");
+        // Здесь вставляется вызов твоего смарт-контракта
+    },
 
-// Запуск при загрузке
-window.addEventListener('DOMContentLoaded', initAfoxEngine);
+    // 7. Профессиональные уведомления
+    notify(msg, type) {
+        const container = document.getElementById('notification-container');
+        if (!container) return;
 
+        const toast = document.createElement('div');
+        toast.className = `afox-toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <span class="toast-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                <span class="toast-msg">${msg}</span>
+            </div>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Плавное удаление
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100px)';
+            setTimeout(() => toast.remove(), 500);
+        }, 3500);
+    }
+};
 
+// CSS стили прямо в JS, чтобы блок был полностью автономным
+const style = document.createElement('style');
+style.innerHTML = `
+    .afox-toast { transition: 0.5s; padding: 15px 25px; border-radius: 12px; margin-bottom: 10px; color: #000; font-weight: bold; min-width: 250px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-left: 5px solid #000; }
+    .afox-toast.success { background: #FFD700; border-color: #b8860b; }
+    .afox-toast.error { background: #ff4d4d; border-color: #990000; color: #fff; }
+    .afox-toast.info { background: #00f0ff; border-color: #0088cc; }
+    .spinner { border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid #000; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; margin-right: 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .shake-anim { animation: shake 0.5s; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+    #connectWalletBtn.connected { background: linear-gradient(90deg, #1a2a44, #0a1229) !important; border: 1px solid #FFD700 !important; color: #FFD700 !important; }
+`;
+document.head.appendChild(style);
+
+// Старт
+document.addEventListener('DOMContentLoaded', () => {
+    AfoxEngine.scanAndBind();
+    
+    // Тихая проверка сессии
+    setTimeout(async () => {
+        const p = AfoxEngine.getProvider();
+        if (p?.connect) {
+            try {
+                const r = await p.connect({ onlyIfTrusted: true });
+                if (r) {
+                    AfoxEngine.wallet = p;
+                    AfoxEngine.pubkey = r.publicKey.toString();
+                    AfoxEngine.connected = true;
+                    AfoxEngine.updateUI(true);
+                }
+            } catch (e) {}
+        }
+    }, 800);
+});
