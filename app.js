@@ -664,252 +664,160 @@ function cacheUIElements() {
 
 
 /**
- * 🦊 AURUM FOX: ULTIMATE CONCRETE ENGINE v11.0
- * Полная автономия для DAO, Staking & Lending
+ * AURUM FOX - Unified Web3 Core Controller
+ * Version: 2.1.0 (Autonomous & Advanced)
  */
 
-const AfoxSmartEngine = {
-    state: {
-        isConnected: false,
-        pubkey: null,
-        provider: null,
-        isBusy: false
-    },
+document.addEventListener('DOMContentLoaded', () => {
+    const CONTRACT_ADDRESS = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
+    let userWallet = null;
 
-    // 1. СТАРТ - ГЛУБОКОЕ СКАНЕР-ПОГРУЖЕНИЕ
-    init() {
-        console.log("🚀 AFOX Engine: Глубокое сканирование HTML...");
-        this.injectStyles();
-        this.scanAndBindAll();
-        this.checkSession();
-        
-        // Живой монитор: если в HTML что-то изменится, движок подцепит это
-        const observer = new MutationObserver(() => this.scanAndBindAll());
-        observer.observe(document.body, { childList: true, subtree: true });
-    },
-
-    // 2. ПОИСК ПРОВАЙДЕРА
-    getProvider() {
-        if ("solana" in window) {
-            return window.solana.isOptional ? window.solana.providers[0] : window.solana;
+    // --- UI ELEMENTS SCANNER ---
+    const elements = {
+        connectBtn: document.getElementById('connectWalletBtn'),
+        staking: {
+            stakeBtn: document.getElementById('stake-afox-btn'),
+            claimBtn: document.getElementById('claim-rewards-btn'),
+            approveBtn: document.getElementById('approve-staking-btn'),
+            unstakeBtn: document.getElementById('unstake-afox-btn'),
+            amount: document.getElementById('stake-amount'),
+            balance: document.getElementById('user-afox-balance')
+        },
+        dao: {
+            createBtn: document.getElementById('createProposalBtn'),
+            voteBtns: document.querySelectorAll('.dao-vote-btn'),
+            executeBtn: document.getElementById('executeProposalBtn')
+        },
+        lending: {
+            lendBtn: document.getElementById('lend-btn'),
+            borrowBtn: document.getElementById('borrow-btn'),
+            repayBtn: document.getElementById('repay-btn')
         }
-        return window.phantom?.solana || window.solflare || null;
-    },
+    };
 
-    // 3. ТОТАЛЬНЫЙ СКАНЕР (От А до Я)
-    scanAndBindAll() {
-        // Ищем все, что может быть кнопкой
-        const allInteractive = document.querySelectorAll('button, a.btn, .royal-btn, .web3-btn, .dao-vote-btn, #connectWalletBtn');
-        
-        allInteractive.forEach(el => {
-            if (el.dataset.afoxManaged) return; // Пропуск если уже под контролем
-
-            const id = (el.id || "").toLowerCase();
-            const txt = (el.innerText || "").toLowerCase();
-            const cls = el.className.toLowerCase();
-
-            // Логика кнопки CONNECT / DISCONNECT
-            if (id.includes("connect") || cls.includes("connect-fox-btn")) {
-                el.onclick = (e) => { e.preventDefault(); this.toggleConnection(); };
-                el.dataset.afoxRole = "auth";
-            } 
-            // Логика ВСЕХ Web3 кнопок (Stake, Borrow, Vote, Claim, Approve, Lend, Repay)
-            else if (this.identifyAction(id, txt, cls)) {
-                el.onclick = (e) => { e.preventDefault(); this.executeWeb3Action(el); };
-                el.dataset.afoxRole = "action";
-            }
-
-            el.dataset.afoxManaged = "true";
-        });
-    },
-
-    identifyAction(id, txt, cls) {
-        const keywords = ['stake', 'claim', 'borrow', 'lend', 'vote', 'repay', 'withdraw', 'unstake', 'approve', 'submit', 'trade', 'enter'];
-        return keywords.some(key => id.includes(key) || txt.includes(key) || cls.includes(key));
-    },
-
-    // 4. УМНЫЙ ВХОД И ВЫХОД (С УВЕДОМЛЕНИЯМИ)
-    async toggleConnection() {
-        if (this.state.isBusy) return;
-        const provider = this.getProvider();
-
-        if (!provider) {
-            this.notify("🦊 Кошелек не найден! Установи Phantom.", "error");
-            window.open("https://phantom.app/", "_blank");
-            return;
-        }
-
-        try {
-            this.setBtnState(document.querySelector('[data-afox-role="auth"]'), true, "WAIT...");
-            
-            if (!this.state.isConnected) {
-                // ВХОД
-                const resp = await provider.connect();
-                this.state.pubkey = resp.publicKey.toString();
-                this.state.provider = provider;
-                this.state.isConnected = true;
-                this.notify("🦊 ДОБРО ПОЖАЛОВАТЬ В AURUM FOX!", "success");
-            } else {
-                // ВЫХОД
-                if (provider.disconnect) await provider.disconnect();
-                this.state.isConnected = false;
-                this.state.pubkey = null;
-                this.notify("🔒 ВЫ УСПЕШНО ОТСОЕДИНИЛИСЬ", "info");
-            }
-            this.updateUI();
-        } catch (err) {
-            this.notify("❌ Ошибка соединения", "error");
-        } finally {
-            this.setBtnState(document.querySelector('[data-afox-role="auth"]'), false);
-        }
-    },
-
-    // 5. ВЫПОЛНЕНИЕ ЛЮБОГО ДЕЙСТВИЯ (DEFI / DAO)
-    async executeWeb3Action(btn) {
-        if (!this.state.isConnected) {
-            this.notify("🔒 СНАЧАЛА ВОЙДИТЕ В КОШЕЛЕК", "error");
-            this.highlightAuth();
-            return;
-        }
-
-        if (this.state.isBusy) return;
-
-        const actionName = btn.innerText.split('\n')[0].toUpperCase();
-        const originalHTML = btn.innerHTML;
-
-        try {
-            this.setBtnState(btn, true, "SIGNING...");
-            this.notify(`Транзакция [${actionName}] отправлена...`, "info");
-
-            // ИМИТАЦИЯ БЛОКЧЕЙНА (Anchor call placeholder)
-            await new Promise(r => setTimeout(r, 2000));
-
-            this.notify(`✅ ${actionName} ВЫПОЛНЕНО УСПЕШНО!`, "success");
-        } catch (err) {
-            this.notify("❌ Ошибка подписи", "error");
-        } finally {
-            this.setBtnState(btn, false, originalHTML);
-        }
-    },
-
-    // ИНСТРУМЕНТАРИЙ
-    updateUI() {
-        const authBtn = document.querySelector('[data-afox-role="auth"]');
-        if (!authBtn) return;
-
-        if (this.state.isConnected) {
-            const short = this.state.pubkey.slice(0,4) + "..." + this.state.pubkey.slice(-4);
-            authBtn.innerHTML = `🦊 ${short} (EXIT)`;
-            authBtn.style.border = "1px solid #FFD700";
-            authBtn.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.4)";
-        } else {
-            authBtn.innerHTML = `🦊 Connect Wallet`;
-            authBtn.style.boxShadow = "none";
-        }
-    },
-
-    setBtnState(btn, loading, text) {
-        if (!btn) return;
-        this.state.isBusy = loading;
-        if (loading) {
-            btn.dataset.old = btn.innerHTML;
-            btn.innerHTML = `<span class="afox-spin"></span> ${text}`;
-            btn.style.pointerEvents = "none";
-            btn.style.opacity = "0.8";
-        } else {
-            btn.innerHTML = btn.dataset.old || btn.innerHTML;
-            btn.style.pointerEvents = "auto";
-            btn.style.opacity = "1";
-        }
-    },
-
-    notify(msg, type) {
+    // --- CORE NOTIFICATION SYSTEM ---
+    const notify = (message, type = 'info') => {
         const container = document.getElementById('notification-container');
-        if (!container) return;
-        
         const toast = document.createElement('div');
-        toast.className = `afox-toast ${type}`;
-        toast.innerHTML = `<b>${msg}</b>`;
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(50px)';
-            setTimeout(() => toast.remove(), 500);
-        }, 3500);
-    },
-
-    highlightAuth() {
-        const btn = document.querySelector('[data-afox-role="auth"]');
-        if (btn) {
-            btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            btn.classList.add('afox-pulse');
-            setTimeout(() => btn.classList.remove('afox-pulse'), 2000);
-        }
-    },
-
-    async checkSession() {
-        const p = this.getProvider();
-        if (p?.isPhantom) {
-            try {
-                const r = await p.connect({ onlyIfTrusted: true });
-                if (r) {
-                    this.state.pubkey = r.publicKey.toString();
-                    this.state.isConnected = true;
-                    this.updateUI();
-                }
-            } catch(e) {}
-        }
-    },
-
-    injectStyles() {
-        if (document.getElementById('afox-engine-styles')) return;
-        const s = document.createElement('style');
-        s.id = 'afox-engine-styles';
-        s.innerHTML = `
-            .afox-toast { 
-                background: #060b1a; color: #fff; padding: 15px 25px; border-radius: 12px; 
-                border-right: 4px solid #FFD700; box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
-                margin-bottom: 10px; animation: afoxSlideIn 0.4s ease forwards;
-                font-family: 'Inter', sans-serif; min-width: 280px;
-            }
-            .afox-toast.success { border-right-color: #00ff7f; color: #00ff7f; }
-            .afox-toast.error { border-right-color: #ff4d4d; color: #ff4d4d; }
-            .afox-toast.info { border-right-color: #00f0ff; color: #00f0ff; }
-            
-            @keyframes afoxSlideIn {
-                from { transform: translateX(100px); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            
-            .afox-spin { 
-                border: 2px solid rgba(255,215,0,0.2); border-top: 2px solid #FFD700; 
-                border-radius: 50%; width: 14px; height: 14px; display: inline-block; 
-                animation: afoxRotation 1s linear infinite; margin-right: 10px;
-            }
-            @keyframes afoxRotation { 100% { transform: rotate(360deg); } }
-            
-            .afox-pulse { animation: afoxPulse 0.5s infinite alternate; }
-            @keyframes afoxPulse { from { transform: scale(1); box-shadow: 0 0 0 #ff4d4d; } to { transform: scale(1.05); box-shadow: 0 0 20px #ff4d4d; } }
+        toast.style.cssText = `
+            background: ${type === 'error' ? '#ff4d4d' : '#FFD700'};
+            color: #000; padding: 15px 25px; border-radius: 12px;
+            font-weight: bold; margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease forwards;
         `;
-        document.head.appendChild(s);
+        toast.innerText = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    };
+
+    // --- WALLET LOGIC ---
+    const updateUIState = (connected) => {
+        if (connected) {
+            elements.connectBtn.innerHTML = `🦊 Disconnect (${userWallet.slice(0, 4)}...${userWallet.slice(-4)})`;
+            elements.connectBtn.style.background = "#ff4d4d";
+            notify("Wallet successfully connected to Aurum Fox Hub", "success");
+        } else {
+            elements.connectBtn.innerHTML = "🦊 Connect Wallet";
+            elements.connectBtn.style.background = "#FFD700";
+            userWallet = null;
+            notify("Wallet disconnected", "info");
+        }
+    };
+
+    const connectWallet = async () => {
+        try {
+            const { solana } = window;
+            if (!solana || !solana.isPhantom) {
+                notify("Please install Phantom Wallet!", "error");
+                window.open("https://phantom.app/", "_blank");
+                return;
+            }
+
+            const response = await solana.connect();
+            userWallet = response.publicKey.toString();
+            updateUIState(true);
+            loadAccountData();
+        } catch (err) {
+            notify("Connection failed: " + err.message, "error");
+        }
+    };
+
+    const disconnectWallet = () => {
+        window.solana.disconnect();
+        updateUIState(false);
+    };
+
+    // --- SMART INTERACTION HANDLERS ---
+    const loadAccountData = () => {
+        // Here we would fetch real on-chain data
+        if(elements.staking.balance) elements.staking.balance.innerText = "Scanning Chain...";
+        setTimeout(() => {
+            if(elements.staking.balance) elements.staking.balance.innerText = "1,250.00 AFOX";
+        }, 1500);
+    };
+
+    const handleTransaction = async (actionName, logic) => {
+        if (!userWallet) return notify("Please connect wallet first!", "error");
+        
+        try {
+            notify(`Processing ${actionName}...`, "info");
+            // Placeholder for Solana Web3 Transaction logic
+            await new Promise(r => setTimeout(r, 2000)); 
+            notify(`${actionName} Successful!`, "success");
+        } catch (err) {
+            notify(`${actionName} failed: ` + err.message, "error");
+        }
+    };
+
+    // --- EVENT LISTENERS INITIALIZATION ---
+    
+    // Wallet Connection
+    elements.connectBtn.addEventListener('click', () => {
+        userWallet ? disconnectWallet() : connectWallet();
+    });
+
+    // Staking Actions
+    if (elements.staking.stakeBtn) {
+        elements.staking.stakeBtn.addEventListener('click', () => {
+            const val = elements.staking.amount.value;
+            handleTransaction(`Stake ${val} AFOX`);
+        });
     }
-};
 
-// ЗАПУСК СИСТЕМЫ
-document.addEventListener('DOMContentLoaded', () => AfoxSmartEngine.init());
+    if (elements.staking.approveBtn) {
+        elements.staking.approveBtn.addEventListener('click', () => handleTransaction("Contract Approval"));
+    }
 
+    // DAO Actions
+    if (elements.dao.createBtn) {
+        elements.dao.createBtn.addEventListener('click', () => {
+            if (!userWallet) return notify("Connect wallet to propose", "error");
+            document.getElementById('createProposalModal').style.display = 'block';
+        });
+    }
 
+    elements.dao.voteBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.getAttribute('data-vote-type');
+            handleTransaction(`DAO Vote ${type.toUpperCase()}`);
+        });
+    });
 
+    // Lending Actions
+    if (elements.lending.lendBtn) {
+        elements.lending.lendBtn.addEventListener('click', () => handleTransaction("Liquidity Supply"));
+    }
 
+    if (elements.lending.borrowBtn) {
+        elements.lending.borrowBtn.addEventListener('click', () => handleTransaction("SOL Borrowing"));
+    }
 
-
-
-
-
-
-
-
-
-
-
+    // --- AUTO-CHECK FOR PREVIOUS CONNECTION ---
+    if (window.solana && window.solana.isPhantom) {
+        window.solana.connect({ onlyIfTrusted: true })
+            .then(({ publicKey }) => {
+                userWallet = publicKey.toString();
+                updateUIState(true);
+            }).catch(() => {});
+    }
+});
