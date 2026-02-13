@@ -808,207 +808,216 @@ async function executeSmartActionWithFullEffects(btn, config) {
 }
 
 /**
- * ============================================================
- * 🦊 AURUM FOX: CONCRETE AUTONOMOUS ENGINE v9.0 🦊
- * Полная автоматизация: Сканирование, Коннект, Состояния
- * ============================================================
+ * 🦊 AURUM FOX: ULTIMATE AUTONOMOUS ENGINE v10.0
+ * Полная автоматизация: Сканирование, Интеллект кнопок, Стабильность
  */
 
-const AfoxSmartEngine = {
+const AfoxEngine = {
     state: {
-        wallet: null,
+        connected: false,
         address: null,
-        isConnected: false,
-        isWorking: false
+        provider: null,
+        busy: false
     },
 
-    // 1. Инициализация системы
+    // 1. ЗАПУСК ДВИГАТЕЛЯ
     init() {
-        console.log("🚀 AFOX Engine: Запуск автономного сканера...");
-        this.injectGlobalStyles();
-        this.autoScanHTML();
-        this.reconnectIfTrusted();
-    },
-
-    // 2. Умный поиск провайдера (Phantom, Solflare и др.)
-    getProvider() {
-        if ("solana" in window) {
-            const provider = window.solana.isOptional ? window.solana.providers[0] : window.solana;
-            if (provider) return provider;
-        }
-        return window.phantom?.solana || window.solflare || null;
-    },
-
-    // 3. ТОТАЛЬНЫЙ СКАНЕР: Находит все кнопки и вешает логику
-    autoScanHTML() {
-        const interactiveElements = document.querySelectorAll('button, a, .web3-button, .royal-btn, .dao-vote-btn');
+        console.log("🚀 AFOX Engine: Автономный запуск...");
+        this.injectStyles();
+        this.syncUI(); // Оживляем кнопки
+        this.autoConnect(); // Проверяем активную сессию
         
-        interactiveElements.forEach(el => {
-            const id = (el.id || "").toLowerCase();
-            const txt = (el.innerText || "").toLowerCase();
+        // Следим за изменениями DOM (если блоки подгружаются динамически)
+        const observer = new MutationObserver(() => this.syncUI());
+        observer.observe(document.body, { childList: true, subtree: true });
+    },
 
-            // Логика кнопки Connect
-            if (id.includes('connect') || id.includes('fox-btn')) {
-                el.onclick = (e) => { e.preventDefault(); this.handleAuth(); };
-                el.setAttribute('data-afox-type', 'auth');
+    // 2. ПОИСК ПРОВАЙДЕРА (Phantom / Solflare / Backpack)
+    getProvider() {
+        const solana = window.solana || window.phantom?.solana;
+        if (solana) return solana;
+        if (window.solflare) return window.solflare;
+        return null;
+    },
+
+    // 3. УМНЫЙ СИНХРОНИЗАТОР (Оживляет все кнопки на лету)
+    syncUI() {
+        const buttons = document.querySelectorAll('button, a.btn, .web3-button, .royal-btn, [id*="btn"]');
+        
+        buttons.forEach(btn => {
+            // Если кнопка уже обработана — пропускаем
+            if (btn.dataset.afoxBound) return;
+
+            const text = (btn.innerText || "").toLowerCase();
+            const id = (btn.id || "").toLowerCase();
+
+            // Кнопка КОННЕКТА
+            if (id.includes("connect") || text.includes("connect wallet") || btn.classList.contains("connect-fox-btn")) {
+                btn.onclick = (e) => { e.preventDefault(); this.handleAuth(); };
+                btn.dataset.afoxType = "auth";
             } 
-            // Логика DeFi кнопок (стейкинг, лендинг, дао)
-            else if (this.isWeb3Action(id, txt)) {
-                el.onclick = (e) => { e.preventDefault(); this.runTransaction(el); };
-                el.setAttribute('data-afox-type', 'action');
+            // Кнопки ДЕЙСТВИЙ (Stake, Borrow, Vote и т.д.)
+            else if (this.isWeb3Action(text, id)) {
+                btn.onclick = (e) => { e.preventDefault(); this.executeAction(btn); };
+                btn.dataset.afoxType = "action";
             }
+
+            btn.dataset.afoxBound = "true"; // Помечаем как "живую"
         });
-        console.log(`✅ Сканирование завершено. Привязано элементов: ${interactiveElements.length}`);
     },
 
-    isWeb3Action(id, txt) {
-        const keys = ['stake', 'claim', 'borrow', 'lend', 'vote', 'repay', 'withdraw', 'unstake', 'approve', 'trade', 'enter', 'access'];
-        return keys.some(k => id.includes(k) || txt.includes(k));
+    isWeb3Action(t, id) {
+        const triggers = ['stake', 'claim', 'borrow', 'lend', 'vote', 'repay', 'unstake', 'trade', 'access', 'enter', 'approve'];
+        return triggers.some(key => t.includes(key) || id.includes(key));
     },
 
-    // 4. Умная Авторизация
+    // 4. ЛОГИКА АВТОРИЗАЦИИ
     async handleAuth() {
-        if (this.state.isWorking) return;
+        if (this.state.busy) return;
         const provider = this.getProvider();
 
         if (!provider) {
-            this.notify("🦊 Установите Phantom кошелек!", "error");
+            this.notify("🦊 Установите Phantom!", "error");
             window.open("https://phantom.app/", "_blank");
             return;
         }
 
         try {
-            this.toggleLoading(document.querySelector('[data-afox-type="auth"]'), true, "WAIT...");
+            this.setLoading(document.querySelector('[data-afox-type="auth"]'), true, "WAIT...");
             
-            if (!this.state.isConnected) {
+            if (!this.state.connected) {
                 const resp = await provider.connect();
                 this.state.address = resp.publicKey.toString();
-                this.state.wallet = provider;
-                this.state.isConnected = true;
-                this.updateWalletUI(true);
-                this.notify("ЗОЛОТОЙ ЛИС В СЕТИ!", "success");
+                this.state.provider = provider;
+                this.state.connected = true;
+                this.notify("ЗОЛОТОЙ ЛИС В СЕТИ", "success");
             } else {
                 if (provider.disconnect) await provider.disconnect();
-                this.state.isConnected = false;
+                this.state.connected = false;
                 this.state.address = null;
-                this.updateWalletUI(false);
-                this.notify("ВЫХОД ВЫПОЛНЕН", "info");
+                this.notify("ВЫХОД ИЗ СИСТЕМЫ", "info");
             }
+            this.updateHeader();
         } catch (err) {
-            this.notify("Отказ в авторизации", "error");
+            this.notify("Отказ в доступе", "error");
         } finally {
-            this.toggleLoading(document.querySelector('[data-afox-type="auth"]'), false);
+            this.setLoading(document.querySelector('[data-afox-type="auth"]'), false);
         }
     },
 
-    // 5. Выполнение любого действия (Бетонная логика)
-    async runTransaction(btn) {
-        if (!this.state.isConnected) {
-            this.notify("🔒 СНАЧАЛА ПОДКЛЮЧИТЕ КОШЕЛЕК", "error");
-            this.shake(document.querySelector('[data-afox-type="auth"]'));
+    // 5. ВЫПОЛНЕНИЕ ДЕЙСТВИЙ (Stake, Vote и т.д.)
+    async executeAction(btn) {
+        if (!this.state.connected) {
+            this.notify("🔒 СНАЧАЛА КОННЕКТ!", "error");
+            this.focusAuth();
             return;
         }
 
-        if (this.state.isWorking) return;
+        if (this.state.busy) return;
 
-        const originalHTML = btn.innerHTML;
-        const label = btn.innerText.split('\n')[0];
+        const originalLabel = btn.innerHTML;
+        const actionName = btn.innerText.split('\n')[0];
 
         try {
-            this.toggleLoading(btn, true, "SIGNING...");
-            this.notify(`${label}: Ожидание подписи...`, "info");
+            this.setLoading(btn, true, "PENDING...");
+            this.notify(`${actionName}: Ожидание подписи...`, "info");
 
-            // Имитация блокчейн-вызова (Сюда вставляется Anchor call)
-            await new Promise(r => setTimeout(r, 2000));
+            // Имитация блокчейна (Здесь будет твой реальный вызов смарт-контракта)
+            await new Promise(res => setTimeout(res, 2000));
 
-            this.notify(`${label}: УСПЕШНО!`, "success");
-        } catch (err) {
+            this.notify(`${actionName}: ВЫПОЛНЕНО!`, "success");
+        } catch (e) {
             this.notify("Ошибка транзакции", "error");
         } finally {
-            this.toggleLoading(btn, false, originalHTML);
+            this.setLoading(btn, false, originalLabel);
         }
     },
 
-    // Инструментарий UI
-    toggleLoading(btn, isLoading, tempText) {
+    // ИНСТРУМЕНТЫ И ВИЗУАЛ
+    setLoading(btn, active, text) {
         if (!btn) return;
-        this.state.isWorking = isLoading;
-        if (isLoading) {
-            btn.dataset.old = btn.innerHTML;
-            btn.innerHTML = `<span class="fox-loader"></span> ${tempText}`;
-            btn.style.pointerEvents = "none";
+        this.state.busy = active;
+        if (active) {
+            btn.dataset.oldContent = btn.innerHTML;
+            btn.innerHTML = `<span class="fox-spin"></span> ${text}`;
             btn.style.opacity = "0.7";
+            btn.style.pointerEvents = "none";
         } else {
-            btn.innerHTML = btn.dataset.old || btn.innerHTML;
-            btn.style.pointerEvents = "auto";
+            btn.innerHTML = btn.dataset.oldContent || btn.innerHTML;
             btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
         }
     },
 
-    updateWalletUI(connected) {
+    updateHeader() {
         const btn = document.querySelector('[data-afox-type="auth"]');
         if (!btn) return;
-        if (connected) {
-            const addr = this.state.address;
-            btn.innerHTML = `🦊 ${addr.slice(0,4)}...${addr.slice(-4)} (EXIT)`;
-            btn.classList.add('connected-glow');
+        if (this.state.connected) {
+            const short = `${this.state.address.slice(0,4)}...${this.state.address.slice(-4)}`;
+            btn.innerHTML = `🦊 ${short} (EXIT)`;
+            btn.style.borderColor = "#FFD700";
+            btn.classList.add("wallet-active");
         } else {
             btn.innerHTML = `🦊 Connect Wallet`;
-            btn.classList.remove('connected-glow');
+            btn.classList.remove("wallet-active");
         }
     },
 
     notify(msg, type) {
-        let container = document.getElementById('afox-notifications');
+        let container = document.getElementById('fox-notifs');
         if (!container) {
             container = document.createElement('div');
-            container.id = 'afox-notifications';
+            container.id = 'fox-notifs';
             document.body.appendChild(container);
         }
         const toast = document.createElement('div');
-        toast.className = `afox-toast ${type}`;
-        toast.innerHTML = `<span>${msg}</span>`;
+        toast.className = `fox-toast ${type}`;
+        toast.innerHTML = `<b>${msg}</b>`;
         container.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3500);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3000);
     },
 
-    shake(el) {
-        if (!el) return;
-        el.style.animation = 'afox-shake 0.5s';
-        setTimeout(() => el.style.animation = '', 500);
+    focusAuth() {
+        const authBtn = document.querySelector('[data-afox-type="auth"]');
+        if (authBtn) {
+            authBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            authBtn.classList.add('pulse-red');
+            setTimeout(() => authBtn.classList.remove('pulse-red'), 2000);
+        }
     },
 
-    async reconnectIfTrusted() {
+    async autoConnect() {
         const p = this.getProvider();
-        if (p?.isPhantom) {
+        if (p) {
             try {
                 const r = await p.connect({ onlyIfTrusted: true });
                 if (r) {
                     this.state.address = r.publicKey.toString();
-                    this.state.isConnected = true;
-                    this.updateWalletUI(true);
+                    this.state.connected = true;
+                    this.updateHeader();
                 }
-            } catch(e) {}
+            } catch (e) {}
         }
     },
 
-    injectGlobalStyles() {
+    injectStyles() {
         const s = document.createElement('style');
         s.innerHTML = `
-            #afox-notifications { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
-            .afox-toast { background: #111; color: #fff; padding: 15px 25px; border-radius: 12px; border-left: 5px solid #FFD700; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: foxSlide 0.4s ease-out; font-family: 'Inter', sans-serif; font-weight: bold; min-width: 250px; }
-            .afox-toast.success { border-left-color: #00ff7f; }
-            .afox-toast.error { border-left-color: #ff4d4d; }
-            .afox-toast.info { border-left-color: #00f0ff; }
-            .fox-loader { width: 14px; height: 14px; border: 2px solid #FFD700; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: foxSpin 0.8s linear infinite; margin-right: 10px; }
-            .connected-glow { box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important; border: 1px solid #FFD700 !important; }
-            @keyframes foxSpin { 100% { transform: rotate(360deg); } }
-            @keyframes foxSlide { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            @keyframes afox-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+            #fox-notifs { position: fixed; bottom: 20px; left: 20px; z-index: 100000; display: flex; flex-direction: column; gap: 10px; }
+            .fox-toast { background: #060b1a; border: 1px solid #FFD700; color: #fff; padding: 12px 25px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); animation: foxIn 0.3s ease-out; font-family: sans-serif; min-width: 220px; }
+            .success { border-color: #00ff7f; color: #00ff7f; }
+            .error { border-color: #ff4d4d; color: #ff4d4d; }
+            .info { border-color: #00f0ff; color: #00f0ff; }
+            .fox-spin { border: 2px solid rgba(255,215,0,0.3); border-top: 2px solid #FFD700; border-radius: 50%; width: 14px; height: 14px; display: inline-block; animation: fSpin 1s linear infinite; margin-right: 8px; vertical-align: middle; }
+            @keyframes fSpin { 100% { transform: rotate(360deg); } }
+            @keyframes foxIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+            .pulse-red { animation: pRed 0.5s infinite alternate; }
+            @keyframes pRed { from { box-shadow: 0 0 0px #ff4d4d; } to { box-shadow: 0 0 25px #ff4d4d; } }
+            .wallet-active { box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
         `;
         document.head.appendChild(s);
     }
 };
 
-// Запуск двигателя
-document.addEventListener('DOMContentLoaded', () => AfoxSmartEngine.init());
+// СТАРТ
+document.addEventListener('DOMContentLoaded', () => AfoxEngine.init());
