@@ -1218,114 +1218,119 @@ async function executeSmartActionWithFullEffects(btn, config) {
 }
 
 
-// ============================================================
-// SMART INTERFACE KNIGHT V2 (FIXED CONNECT & ERROR HANDLING)
-// ============================================================
-async function setupSmartKnightUI() {
-    console.log("⚔️ [Knight]: X!");
 
-    // 1. Сначала чиним КОШЕЛЕК
-    const connectBtn = document.getElementById('connectWalletBtn');
+// ============================================================
+// ULTRA SMART KNIGHT ENGINE — ВСЁ ПОДХВАТИТ САМ
+// ============================================================
+const KnightLogic = {
+    // Карта ключевых слов: если это есть в ID или ТЕКСТЕ кнопки — вешаем логику
+    map: {
+        'stake':   { name: 'Staking', msg: 'Tokens Staked!', fn: () => window.handleStakeAfox?.() },
+        'unstake': { name: 'Unstaking', msg: 'Tokens Freed!', fn: () => window.handleUnstakeAfox?.() },
+        'claim':   { name: 'Claiming', msg: 'Rewards Collected!', fn: () => window.handleClaimRewards?.() },
+        'lend':    { name: 'Lending', msg: 'Assets Lent!', fn: () => window.handleLendingAction?.('Lend') },
+        'borrow':  { name: 'Borrowing', msg: 'Loan Taken!', fn: () => window.handleLoanAction?.('Borrow') },
+        'repay':   { name: 'Repaying', msg: 'Loan Paid!', fn: () => window.handleLoanAction?.('Repay') },
+        'proposal':{ name: 'DAO', msg: 'Created!', fn: (e) => window.handleCreateProposal?.(e) }
+    },
+
+    // Умный поиск кнопки коннекта
+    findConnectBtn: () => {
+        return document.getElementById('connectWalletBtn') || 
+               document.querySelector('button[id*="connect"]') || 
+               Array.from(document.querySelectorAll('button')).find(b => b.innerText.toLowerCase().includes('wallet'));
+    }
+};
+
+async function startUltraKnight() {
+    console.log("🛡️ [Ultra Knight]: Начинаю глубокое сканирование HTML...");
+
+    // 1. ОЖИВЛЯЕМ КОШЕЛЕК (С ГАРАНТИЕЙ)
+    const connectBtn = KnightLogic.findConnectBtn();
     if (connectBtn) {
+        console.log("🦊 [Ultra Knight]: Кнопка коннекта найдена:", connectBtn.id || "по тексту");
         connectBtn.onclick = async (e) => {
             e.preventDefault();
-            console.log("🦊 [Knight]: Попытка связи с кошельком...");
             try {
-                if (typeof appState !== 'undefined' && appState.walletPublicKey) {
-                    await disconnectWallet();
+                // Если кошелек уже есть в appState — отключаем, если нет — подключаем
+                const isConnected = window.appState && window.appState.walletPublicKey;
+                if (isConnected) {
+                    console.log("🔌 Отключаю...");
+                    if (typeof window.disconnectWallet === 'function') await window.disconnectWallet();
                 } else {
-                    await connectWallet();
+                    console.log("🔑 Подключаю...");
+                    if (typeof window.connectWallet === 'function') await window.connectWallet();
                 }
             } catch (err) {
-                console.error("Connect error:", err);
+                console.error("❌ Ошибка Коннекта:", err);
             }
         };
     }
 
-    // 2. Карта функций (теперь с проверкой на существование)
-    const actionMap = {
-        'stake-afox':  { name: 'Staking', msg: 'Staked!', fn: () => window.handleStakeAfox?.() },
-        'unstake-afox':{ name: 'Unstaking', msg: 'Freed!', fn: () => window.handleUnstakeAfox?.() },
-        'claim-reward':{ name: 'Claiming', msg: 'Claimed!', fn: () => window.handleClaimRewards?.() },
-        'lend':         { name: 'Lending', msg: 'Lent!', fn: () => window.handleLendingAction?.('Lend') },
-        'withdraw-lend':{ name: 'Withdrawing', msg: 'Back!', fn: () => window.handleLendingAction?.('Withdraw') },
-        'borrow':       { name: 'Borrowing', msg: 'Borrowed!', fn: () => window.handleLoanAction?.('Borrow') },
-        'repay':        { name: 'Repaying', msg: 'Repaid!', fn: () => window.handleLoanAction?.('Repay') },
-        'submit-proposal': { name: 'DAO', msg: 'Created!', fn: (e) => window.handleCreateProposal?.(e) }
-    };
-
-    // 3. Универсальный движок кнопок
-    const knightExecute = async (btn, config) => {
+    // 2. ДВИЖОК ДЕЙСТВИЙ
+    const execute = async (btn, cfg) => {
         if (btn.disabled) return;
-        const originalHTML = btn.innerHTML;
-        
+        const oldHtml = btn.innerHTML;
         try {
             btn.disabled = true;
-            btn.classList.add('processing');
-            btn.innerHTML = `<span class="spinner"></span> ${config.name}...`;
-
-            const result = await config.fn(); 
-            
-            btn.innerHTML = `✅ ${config.msg}`;
-            btn.style.borderColor = "#00ffaa";
+            btn.innerHTML = `<span class="spinner"></span> ${cfg.name}...`;
+            await cfg.fn();
+            btn.innerHTML = `✅ ${cfg.msg}`;
             window.spawnRichParticles?.(btn);
-            window.showNotification?.(config.msg, "success");
-            
         } catch (err) {
-            console.error(`[Knight Error]:`, err);
             btn.innerHTML = `❌ Error`;
-            btn.style.borderColor = "#ff4d4d";
-            window.showNotification?.(err.message || "Transaction failed", "error");
+            console.error(err);
         } finally {
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
-                btn.classList.remove('processing');
-                btn.style.borderColor = "";
-            }, 3000);
+            setTimeout(() => { btn.disabled = false; btn.innerHTML = oldHtml; }, 3000);
         }
     };
 
-    // 4. Оживляем кнопки действий
-    document.querySelectorAll('button[id]').forEach(btn => {
-        if (btn.id === 'connectWalletBtn') return; // Коннект мы уже оживили выше
+    // 3. АВТО-МАРШРУТИЗАЦИЯ ВСЕХ КНОПОК
+    document.querySelectorAll('button').forEach(btn => {
+        // Пропускаем кнопку коннекта, её уже обработали
+        if (btn === connectBtn) return;
 
-        const id = btn.id.toLowerCase();
-        for (const [key, config] of Object.entries(actionMap)) {
-            if (id.includes(key)) {
+        const btnKey = (btn.id + btn.className + btn.innerText).toLowerCase();
+        
+        for (const [key, cfg] of Object.entries(KnightLogic.map)) {
+            if (btnKey.includes(key)) {
                 btn.onclick = (e) => {
                     e.preventDefault();
-                    if (typeof appState === 'undefined' || !appState.walletPublicKey) {
-                        window.showNotification?.("Connect Wallet First! 🦊", "error");
+                    if (!window.appState?.walletPublicKey) {
+                        window.showNotification?.("Сначала подключи кошелек! 🦊", "error");
                         return;
                     }
-                    knightExecute(btn, config);
+                    execute(btn, cfg);
                 };
-                console.log(`✅ [Knight]: Связал #${btn.id} с логикой ${config.name}`);
+                console.log(`✅ Рыцарь привязан к: "${btn.innerText.trim()}" (по ключу: ${key})`);
             }
         }
-    });
 
-    // 5. MAX Кнопки (сканируем по ID и по тексту)
-    document.querySelectorAll('button').forEach(btn => {
-        if (btn.id.toLowerCase().includes('max') || btn.innerText.includes('MAX')) {
+        // 4. УМНЫЙ MAX
+        if (btnKey.includes('max')) {
             btn.onclick = (e) => {
                 e.preventDefault();
-                const parent = btn.parentElement;
-                const input = parent.querySelector('input');
-                if (input && typeof appState !== 'undefined') {
-                    const isSol = btn.id.includes('sol') || input.id.includes('sol');
-                    const balance = isSol ? appState.userBalances.SOL : appState.userBalances.AFOX;
-                    input.value = typeof formatBigInt !== 'undefined' ? formatBigInt(balance, isSol ? 9 : 6) : (Number(balance)/1e6);
+                const input = btn.closest('.input-group')?.querySelector('input') || 
+                              btn.parentElement?.querySelector('input') ||
+                              document.querySelector('input[type="number"]');
+                if (input && window.appState) {
+                    const isSol = btnKey.includes('sol');
+                    const val = isSol ? window.appState.userBalances.SOL : window.appState.userBalances.AFOX;
+                    input.value = window.formatBigInt ? window.formatBigInt(val, isSol ? 9 : 6) : Number(val)/1e6;
                 }
             };
         }
     });
 }
 
-// Запуск (используем и DOMContentLoaded и load для надежности)
-window.addEventListener('load', setupSmartKnightUI);
-
+// ЗАПУСКАТЬ ВЕЗДЕ ДЛЯ НАДЕЖНОСТИ
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', startUltraKnight);
+} else {
+    startUltraKnight();
+}
+// На всякий случай еще через секунду, если Phantom тормозит
+setTimeout(startUltraKnight, 1000);
 
 
 
