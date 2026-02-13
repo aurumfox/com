@@ -405,38 +405,7 @@ async function updateStakingAndBalanceUI() {
 
 
 
-async function handleClaimRewards() {
-    const btn = document.getElementById('claim-rewards-btn');
-    if (!appState.walletPublicKey) throw new Error("Wallet not connected");
 
-    await executeSmartActionWithFullEffects(btn, {
-        name: "Claiming",
-        msg: "Rewards Received!",
-        fn: async () => {
-            const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-            const userPDA = await getUserStakingPDA(appState.walletPublicKey);
-            
-            // Ищем или создаем ATA (Associated Token Account)
-            const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
-                [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-                new window.solanaWeb3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL") // АТA Program ID
-            ).then(res => res[0]);
-
-            return await program.methods.claimRewards()
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    userStaking: userPDA,
-                    owner: appState.walletPublicKey,
-                    vault: AFOX_POOL_VAULT_PUBKEY,
-                    adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                    userRewardsAta: userAta,
-                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                }).rpc();
-        }
-    });
-}
 
 
 
