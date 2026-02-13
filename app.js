@@ -1307,27 +1307,39 @@ const KnightLogic = {
 
     // 2. КАРТА ВСЕХ КНОПОК ИЗ ТВОЕГО HTML
     // Я добавил сюда всё: от Стейкинга до Лендинга и ДАО
-    map: {
+       map: {
+        // --- DEX & EXTERNAL ---
+        'trade-raydium-btn':  { name: 'Redirecting', msg: 'Opening Raydium...', fn: () => window.open('https://raydium.io/swap/?outputCurrency=GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd', '_blank') },
+        'connectWalletBtn':   { name: 'Connecting', msg: 'Wallet Linked!', fn: async () => await window.connectWallet?.() },
+        'copy-contract-btn':  { name: 'Copying', msg: 'Copied to Clipboard!', fn: () => { navigator.clipboard.writeText('GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd'); } },
+
         // --- STAKING ---
+        'approve-staking-btn':{ name: 'Approving', msg: 'Token Approved!', fn: async () => await window.handleApproveAfox?.() },
         'stake-afox-btn':     { name: 'Staking', msg: 'Gold Staked!', fn: async () => await window.handleStakeAfox?.() },
         'unstake-afox-btn':   { name: 'Unstaking', msg: 'Gold Unstaked!', fn: async () => await window.handleUnstakeAfox?.() },
         'claim-rewards-btn':  { name: 'Claiming', msg: 'Rewards Collected!', fn: async () => await window.handleClaimRewards?.() },
-        'approve-staking-btn':{ name: 'Approving', msg: 'Token Approved!', fn: async () => await window.handleApproveAfox?.() },
+        'max-stake-btn':      { name: 'Maxing', msg: 'Max Selected', fn: () => console.log("Max Stake") },
         
-        // --- LENDING (Кредитование) ---
+        // --- LENDING ---
         'lend-btn':           { name: 'Lending', msg: 'Assets Supplied!', fn: async () => await window.handleLendingAction?.('Lend') },
+        'max-lend-btn':       { name: 'Maxing', msg: 'Max Selected', fn: () => console.log("Max Lend") },
         'withdraw-lend-btn':  { name: 'Withdrawing', msg: 'Assets Withdrawn!', fn: async () => await window.handleLendingAction?.('Withdraw') },
         'borrow-btn':         { name: 'Borrowing', msg: 'SOL Borrowed!', fn: async () => await window.handleLoanAction?.('Borrow') },
         'repay-btn':          { name: 'Repaying', msg: 'Loan Repaid!', fn: async () => await window.handleLoanAction?.('Repay') },
 
-        // --- DAO (Управление) ---
-        'createProposalBtn':  { name: 'DAO', msg: 'Proposal Created!', fn: async (e) => await window.handleCreateProposal?.(e) },
+        // --- DAO & GOVERNANCE ---
+        'createProposalBtn':  { name: 'DAO', msg: 'Opening Modal...', fn: async () => { document.getElementById('createProposalModal').style.display='block'; } },
+        'closeProposalModal': { name: 'Closing', msg: 'Closed', fn: () => { document.getElementById('createProposalModal').style.display='none'; } },
+        'cancelProposalBtn':  { name: 'Closing', msg: 'Cancelled', fn: () => { document.getElementById('createProposalModal').style.display='none'; } },
         'executeProposalBtn': { name: 'DAO', msg: 'Proposal Executed!', fn: async () => await window.handleExecuteProposal?.() },
-        'dao-vote-btn':       { name: 'Voting', msg: 'Vote Casted!', fn: async (e) => await window.handleVote?.(e) },
+        'vote-for-btn':       { name: 'Voting Yes', msg: 'Vote Casted!', fn: async () => await window.handleVote?.('for') },
+        'vote-against-btn':   { name: 'Voting No', msg: 'Vote Casted!', fn: async () => await window.handleVote?.('against') },
         
         // --- FILTERS ---
-        'filterActiveBtn':    { name: 'Filtering', msg: 'Updated!', fn: async () => console.log("Filter Active") }
+        'filterActiveBtn':    { name: 'Filtering', msg: 'Showing Active', fn: () => window.filterProposals?.('active') },
+        'filterClosedBtn':    { name: 'Filtering', msg: 'Showing Archive', fn: () => window.filterProposals?.('closed') }
     },
+
 
     findConnectBtn: () => {
         return document.getElementById('connectWalletBtn') || 
