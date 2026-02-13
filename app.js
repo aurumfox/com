@@ -405,116 +405,152 @@ async function updateStakingAndBalanceUI() {
 
 
 // ============================================================
-// БОГАТОЕ ПОДКЛЮЧЕНИЕ: С АВТОСОХРАНЕНИЕМ СЕССИИ
+// МОДУЛЬ: SMART WALLET & ACTION ENGINE
 // ============================================================
 
-let isProcessingWallet = false;
-async function connectWallet(silent = false) {
-    if (isProcessingWallet) return;
-    const btn = document.getElementById('connectWalletBtn');
-    isProcessingWallet = true;
+const SmartWallet = {
+    isProcessing: false,
 
-    try {
-        if (!silent && btn) btn.style.transform = 'scale(0.9) rotate(-2deg)';
+    // 1. Умный поиск кнопки коннекта
+    getBtn: () => {
+        return document.getElementById('connectWalletBtn') || 
+               document.querySelector('button[id*="connect"]') || 
+               Array.from(document.querySelectorAll('button')).find(b => b.innerText.toLowerCase().includes('wallet'));
+    },
+
+    // 2. Логика Подключения / Отключения (Переключатель)
+    toggle: async function() {
+        if (this.isProcessing) return;
         
-        const provider = window.phantom?.solana || window.solana;
-        if (!provider) {
-            if (!silent && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                window.open(`https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`, '_blank');
-            } else if (!silent) {
-                showNotification("Please install Phantom!", "error");
-            }
-            return;
+        const isConnected = !!appState.walletPublicKey;
+        if (isConnected) {
+            await this.disconnect();
+        } else {
+            await this.connect(false);
         }
+    },
 
-        // Подключаемся
-        const resp = await provider.connect(silent ? { onlyIfTrusted: true } : {});
-        
-        // --- ВОТ ЭТО ИСПРАВЛЯЕТ ВЫЛЕТ ---
-        // Принудительно записываем данные в глобальное состояние ДО обновления UI
-        appState.walletPublicKey = resp.publicKey;
-        appState.provider = provider;
-        
-        // Создаем соединение один раз, если его нет
-        if (!appState.connection) {
-            appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
-        }
-
-        // Слушатель: если кошелек захочет "отключиться" сам, мы это блокируем или обрабатываем
-        if (!provider._eventsPatched) {
-            provider.on('accountChanged', (newPublicKey) => {
-                if (newPublicKey) {
-                    appState.walletPublicKey = newPublicKey;
-                    updateWalletDisplay();
-                } else {
-                    // Только здесь мы разрешаем отключение
-                    appState.walletPublicKey = null;
-                    updateWalletDisplay();
-                }
-            });
-            provider._eventsPatched = true;
-        }
-        // ---------------------------------
-
-        if (!silent && btn) {
-            btn.style.transform = 'scale(1.1)';
-            spawnConnectEffects(btn); 
-            showNotification("Access Granted! 🔑", "success");
-        }
-
-        // Вызываем обновление интерфейса, когда данные уже точно в appState
-        updateWalletDisplay();
-        
-        // Оборачиваем в try/catch, чтобы если стейкинг упадет, коннект НЕ слетел
+    // 3. Подключение
+    connect: async function(silent = false) {
+        this.isProcessing = true;
         try {
-            await updateStakingAndBalanceUI();
-        } catch (e) {
-            console.warn("Балансы не загрузились, но кошелек держим:", e);
-        }
+            const provider = window.phantom?.solana || window.solana;
+            if (!provider) {
+                if (!silent) showNotification("Phantom not found! 🦊", "error");
+                return;
+            }
 
-    } catch (err) {
-        if (!silent) {
-            console.error("❌ Error:", err);
-            if (err.code !== 4001) showNotification("Connection Failed", "error");
-            if (btn) btn.style.transform = '';
+            const resp = await provider.connect(silent ? { onlyIfTrusted: true } : {});
+            appState.walletPublicKey = resp.publicKey;
+            appState.provider = provider;
+            
+            if (!appState.connection) {
+                appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+            }
+
+            if (!silent) {
+                const btn = this.getBtn();
+                if (btn) spawnConnectEffects(btn); // Твоя функция с частицами
+                showNotification("Wallet Connected! 🔑", "success");
+            }
+
+            this.updateUI();
+            if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+
+        } catch (err) {
+            if (!silent) console.error("Connect Error:", err);
+        } finally {
+            this.isProcessing = false;
         }
-    } finally {
-        isProcessingWallet = false;
+    },
+
+    // 4. Отключение
+    disconnect: async function() {
+        try {
+            const provider = window.phantom?.solana || window.solana;
+            const btn = this.getBtn();
+            if (btn) spawnDisconnectEffects(btn); // Эффект дыма
+
+            if (provider) await provider.disconnect();
+
+            appState.walletPublicKey = null;
+            appState.provider = null;
+            
+            this.updateUI();
+            if (typeof updateStakingUI === 'function') updateStakingUI();
+            showNotification("Disconnected 💨", "info");
+        } catch (err) {
+            console.error("Disconnect Error:", err);
+        }
+    },
+
+    // 5. Обновление внешнего вида кнопки
+    updateUI: function() {
+        const btn = this.getBtn();
+        if (!btn) return;
+
+        if (appState.walletPublicKey) {
+            const addr = appState.walletPublicKey.toBase58();
+            btn.innerHTML = `<span style="color: #00ffaa; margin-right: 8px;">●</span>${addr.slice(0, 4)}...${addr.slice(-4)}`;
+            btn.classList.add('connected');
+        } else {
+            btn.innerHTML = 'Connect Wallet';
+            btn.classList.remove('connected');
+        }
     }
+};
+
+// 6. Глобальный "Рыцарь" — вешает события на все кнопки автоматически
+function initSmartKnight() {
+    console.log("🛡️ Smart Knight Activated");
+
+    // Привязываем кнопку кошелька
+    const connectBtn = SmartWallet.getBtn();
+    if (connectBtn) {
+        connectBtn.onclick = (e) => {
+            e.preventDefault();
+            SmartWallet.toggle();
+        };
+    }
+
+    // Привязываем остальные действия (Stake, Claim и т.д.)
+    const actionMap = {
+        'stake': { name: 'Staking', fn: window.handleStakeAfox },
+        'claim': { name: 'Claiming', fn: window.handleClaimRewards },
+        'unstake': { name: 'Unstaking', fn: window.handleUnstakeAfox }
+    };
+
+    document.querySelectorAll('button').forEach(btn => {
+        if (btn === connectBtn) return;
+        const text = btn.innerText.toLowerCase();
+
+        for (const [key, config] of Object.entries(actionMap)) {
+            if (text.includes(key)) {
+                btn.onclick = async (e) => {
+                    e.preventDefault();
+                    if (!appState.walletPublicKey) {
+                        showNotification("Connect Wallet first!", "error");
+                        return;
+                    }
+                    // Используем твой красивый лоадер
+                    await executeSmartActionWithFullEffects(btn, {
+                        name: config.name,
+                        msg: "Confirmed!",
+                        fn: config.fn
+                    });
+                };
+            }
+        }
+    });
 }
 
+// 7. Авто-запуск при загрузке страницы
+window.addEventListener('load', () => {
+    initSmartKnight();
+    // Проверка сессии (если юзер уже залогинен в Phantom)
+    setTimeout(() => SmartWallet.connect(true), 1000);
+});
 
-/**
- * СПЕЦИАЛЬНАЯ АНИМАЦИЯ ДЛЯ КОННЕКТА (БЕЗ ИЗМЕНЕНИЙ)
- */
-function spawnConnectEffects(el) {
-    const rect = el.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const items = ['🔑', '💎', '✨', '🔓', '⭐'];
-    const count = 25; 
-
-    for (let i = 0; i < count; i++) {
-        const p = document.createElement('span');
-        p.textContent = items[Math.floor(Math.random() * items.length)];
-        p.style.cssText = `position: fixed; left: ${centerX}px; top: ${centerY}px; z-index: 10001; pointer-events: none; font-size: ${18 + Math.random() * 24}px; filter: drop-shadow(0 0 10px gold); user-select: none;`;
-        document.body.appendChild(p);
-        const angle = Math.random() * Math.PI * 2;
-        const velocity = 8 + Math.random() * 12;
-        const tx = Math.cos(angle) * (velocity * 20);
-        const ty = Math.sin(angle) * (velocity * 20);
-        const rot = Math.random() * 1080 - 540;
-        p.animate([
-            { transform: 'translate(-50%, -50%) scale(0) rotate(0deg)', opacity: 1 },
-            { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(1.8)`, opacity: 1, offset: 0.8 },
-            { transform: `translate(-50%, -50%) translate(${tx * 1.1}px, ${ty * 1.1}px) rotate(${rot * 1.2}deg) scale(0)`, opacity: 0 }
-        ], { duration: 1200 + Math.random() * 800, easing: 'cubic-bezier(0.1, 0.9, 0.2, 1)' }).onfinish = () => p.remove();
-    }
-    const flash = document.createElement('div');
-    flash.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:white; opacity:0.1; z-index:10000; pointer-events:none;';
-    document.body.appendChild(flash);
-    flash.animate([{ opacity: 0.3 }, { opacity: 0 }], { duration: 500 }).onfinish = () => flash.remove();
-}
 
 
 
