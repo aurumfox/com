@@ -404,107 +404,133 @@ async function updateStakingAndBalanceUI() {
 
 
 
+
 // ============================================================
-// МОДУЛЬ: SMART WALLET & ACTION ENGINE
+// ИСПРАВЛЕННЫЙ МОДУЛЬ: SMART WALLET & КНОПОЧНЫЙ ДВИЖОК
 // ============================================================
 
 const SmartWallet = {
     isProcessing: false,
 
-    // 1. Умный поиск кнопки коннекта
+    // 1. Поиск кнопки по ID из твоего HTML или по тексту
     getBtn: () => {
         return document.getElementById('connectWalletBtn') || 
-               document.querySelector('button[id*="connect"]') || 
+               document.querySelector('.connect-btn') ||
                Array.from(document.querySelectorAll('button')).find(b => b.innerText.toLowerCase().includes('wallet'));
     },
 
-    // 2. Логика Подключения / Отключения (Переключатель)
+    // 2. Переключатель (Connect/Disconnect)
     toggle: async function() {
         if (this.isProcessing) return;
-        
-        const isConnected = !!appState.walletPublicKey;
-        if (isConnected) {
+        if (appState.walletPublicKey) {
             await this.disconnect();
         } else {
             await this.connect(false);
         }
     },
 
-    // 3. Подключение
+    // 3. Логика подключения
     connect: async function(silent = false) {
+        if (this.isProcessing) return;
         this.isProcessing = true;
+        
         try {
             const provider = window.phantom?.solana || window.solana;
             if (!provider) {
-                if (!silent) showNotification("Phantom not found! 🦊", "error");
+                if (!silent) showNotification("Phantom не найден! 🦊", "error");
                 return;
             }
 
+            // Подключаемся
             const resp = await provider.connect(silent ? { onlyIfTrusted: true } : {});
+            
+            // Сохраняем данные в глобальное состояние appState
             appState.walletPublicKey = resp.publicKey;
             appState.provider = provider;
-            
+
+            // Проверяем соединение RPC
             if (!appState.connection) {
-                appState.connection = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, 'confirmed');
+                appState.connection = new solanaWeb3.Connection(RPC_ENDPOINTS[0], 'confirmed');
             }
 
+            // Если не "тихий" вход — запускаем твои эффекты частиц
             if (!silent) {
                 const btn = this.getBtn();
-                if (btn) spawnConnectEffects(btn); // Твоя функция с частицами
-                showNotification("Wallet Connected! 🔑", "success");
+                if (btn && typeof spawnConnectEffects === 'function') {
+                    spawnConnectEffects(btn); 
+                }
+                showNotification("Кошелек подключен! 🔑", "success");
             }
 
             this.updateUI();
-            if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+
+            // СРАЗУ ОБНОВЛЯЕМ БАЛАНСЫ И ДАННЫЕ В HTML
+            if (typeof updateStakingAndBalanceUI === 'function') {
+                await updateStakingAndBalanceUI();
+            }
 
         } catch (err) {
-            if (!silent) console.error("Connect Error:", err);
+            if (!silent) {
+                console.error("Ошибка подключения:", err);
+                showNotification("Ошибка входа", "error");
+            }
         } finally {
             this.isProcessing = false;
         }
     },
 
-    // 4. Отключение
+    // 4. Логика отключения
     disconnect: async function() {
         try {
             const provider = window.phantom?.solana || window.solana;
             const btn = this.getBtn();
-            if (btn) spawnDisconnectEffects(btn); // Эффект дыма
+            
+            if (btn && typeof spawnDisconnectEffects === 'function') {
+                spawnDisconnectEffects(btn); // Твой эффект дыма
+            }
 
             if (provider) await provider.disconnect();
 
             appState.walletPublicKey = null;
             appState.provider = null;
-            
+
             this.updateUI();
+            
+            // Очищаем данные в интерфейсе
             if (typeof updateStakingUI === 'function') updateStakingUI();
-            showNotification("Disconnected 💨", "info");
+            
+            showNotification("Отключено 💨", "info");
         } catch (err) {
-            console.error("Disconnect Error:", err);
+            console.error("Ошибка отключения:", err);
         }
     },
 
-    // 5. Обновление внешнего вида кнопки
+    // 5. Обновление кнопки (Конвертация адреса для HTML)
     updateUI: function() {
         const btn = this.getBtn();
         if (!btn) return;
 
         if (appState.walletPublicKey) {
+            // Конвертируем PublicKey в строку и сокращаем: "Afox...1234"
             const addr = appState.walletPublicKey.toBase58();
-            btn.innerHTML = `<span style="color: #00ffaa; margin-right: 8px;">●</span>${addr.slice(0, 4)}...${addr.slice(-4)}`;
+            const shortAddr = addr.slice(0, 4) + "..." + addr.slice(-4);
+            
+            btn.innerHTML = `<span class="conn-dot">●</span> ${shortAddr}`;
             btn.classList.add('connected');
+            btn.style.borderColor = "#00ffaa";
         } else {
             btn.innerHTML = 'Connect Wallet';
             btn.classList.remove('connected');
+            btn.style.borderColor = "";
         }
     }
 };
 
-// 6. Глобальный "Рыцарь" — вешает события на все кнопки автоматически
+// 6. Инициализация "Рыцаря" (Привязка к кнопкам действий)
 function initSmartKnight() {
-    console.log("🛡️ Smart Knight Activated");
+    console.log("⚔️ Smart Knight: Привязка кнопок к HTML...");
 
-    // Привязываем кнопку кошелька
+    // Привязываем главную кнопку кошелька
     const connectBtn = SmartWallet.getBtn();
     if (connectBtn) {
         connectBtn.onclick = (e) => {
@@ -513,44 +539,57 @@ function initSmartKnight() {
         };
     }
 
-    // Привязываем остальные действия (Stake, Claim и т.д.)
-    const actionMap = {
-        'stake': { name: 'Staking', fn: window.handleStakeAfox },
-        'claim': { name: 'Claiming', fn: window.handleClaimRewards },
-        'unstake': { name: 'Unstaking', fn: window.handleUnstakeAfox }
-    };
+    // Карта действий для кнопок Stake, Claim, Unstake
+    const actionMap = [
+        { key: 'stake', name: 'Staking', fn: 'handleStakeAfox' },
+        { key: 'claim', name: 'Claiming', fn: 'handleClaimRewards' },
+        { key: 'unstake', name: 'Unstaking', fn: 'handleUnstakeAfox' }
+    ];
 
+    // Ищем все кнопки в документе и вешаем на них обработчики
     document.querySelectorAll('button').forEach(btn => {
-        if (btn === connectBtn) return;
-        const text = btn.innerText.toLowerCase();
+        if (btn === connectBtn) return; // Пропускаем кнопку кошелька
+        
+        const btnText = btn.innerText.toLowerCase();
 
-        for (const [key, config] of Object.entries(actionMap)) {
-            if (text.includes(key)) {
+        actionMap.forEach(action => {
+            if (btnText.includes(action.key)) {
                 btn.onclick = async (e) => {
                     e.preventDefault();
+                    
                     if (!appState.walletPublicKey) {
-                        showNotification("Connect Wallet first!", "error");
+                        showNotification("Сначала подключи кошелек! 🦊", "error");
+                        if (connectBtn) connectBtn.classList.add('pulse-highlight');
                         return;
                     }
-                    // Используем твой красивый лоадер
-                    await executeSmartActionWithFullEffects(btn, {
-                        name: config.name,
-                        msg: "Confirmed!",
-                        fn: config.fn
-                    });
+
+                    // Вызываем твой executeSmartAction из app.js
+                    // Он запустит лоадер и выполнит функцию
+                    if (typeof executeSmartActionWithFullEffects === 'function') {
+                        await executeSmartActionWithFullEffects(btn, {
+                            name: action.name,
+                            msg: "Транзакция прошла!",
+                            fn: window[action.fn] // Берем функцию из глобального окна
+                        });
+                    } else {
+                        // Фолбэк, если функции эффектов нет
+                        try { await window[action.fn](); } catch(e) { console.error(e); }
+                    }
                 };
             }
-        }
+        });
     });
 }
 
-// 7. Авто-запуск при загрузке страницы
+// 7. Точка входа при загрузке
 window.addEventListener('load', () => {
-    initSmartKnight();
-    // Проверка сессии (если юзер уже залогинен в Phantom)
-    setTimeout(() => SmartWallet.connect(true), 1000);
+    // Ждем секунду, чтобы все скрипты и Phantom прогрузились
+    setTimeout(() => {
+        initSmartKnight();
+        // Пытаемся автоматически подцепить кошелек (без всплывающего окна)
+        SmartWallet.connect(true);
+    }, 1000);
 });
-
 
 
 
