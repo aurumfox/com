@@ -1338,6 +1338,25 @@ const KnightLogic = {
         // --- FILTERS ---
         'filterActiveBtn':    { name: 'Filtering', msg: 'Showing Active', fn: () => window.filterProposals?.('active') },
         'filterClosedBtn':    { name: 'Filtering', msg: 'Showing Archive', fn: () => window.filterProposals?.('closed') }
+
+            // --- FILTERS ---
+        'filterActiveBtn':    { 
+            name: 'Filtering', 
+            msg: 'Showing Active', 
+            fn: () => { 
+                console.log("Filter: Active"); // Для отладки
+                window.filterProposals?.('active'); 
+            } 
+        },
+        'filterClosedBtn':    { 
+            name: 'Filtering', 
+            msg: 'Showing Archive', 
+            fn: () => { 
+                console.log("Filter: Closed"); // Для отладки
+                window.filterProposals?.('closed'); 
+            } 
+        }
+
     },
 
 
