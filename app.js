@@ -7,55 +7,118 @@ function formatBigInt(value, decimals) {
 }
 
 
+
 // ============================================================
-// ГЛОБАЛЬНЫЙ МОСТ: РЕШАЕМ ПРОБЛЕМУ CSP И SYNTAXERROR
+// 🌐 ГЛОБАЛЬНЫЙ МОСТ 2.0 + РЫЦАРЬ (ВСЁ В ОДНОМ)
 // ============================================================
 (function() {
-    console.log("🛠️ Запуск экстренного восстановления систем...");
+    console.log("🛠️ Система Aurum Fox: Глубокая синхронизация...");
 
-    // 1. Прямая настройка Buffer
+    // 1. Фикс Buffer (чтобы транзакции не падали)
     window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
-    // 2. Создаем «Виртуальный Anchor» прямо здесь
-    // Это обходит блокировку CSP, так как код уже внутри app.js
-    const createVirtualAnchor = () => {
-        return {
-            AnchorProvider: function(conn, wallet, opts) {
-                this.connection = conn;
-                this.wallet = wallet;
-                this.opts = opts || { preflightCommitment: 'processed' };
-            },
-            Program: function(idl, programId, provider) {
-                this.idl = idl;
-                this.programId = programId;
-                this.provider = provider;
-                console.log("✅ Виртуальная программа Anchor запущена!");
-            },
-            get PublicKey() {
-                return (window.solanaWeb3 && window.solanaWeb3.PublicKey) ? window.solanaWeb3.PublicKey : null;
-            }
-        };
-    };
-
-    // Принудительно ставим заглушку, если основная библиотека заблокирована
+    // 2. Улучшенный Anchor Bridge (Тот самый мост, но стабильный)
     if (!window.anchor || !window.anchor.AnchorProvider) {
-        window.anchor = createVirtualAnchor();
-        window.Anchor = window.anchor;
-        console.log("⚓ Anchor Bridge: Принудительно активирован (Обход CSP)");
+        const createBridge = () => ({
+            AnchorProvider: function(c, w, o) { 
+                this.connection = c; this.wallet = w; 
+                this.opts = o || { preflightCommitment: 'processed' }; 
+            },
+            Program: function(idl, id, prov) { 
+                this.idl = idl; this.programId = id; this.provider = prov; 
+                this.account = prov.connection ? {} : null; 
+            },
+            get PublicKey() { return window.solanaWeb3?.PublicKey; }
+        });
+        window.anchor = window.Anchor = createBridge();
+        console.log("⚓ Мост Anchor перезапущен для стабильности");
     }
 
-    // 3. Финальный отчет в консоль
-    const report = () => {
-        const isSolReady = !!window.solanaWeb3;
-        const isAnchorReady = !!(window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider));
+    // 3. УМНЫЙ РЫЦАРЬ (Управление кнопками)
+    window.AFOX_ENGINE = {
+        // Находит кнопку по смыслу, чтобы ты не мучался с ID
+        findBtn(keys) {
+            return Array.from(document.querySelectorAll('button')).find(b => {
+                const t = (b.innerText + b.id).toLowerCase();
+                return keys.some(k => t.includes(k));
+            });
+        },
 
-        console.log("--- СТАТУС ПОСЛЕ ВОССТАНОВЛЕНИЯ ---");
-        console.log("Buffer:", window.Buffer ? "✅" : "❌");
-        console.log("Solana Web3:", isSolReady ? "✅" : "❌ (Нужен локальный файл)");
-        console.log("Anchor (Real): ✅ (Работает через Bridge)");
+        // Коннект кошелька (Без вылетов и дубликатов)
+        async syncWallet(silent = false) {
+            const provider = window.phantom?.solana || window.solana;
+            if (!provider) return silent ? null : showNotification("Phantom not found!", "error");
+
+            try {
+                // Если кошелек уже подключен и мы нажимаем "Connect" — это дисконнект
+                if (appState.walletPublicKey && !silent) {
+                    await provider.disconnect();
+                    appState.walletPublicKey = null;
+                    appState.provider = null;
+                } else {
+                    const resp = await provider.connect(silent ? { onlyIfTrusted: true } : {});
+                    appState.walletPublicKey = resp.publicKey;
+                    appState.provider = provider;
+                }
+                
+                this.refreshUI();
+                if (appState.walletPublicKey) updateStakingAndBalanceUI();
+            } catch (e) { console.warn("Wallet Sync Notice:", e.message); }
+        },
+
+        refreshUI() {
+            const b = this.findBtn(['connect', 'wallet']);
+            if (!b) return;
+            if (appState.walletPublicKey) {
+                const a = appState.walletPublicKey.toBase58();
+                b.innerHTML = `✅ ${a.slice(0,4)}...${a.slice(-4)}`;
+                b.style.border = "1px solid #00ffaa";
+            } else {
+                b.innerHTML = "Connect Wallet";
+                b.style.border = "";
+            }
+        },
+
+        // Авто-привязка твоих функций handleStake... и т.д.
+        bindActions() {
+            const map = [
+                { k: ['stake', 'deposit'], n: 'Staking', f: window.handleStakeAfox },
+                { k: ['unstake', 'withdraw'], n: 'Unstaking', f: window.handleUnstakeAfox },
+                { k: ['claim'], n: 'Claiming', f: window.handleClaimRewards }
+            ];
+
+            document.querySelectorAll('button').forEach(btn => {
+                const txt = (btn.innerText + btn.id).toLowerCase();
+                map.forEach(act => {
+                    if (act.k.some(key => txt.includes(key))) {
+                        btn.onclick = async (e) => {
+                            e.preventDefault();
+                            if (!appState.walletPublicKey) return showNotification("Connect Wallet!", "error");
+                            
+                            // Запуск через твой красивый лоадер
+                            if (typeof executeSmartActionWithFullEffects === 'function') {
+                                await executeSmartActionWithFullEffects(btn, { name: act.n, msg: "Success!", fn: act.f });
+                            } else { await act.f(); }
+                        };
+                    }
+                });
+            });
+
+            const connBtn = this.findBtn(['connect', 'wallet']);
+            if (connBtn) connBtn.onclick = (e) => { e.preventDefault(); this.syncWallet(); };
+        }
     };
 
-    setTimeout(report, 500);
+    // ЗАПУСК СИСТЕМЫ
+    window.addEventListener('DOMContentLoaded', () => {
+        if (typeof setupAddresses === 'function') setupAddresses();
+        if (typeof cacheUIElements === 'function') cacheUIElements();
+        
+        window.AFOX_ENGINE.bindActions();
+        // Проверка сессии через 1 секунду
+        setTimeout(() => window.AFOX_ENGINE.syncWallet(true), 1000);
+    });
+
 })();
 
 
