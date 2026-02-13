@@ -932,9 +932,9 @@ const ActionMap = {
     // Стейкинг
     'approve-staking-btn': { name: 'Approval', msg: 'AFOX Approved!', fn: async () => { console.log("Approve AFOX..."); } },
     'stake-afox-btn': { name: 'Staking', msg: 'Tokens Staked!', fn: async () => { console.log("Staking..."); } },
-    'claim-rewards-btn': { name: 'Claiming', msg: 'Rewards Collected!', fn: async () => { console.log("Claiming..."); } },
     'unstake-afox-btn': { name: 'Unstaking', msg: 'Tokens Returned!', fn: async () => { console.log("Unstaking..."); } },
     'max-stake-btn': { name: 'Max', msg: 'Max Selected', fn: () => fillMax('stake-amount') },
+    'claim-rewards-btn': { name: 'Claiming', msg: 'Rewards Collected!', fn: async () => await handleClaimRewards() },
 
     // DAO
     'createProposalBtn': { name: 'DAO', msg: 'Opening Editor...', fn: () => toggleModal('createProposalModal', true) },
