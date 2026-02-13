@@ -622,49 +622,9 @@ function getTokenDecimals(mintAddress) {
 
 
 /**
- * Запас SOL на комиссии (0.005 SOL)
- */
-function getSolanaTxnFeeReserve() {
-    return 5000000n; // 0.005 * 10^9
-}
-
-function cacheUIElements() {
-    uiElements = {
-        // Данные пользователя
-        userAfoxBalance: document.getElementById('user-afox-balance'),
-        userStakedAmount: document.getElementById('user-staked-amount'),
-        userRewardsAmount: document.getElementById('user-rewards-amount'),
-        stakingApr: document.getElementById('staking-apr'),
-        lockupPeriod: document.getElementById('lockup-period'),
-        
-        // Ввод и селекторы
-        stakeAmountInput: document.getElementById('stake-amount'),
-        poolSelector: document.getElementById('pool-selector'),
-        
-        // Кнопки управления (Web3 Actions)
-        stakeAfoxBtn: document.getElementById('stake-afox-btn'),
-        claimRewardsBtn: document.getElementById('claim-rewards-btn'),
-        unstakeAfoxBtn: document.getElementById('unstake-afox-btn'),
-        
-        // DAO & Lending
-        // --- DAO (ИСПРАВЛЕННЫЕ ID ПОД ТВОЙ HTML) ---
-        createProposalBtn: document.getElementById('createProposalBtn'),
-        createProposalModal: document.getElementById('createProposalModal'), // Исправлено!
-        createProposalForm: document.getElementById('newProposalForm'),   
-        
-        
-        // Утилиты
-        notificationContainer: document.getElementById('notification-container'),
-        pageLoader: document.getElementById('page-loader'),
-        copyButtons: document.querySelectorAll('.copy-btn')
-    };
-}
-
-
-/**
- * AURUM FOX - QUANTUM CORE ENGINE
- * Version: 3.0.0 (Ultimate Autonomous Edition)
- * Systems: DAO, STAKING, LENDING, WALLET AGGREGATOR
+ * AURUM FOX - UNIFIED QUANTUM CORE
+ * Version: 4.0.0 (Stability & Power Update)
+ * Integrated: Fee Management, DAO Hub, Staking Vault, Lending Terminal
  */
 
 class AurumFoxEngine {
@@ -672,98 +632,123 @@ class AurumFoxEngine {
         this.config = {
             tokenMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd",
             rpcEndpoint: "https://api.mainnet-beta.solana.com",
-            network: "mainnet-beta"
+            feeReserve: 5000000n, // 0.005 SOL reserve
         };
+        
         this.state = {
             connected: false,
             walletAddress: null,
-            balances: { afox: 0, sol: 0 },
-            isPending: false
+            isPending: false,
+            balances: { afox: "0.00", sol: "0.00" }
         };
-        this.init();
+
+        // Initialize immediately
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
     }
 
     async init() {
-        console.log("⚡ Aurum Fox Engine Ignition...");
-        this.scanElements();
+        console.log("🦊 Aurum Fox Engine: Initializing Systems...");
+        this.scanAllElements();
+        this.setupNotificationSystem();
         this.attachEventListeners();
-        this.autoConnect();
+        this.checkExistingConnection();
     }
 
-    scanElements() {
+    // --- DEEP ELEMENT SCANNER ---
+    scanAllElements() {
         this.ui = {
+            // General
             connectBtn: document.getElementById('connectWalletBtn'),
+            notificationContainer: document.getElementById('notification-container'),
+            
+            // Staking Section
             staking: {
-                group: document.querySelector('.web3-staking-luxe'),
-                stake: document.getElementById('stake-afox-btn'),
-                claim: document.getElementById('claim-rewards-btn'),
-                approve: document.getElementById('approve-staking-btn'),
+                balanceDisplay: document.getElementById('user-afox-balance'),
+                stakedDisplay: document.getElementById('user-staked-amount'),
+                rewardsDisplay: document.getElementById('user-rewards-amount'),
                 input: document.getElementById('stake-amount'),
-                display: document.getElementById('user-afox-balance')
+                pool: document.getElementById('pool-selector'),
+                btnStake: document.getElementById('stake-afox-btn'),
+                btnClaim: document.getElementById('claim-rewards-btn'),
+                btnUnstake: document.getElementById('unstake-afox-btn'),
+                btnApprove: document.getElementById('approve-staking-btn')
             },
+
+            // DAO Section
             dao: {
+                btnCreate: document.getElementById('createProposalBtn'),
                 modal: document.getElementById('createProposalModal'),
-                create: document.getElementById('createProposalBtn'),
-                votes: document.querySelectorAll('.dao-vote-btn'),
-                execute: document.getElementById('executeProposalBtn')
+                form: document.getElementById('newProposalForm'),
+                closeModal: document.getElementById('closeProposalModal'),
+                btnExecute: document.getElementById('executeProposalBtn'),
+                voteBtns: document.querySelectorAll('.dao-vote-btn')
             },
+
+            // Lending Section
             lending: {
-                lend: document.getElementById('lend-btn'),
-                borrow: document.getElementById('borrow-btn'),
-                health: document.getElementById('health-factor-value')
+                btnLend: document.getElementById('lend-btn'),
+                btnBorrow: document.getElementById('borrow-btn'),
+                btnRepay: document.getElementById('repay-btn'),
+                healthFactor: document.getElementById('health-factor-value')
             }
         };
     }
 
     // --- NOTIFICATION ENGINE ---
     notify(msg, type = 'info') {
+        if (!this.ui.notificationContainer) return;
+        
         const colors = {
             success: 'linear-gradient(135deg, #00ff7f, #00b359)',
             error: 'linear-gradient(135deg, #ff4d4d, #b30000)',
             info: 'linear-gradient(135deg, #FFD700, #b8860b)'
         };
-        
+
         const toast = document.createElement('div');
-        toast.className = 'web3-toast-active';
         toast.style.cssText = `
-            background: ${colors[type]}; color: #000; padding: 18px 30px;
-            border-radius: 15px; font-weight: 800; margin: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-family: 'Inter', sans-serif;
-            text-transform: uppercase; letter-spacing: 1px; pointer-events: none;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: ${colors[type]}; color: #000; padding: 18px 25px;
+            border-radius: 12px; font-weight: 800; margin-bottom: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4); font-family: 'Inter', sans-serif;
+            text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.4s ease; transform: translateX(20px); opacity: 0;
         `;
-        toast.innerHTML = `<span>${type === 'error' ? '❌' : '🦊'}</span> ${msg}`;
         
-        const container = document.getElementById('notification-container');
-        container.appendChild(toast);
+        toast.innerHTML = `<span>${type === 'error' ? '⚠️' : '🦊'}</span> ${msg}`;
+        this.ui.notificationContainer.appendChild(toast);
+
+        // Animation in
+        setTimeout(() => { toast.style.transform = 'translateX(0)'; toast.style.opacity = '1'; }, 10);
         
+        // Remove
         setTimeout(() => {
             toast.style.opacity = '0';
-            toast.style.transform = 'translateY(20px)';
-            setTimeout(() => toast.remove(), 500);
+            setTimeout(() => toast.remove(), 400);
         }, 4000);
     }
 
-    // --- WALLET AGGREGATOR ---
+    // --- WALLET HUB ---
     async connect() {
         if (this.state.isPending) return;
         this.state.isPending = true;
 
         try {
-            const provider = window?.solana;
-            if (!provider?.isPhantom) {
-                this.notify("Phantom Extension Not Found", "error");
+            const { solana } = window;
+            if (!solana?.isPhantom) {
+                this.notify("Phantom Wallet Not Found!", "error");
                 window.open("https://phantom.app/", "_blank");
                 return;
             }
 
-            const response = await provider.connect();
-            this.state.walletAddress = response.publicKey.toString();
+            const resp = await solana.connect();
+            this.state.walletAddress = resp.publicKey.toString();
             this.state.connected = true;
-            this.syncUI();
-            this.notify("Vault Access Granted", "success");
-            this.loadBlockchainData();
+            this.updateInterface();
+            this.notify("Secure Connection Established", "success");
+            this.refreshBlockchainState();
         } catch (err) {
             this.notify(err.message, "error");
         } finally {
@@ -772,107 +757,116 @@ class AurumFoxEngine {
     }
 
     async disconnect() {
-        await window.solana.disconnect();
-        this.state.connected = false;
-        this.state.walletAddress = null;
-        this.syncUI();
-        this.notify("Session Terminated", "info");
+        if (window.solana) {
+            await window.solana.disconnect();
+            this.state.connected = false;
+            this.state.walletAddress = null;
+            this.updateInterface();
+            this.notify("Vault Locked", "info");
+        }
     }
 
-    syncUI() {
-        const { connectBtn } = this.ui;
+    updateInterface() {
+        if (!this.ui.connectBtn) return;
+        
         if (this.state.connected) {
-            connectBtn.style.background = "linear-gradient(90deg, #ff4d4d, #800000)";
-            connectBtn.innerHTML = `SECURED: ${this.state.walletAddress.slice(0,4)}...${this.state.walletAddress.slice(-4)}`;
-            document.body.classList.add('wallet-connected');
+            this.ui.connectBtn.style.background = "linear-gradient(90deg, #ff4d4d, #800000)";
+            this.ui.connectBtn.innerText = `🦊 ${this.state.walletAddress.slice(0,4)}...${this.state.walletAddress.slice(-4)}`;
         } else {
-            connectBtn.style.background = "linear-gradient(90deg, #FFD700, #b8860b)";
-            connectBtn.innerHTML = "🦊 Connect Golden Vault";
-            document.body.classList.remove('wallet-connected');
+            this.ui.connectBtn.style.background = "linear-gradient(90deg, #FFD700, #b8860b)";
+            this.ui.connectBtn.innerText = "🦊 Connect Golden Vault";
         }
     }
 
-    // --- TRANSACTION MIDDLWARE ---
-    async runSecureContract(actionName, callback) {
-        if (!this.state.connected) {
-            this.notify("Authentication Required", "error");
-            return;
-        }
-
-        this.notify(`Initiating ${actionName}...`, "info");
-        try {
-            // Here you would inject @solana/web3.js instructions
-            await new Promise(r => setTimeout(r, 1500)); // Simulate Blockchain Latency
-            await callback();
-            this.notify(`${actionName} Confirmed on Chain`, "success");
-        } catch (err) {
-            this.notify(`${actionName} Rejected`, "error");
-        }
-    }
-
-    // --- DATA FETCHING ---
-    async loadBlockchainData() {
-        if (this.ui.staking.display) {
-            this.ui.staking.display.innerHTML = '<span class="loading-pulse">Analyzing...</span>';
-            // Simulated Balance Fetch
+    // --- DATA REFRESHER ---
+    async refreshBlockchainState() {
+        if (!this.state.connected) return;
+        
+        // Simulating chain scan for AFOX balance
+        if (this.ui.staking.balanceDisplay) {
+            this.ui.staking.balanceDisplay.innerHTML = '<span class="pulse">SCANNING...</span>';
             setTimeout(() => {
-                this.ui.staking.display.innerText = "5,420.69 AFOX";
-            }, 2000);
+                this.ui.staking.balanceDisplay.innerText = "1,500,000.00 AFOX";
+                this.ui.staking.stakedDisplay.innerText = "250,000.00 AFOX";
+            }, 1500);
         }
     }
 
-    // --- EVENT ROUTER ---
+    // --- EVENT MANAGER ---
     attachEventListeners() {
         // Wallet Connection
-        this.ui.connectBtn.onclick = () => this.state.connected ? this.disconnect() : this.connect();
+        if (this.ui.connectBtn) {
+            this.ui.connectBtn.onclick = () => this.state.connected ? this.disconnect() : this.connect();
+        }
 
         // Staking Logic
-        if (this.ui.staking.stake) {
-            this.ui.staking.stake.onclick = () => {
-                const amount = this.ui.staking.input.value;
-                if (!amount || amount <= 0) return this.notify("Invalid Amount", "error");
-                this.runSecureContract(`STAKE ${amount} AFOX`, () => {
-                    console.log("On-chain staking logic executed");
-                });
+        if (this.ui.staking.btnStake) {
+            this.ui.staking.btnStake.onclick = () => {
+                const amt = this.ui.staking.input.value;
+                if (!amt || amt <= 0) return this.notify("Enter a valid amount", "error");
+                this.performTx(`Staking ${amt} AFOX`);
             };
         }
 
         // DAO Logic
-        if (this.ui.dao.create) {
-            this.ui.dao.create.onclick = () => {
-                if (!this.state.connected) return this.notify("Connect Wallet", "error");
-                this.ui.dao.modal.style.display = 'flex';
-                this.ui.dao.modal.style.alignItems = 'center';
+        if (this.ui.dao.btnCreate) {
+            this.ui.dao.btnCreate.onclick = () => {
+                if (!this.state.connected) return this.notify("Connect Wallet First", "error");
+                this.ui.dao.modal.style.display = 'block';
             };
         }
 
-        this.ui.dao.votes.forEach(btn => {
-            btn.onclick = () => {
-                const type = btn.getAttribute('data-vote-type');
-                this.runSecureContract(`DAO VOTE: ${type.toUpperCase()}`, () => {});
-            };
+        if (this.ui.dao.closeModal) {
+            this.ui.dao.closeModal.onclick = () => this.ui.dao.modal.style.display = 'none';
+        }
+
+        this.ui.dao.voteBtns.forEach(btn => {
+            btn.onclick = () => this.performTx(`DAO Vote: ${btn.innerText}`);
         });
 
         // Lending Logic
-        if (this.ui.lending.lend) {
-            this.ui.lending.lend.onclick = () => this.runSecureContract("ASSET SUPPLY", () => {});
+        if (this.ui.lending.btnLend) {
+            this.ui.lending.btnLend.onclick = () => this.performTx("Lending Supply");
         }
     }
 
-    autoConnect() {
+    // --- TRANSACTION SIMULATOR (BRO, READY FOR WEB3.JS) ---
+    async performTx(actionName) {
+        if (!this.state.connected) return this.notify("Wallet Not Connected", "error");
+        
+        this.notify(`Executing ${actionName}...`, "info");
+        try {
+            // This is where you will later call: await sendTransaction(instructions)
+            await new Promise(r => setTimeout(r, 2000)); 
+            this.notify(`${actionName} Confirmed!`, "success");
+            this.refreshBlockchainState();
+        } catch (err) {
+            this.notify(`Transaction Failed`, "error");
+        }
+    }
+
+    checkExistingConnection() {
         if (window.solana?.isPhantom) {
             window.solana.connect({ onlyIfTrusted: true })
                 .then(res => {
                     this.state.walletAddress = res.publicKey.toString();
                     this.state.connected = true;
-                    this.syncUI();
-                    this.loadBlockchainData();
-                }).catch(() => {});
+                    this.updateInterface();
+                    this.refreshBlockchainState();
+                }).catch(() => console.log("Silent login failed."));
+        }
+    }
+
+    setupNotificationSystem() {
+        if (!this.ui.notificationContainer) {
+            const container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10000;';
+            document.body.appendChild(container);
+            this.ui.notificationContainer = container;
         }
     }
 }
 
-// Start the Golden Engine
-window.AurumFox = new AurumFoxEngine();
-
-
+// IGNITION
+window.AurumFoxCore = new AurumFoxEngine();
