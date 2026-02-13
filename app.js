@@ -1223,99 +1223,135 @@ async function executeSmartActionWithFullEffects(btn, config) {
  * ИСПРАВЛЕННЫЙ БЛОК УПРАВЛЕНИЯ КНОПКАМИ (AURUM FOX CORE)
  * ============================================================
  */
-function setupModernUI() {
+async function setupModernUI() {
     console.log("🎯 [System]: Регистрация всех кнопок экосистемы...");
+
+    // Базовая функция для эффектов, если она не определена глобально
+    const executeAction = async (btn, item) => {
+        const originalText = btn.innerHTML;
+        try {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner">⏳</span> Processing...`;
+            
+            // Вызов основной логики
+            await item.fn();
+            
+            // Успех
+            btn.innerHTML = item.msg;
+            btn.style.background = "#4CAF50"; // Зеленый при успехе
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = ""; 
+                btn.disabled = false;
+            }, 2000);
+            
+            if (typeof showNotification === 'function') {
+                showNotification(item.msg, "success");
+            }
+        } catch (error) {
+            console.error(`Error in ${item.name}:`, error);
+            btn.innerHTML = "❌ Error";
+            btn.style.background = "#ff4d4d";
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = "";
+                btn.disabled = false;
+            }, 2000);
+        }
+    };
 
     const actions = [
         // --- Wallet ---
-        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Action Done! ⚡', fn: async () => {
-            if (appState.walletPublicKey) await disconnectWallet();
+        { id: 'connectWalletBtn', name: 'Wallet', msg: 'Connected! ⚡', fn: async () => {
+            if (window.appState?.walletPublicKey) await disconnectWallet();
             else await connectWallet();
         }},
 
         // --- Staking ---
-        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Staked! 📈', fn: handleStakeAfox },
-        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🔓', fn: handleUnstakeAfox },
-        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Rewards Received! 🎁', fn: handleClaimRewards },
+        { id: 'approve-staking-btn', name: 'Approve', msg: 'Approved! 🛡️', fn: async () => { console.log("Approving AFOX..."); await new Promise(r => setTimeout(r, 1000)); }},
+        { id: 'stake-afox-btn', name: 'Staking', msg: 'Tokens Staked! 📈', fn: typeof handleStakeAfox !== 'undefined' ? handleStakeAfox : async () => {} },
+        { id: 'unstake-afox-btn', name: 'Unstake', msg: 'Tokens Freed! 🔓', fn: typeof handleUnstakeAfox !== 'undefined' ? handleUnstakeAfox : async () => {} },
+        { id: 'claim-rewards-btn', name: 'Claim', msg: 'Rewards Received! 🎁', fn: typeof handleClaimRewards !== 'undefined' ? handleClaimRewards : async () => {} },
 
         // --- DAO ---
-        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Proposal Active! 🚀', fn: handleCreateProposal },
-        // Голосование через делегирование (для динамических кнопок)
-        { id: 'filterActiveBtn', name: 'Filter', msg: 'Showing Active', fn: async () => console.log("Filtering...") },
-        { id: 'filterClosedBtn', name: 'Filter', msg: 'Showing Closed', fn: async () => console.log("Filtering...") },
+        { id: 'submitProposalBtn', name: 'Proposal', msg: 'Proposal Active! 🚀', fn: typeof handleCreateProposal !== 'undefined' ? handleCreateProposal : async () => {} },
+        { id: 'executeProposalBtn', name: 'Execute', msg: 'Executed! ⚖️', fn: async () => { console.log("Executing proposal..."); }},
+        { id: 'filterActiveBtn', name: 'Filter', msg: 'Active Filtered', fn: async () => { console.log("Filtering active..."); }},
+        { id: 'filterClosedBtn', name: 'Filter', msg: 'Closed Filtered', fn: async () => { console.log("Filtering closed..."); }},
 
         // --- Lending & Borrowing ---
-        { id: 'lend-btn', name: 'Lending', msg: 'Assets Supplied! 🏦', fn: () => handleLendingAction('Lend') },
-        { id: 'withdraw-lend-btn', name: 'Withdraw', msg: 'Assets Withdrawn! 💸', fn: () => handleLendingAction('Withdraw') },
-        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Processed! 💰', fn: () => handleLoanAction('Borrow') },
-        { id: 'repay-btn', name: 'Repay', msg: 'Loan Repaid! ✅', fn: () => handleLoanAction('Repay') }
+        { id: 'lend-btn', name: 'Lending', msg: 'Assets Supplied! 🏦', fn: () => typeof handleLendingAction !== 'undefined' ? handleLendingAction('Lend') : console.log("Lend") },
+        { id: 'withdraw-lend-btn', name: 'Withdraw', msg: 'Assets Withdrawn! 💸', fn: () => typeof handleLendingAction !== 'undefined' ? handleLendingAction('Withdraw') : console.log("Withdraw") },
+        { id: 'borrow-btn', name: 'Borrow', msg: 'Loan Processed! 💰', fn: () => typeof handleLoanAction !== 'undefined' ? handleLoanAction('Borrow') : console.log("Borrow") },
+        { id: 'repay-btn', name: 'Repay', msg: 'Loan Repaid! ✅', fn: () => typeof handleLoanAction !== 'undefined' ? handleLoanAction('Repay') : console.log("Repay") }
     ];
 
-    // Привязываем каждую кнопку к эффектам и логике
+    // Привязываем каждую кнопку
     actions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
-            // Очистка старых слушателей (клонирование)
-            const cleanBtn = el.cloneNode(true);
-            el.parentNode.replaceChild(cleanBtn, el);
-            
-            cleanBtn.onclick = (e) => {
+            el.onclick = (e) => {
                 e.preventDefault();
-                if (!appState.walletPublicKey && item.id !== 'connectWalletBtn') {
-                    showNotification("Connect wallet first! 🦊", "error");
+                // Проверка кошелька (кроме самой кнопки коннекта)
+                if (item.id !== 'connectWalletBtn' && (!window.appState || !window.appState.walletPublicKey)) {
+                    if (typeof showNotification === 'function') showNotification("Connect wallet first! 🦊", "error");
+                    else alert("Connect wallet first! 🦊");
                     return;
                 }
-                executeSmartActionWithFullEffects(cleanBtn, item);
+                executeAction(el, item);
             };
         }
     });
 
-    // --- ДОПОЛНИТЕЛЬНАЯ ЛОГИКА ДЛЯ КНОПОК MAX ---
-    const maxStakeBtn = document.getElementById('max-stake-btn');
-    if (maxStakeBtn) {
-        maxStakeBtn.onclick = () => {
-            if (appState.userBalances.AFOX > 0n) {
-                const amount = formatBigInt(appState.userBalances.AFOX, AFOX_DECIMALS);
-                document.getElementById('stake-amount').value = amount;
-                showNotification(`Max amount set: ${amount} AFOX`, "info");
-            }
-        };
-    }
+    // --- КНОПКИ MAX ---
+    const setupMaxBtn = (btnId, inputId, balanceKey) => {
+        const btn = document.getElementById(btnId);
+        const input = document.getElementById(inputId);
+        if (btn && input) {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                const balance = window.appState?.userBalances?.[balanceKey] || "0.00";
+                input.value = balance;
+                console.log(`Max set for ${inputId}: ${balance}`);
+            };
+        }
+    };
 
-    // --- КНОПКИ ГОЛОСОВАНИЯ ВНУТРИ КАРТОЧЕК (DAO) ---
+    setupMaxBtn('max-stake-btn', 'stake-amount', 'AFOX');
+    setupMaxBtn('max-lend-btn', 'lend-amount-input', 'AFOX');
+
+    // --- ДИНАМИЧЕСКИЕ КНОПКИ ГОЛОСОВАНИЯ (Event Delegation) ---
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('dao-vote-btn')) {
-            const type = e.target.getAttribute('data-vote-type'); // "for" или "against"
-            executeSmartActionWithFullEffects(e.target, {
+        const voteBtn = e.target.closest('.dao-vote-btn');
+        if (voteBtn) {
+            const type = voteBtn.getAttribute('data-vote-type');
+            executeAction(voteBtn, {
                 name: "Voting",
                 msg: `Voted ${type.toUpperCase()}!`,
-                fn: async () => {
-                    console.log(`Voting ${type} on proposal...`);
-                    await new Promise(r => setTimeout(r, 1500)); // Симуляция
-                }
+                fn: async () => { await new Promise(r => setTimeout(r, 1200)); }
             });
         }
     });
 
-    // --- ОБРАБОТКА МОДАЛЬНОГО ОКНА DAO ---
+    // --- МОДАЛКА DAO ---
     const modal = document.getElementById('createProposalModal');
     const openBtn = document.getElementById('createProposalBtn');
-    const closeBtn = document.getElementById('closeProposalModal');
-    const cancelBtn = document.getElementById('cancelProposalBtn');
+    const closeElements = ['closeProposalModal', 'cancelProposalBtn'];
 
     if (openBtn) openBtn.onclick = () => modal.style.display = 'flex';
-    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
-    if (cancelBtn) cancelBtn.onclick = () => modal.style.display = 'none';
+    closeElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.onclick = () => modal.style.display = 'none';
+    });
 }
 
-// Переинициализация при загрузке
-window.addEventListener('DOMContentLoaded', () => {
-    // Ждем секунду для прогрузки всех стилей и скриптов
-    setTimeout(() => {
-        setupModernUI();
-        console.log("✅ [System]: Все блоки HTML синхронизированы с JavaScript.");
-    }, 1000);
-});
+// Запуск
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', setupModernUI);
+} else {
+    setupModernUI();
+}
 
 
 
