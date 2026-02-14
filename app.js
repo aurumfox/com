@@ -469,24 +469,7 @@ function getTokenDecimals(mintAddress) {
 
 
 
-async function connectWallet() {
-    if (window.solana) {
-        wallet = window.solana;
-        await wallet.connect();
-        const connection = new Connection("https://api.mainnet-beta.solana.com"); // или devnet
-        provider = new anchor.AnchorProvider(connection, wallet, {});
-        // Загрузи IDL здесь: program = new anchor.Program(idl, programId, provider);
-        console.log("Wallet Connected:", wallet.publicKey.toString());
-    }
-}
 
-// 2. Отключение
-async function disconnectWallet() {
-    if (wallet) {
-        await wallet.disconnect();
-        console.log("Disconnected");
-    }
-}
 
 // 3. Проверка баланса (SOL и AFOX)
 async function checkBalance() {
