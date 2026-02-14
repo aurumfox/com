@@ -611,6 +611,80 @@ async function executeProposal() {
         }).rpc();
 }
 
+/**
+ * 👑 AURUM FOX: SUPREME AUTONOMOUS CORE
+ * Полная автономия: исправляет ошибки имен и обновляет балансы
+ */
+
+window.AurumDisplayCore = {
+    // Автоматический поиск ВСЕХ элементов, где может быть адрес или баланс
+    findTargets() {
+        return document.querySelectorAll(`
+            .user-balance, #wallet-address-display, .wallet-label, 
+            [data-fox-category="HEADER/WALLET"], .afox-amount, 
+            #connect-btn-text, .sol-balance
+        `);
+    },
+
+    // Главная логика визуала
+    sync(publicKey) {
+        const isConnected = !!publicKey;
+        const address = isConnected ? publicKey.toString() : null;
+        const shortAddr = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : "Connect Wallet";
+
+        this.findTargets().forEach(el => {
+            el.style.transition = "all 0.4s ease";
+            
+            // Если это кнопка в шапке
+            if (el.tagName === 'BUTTON' || el.dataset.foxCategory === "HEADER/WALLET") {
+                el.innerHTML = isConnected ? `🦊 ${shortAddr}` : "🦊 Connect Wallet";
+                if (isConnected) {
+                    el.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
+                    el.style.color = "#000";
+                    el.style.boxShadow = "0 0 20px rgba(0, 255, 127, 0.4)";
+                } else {
+                    el.style.background = "";
+                    el.style.color = "";
+                    el.style.boxShadow = "";
+                }
+            } else {
+                // Если это текстовое поле (адрес или баланс)
+                el.innerText = isConnected ? shortAddr : (el.innerText.includes('AFOX') ? "0.00 AFOX" : "Not Connected");
+                if (isConnected) el.style.color = "#FFD700"; // Золотой статус
+            }
+        });
+    }
+};
+
+// --- АВТОМАТИЧЕСКИЕ МОСТЫ (ФИКСЯТ ОШИБКИ ИЗ КОНСОЛИ) ---
+
+// 1. Фикс несовпадения имен токена (самый важный фикс!)
+if (typeof AFOX_OFFICIAL_KEYS !== 'undefined') {
+    window.AFOX_TOKEN_MINT_ADDRESS = new window.solanaWeb3.PublicKey(AFOX_OFFICIAL_KEYS.TOKEN_MINT);
+}
+
+// 2. Глобальный хендлер ключа
+window.handlePublicKeyChange = function(pubKey) {
+    if (window.appState) window.appState.walletPublicKey = pubKey;
+    window.AurumDisplayCore.sync(pubKey);
+    
+    // Если есть функция обновления стейкинга — запускаем
+    if (pubKey && typeof updateStakingAndBalanceUI === 'function') {
+        updateStakingAndBalanceUI();
+    }
+};
+
+// 3. Та самая функция, которую требовала ошибка ReferenceError
+window.updateWalletDisplay = function(address) {
+    window.AurumDisplayCore.sync(address);
+};
+
+console.log("%c[ROYAL CORE]: Autonomous Display Active & ReferenceErrors Fixed.", "color: #00ff7f; font-weight: bold;");
+
+
+
+
+
 
 
 /**
