@@ -635,18 +635,15 @@ async function executeProposal() {
 
 
 
-
-
-
 /**
  * AURUM FOX: LUXE ENGINE v7.0 - ROYAL LIQUIDITY OVERRIDE
- * Feature: Advanced Loading States, Wallet Simulation & Dynamic HUD
+ * Исправлено: Работает с реальным кошельком Solana
  */
 
 const AurumFoxEngine = {
     isWalletConnected: false,
-    walletAddress: null,
-    
+    walletAddress: null, // Теперь берем настоящий адрес
+
     stats: { header: 0, dao: 0, staking: 0, lending: 0, social: 0, total: 0 },
     registry: [],
 
@@ -658,20 +655,90 @@ const AurumFoxEngine = {
         this.scanAndCalibrate();
         this.watchOrbit();
         
+        // Проверка: если кошелек уже был подключен ранее
+        if (window.solana && window.solana.isConnected) {
+            this.handleRealWalletSync();
+        }
+
         console.log(`%c[ROYAL SYSTEM]: ONLINE. ${this.stats.total} NODES SYNCED.`, "color: #FFD700; font-weight: bold; padding: 10px; border: 2px solid #FFD700; background: #000;");
     },
 
+    // Вспомогательный метод для синхронизации состояния
+    handleRealWalletSync() {
+        if (window.solana && window.solana.publicKey) {
+            const addr = window.solana.publicKey.toString();
+            this.walletAddress = addr.slice(0, 4) + "..." + addr.slice(-4);
+            this.isWalletConnected = true;
+            // Обновляем глобальное состояние приложения (appState из первой части кода)
+            if (typeof handlePublicKeyChange === 'function') {
+                handlePublicKeyChange(window.solana.publicKey);
+            }
+        }
+    },
+
+    // --- ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ ЛОГИКА КОШЕЛЬКА ---
+    async toggleWallet(el) {
+        const btn = el;
+        if (btn.dataset.loading === "true") return;
+        btn.dataset.loading = "true";
+
+        try {
+            if (!this.isWalletConnected) {
+                // ПРОВЕРКА НАЛИЧИЯ PHANTOM / SOLFLARE
+                if (!window.solana) {
+                    this.notify("Solana Wallet not found!", "PROVIDER_ERROR");
+                    window.open("https://phantom.app/", "_blank");
+                    btn.dataset.loading = "false";
+                    return;
+                }
+
+                btn.innerHTML = `<span class="fox-loader"></span> Requesting...`;
+                
+                // РЕАЛЬНЫЙ КОННЕКТ
+                const response = await window.solana.connect();
+                this.handleRealWalletSync();
+
+                btn.innerHTML = `🦊 ${this.walletAddress}`;
+                btn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
+                btn.style.color = "#000";
+                this.notify("Wallet Linked: Solana Mainnet", "WALLET_CONNECTED");
+            } else {
+                // РЕАЛЬНЫЙ ДИСКОННЕКТ
+                btn.innerHTML = `Disconnecting...`;
+                await window.solana.disconnect();
+                
+                this.isWalletConnected = false;
+                this.walletAddress = null;
+                btn.innerHTML = `🦊 Connect Wallet`;
+                btn.style.background = "";
+                btn.style.color = "";
+                this.notify("Session Terminated", "WALLET_DISCONNECTED");
+                
+                if (typeof handlePublicKeyChange === 'function') {
+                    handlePublicKeyChange(null);
+                }
+            }
+        } catch (err) {
+            console.error("Wallet Connection Error:", err);
+            this.notify("User Rejected Connection", "AUTH_CANCELLED");
+            btn.innerHTML = `🦊 Connect Wallet`;
+        } finally {
+            btn.dataset.loading = "false";
+        }
+    },
+
+    // Остальные методы (printBanner, notify, injectStyles и т.д.) оставляй БЕЗ ИЗМЕНЕНИЙ
+    // Они у тебя работают идеально.
+    
     printBanner() {
         console.log("%c👑 AURUM FOX LUXE INTERFACE", "color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);");
         console.log("%cElite Web3 Protocol Environment Initialized...", "color: #888; font-style: italic;");
     },
 
-    // Классификатор узлов (дополненный)
     classifyNode(el) {
         const text = el.innerText.toLowerCase();
         const id = el.id.toLowerCase();
         const html = el.outerHTML.toLowerCase();
-
         if (id.includes('wallet') || text.includes('connect')) return "HEADER/WALLET";
         if (id.includes('dao') || text.includes('vote') || text.includes('proposal')) return "DAO_GOVERNANCE";
         if (id.includes('stake') || text.includes('staking') || text.includes('apr')) return "STAKING_VAULT";
@@ -692,80 +759,36 @@ const AurumFoxEngine = {
     syncNode(el, category, index) {
         el.dataset.foxSynced = "true";
         this.stats.total++;
-        
         const label = (el.innerText || "Action").trim().split('\n')[0].substring(0, 30);
-
         this.registry.push({ UID: index + 1, Category: category, Label: label });
-
         el.addEventListener('click', async (e) => {
-            e.preventDefault();
+            if (category === "HEADER/WALLET") e.preventDefault();
             await this.handleInteraction(el, label, category);
         });
     },
 
-    // ГЛАВНЫЙ ОБРАБОТЧИК: Загрузка, Состояния, Звук (визуальный)
     async handleInteraction(el, label, category) {
         if (el.dataset.loading === "true") return;
-
-        // Специальная логика для кошелька
         if (category === "HEADER/WALLET") {
             await this.toggleWallet(el);
             return;
         }
-
         const originalContent = el.innerHTML;
         el.dataset.loading = "true";
-
-        // 1. Стадия: Инициализация (Лондон/Загрузка)
         this.triggerVisualPulse(el);
         el.innerHTML = `<span class="fox-loader"></span> Syncing...`;
         this.notify(`Initializing ${label}`, "PROTOCOL_PENDING");
-
-        // Имитация задержки сети (1.2 секунды)
         await new Promise(r => setTimeout(r, 1200));
-
-        // 2. Стадия: Успех
         el.innerHTML = `✅ Confirmed`;
         el.style.borderColor = "#00ff7f";
         el.style.color = "#00ff7f";
         this.notify(`${label} Executed Successfully`, "SUCCESS_CONFIRMED");
-
-        // Возврат в исходное состояние
         setTimeout(() => {
             el.innerHTML = originalContent;
             el.style.borderColor = "";
             el.style.color = "";
             el.dataset.loading = "false";
         }, 2000);
-    },
-
-    // ЛОГИКА КОШЕЛЬКА (Connect / Disconnect)
-    async toggleWallet(el) {
-        const btn = el;
-        btn.dataset.loading = "true";
-        
-        if (!this.isWalletConnected) {
-            // CONNECTING
-            btn.innerHTML = `<span class="fox-loader"></span> Connecting...`;
-            await new Promise(r => setTimeout(r, 1500));
-            
-            this.isWalletConnected = true;
-            btn.innerHTML = `🦊 ${this.walletAddress}`;
-            btn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
-            btn.style.color = "#000";
-            this.notify("Wallet Linked: Solana Mainnet", "WALLET_CONNECTED");
-        } else {
-            // DISCONNECTING
-            btn.innerHTML = `Disconnecting...`;
-            await new Promise(r => setTimeout(r, 800));
-            
-            this.isWalletConnected = false;
-            btn.innerHTML = `🦊 Connect Wallet`;
-            btn.style.background = "";
-            btn.style.color = "";
-            this.notify("Session Terminated", "WALLET_DISCONNECTED");
-        }
-        btn.dataset.loading = "false";
     },
 
     triggerVisualPulse(el) {
@@ -787,19 +810,17 @@ const AurumFoxEngine = {
                 margin-right: 8px; vertical-align: middle;
             }
             @keyframes foxRotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            
-            /* Кнопки теперь чувствуются козырно */
             button, .royal-btn, .web3-btn {
                 transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1) !important;
                 position: relative; overflow: hidden;
             }
             button:active { transform: scale(0.9) !important; }
-            
-            .fox-alert {
+            .fox-alerat {
                 border-radius: 12px !important;
                 border: 1px solid rgba(255, 215, 0, 0.3) !important;
                 background: rgba(10, 15, 30, 0.98) !important;
                 box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,215,0,0.05) !important;
+                margin-bottom: 10px;
             }
         `;
         document.head.appendChild(style);
@@ -816,7 +837,7 @@ const AurumFoxEngine = {
     notify(msg, type) {
         const alert = document.createElement('div');
         alert.className = 'fox-alerat';
-        alert.style = "background: #060b1a; border-left: 4px solid #FFD700; color: #fff; padding: 18px 25px; min-width: 280px; animation: foxIn 0.4s ease-out;";
+        alert.style = "background: #060b1a; border-left: 4px solid #FFD700; color: #fff; padding: 18px 25px; min-width: 280px; animation: foxIn 0.4s ease-out; pointer-events: auto;";
         alert.innerHTML = `
             <div style="color: #FFD700; font-size: 10px; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px;">${type}</div>
             <div style="font-size: 14px; font-weight: 500;">${msg}</div>
@@ -836,9 +857,7 @@ const AurumFoxEngine = {
     }
 };
 
-// Запуск через секунду после загрузки
 setTimeout(() => AurumFoxEngine.init(), 1000);
-
 
 
 
