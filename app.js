@@ -645,7 +645,7 @@ async function executeProposal() {
 
 const AurumFoxEngine = {
     isWalletConnected: false,
-    walletAddress: "0xAFox...777",
+    walletAddress: null,
     
     stats: { header: 0, dao: 0, staking: 0, lending: 0, social: 0, total: 0 },
     registry: [],
