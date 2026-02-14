@@ -621,252 +621,143 @@ function getTokenDecimals(mintAddress) {
 }
 
 
+
+
+
+
+
+
+
 /**
- * AURUM FOX - UNIFIED QUANTUM CORE
- * Version: 4.0.0 (Stability & Power Update)
- * Integrated: Fee Management, DAO Hub, Staking Vault, Lending Terminal
+ * AURUM FOX ATOMIC CORE - Full Interface Takeover
+ * Этот скрипт найдет абсолютно всё, что кликается.
  */
+const AurumFoxSmartBlock = {
+    count: 0,
 
-class AurumFoxEngine {
-    constructor() {
-        this.config = {
-            tokenMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd",
-            rpcEndpoint: "https://api.mainnet-beta.solana.com",
-            feeReserve: 5000000n, // 0.005 SOL reserve
-        };
+    init() {
+        console.log("%c🚀 ЗАПУСК АТОМАРНОГО СКАНЕРА...", "color: #FFD700; font-weight: bold; font-size: 20px;");
+        this.createNotifyContainer();
+        this.fullExploration();
         
-        this.state = {
-            connected: false,
-            walletAddress: null,
-            isPending: false,
-            balances: { afox: "0.00", sol: "0.00" }
-        };
+        // Наблюдатель: если на странице появится новая кнопка (например, через JS), он её тут же захватит
+        this.watchForChanges();
+        
+        console.log(`%c✅ СИСТЕМА ГОТОВА. ОЖИВЛЕНО ЭЛЕМЕНТОВ: ${this.count}`, "color: #00ff7f; font-weight: bold;");
+    },
 
-        // Initialize immediately
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
-        } else {
-            this.init();
-        }
-    }
+    // Глубокая проверка элемента: это кнопка или нет?
+    isInteractive(el) {
+        const tagName = el.tagName.toLowerCase();
+        const role = el.getAttribute('role');
+        const classes = el.className.toString().toLowerCase();
+        
+        return (
+            tagName === 'button' || 
+            tagName === 'a' || 
+            tagName === 'select' ||
+            el.onclick != null ||
+            classes.includes('btn') || 
+            classes.includes('button') ||
+            role === 'button'
+        );
+    },
 
-    async init() {
-        console.log("🦊 Aurum Fox Engine: Initializing Systems...");
-        this.scanAllElements();
-        this.setupNotificationSystem();
-        this.attachEventListeners();
-        this.checkExistingConnection();
-    }
+    // Метод тотального поиска
+    fullExploration() {
+        // Берем ВООБЩЕ ВСЕ элементы на странице
+        const allElements = document.getElementsByTagName('*');
+        this.count = 0;
 
-    // --- DEEP ELEMENT SCANNER ---
-    scanAllElements() {
-        this.ui = {
-            // General
-            connectBtn: document.getElementById('connectWalletBtn'),
-            notificationContainer: document.getElementById('notification-container'),
-            
-            // Staking Section
-            staking: {
-                balanceDisplay: document.getElementById('user-afox-balance'),
-                stakedDisplay: document.getElementById('user-staked-amount'),
-                rewardsDisplay: document.getElementById('user-rewards-amount'),
-                input: document.getElementById('stake-amount'),
-                pool: document.getElementById('pool-selector'),
-                btnStake: document.getElementById('stake-afox-btn'),
-                btnClaim: document.getElementById('claim-rewards-btn'),
-                btnUnstake: document.getElementById('unstake-afox-btn'),
-                btnApprove: document.getElementById('approve-staking-btn')
-            },
-
-            // DAO Section
-            dao: {
-                btnCreate: document.getElementById('createProposalBtn'),
-                modal: document.getElementById('createProposalModal'),
-                form: document.getElementById('newProposalForm'),
-                closeModal: document.getElementById('closeProposalModal'),
-                btnExecute: document.getElementById('executeProposalBtn'),
-                voteBtns: document.querySelectorAll('.dao-vote-btn')
-            },
-
-            // Lending Section
-            lending: {
-                btnLend: document.getElementById('lend-btn'),
-                btnBorrow: document.getElementById('borrow-btn'),
-                btnRepay: document.getElementById('repay-btn'),
-                healthFactor: document.getElementById('health-factor-value')
+        for (let el of allElements) {
+            if (this.isInteractive(el)) {
+                this.revive(el);
             }
-        };
-    }
+        }
+    },
 
-    // --- NOTIFICATION ENGINE ---
-    notify(msg, type = 'info') {
-        if (!this.ui.notificationContainer) return;
+    // Оживление конкретного узла
+    revive(el) {
+        if (el.dataset.foxAlive) return; // Чтобы не вешать дважды
         
-        const colors = {
-            success: 'linear-gradient(135deg, #00ff7f, #00b359)',
-            error: 'linear-gradient(135deg, #ff4d4d, #b30000)',
-            info: 'linear-gradient(135deg, #FFD700, #b8860b)'
-        };
+        el.dataset.foxAlive = "true";
+        this.count++;
 
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-            background: ${colors[type]}; color: #000; padding: 18px 25px;
-            border-radius: 12px; font-weight: 800; margin-bottom: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4); font-family: 'Inter', sans-serif;
-            text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.4s ease; transform: translateX(20px); opacity: 0;
-        `;
-        
-        toast.innerHTML = `<span>${type === 'error' ? '⚠️' : '🦊'}</span> ${msg}`;
-        this.ui.notificationContainer.appendChild(toast);
+        el.addEventListener('click', (e) => {
+            // Останавливаем всплытие, чтобы один клик не считался за три
+            e.stopPropagation();
 
-        // Animation in
-        setTimeout(() => { toast.style.transform = 'translateX(0)'; toast.style.opacity = '1'; }, 10);
-        
-        // Remove
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 400);
-        }, 4000);
-    }
+            let name = el.innerText.trim() 
+                || el.getAttribute('aria-label') 
+                || el.id 
+                || el.placeholder 
+                || "Интерактивный узел";
 
-    // --- WALLET HUB ---
-    async connect() {
-        if (this.state.isPending) return;
-        this.state.isPending = true;
+            // Очистка текста от лишних переносов (для DAO кнопок)
+            name = name.split('\n')[0].substring(0, 30);
 
-        try {
-            const { solana } = window;
-            if (!solana?.isPhantom) {
-                this.notify("Phantom Wallet Not Found!", "error");
-                window.open("https://phantom.app/", "_blank");
-                return;
-            }
+            // 1. Физический отклик (анимация)
+            el.style.transition = "transform 0.1s ease";
+            el.style.transform = "scale(0.95)";
+            setTimeout(() => el.style.transform = "", 100);
 
-            const resp = await solana.connect();
-            this.state.walletAddress = resp.publicKey.toString();
-            this.state.connected = true;
-            this.updateInterface();
-            this.notify("Secure Connection Established", "success");
-            this.refreshBlockchainState();
-        } catch (err) {
-            this.notify(err.message, "error");
-        } finally {
-            this.state.isPending = false;
-        }
-    }
+            // 2. Визуальное уведомление
+            this.notify(name);
 
-    async disconnect() {
-        if (window.solana) {
-            await window.solana.disconnect();
-            this.state.connected = false;
-            this.state.walletAddress = null;
-            this.updateInterface();
-            this.notify("Vault Locked", "info");
-        }
-    }
-
-    updateInterface() {
-        if (!this.ui.connectBtn) return;
-        
-        if (this.state.connected) {
-            this.ui.connectBtn.style.background = "linear-gradient(90deg, #ff4d4d, #800000)";
-            this.ui.connectBtn.innerText = `🦊 ${this.state.walletAddress.slice(0,4)}...${this.state.walletAddress.slice(-4)}`;
-        } else {
-            this.ui.connectBtn.style.background = "linear-gradient(90deg, #FFD700, #b8860b)";
-            this.ui.connectBtn.innerText = "🦊 Connect Golden Vault";
-        }
-    }
-
-    // --- DATA REFRESHER ---
-    async refreshBlockchainState() {
-        if (!this.state.connected) return;
-        
-        // Simulating chain scan for AFOX balance
-        if (this.ui.staking.balanceDisplay) {
-            this.ui.staking.balanceDisplay.innerHTML = '<span class="pulse">SCANNING...</span>';
-            setTimeout(() => {
-                this.ui.staking.balanceDisplay.innerText = "1,500,000.00 AFOX";
-                this.ui.staking.stakedDisplay.innerText = "250,000.00 AFOX";
-            }, 1500);
-        }
-    }
-
-    // --- EVENT MANAGER ---
-    attachEventListeners() {
-        // Wallet Connection
-        if (this.ui.connectBtn) {
-            this.ui.connectBtn.onclick = () => this.state.connected ? this.disconnect() : this.connect();
-        }
-
-        // Staking Logic
-        if (this.ui.staking.btnStake) {
-            this.ui.staking.btnStake.onclick = () => {
-                const amt = this.ui.staking.input.value;
-                if (!amt || amt <= 0) return this.notify("Enter a valid amount", "error");
-                this.performTx(`Staking ${amt} AFOX`);
-            };
-        }
-
-        // DAO Logic
-        if (this.ui.dao.btnCreate) {
-            this.ui.dao.btnCreate.onclick = () => {
-                if (!this.state.connected) return this.notify("Connect Wallet First", "error");
-                this.ui.dao.modal.style.display = 'block';
-            };
-        }
-
-        if (this.ui.dao.closeModal) {
-            this.ui.dao.closeModal.onclick = () => this.ui.dao.modal.style.display = 'none';
-        }
-
-        this.ui.dao.voteBtns.forEach(btn => {
-            btn.onclick = () => this.performTx(`DAO Vote: ${btn.innerText}`);
+            // 3. Консольный лог для дебага
+            console.log(`%c[CLICK]: ${name}`, "color: #FFD700; font-weight: bold;", el);
         });
+    },
 
-        // Lending Logic
-        if (this.ui.lending.btnLend) {
-            this.ui.lending.btnLend.onclick = () => this.performTx("Lending Supply");
-        }
-    }
+    // Слежка за DOM (Mutation Observer)
+    watchForChanges() {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Если это HTML элемент
+                        if (this.isInteractive(node)) this.revive(node);
+                        // Ищем кнопки внутри добавленного узла
+                        const children = node.querySelectorAll('button, a, .btn');
+                        children.forEach(child => this.revive(child));
+                    }
+                });
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    },
 
-    // --- TRANSACTION SIMULATOR (BRO, READY FOR WEB3.JS) ---
-    async performTx(actionName) {
-        if (!this.state.connected) return this.notify("Wallet Not Connected", "error");
+    createNotifyContainer() {
+        if (document.getElementById('fox-notifier')) return;
+        const container = document.createElement('div');
+        container.id = 'fox-notifier';
+        container.style = "position: fixed; bottom: 20px; right: 20px; z-index: 100000; display: flex; flex-direction: column; gap: 8px;";
+        document.body.appendChild(container);
+    },
+
+    notify(name) {
+        const n = document.createElement('div');
+        n.style = `
+            background: #060b1a; border: 1px solid #FFD700; color: #fff;
+            padding: 12px 20px; border-radius: 12px; font-family: 'Inter', sans-serif;
+            font-size: 13px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: foxPop 0.3s ease;
+        `;
+        n.innerHTML = `<span style="color:#FFD700">🦊 FOX ACTIVE:</span> ${name}`;
         
-        this.notify(`Executing ${actionName}...`, "info");
-        try {
-            // This is where you will later call: await sendTransaction(instructions)
-            await new Promise(r => setTimeout(r, 2000)); 
-            this.notify(`${actionName} Confirmed!`, "success");
-            this.refreshBlockchainState();
-        } catch (err) {
-            this.notify(`Transaction Failed`, "error");
-        }
+        document.getElementById('fox-notifier').appendChild(n);
+        setTimeout(() => {
+            n.style.opacity = '0';
+            setTimeout(() => n.remove(), 500);
+        }, 2500);
     }
+};
 
-    checkExistingConnection() {
-        if (window.solana?.isPhantom) {
-            window.solana.connect({ onlyIfTrusted: true })
-                .then(res => {
-                    this.state.walletAddress = res.publicKey.toString();
-                    this.state.connected = true;
-                    this.updateInterface();
-                    this.refreshBlockchainState();
-                }).catch(() => console.log("Silent login failed."));
-        }
-    }
+// Стили для анимации появления
+const foxStyles = document.createElement('style');
+foxStyles.innerHTML = `
+    @keyframes foxPop { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+`;
+document.head.appendChild(foxStyles);
 
-    setupNotificationSystem() {
-        if (!this.ui.notificationContainer) {
-            const container = document.createElement('div');
-            container.id = 'notification-container';
-            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10000;';
-            document.body.appendChild(container);
-            this.ui.notificationContainer = container;
-        }
-    }
-}
-
-// IGNITION
-window.AurumFoxCore = new AurumFoxEngine();
+// Поехали!
+AurumFoxSmartBlock.init();
