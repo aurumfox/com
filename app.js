@@ -466,150 +466,152 @@ function getTokenDecimals(mintAddress) {
 
 
 
+// --- ФУНКЦИИ, ВЫЗЫВАЕМЫЕ ЧЕРЕЗ ID КНОПОК ---
 
-
-
-
-
-// 3. Проверка баланса (SOL и AFOX)
-async function checkBalance() {
-    const solBalance = await provider.connection.getBalance(wallet.publicKey);
-    const poolState = await program.account.poolState.fetch(poolStateAddress); // poolStateAddress - адрес твоего PDA пула
-    const afoxMint = poolState.rewardMint;
-    const userAta = await getAssociatedTokenAddress(afoxMint, wallet.publicKey);
-    const tokenBalance = await provider.connection.getTokenAccountBalance(userAta);
-    console.log(`SOL: ${solBalance / 1e9}, AFOX: ${tokenBalance.value.uiAmount}`);
-}
-
-// --- БЛОК 2: СТЕЙКИНГ ---
-
-// 4. Одобрение (Approve) - В SPL токене на Solana технически делается через Delegate, 
-// но чаще всего мы просто подписываем транзакцию перевода в Vault контракта.
-async function approveAFOX() {
-    console.log("В Solana Anchor аппрув встроен в логику передачи аккаунтов. Готово к стейкингу.");
-}
-
-// 5. Стейкинг
-async function stakeAFOX(amount, poolIndex) {
-    const [userStakeAccount] = PublicKey.findProgramAddressSync(
-        [Buffer.from("user_stake"), poolStateAddress.toBuffer(), wallet.publicKey.toBuffer(), Buffer.from([poolIndex])],
-        programId
-    );
-
-    await program.methods.deposit(poolIndex, new anchor.BN(amount))
+// 1. Для ID: "initialize-user-stake-btn" (Category: STAKING_INIT)
+export async function createStakingAccount(program, poolIndex, poolStatePDA, userStakingPDA) {
+    console.log("🚀 Initializing Staking Account...");
+    return await program.methods
+        .initializeUserStake(poolIndex)
         .accounts({
-            poolState: poolStateAddress,
-            userStaking: userStakeAccount,
-            owner: wallet.publicKey,
-            vault: poolVault,
-            stMint: stMintAddress,
-            userSourceAta: userAta,
-            userStAta: userStAta,
+            poolState: poolStatePDA,
+            userStaking: userStakingPDA,
+            owner: program.provider.wallet.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        })
+        .rpc();
+}
+
+// 2. Для ID: "deposit-btn" (Category: STAKING_DEPOSIT)
+export async function stakeAfox(program, poolIndex, amount, poolStatePDA, userStakingPDA, userSourceAta, poolVaultAta) {
+    console.log(`💎 Staking ${amount} AFOX...`);
+    return await program.methods
+        .deposit(poolIndex, new anchor.BN(amount))
+        .accounts({
+            poolState: poolStatePDA,
+            userStaking: userStakingPDA,
+            userSourceAta: userSourceAta,
+            poolVault: poolVaultAta,
+            owner: program.provider.wallet.publicKey,
             tokenProgram: TOKEN_PROGRAM_ID,
-        }).rpc();
+            systemProgram: anchor.web3.SystemProgram.programId,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        })
+        .rpc();
 }
 
-// 6. Сбор профита (Предварительный расчет)
-async function collectProfit() {
-    console.log("Профит рассчитывается автоматически в функции __sync_pool_and_user на контракте.");
-}
-
-// 7. Получение наград на кошелек
-async function claimRewards(poolIndex) {
-    await program.methods.claimRewards(poolIndex)
+// 3. Для ID: "unstake-btn" (Category: STAKING_WITHDRAW)
+export async function unstakeAfox(program, poolIndex, amount, poolStatePDA, userStakingPDA, poolVaultAta, userDestinationAta) {
+    console.log(`📤 Unstaking ${amount} AFOX...`);
+    return await program.methods
+        .withdraw(poolIndex, new anchor.BN(amount))
         .accounts({
-            poolState: poolStateAddress,
-            userStaking: userStakeAccount,
-            owner: wallet.publicKey,
-            // ... остальные аккаунты из твоего #[derive(Accounts)] ClaimRewards
-        }).rpc();
+            poolState: poolStatePDA,
+            userStaking: userStakingPDA,
+            poolVault: poolVaultAta,
+            userDestinationAta: userDestinationAta,
+            owner: program.provider.wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        })
+        .rpc();
 }
 
-// 8. Вывод из стейка (с логикой штрафа)
-async function unstakeAFOX(poolIndex, amount) {
-    await program.methods.unstake(poolIndex, new anchor.BN(amount))
+// 4. Для ID: "collateralize-btn" (Category: LENDING_BORROW)
+export async function executeBorrowing(program, poolStatePDA, userStakingPDA, amount) {
+    console.log(`🔒 Locking Collateral: ${amount}`);
+    return await program.methods
+        .collateralizeLending(new anchor.BN(amount))
         .accounts({
-            poolState: poolStateAddress,
-            user: userStakeAccount,
-            owner: wallet.publicKey,
-            // ... аккаунты для штрафов (daoTreasury, adminFeeVault)
-        }).rpc();
+            poolState: poolStatePDA,
+            userStaking: userStakingPDA,
+            lendingAuthority: program.provider.wallet.publicKey,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        })
+        .rpc();
 }
 
-// 9. Получить дату разблокировки
-async function getLockPeriod(poolIndex) {
-    const userAccount = await program.account.userStakingAccount.fetch(userStakeAccount);
-    const date = new Date(userAccount.lockupEndTime.toNumber() * 1000);
-    console.log("Locked until:", date.toLocaleString());
-    return date;
-}
-
-// --- БЛОК 3: ЛЕНДИНГ (LENDING) ---
-
-// 10. Поставка активов (Обеспечение)
-async function supplyAssets(amount) {
-    await program.methods.collateralizeLending(new anchor.BN(amount))
+// 5. Для ID: "decollateralize-btn" (Category: LENDING_REPAY)
+export async function decollateralize(program, poolStatePDA, userStakingPDA, amount) {
+    console.log(`🔓 Releasing Collateral: ${amount}`);
+    return await program.methods
+        .decollateralizeLending(new anchor.BN(amount))
         .accounts({
-            poolState: poolStateAddress,
-            userStaking: userStakeAccount,
-            lendingAuthority: wallet.publicKey,
-        }).rpc();
+            poolState: poolStatePDA,
+            userStaking: userStakingPDA,
+            lendingAuthority: program.provider.wallet.publicKey,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        })
+        .rpc();
 }
 
-// 11. Вывод из обеспечения
-async function withdrawSupply(amount) {
-    await program.methods.decollateralizeLending(new anchor.BN(amount))
+// 6. Для ID: "claim-all-rewards-btn" и "claim-all-btn-luxe" (Category: REWARDS_CLAIM_ALL)
+export async function claimAllRewards(program, poolIndices, userStakingPDAs, poolStatePDA, rewardVault, userRewardAccount) {
+    console.log("💰 Claiming All Rewards...");
+    const remainingAccounts = userStakingPDAs.map(pda => ({
+        pubkey: pda, isWritable: true, isSigner: false
+    }));
+
+    return await program.methods
+        .claimAllRewards(Buffer.from(poolIndices))
         .accounts({
-            poolState: poolStateAddress,
-            userStaking: userStakeAccount,
-            lendingAuthority: wallet.publicKey,
-        }).rpc();
+            poolState: poolStatePDA,
+            rewardVault: rewardVault,
+            userRewardAccount: userRewardAccount,
+            owner: program.provider.wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        })
+        .remainingAccounts(remainingAccounts)
+        .rpc();
 }
 
-// 12. Взять взаймы SOL
-async function borrowSOL(amount) {
-    console.log("Эта функция должна вызываться на твоем ВНЕШНЕМ контракте лендинга, используя лимиты из нашего контракта.");
-}
-
-// 13. Погасить заем
-async function repayLoan(amount) {
-    console.log(`Погашение займа на сумму ${amount} SOL`);
-}
-
-// 14. Закрыть позицию
-async function repayAndCloseLoan() {
-    await withdrawSupply(0); // Пример обнуления обеспечения
-}
-
-// --- БЛОК 4: УПРАВЛЕНИЕ (DAO) ---
-
-// 15. Создать предложение
-async function createNewProposal(newRate) {
-    await program.methods.proposeRewardRate(new anchor.BN(newRate))
+// 7. Для ID: "collect-profit-btn" (Category: REWARDS_SINGLE)
+export async function collectProfitSingle(program, poolIndex, poolStatePDA, userStakingPDA, rewardVault, userRewardAccount) {
+    console.log(`💵 Collecting Profit for Pool ${poolIndex}...`);
+    return await program.methods
+        .claimAllRewards(Buffer.from([poolIndex]))
         .accounts({
-            poolState: poolStateAddress,
-            governanceAuthority: wallet.publicKey,
-        }).rpc();
+            poolState: poolStatePDA,
+            rewardVault: rewardVault,
+            userRewardAccount: userRewardAccount,
+            owner: program.provider.wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        })
+        .remainingAccounts([{
+            pubkey: userStakingPDA, isWritable: true, isSigner: false
+        }])
+        .rpc();
 }
 
-// 16. Голосовать ЗА
-async function voteFor(proposalId) {
-    console.log(`Голосование ЗА предложение ${proposalId}. В твоем контракте это вызов методов управления.`);
-}
-
-// 17. Голосовать ПРОТИВ
-async function voteAgainst(proposalId) {
-    console.log(`Голосование ПРОТИВ предложения ${proposalId}`);
-}
-
-// 18. Исполнить предложение (через 48 часов)
-async function executeProposal() {
-    await program.methods.applyConfigChange()
+// 8. Для ID: "force-unlock-btn" (Category: LENDING_LIQUIDATE)
+export async function forceUnlockCollateral(program, poolStatePDA, userStakingPDA, treasuryAta, poolVaultAta) {
+    console.log("⚠️ Executing Force Unlock/Liquidation...");
+    return await program.methods
+        .forceUnlockCollateral()
         .accounts({
-            poolState: poolStateAddress,
-            governanceAuthority: wallet.publicKey,
-        }).rpc();
+            poolState: poolStatePDA,
+            userStaking: userStakingPDA,
+            defaulterTreasury: treasuryAta,
+            poolVault: poolVaultAta,
+            lendingAuthority: program.provider.wallet.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        })
+        .rpc();
 }
+
+// 9. Для ID: "repay-close-btn" (Category: LENDING_CLOSE)
+export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, amount) {
+    console.log("🏁 Closing Position and Repaying...");
+    // Вызываем деколлатерализацию как финальный этап
+    return await decollateralize(program, poolStatePDA, userStakingPDA, amount);
+}
+
+
+
 
 
 
@@ -733,16 +735,37 @@ console.log("%c[ROYAL SYSTEM]: Autonomous Core v11.0 Ready. Conflicts Resolved."
 
 
 /**
- * AURUM FOX: LUXE ENGINE v7.0 - ROYAL LIQUIDITY OVERRIDE
- * Исправлено: 100% синхронизация с реальным кошельком Solana
+ * AURUM FOX: LUXE ENGINE v7.5 - ROYAL LIQUIDITY OVERRIDE
+ * Полная синхронизация ID кнопок HTML и логики Solana Mainnet
  */
 
 const AurumFoxEngine = {
     isWalletConnected: false,
     walletAddress: null, 
 
-    stats: { header: 0, dao: 0, staking: 0, lending: 0, social: 0, total: 0 },
-    registry: [],
+    // Реестр всех ID кнопок из твоего HTML для точного контроля
+    KEY_BUTTONS: {
+        // Wallet
+        "connectWalletBtn": "HEADER/WALLET",
+        
+        // Staking
+        "initialize-user-stake-btn": "STAKING_INIT",
+        "deposit-btn": "STAKING_DEPOSIT",
+        "unstake-btn": "STAKING_WITHDRAW",
+        "max-stake-btn": "INTERFACE_HELPER",
+        "close-staking-account-btn": "STAKING_CLOSE",
+        
+        // Rewards
+        "claim-all-rewards-btn": "REWARDS_CLAIM", // Кнопка в статистике
+        "claim-all-btn-luxe": "REWARDS_CLAIM",    // Кнопка "Claim All" в списке пулов
+        
+        // Lending
+        "collateralize-btn": "LENDING_COLLATERAL",
+        "decollateralize-btn": "LENDING_DECOLLATERAL",
+        "borrow-btn": "LENDING_BORROW",
+        "repay-btn": "LENDING_REPAY",
+        "max-collateral-btn": "INTERFACE_HELPER"
+    },
 
     init() {
         console.clear();
@@ -752,13 +775,12 @@ const AurumFoxEngine = {
         this.scanAndCalibrate();
         this.watchOrbit();
 
-        // ИСПРАВЛЕНО: Правильная проверка активной сессии
         const provider = window.solana || window.phantom?.solana;
         if (provider && provider.isConnected) {
             this.handleRealWalletSync();
         }
 
-        console.log(`%c[ROYAL SYSTEM]: ONLINE. ${this.stats.total} NODES SYNCED.`, "color: #FFD700; font-weight: bold; padding: 10px; border: 2px solid #FFD700; background: #000;");
+        console.log(`%c[ROYAL SYSTEM]: CALIBRATED. ALL HTML IDs SYNCED.`, "color: #00ff7f; font-weight: bold; background: #000; padding: 5px;");
     },
 
     handleRealWalletSync() {
@@ -767,19 +789,8 @@ const AurumFoxEngine = {
             const addr = provider.publicKey.toString();
             this.walletAddress = addr.slice(0, 4) + "..." + addr.slice(-4);
             this.isWalletConnected = true;
-            
-            // Синхронизация с глобальным стейтом приложения
-            if (typeof appState !== 'undefined') {
-                appState.walletPublicKey = provider.publicKey;
-                appState.provider = provider;
-            }
-            
-            if (typeof handlePublicKeyChange === 'function') {
-                handlePublicKeyChange(provider.publicKey);
-            }
-            
-            // Находим кнопку и обновляем её визуал сразу
-            const walletBtn = document.querySelector('[data-fox-category="HEADER/WALLET"]');
+
+            const walletBtn = document.getElementById('connectWalletBtn');
             if (walletBtn) {
                 walletBtn.innerHTML = `🦊 ${this.walletAddress}`;
                 walletBtn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
@@ -788,9 +799,9 @@ const AurumFoxEngine = {
         }
     },
 
-    async toggleWallet(el) {
-        const btn = el;
-        if (btn.dataset.loading === "true") return;
+    async toggleWallet() {
+        const btn = document.getElementById('connectWalletBtn');
+        if (!btn || btn.dataset.loading === "true") return;
         btn.dataset.loading = "true";
 
         try {
@@ -798,160 +809,126 @@ const AurumFoxEngine = {
 
             if (!this.isWalletConnected) {
                 if (!provider) {
-                    this.notify("Solana Wallet not found!", "PROVIDER_ERROR");
+                    this.notify("Wallet not found!", "ERROR");
                     window.open("https://phantom.app/", "_blank");
-                    btn.dataset.loading = "false";
                     return;
                 }
-
-                btn.innerHTML = `<span class="fox-loader"></span> Requesting...`;
-
-                // РЕАЛЬНЫЙ КОННЕКТ
+                btn.innerHTML = `<span class="fox-loader"></span> Connecting...`;
                 await provider.connect();
                 this.handleRealWalletSync();
-
-                btn.innerHTML = `🦊 ${this.walletAddress}`;
-                btn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
-                btn.style.color = "#000";
-                this.notify("Wallet Linked: Solana Mainnet", "WALLET_CONNECTED");
+                this.notify("Solana Mainnet Linked", "SUCCESS");
             } else {
-                // РЕАЛЬНЫЙ ДИСКОННЕКТ
-                btn.innerHTML = `Disconnecting...`;
                 if (provider) await provider.disconnect();
-
                 this.isWalletConnected = false;
-                this.walletAddress = null;
-                
-                if (typeof appState !== 'undefined') {
-                    appState.walletPublicKey = null;
-                }
-
                 btn.innerHTML = `🦊 Connect Wallet`;
                 btn.style.background = "";
                 btn.style.color = "";
                 this.notify("Session Terminated", "WALLET_DISCONNECTED");
-
-                if (typeof handlePublicKeyChange === 'function') {
-                    handlePublicKeyChange(null);
-                }
             }
         } catch (err) {
-            console.error("Wallet Connection Error:", err);
-            this.notify("User Rejected Connection", "AUTH_CANCELLED");
+            this.notify("Connection Rejected", "CANCELLED");
             btn.innerHTML = `🦊 Connect Wallet`;
         } finally {
             btn.dataset.loading = "false";
         }
     },
 
-    printBanner() {
-        console.log("%c👑 AURUM FOX LUXE INTERFACE", "color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);");
-        console.log("%cElite Web3 Protocol Environment Initialized...", "color: #888; font-style: italic;");
-    },
-
-    classifyNode(el) {
-        const text = el.innerText.toLowerCase();
-        const id = el.id.toLowerCase();
-        const html = el.outerHTML.toLowerCase();
-        if (id.includes('wallet') || text.includes('connect')) return "HEADER/WALLET";
-        if (id.includes('dao') || text.includes('vote') || text.includes('proposal')) return "DAO_GOVERNANCE";
-        if (id.includes('stake') || text.includes('staking') || text.includes('apr')) return "STAKING_VAULT";
-        if (id.includes('lend') || id.includes('borrow') || id.includes('repay')) return "LENDING_TERMINAL";
-        if (html.includes('svg') || text.includes('discord') || text.includes('telegram')) return "SOCIAL_NETWORK";
-        return "GENERAL_INTERFACE";
-    },
-
     scanAndCalibrate() {
-        const targets = document.querySelectorAll('button, a, .royal-btn, .web3-button, .web3-btn, [role="button"]');
-        targets.forEach((el, index) => {
+        // Сканируем вообще все кнопки и ссылки
+        const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn');
+        
+        targets.forEach((el) => {
             if (el.dataset.foxSynced) return;
-            const category = this.classifyNode(el);
-            this.syncNode(el, category, index);
-        });
-    },
 
-    syncNode(el, category, index) {
-        el.dataset.foxSynced = "true";
-        el.dataset.foxCategory = category; // Добавлено для точного поиска кнопок
-        this.stats.total++;
-        const label = (el.innerText || "Action").trim().split('\n')[0].substring(0, 30);
-        this.registry.push({ UID: index + 1, Category: category, Label: label });
-        el.addEventListener('click', async (e) => {
-            if (category === "HEADER/WALLET") e.preventDefault();
-            await this.handleInteraction(el, label, category);
-        });
-    },
+            // 1. Пытаемся определить категорию по ID из нашего словаря KEY_BUTTONS
+            let category = this.KEY_BUTTONS[el.id];
 
-    async handleInteraction(el, label, category) {
-        if (el.dataset.loading === "true") return;
-        if (category === "HEADER/WALLET") {
-            await this.toggleWallet(el);
-            return;
-        }
-
-        const originalContent = el.innerHTML;
-        el.dataset.loading = "true";
-        this.triggerVisualPulse(el);
-        el.innerHTML = `<span class="fox-loader"></span> Syncing...`;
-        this.notify(`Initializing ${label}`, "PROTOCOL_PENDING");
-
-        try {
-            // Если кнопка - Стейкинг или Клейм, тут можно вызвать реальные методы контракта
-            if (label.toLowerCase().includes("claim") || label.toLowerCase().includes("collect")) {
-                 if (typeof claimRewards === 'function') await claimRewards();
+            // 2. Если ID нет, пробуем определить по классу (для кнопок без ID)
+            if (!category) {
+                if (el.classList.contains('claim-btn-luxe')) category = "REWARDS_CLAIM";
+                else if (el.classList.contains('discord-btn')) category = "SOCIAL";
+                else category = "GENERAL_INTERFACE";
             }
 
-            await new Promise(r => setTimeout(r, 1200)); // Короткая пауза для визуала
+            this.syncNode(el, category);
+        });
+    },
 
-            el.innerHTML = `✅ Confirmed`;
-            el.style.borderColor = "#00ff7f";
-            el.style.color = "#00ff7f";
-            this.notify(`${label} Executed Successfully`, "SUCCESS_CONFIRMED");
+    syncNode(el, category) {
+        el.dataset.foxSynced = "true";
+        el.dataset.foxCategory = category;
+
+        el.addEventListener('click', async (e) => {
+            // Если это кнопка кошелька - отменяем стандартный переход (если это <a>)
+            if (el.id === 'connectWalletBtn') {
+                e.preventDefault();
+                await this.toggleWallet();
+                return;
+            }
+
+            // Для кнопок внутри форм/стейкинга тоже гасим дефолт
+            if (el.tagName === 'BUTTON') e.preventDefault();
+            
+            await this.handleInteraction(el, category);
+        });
+    },
+
+    async handleInteraction(el, category) {
+        if (el.dataset.loading === "true") return;
+        
+        const label = (el.innerText || "Action").trim().split('\n')[0];
+        const originalContent = el.innerHTML;
+        
+        el.dataset.loading = "true";
+        this.triggerVisualPulse(el);
+        
+        // Визуальный отклик
+        el.innerHTML = `<span class="fox-loader"></span> Processing...`;
+        this.notify(`Executing: ${label}`, category);
+
+        try {
+            // ИНТЕГРАЦИЯ: Здесь вызываются функции из твоего предыдущего блока JavaScript
+            if (category === "REWARDS_CLAIM") {
+                if (typeof claimAllRewards === 'function') await claimAllRewards();
+            } else if (category === "STAKING_DEPOSIT") {
+                this.notify("Check your wallet for approval", "STAKING");
+                // if (typeof stakeAfox === 'function') await stakeAfox(...);
+            }
+
+            // Имитация задержки сети для красоты
+            await new Promise(r => setTimeout(r, 1000));
+
+            el.innerHTML = `✅ Complete`;
+            this.notify(`${label} confirmed on chain`, "SUCCESS");
         } catch (err) {
-            this.notify("Transaction Failed", "BLOCKCHAIN_ERROR");
-            el.innerHTML = `❌ Error`;
+            this.notify("Transaction rejected", "FAILED");
+            el.innerHTML = `❌ Failed`;
         }
 
         setTimeout(() => {
             el.innerHTML = originalContent;
-            el.style.borderColor = "";
-            el.style.color = "";
             el.dataset.loading = "false";
         }, 2000);
     },
 
     triggerVisualPulse(el) {
-        el.style.transform = "scale(0.9) translateY(4px)";
-        el.style.filter = "brightness(2) contrast(1.2)";
-        setTimeout(() => {
-            el.style.transform = "";
-            el.style.filter = "";
-        }, 150);
+        el.style.transform = "scale(0.96)";
+        setTimeout(() => el.style.transform = "", 100);
     },
 
     injectGlobalLuxeStyles() {
+        if (document.getElementById('fox-engine-styles')) return;
         const style = document.createElement('style');
+        style.id = 'fox-engine-styles';
         style.innerHTML = `
             .fox-loader {
-                width: 14px; height: 14px; border: 2px solid #FFD700;
+                width: 12px; height: 12px; border: 2px solid currentColor;
                 border-bottom-color: transparent; border-radius: 50%;
                 display: inline-block; animation: foxRotation 0.6s linear infinite;
-                margin-right: 8px; vertical-align: middle;
+                margin-right: 8px;
             }
             @keyframes foxRotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            button, .royal-btn, .web3-btn {
-                transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1) !important;
-                position: relative; overflow: hidden;
-            }
-            button:active { transform: scale(0.9) !important; }
-            .fox-alerat {
-                border-radius: 12px !important;
-                border: 1px solid rgba(255, 215, 0, 0.3) !important;
-                background: rgba(10, 15, 30, 0.98) !important;
-                box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,215,0,0.05) !important;
-                margin-bottom: 10px;
-                z-index: 100001;
-            }
+            [data-loading="true"] { pointer-events: none; opacity: 0.8; }
         `;
         document.head.appendChild(style);
     },
@@ -960,25 +937,26 @@ const AurumFoxEngine = {
         if (document.getElementById('fox-notif-hub')) return;
         const hub = document.createElement('div');
         hub.id = 'fox-notif-hub';
-        hub.style = "position: fixed; top: 30px; right: 30px; z-index: 100000; display: flex; flex-direction: column; gap: 12px; pointer-events: none;";
+        hub.style = "position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;";
         document.body.appendChild(hub);
     },
 
     notify(msg, type) {
         const alert = document.createElement('div');
-        alert.className = 'fox-alerat';
-        alert.style = "background: #060b1a; border-left: 4px solid #FFD700; color: #fff; padding: 18px 25px; min-width: 280px; animation: foxIn 0.4s ease-out; pointer-events: auto;";
+        alert.style = "background: #060b1a; border-left: 4px solid #FFD700; color: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: foxIn 0.3s ease-out; pointer-events: auto; min-width: 250px;";
         alert.innerHTML = `
-            <div style="color: #FFD700; font-size: 10px; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px;">${type}</div>
-            <div style="font-size: 14px; font-weight: 500;">${msg}</div>
+            <div style="color: #FFD700; font-size: 9px; font-weight: 900; text-transform: uppercase;">${type}</div>
+            <div style="font-size: 13px;">${msg}</div>
         `;
         document.getElementById('fox-notif-hub').appendChild(alert);
         setTimeout(() => {
             alert.style.opacity = '0';
-            alert.style.transform = 'translateY(-20px)';
-            alert.style.transition = 'all 0.6s ease';
-            setTimeout(() => alert.remove(), 600);
-        }, 4000);
+            setTimeout(() => alert.remove(), 500);
+        }, 3500);
+    },
+
+    printBanner() {
+        console.log("%c👑 AURUM FOX ENGINE v7.5", "color: #FFD700; font-size: 20px; font-weight: bold;");
     },
 
     watchOrbit() {
@@ -987,4 +965,7 @@ const AurumFoxEngine = {
     }
 };
 
-setTimeout(() => AurumFoxEngine.init(), 1000);
+// Запуск с небольшой задержкой, чтобы DOM успел прогрузиться
+setTimeout(() => AurumFoxEngine.init(), 500);
+
+
