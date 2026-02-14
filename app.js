@@ -623,165 +623,207 @@ function getTokenDecimals(mintAddress) {
 
 
 
-
-
-
-
 /**
- * AURUM FOX: CYBER ENGINE v5.0 - ULTIMATE INTERFACE OVERRIDE
- * Language: English | Mode: Advanced Diagnostic & Auto-Revive
+ * AURUM FOX: LUXE ENGINE v7.0 - ROYAL LIQUIDITY OVERRIDE
+ * Feature: Advanced Loading States, Wallet Simulation & Dynamic HUD
  */
-const AurumFoxCyberEngine = {
-    totalNodes: 0,
+
+const AurumFoxEngine = {
+    isWalletConnected: false,
+    walletAddress: "0xAFox...777",
+    
+    stats: { header: 0, dao: 0, staking: 0, lending: 0, social: 0, total: 0 },
     registry: [],
 
     init() {
         console.clear();
-        console.log("%c[SYSTEM]: INITIALIZING AURUM FOX CYBER ENGINE...", "color: #FFD700; font-weight: bold; font-size: 14px;");
+        this.printBanner();
+        this.buildNotificationSystem();
+        this.injectGlobalLuxeStyles();
+        this.scanAndCalibrate();
+        this.watchOrbit();
         
-        this.setupEnvironment();
-        this.deepScan();
-        this.displayDashboard();
-        this.initAutoSurveillance();
-
-        console.log(`%c[READY]: CORE SYNCHRONIZED. NODES CAPTURED: ${this.totalNodes}`, "color: #00FFAD; font-weight: bold; padding: 5px; border: 1px solid #00FFAD;");
+        console.log(`%c[ROYAL SYSTEM]: ONLINE. ${this.stats.total} NODES SYNCED.`, "color: #FFD700; font-weight: bold; padding: 10px; border: 2px solid #FFD700; background: #000;");
     },
 
-    // Check if element is a button, link, or clickable component
-    isInteractive(el) {
-        const tag = el.tagName.toLowerCase();
-        const role = el.getAttribute('role');
-        const style = window.getComputedStyle(el);
-        const hasClickAttr = el.getAttribute('onclick') || el.classList.contains('btn') || el.classList.contains('button');
-
-        return (
-            ['button', 'a', 'select', 'input', 'details'].includes(tag) ||
-            role === 'button' ||
-            style.cursor === 'pointer' ||
-            hasClickAttr
-        );
+    printBanner() {
+        console.log("%c👑 AURUM FOX LUXE INTERFACE", "color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);");
+        console.log("%cElite Web3 Protocol Environment Initialized...", "color: #888; font-style: italic;");
     },
 
-    deepScan() {
-        const allElements = document.querySelectorAll('*');
-        this.totalNodes = 0;
-        this.registry = [];
+    // Классификатор узлов (дополненный)
+    classifyNode(el) {
+        const text = el.innerText.toLowerCase();
+        const id = el.id.toLowerCase();
+        const html = el.outerHTML.toLowerCase();
 
-        allElements.forEach((el, index) => {
-            if (this.isInteractive(el)) {
-                this.injectCyberLink(el, index);
-            }
+        if (id.includes('wallet') || text.includes('connect')) return "HEADER/WALLET";
+        if (id.includes('dao') || text.includes('vote') || text.includes('proposal')) return "DAO_GOVERNANCE";
+        if (id.includes('stake') || text.includes('staking') || text.includes('apr')) return "STAKING_VAULT";
+        if (id.includes('lend') || id.includes('borrow') || id.includes('repay')) return "LENDING_TERMINAL";
+        if (html.includes('svg') || text.includes('discord') || text.includes('telegram')) return "SOCIAL_NETWORK";
+        return "GENERAL_INTERFACE";
+    },
+
+    scanAndCalibrate() {
+        const targets = document.querySelectorAll('button, a, .royal-btn, .web3-button, .web3-btn, [role="button"]');
+        targets.forEach((el, index) => {
+            if (el.dataset.foxSynced) return;
+            const category = this.classifyNode(el);
+            this.syncNode(el, category, index);
         });
     },
 
-    injectCyberLink(el, id) {
-        if (el.dataset.foxEngine) return;
+    syncNode(el, category, index) {
+        el.dataset.foxSynced = "true";
+        this.stats.total++;
         
-        el.dataset.foxEngine = "active";
-        this.totalNodes++;
+        const label = (el.innerText || "Action").trim().split('\n')[0].substring(0, 30);
 
-        const label = (el.innerText || el.placeholder || el.getAttribute('aria-label') || el.id || "HIDDEN_NODE")
-                      .trim().split('\n')[0].substring(0, 25);
+        this.registry.push({ UID: index + 1, Category: category, Label: label });
 
-        // Add to Registry for the Dashboard
-        this.registry.push({
-            UID: id,
-            Type: el.tagName,
-            Label: label || "Undefined",
-            Class: el.className.split(' ')[0] || "No Class",
-            Status: "ONLINE 🟢"
+        el.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await this.handleInteraction(el, label, category);
         });
+    },
 
-        // Forced Interaction Binding
-        el.addEventListener('click', (e) => {
-            // Visual pulse effect
-            this.triggerPulse(el);
+    // ГЛАВНЫЙ ОБРАБОТЧИК: Загрузка, Состояния, Звук (визуальный)
+    async handleInteraction(el, label, category) {
+        if (el.dataset.loading === "true") return;
+
+        // Специальная логика для кошелька
+        if (category === "HEADER/WALLET") {
+            await this.toggleWallet(el);
+            return;
+        }
+
+        const originalContent = el.innerHTML;
+        el.dataset.loading = "true";
+
+        // 1. Стадия: Инициализация (Лондон/Загрузка)
+        this.triggerVisualPulse(el);
+        el.innerHTML = `<span class="fox-loader"></span> Syncing...`;
+        this.notify(`Initializing ${label}`, "PROTOCOL_PENDING");
+
+        // Имитация задержки сети (1.2 секунды)
+        await new Promise(r => setTimeout(r, 1200));
+
+        // 2. Стадия: Успех
+        el.innerHTML = `✅ Confirmed`;
+        el.style.borderColor = "#00ff7f";
+        el.style.color = "#00ff7f";
+        this.notify(`${label} Executed Successfully`, "SUCCESS_CONFIRMED");
+
+        // Возврат в исходное состояние
+        setTimeout(() => {
+            el.innerHTML = originalContent;
+            el.style.borderColor = "";
+            el.style.color = "";
+            el.dataset.loading = "false";
+        }, 2000);
+    },
+
+    // ЛОГИКА КОШЕЛЬКА (Connect / Disconnect)
+    async toggleWallet(el) {
+        const btn = el;
+        btn.dataset.loading = "true";
+        
+        if (!this.isWalletConnected) {
+            // CONNECTING
+            btn.innerHTML = `<span class="fox-loader"></span> Connecting...`;
+            await new Promise(r => setTimeout(r, 1500));
             
-            // On-screen notification
-            this.pushNotification(label);
-
-            // Console report
-            console.log(`%c[INTERCEPT]: Action detected on "${label}"`, "background: #FFD700; color: #000; padding: 2px 8px; font-weight: bold;");
-            console.dir(el);
-        });
+            this.isWalletConnected = true;
+            btn.innerHTML = `🦊 ${this.walletAddress}`;
+            btn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
+            btn.style.color = "#000";
+            this.notify("Wallet Linked: Solana Mainnet", "WALLET_CONNECTED");
+        } else {
+            // DISCONNECTING
+            btn.innerHTML = `Disconnecting...`;
+            await new Promise(r => setTimeout(r, 800));
+            
+            this.isWalletConnected = false;
+            btn.innerHTML = `🦊 Connect Wallet`;
+            btn.style.background = "";
+            btn.style.color = "";
+            this.notify("Session Terminated", "WALLET_DISCONNECTED");
+        }
+        btn.dataset.loading = "false";
     },
 
-    triggerPulse(el) {
-        const originalTransition = el.style.transition;
-        el.style.transition = "all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-        el.style.transform = "scale(0.92) translateY(2px)";
-        el.style.filter = "brightness(1.8) drop-shadow(0 0 10px #FFD700)";
-        
+    triggerVisualPulse(el) {
+        el.style.transform = "scale(0.9) translateY(4px)";
+        el.style.filter = "brightness(2) contrast(1.2)";
         setTimeout(() => {
             el.style.transform = "";
             el.style.filter = "";
-            setTimeout(() => el.style.transition = originalTransition, 150);
         }, 150);
     },
 
-    displayDashboard() {
-        if (this.registry.length > 0) {
-            console.group("%c📊 CYBER ENGINE: NODES DASHBOARD", "color: #00f0ff; font-weight: bold; font-size: 12px;");
-            console.table(this.registry);
-            console.groupEnd();
-        }
-    },
-
-    initAutoSurveillance() {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) {
-                        if (this.isInteractive(node)) this.injectCyberLink(node, Math.random());
-                        node.querySelectorAll && node.querySelectorAll('*').forEach(child => {
-                            if (this.isInteractive(child)) this.injectCyberLink(child, Math.random());
-                        });
-                    }
-                });
-            });
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-    },
-
-    setupEnvironment() {
-        if (document.getElementById('cyber-notif-root')) return;
-        const root = document.createElement('div');
-        root.id = 'cyber-notif-root';
-        root.style = "position: fixed; top: 20px; right: 20px; z-index: 2147483647; pointer-events: none;";
-        document.body.appendChild(root);
-
+    injectGlobalLuxeStyles() {
         const style = document.createElement('style');
         style.innerHTML = `
-            @keyframes cyberSlideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            .cyber-toast {
-                background: rgba(0, 0, 0, 0.85); border-left: 4px solid #FFD700;
-                color: #fff; padding: 12px 20px; margin-bottom: 10px;
-                font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px;
-                backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.8);
-                animation: cyberSlideIn 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-                display: flex; align-items: center; min-width: 200px;
+            .fox-loader {
+                width: 14px; height: 14px; border: 2px solid #000;
+                border-bottom-color: transparent; border-radius: 50%;
+                display: inline-block; animation: foxRotation 0.6s linear infinite;
+                margin-right: 8px; vertical-align: middle;
+            }
+            @keyframes foxRotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            
+            /* Кнопки теперь чувствуются козырно */
+            button, .royal-btn, .web3-btn {
+                transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1) !important;
+                position: relative; overflow: hidden;
+            }
+            button:active { transform: scale(0.9) !important; }
+            
+            .fox-alert {
+                border-radius: 12px !important;
+                border: 1px solid rgba(255, 215, 0, 0.3) !important;
+                background: rgba(10, 15, 30, 0.98) !important;
+                box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,215,0,0.05) !important;
             }
         `;
         document.head.appendChild(style);
     },
 
-    pushNotification(msg) {
-        const toast = document.createElement('div');
-        toast.className = 'cyber-toast';
-        toast.innerHTML = `<span style="color: #FFD700; margin-right: 10px;">⚡</span> [NODE]: ${msg}`;
-        
-        const root = document.getElementById('cyber-notif-root');
-        root.appendChild(toast);
-        
+    buildNotificationSystem() {
+        if (document.getElementById('fox-notif-hub')) return;
+        const hub = document.createElement('div');
+        hub.id = 'fox-notif-hub';
+        hub.style = "position: fixed; top: 30px; right: 30px; z-index: 100000; display: flex; flex-direction: column; gap: 12px; pointer-events: none;";
+        document.body.appendChild(hub);
+    },
+
+    notify(msg, type) {
+        const alert = document.createElement('div');
+        alert.className = 'fox-alerat';
+        alert.style = "background: #060b1a; border-left: 4px solid #FFD700; color: #fff; padding: 18px 25px; min-width: 280px; animation: foxIn 0.4s ease-out;";
+        alert.innerHTML = `
+            <div style="color: #FFD700; font-size: 10px; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px;">${type}</div>
+            <div style="font-size: 14px; font-weight: 500;">${msg}</div>
+        `;
+        document.getElementById('fox-notif-hub').appendChild(alert);
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(50px)';
-            toast.style.transition = 'all 0.5s ease';
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-20px)';
+            alert.style.transition = 'all 0.6s ease';
+            setTimeout(() => alert.remove(), 600);
+        }, 4000);
+    },
+
+    watchOrbit() {
+        const observer = new MutationObserver(() => this.scanAndCalibrate());
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 };
 
-// INITIALIZE SYSTEM
-setTimeout(() => AurumFoxCyberEngine.init(), 800);
+// Запуск через секунду после загрузки
+setTimeout(() => AurumFoxEngine.init(), 1000);
+
+
+
 
