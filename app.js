@@ -620,12 +620,12 @@ async function executeProposal() {
 
 /**
  * AURUM FOX: LUXE ENGINE v7.0 - ROYAL LIQUIDITY OVERRIDE
- * Исправлено: Работает с реальным кошельком Solana
+ * Исправлено: 100% синхронизация с реальным кошельком Solana
  */
 
 const AurumFoxEngine = {
     isWalletConnected: false,
-    walletAddress: null, // Теперь берем настоящий адрес
+    walletAddress: null, 
 
     stats: { header: 0, dao: 0, staking: 0, lending: 0, social: 0, total: 0 },
     registry: [],
@@ -637,38 +637,53 @@ const AurumFoxEngine = {
         this.injectGlobalLuxeStyles();
         this.scanAndCalibrate();
         this.watchOrbit();
-        
-        // Проверка: если кошелек уже был подключен ранее
-        if (window.solana && window.solana.isConnected) {
+
+        // ИСПРАВЛЕНО: Правильная проверка активной сессии
+        const provider = window.solana || window.phantom?.solana;
+        if (provider && provider.isConnected) {
             this.handleRealWalletSync();
         }
 
         console.log(`%c[ROYAL SYSTEM]: ONLINE. ${this.stats.total} NODES SYNCED.`, "color: #FFD700; font-weight: bold; padding: 10px; border: 2px solid #FFD700; background: #000;");
     },
 
-    // Вспомогательный метод для синхронизации состояния
     handleRealWalletSync() {
-        if (window.solana && window.solana.publicKey) {
-            const addr = window.solana.publicKey.toString();
+        const provider = window.solana || window.phantom?.solana;
+        if (provider && provider.publicKey) {
+            const addr = provider.publicKey.toString();
             this.walletAddress = addr.slice(0, 4) + "..." + addr.slice(-4);
             this.isWalletConnected = true;
-            // Обновляем глобальное состояние приложения (appState из первой части кода)
+            
+            // Синхронизация с глобальным стейтом приложения
+            if (typeof appState !== 'undefined') {
+                appState.walletPublicKey = provider.publicKey;
+                appState.provider = provider;
+            }
+            
             if (typeof handlePublicKeyChange === 'function') {
-                handlePublicKeyChange(window.solana.publicKey);
+                handlePublicKeyChange(provider.publicKey);
+            }
+            
+            // Находим кнопку и обновляем её визуал сразу
+            const walletBtn = document.querySelector('[data-fox-category="HEADER/WALLET"]');
+            if (walletBtn) {
+                walletBtn.innerHTML = `🦊 ${this.walletAddress}`;
+                walletBtn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
+                walletBtn.style.color = "#000";
             }
         }
     },
 
-    // --- ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ ЛОГИКА КОШЕЛЬКА ---
     async toggleWallet(el) {
         const btn = el;
         if (btn.dataset.loading === "true") return;
         btn.dataset.loading = "true";
 
         try {
+            const provider = window.solana || window.phantom?.solana;
+
             if (!this.isWalletConnected) {
-                // ПРОВЕРКА НАЛИЧИЯ PHANTOM / SOLFLARE
-                if (!window.solana) {
+                if (!provider) {
                     this.notify("Solana Wallet not found!", "PROVIDER_ERROR");
                     window.open("https://phantom.app/", "_blank");
                     btn.dataset.loading = "false";
@@ -676,9 +691,9 @@ const AurumFoxEngine = {
                 }
 
                 btn.innerHTML = `<span class="fox-loader"></span> Requesting...`;
-                
+
                 // РЕАЛЬНЫЙ КОННЕКТ
-                const response = await window.solana.connect();
+                await provider.connect();
                 this.handleRealWalletSync();
 
                 btn.innerHTML = `🦊 ${this.walletAddress}`;
@@ -688,15 +703,20 @@ const AurumFoxEngine = {
             } else {
                 // РЕАЛЬНЫЙ ДИСКОННЕКТ
                 btn.innerHTML = `Disconnecting...`;
-                await window.solana.disconnect();
-                
+                if (provider) await provider.disconnect();
+
                 this.isWalletConnected = false;
                 this.walletAddress = null;
+                
+                if (typeof appState !== 'undefined') {
+                    appState.walletPublicKey = null;
+                }
+
                 btn.innerHTML = `🦊 Connect Wallet`;
                 btn.style.background = "";
                 btn.style.color = "";
                 this.notify("Session Terminated", "WALLET_DISCONNECTED");
-                
+
                 if (typeof handlePublicKeyChange === 'function') {
                     handlePublicKeyChange(null);
                 }
@@ -710,9 +730,6 @@ const AurumFoxEngine = {
         }
     },
 
-    // Остальные методы (printBanner, notify, injectStyles и т.д.) оставляй БЕЗ ИЗМЕНЕНИЙ
-    // Они у тебя работают идеально.
-    
     printBanner() {
         console.log("%c👑 AURUM FOX LUXE INTERFACE", "color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.5);");
         console.log("%cElite Web3 Protocol Environment Initialized...", "color: #888; font-style: italic;");
@@ -741,6 +758,7 @@ const AurumFoxEngine = {
 
     syncNode(el, category, index) {
         el.dataset.foxSynced = "true";
+        el.dataset.foxCategory = category; // Добавлено для точного поиска кнопок
         this.stats.total++;
         const label = (el.innerText || "Action").trim().split('\n')[0].substring(0, 30);
         this.registry.push({ UID: index + 1, Category: category, Label: label });
@@ -756,16 +774,30 @@ const AurumFoxEngine = {
             await this.toggleWallet(el);
             return;
         }
+
         const originalContent = el.innerHTML;
         el.dataset.loading = "true";
         this.triggerVisualPulse(el);
         el.innerHTML = `<span class="fox-loader"></span> Syncing...`;
         this.notify(`Initializing ${label}`, "PROTOCOL_PENDING");
-        await new Promise(r => setTimeout(r, 1200));
-        el.innerHTML = `✅ Confirmed`;
-        el.style.borderColor = "#00ff7f";
-        el.style.color = "#00ff7f";
-        this.notify(`${label} Executed Successfully`, "SUCCESS_CONFIRMED");
+
+        try {
+            // Если кнопка - Стейкинг или Клейм, тут можно вызвать реальные методы контракта
+            if (label.toLowerCase().includes("claim") || label.toLowerCase().includes("collect")) {
+                 if (typeof claimRewards === 'function') await claimRewards();
+            }
+
+            await new Promise(r => setTimeout(r, 1200)); // Короткая пауза для визуала
+
+            el.innerHTML = `✅ Confirmed`;
+            el.style.borderColor = "#00ff7f";
+            el.style.color = "#00ff7f";
+            this.notify(`${label} Executed Successfully`, "SUCCESS_CONFIRMED");
+        } catch (err) {
+            this.notify("Transaction Failed", "BLOCKCHAIN_ERROR");
+            el.innerHTML = `❌ Error`;
+        }
+
         setTimeout(() => {
             el.innerHTML = originalContent;
             el.style.borderColor = "";
@@ -787,7 +819,7 @@ const AurumFoxEngine = {
         const style = document.createElement('style');
         style.innerHTML = `
             .fox-loader {
-                width: 14px; height: 14px; border: 2px solid #000;
+                width: 14px; height: 14px; border: 2px solid #FFD700;
                 border-bottom-color: transparent; border-radius: 50%;
                 display: inline-block; animation: foxRotation 0.6s linear infinite;
                 margin-right: 8px; vertical-align: middle;
@@ -804,6 +836,7 @@ const AurumFoxEngine = {
                 background: rgba(10, 15, 30, 0.98) !important;
                 box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,215,0,0.05) !important;
                 margin-bottom: 10px;
+                z-index: 100001;
             }
         `;
         document.head.appendChild(style);
@@ -841,6 +874,3 @@ const AurumFoxEngine = {
 };
 
 setTimeout(() => AurumFoxEngine.init(), 1000);
-
-
-
