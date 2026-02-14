@@ -739,27 +739,41 @@ console.log("%c[ROYAL SYSTEM]: Autonomous Core v11.0 Ready. Conflicts Resolved."
  * Полная синхронизация ID кнопок HTML и логики Solana Mainnet
  */
 
+// --- Вспомогательная функция для кнопки MAX ---
+function handleMaxButtonClick(type) {
+    const afoxBalance = formatBigInt(appState.userBalances.AFOX, 6);
+    let input;
+    if (type === 'STAKING') {
+        input = document.querySelector('input[placeholder="0.00"]');
+    } else {
+        input = document.getElementById('borrow-amount-input');
+    }
+    if (input) {
+        input.value = afoxBalance;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        console.log(`✅ Max value set: ${afoxBalance}`);
+    }
+}
+
+// ПРИНУДИТЕЛЬНО РЕГИСТРИРУЕМ ФУНКЦИИ В ГЛОБАЛЬНОМ ОКНЕ
+window.claimAllRewards = claimAllRewards;
+window.stakeAfox = stakeAfox;
+window.unstakeAfox = unstakeAfox;
+window.createStakingAccount = createStakingAccount;
+
 const AurumFoxEngine = {
     isWalletConnected: false,
     walletAddress: null, 
 
-    // Реестр всех ID кнопок из твоего HTML для точного контроля
     KEY_BUTTONS: {
-        // Wallet
         "connectWalletBtn": "HEADER/WALLET",
-        
-        // Staking
         "initialize-user-stake-btn": "STAKING_INIT",
         "deposit-btn": "STAKING_DEPOSIT",
         "unstake-btn": "STAKING_WITHDRAW",
         "max-stake-btn": "INTERFACE_HELPER",
         "close-staking-account-btn": "STAKING_CLOSE",
-        
-        // Rewards
-        "claim-all-rewards-btn": "REWARDS_CLAIM", // Кнопка в статистике
-        "claim-all-btn-luxe": "REWARDS_CLAIM",    // Кнопка "Claim All" в списке пулов
-        
-        // Lending
+        "claim-all-rewards-btn": "REWARDS_CLAIM",
+        "claim-all-btn-luxe": "REWARDS_CLAIM",
         "collateralize-btn": "LENDING_COLLATERAL",
         "decollateralize-btn": "LENDING_DECOLLATERAL",
         "borrow-btn": "LENDING_BORROW",
@@ -779,7 +793,6 @@ const AurumFoxEngine = {
         if (provider && provider.isConnected) {
             this.handleRealWalletSync();
         }
-
         console.log(`%c[ROYAL SYSTEM]: CALIBRATED. ALL HTML IDs SYNCED.`, "color: #00ff7f; font-weight: bold; background: #000; padding: 5px;");
     },
 
@@ -789,7 +802,6 @@ const AurumFoxEngine = {
             const addr = provider.publicKey.toString();
             this.walletAddress = addr.slice(0, 4) + "..." + addr.slice(-4);
             this.isWalletConnected = true;
-
             const walletBtn = document.getElementById('connectWalletBtn');
             if (walletBtn) {
                 walletBtn.innerHTML = `🦊 ${this.walletAddress}`;
@@ -803,10 +815,8 @@ const AurumFoxEngine = {
         const btn = document.getElementById('connectWalletBtn');
         if (!btn || btn.dataset.loading === "true") return;
         btn.dataset.loading = "true";
-
         try {
             const provider = window.solana || window.phantom?.solana;
-
             if (!this.isWalletConnected) {
                 if (!provider) {
                     this.notify("Wallet not found!", "ERROR");
@@ -834,22 +844,15 @@ const AurumFoxEngine = {
     },
 
     scanAndCalibrate() {
-        // Сканируем вообще все кнопки и ссылки
         const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn');
-        
         targets.forEach((el) => {
             if (el.dataset.foxSynced) return;
-
-            // 1. Пытаемся определить категорию по ID из нашего словаря KEY_BUTTONS
             let category = this.KEY_BUTTONS[el.id];
-
-            // 2. Если ID нет, пробуем определить по классу (для кнопок без ID)
             if (!category) {
                 if (el.classList.contains('claim-btn-luxe')) category = "REWARDS_CLAIM";
                 else if (el.classList.contains('discord-btn')) category = "SOCIAL";
                 else category = "GENERAL_INTERFACE";
             }
-
             this.syncNode(el, category);
         });
     },
@@ -857,51 +860,84 @@ const AurumFoxEngine = {
     syncNode(el, category) {
         el.dataset.foxSynced = "true";
         el.dataset.foxCategory = category;
-
         el.addEventListener('click', async (e) => {
-            // Если это кнопка кошелька - отменяем стандартный переход (если это <a>)
             if (el.id === 'connectWalletBtn') {
                 e.preventDefault();
                 await this.toggleWallet();
                 return;
             }
-
-            // Для кнопок внутри форм/стейкинга тоже гасим дефолт
             if (el.tagName === 'BUTTON') e.preventDefault();
-            
             await this.handleInteraction(el, category);
         });
     },
 
     async handleInteraction(el, category) {
         if (el.dataset.loading === "true") return;
-        
+
         const label = (el.innerText || "Action").trim().split('\n')[0];
         const originalContent = el.innerHTML;
-        
+
         el.dataset.loading = "true";
         this.triggerVisualPulse(el);
-        
-        // Визуальный отклик
         el.innerHTML = `<span class="fox-loader"></span> Processing...`;
         this.notify(`Executing: ${label}`, category);
 
         try {
-            // ИНТЕГРАЦИЯ: Здесь вызываются функции из твоего предыдущего блока JavaScript
-            if (category === "REWARDS_CLAIM") {
-                if (typeof claimAllRewards === 'function') await claimAllRewards();
-            } else if (category === "STAKING_DEPOSIT") {
-                this.notify("Check your wallet for approval", "STAKING");
-                // if (typeof stakeAfox === 'function') await stakeAfox(...);
-            }
+            switch(category) {
+                case "REWARDS_CLAIM":
+                    if (typeof window.claimAllRewards === 'function') {
+                        await window.claimAllRewards(
+                            getAnchorProgram(window.STAKING_PROGRAM_ID, STAKING_IDL),
+                            [0, 1, 2],
+                            [/* userStakingPDAs */],
+                            window.AFOX_POOL_STATE_PUBKEY,
+                            window.AFOX_REWARDS_VAULT_PUBKEY,
+                            appState.userRewardAta
+                        );
+                    }
+                    break;
 
-            // Имитация задержки сети для красоты
-            await new Promise(r => setTimeout(r, 1000));
+                case "STAKING_DEPOSIT":
+                    const amountInput = document.querySelector('input[type="number"]') || {value: "0"};
+                    const amountBN = parseAmountToBigInt(amountInput.value, 6);
+                    if (typeof window.stakeAfox === 'function') {
+                        await window.stakeAfox(
+                            getAnchorProgram(window.STAKING_PROGRAM_ID, STAKING_IDL),
+                            appState.userStakingData.poolIndex,
+                            amountBN,
+                            window.AFOX_POOL_STATE_PUBKEY,
+                            appState.userStakingPDA,
+                            appState.userSourceAta,
+                            window.AFOX_POOL_VAULT_PUBKEY
+                        );
+                    }
+                    break;
+
+                case "INTERFACE_HELPER":
+                    if (el.id === "max-stake-btn") handleMaxButtonClick('STAKING');
+                    if (el.id === "max-collateral-btn") handleMaxButtonClick('LENDING');
+                    this.notify("Balance set to Maximum", "INFO");
+                    break;
+                
+                case "STAKING_INIT":
+                    if (typeof window.createStakingAccount === 'function') {
+                        await window.createStakingAccount(
+                            getAnchorProgram(window.STAKING_PROGRAM_ID, STAKING_IDL),
+                            0,
+                            window.AFOX_POOL_STATE_PUBKEY,
+                            appState.userStakingPDA
+                        );
+                    }
+                    break;
+            }
 
             el.innerHTML = `✅ Complete`;
             this.notify(`${label} confirmed on chain`, "SUCCESS");
+            if (typeof updateStakingAndBalanceUI === 'function') await updateStakingAndBalanceUI();
+
         } catch (err) {
-            this.notify("Transaction rejected", "FAILED");
+            console.error("❌ Error during interaction:", err);
+            this.notify(err.message || "Transaction rejected", "FAILED");
             el.innerHTML = `❌ Failed`;
         }
 
@@ -965,7 +1001,4 @@ const AurumFoxEngine = {
     }
 };
 
-// Запуск с небольшой задержкой, чтобы DOM успел прогрузиться
 setTimeout(() => AurumFoxEngine.init(), 500);
-
-
