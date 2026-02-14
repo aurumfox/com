@@ -796,17 +796,57 @@ const AurumFoxEngine = {
         console.log(`%c[ROYAL SYSTEM]: CALIBRATED. ALL HTML IDs SYNCED.`, "color: #00ff7f; font-weight: bold; background: #000; padding: 5px;");
     },
 
+        // 1. УМНЫЙ ПОИСК ПРОВАЙДЕРА (Phantom, Solflare, Backpack)
+    getProvider() {
+        if ('phantom' in window && window.phantom?.solana) return window.phantom.solana;
+        if ('solflare' in window && window.solflare) return window.solflare;
+        if ('backpack' in window && window.backpack) return window.backpack;
+        if (window.solana) return window.solana; // Универсальный инжект
+        return null;
+    },
+
+    // 2. АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ (Eager Connection)
+    async autoConnect() {
+        const provider = this.getProvider();
+        if (provider && provider.isPhantom) { // Phantom поддерживает флаг доверия
+            try {
+                // Пытаемся подключиться тихо (без всплывающего окна)
+                const resp = await provider.connect({ onlyIfTrusted: true });
+                if (resp.publicKey) {
+                    console.log("🚀 Auto-connected to wallet");
+                    this.handleRealWalletSync();
+                }
+            } catch (err) {
+                // Если не доверено — просто ждем клика пользователя
+                console.log("📡 Wallet found, waiting for manual interaction");
+            }
+        }
+    },
+
     handleRealWalletSync() {
-        const provider = window.solana || window.phantom?.solana;
+        const provider = this.getProvider();
         if (provider && provider.publicKey) {
+            // Сохраняем данные для логики блокчейна (Anchor)
+            window.appState.walletPublicKey = provider.publicKey;
+            window.appState.provider = {
+                publicKey: provider.publicKey,
+                signTransaction: provider.signTransaction.bind(provider),
+                signAllTransactions: provider.signAllTransactions.bind(provider),
+            };
+
             const addr = provider.publicKey.toString();
             this.walletAddress = addr.slice(0, 4) + "..." + addr.slice(-4);
             this.isWalletConnected = true;
+
             const walletBtn = document.getElementById('connectWalletBtn');
             if (walletBtn) {
                 walletBtn.innerHTML = `🦊 ${this.walletAddress}`;
                 walletBtn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
                 walletBtn.style.color = "#000";
+            }
+
+            if (typeof updateStakingAndBalanceUI === 'function') {
+                updateStakingAndBalanceUI();
             }
         }
     },
@@ -815,33 +855,61 @@ const AurumFoxEngine = {
         const btn = document.getElementById('connectWalletBtn');
         if (!btn || btn.dataset.loading === "true") return;
         btn.dataset.loading = "true";
+
         try {
-            const provider = window.solana || window.phantom?.solana;
+            const provider = this.getProvider();
+
             if (!this.isWalletConnected) {
                 if (!provider) {
-                    this.notify("Wallet not found!", "ERROR");
+                    this.notify("Install Phantom or Solflare!", "ERROR");
                     window.open("https://phantom.app/", "_blank");
                     return;
                 }
-                btn.innerHTML = `<span class="fox-loader"></span> Connecting...`;
+                
+                btn.innerHTML = `<span class="fox-loader"></span> Syncing...`;
+                
+                // Обычное подключение с окном подтверждения
                 await provider.connect();
                 this.handleRealWalletSync();
-                this.notify("Solana Mainnet Linked", "SUCCESS");
+                
+                this.notify("Linked to " + (provider.name || "Solana Wallet"), "SUCCESS");
             } else {
-                if (provider) await provider.disconnect();
+                if (provider && provider.disconnect) await provider.disconnect();
+                
                 this.isWalletConnected = false;
+                window.appState.walletPublicKey = null;
+                window.appState.provider = null;
+                
                 btn.innerHTML = `🦊 Connect Wallet`;
                 btn.style.background = "";
                 btn.style.color = "";
-                this.notify("Session Terminated", "WALLET_DISCONNECTED");
+                
+                this.notify("Disconnected", "OFFLINE");
             }
         } catch (err) {
-            this.notify("Connection Rejected", "CANCELLED");
+            console.error("Connection error:", err);
+            this.notify("User Rejected", "CANCELLED");
             btn.innerHTML = `🦊 Connect Wallet`;
         } finally {
             btn.dataset.loading = "false";
         }
     },
+
+    // 3. ИНИЦИАЛИЗАЦИЯ ПРИ ЗАПУСКЕ СКРИПТА
+    init() {
+        // ... твой старый код инициализации ...
+        
+        // Добавляем автоматическую проверку при загрузке
+        if (document.readyState === 'complete') {
+            this.autoConnect();
+        } else {
+            window.addEventListener('load', () => this.autoConnect());
+        }
+        
+        this.scanAndCalibrate();
+        this.watchOrbit();
+    }
+
 
     scanAndCalibrate() {
         const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn');
