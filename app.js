@@ -614,96 +614,91 @@ async function executeProposal() {
 
 
 /**
- * 👑 AURUM FOX: ROYAL DISPLAY & SYNC MANAGER v8.0
- * Максимальная синхронизация, козырный визуал и фикс всех ReferenceError
+ * 🦊 AURUM FOX: SMART AUTONOMOUS DISPLAY
+ * Автоматический поиск элементов, фикс ошибок и люксовый визуал
  */
 
-// 1. Глобальный обработчик смены ключа (Fixes: handlePublicKeyChange is not defined)
-window.handlePublicKeyChange = function(publicKey) {
-    const statusColor = publicKey ? "#00ff7f" : "#ff4b2b";
-    console.log(`%c[ROYAL SYNC]: %c${publicKey ? 'LINKED' : 'DETACHED'}`, "color: #FFD700; font-weight: bold;", `color: ${statusColor};`);
-    
-    if (publicKey) {
-        // Записываем в ядро системы
-        if (window.appState) {
-            window.appState.walletPublicKey = publicKey;
-        }
+window.AurumDisplayCore = {
+    // Автоматический поиск всех элементов баланса и адреса на странице
+    findTargets() {
+        return document.querySelectorAll(`
+            .user-balance, 
+            #wallet-address-display, 
+            .wallet-label, 
+            [data-fox-category="HEADER/WALLET"],
+            .afox-amount,
+            #connect-btn-text
+        `);
+    },
 
-        // Запускаем цепочку обновлений
-        window.updateWalletDisplay(publicKey.toString());
-        
-        if (typeof updateStakingAndBalanceUI === 'function') {
-            updateStakingAndBalanceUI();
-        }
-    } else {
-        window.resetDisplayToDefault();
+    // Главная "умная" функция обновления
+    sync(publicKey) {
+        const isConnected = !!publicKey;
+        const address = isConnected ? publicKey.toString() : null;
+        const shortAddr = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : "Connect Wallet";
+
+        console.log(`%c[AUTONOMOUS SYNC]: ${isConnected ? 'LINKED' : 'DISCONNECTED'}`, 
+            `color: ${isConnected ? '#00ff7f' : '#ff4b2b'}; font-weight: bold;`);
+
+        this.findTargets().forEach(el => {
+            // Эффект "Королевского проявления"
+            el.style.transition = "all 0.6s cubic-bezier(0.23, 1, 0.32, 1)";
+            el.style.filter = "blur(5px)";
+            el.style.opacity = "0";
+
+            setTimeout(() => {
+                // Умная замена текста
+                if (el.tagName === 'BUTTON' || el.dataset.foxCategory === "HEADER/WALLET") {
+                    el.innerHTML = isConnected ? `🦊 ${shortAddr}` : "🦊 Connect Wallet";
+                } else {
+                    el.innerText = isConnected ? shortAddr : (el.classList.contains('user-balance') ? "0.00 AFOX" : "Not Connected");
+                }
+
+                // Козырный стайлинг
+                if (isConnected) {
+                    el.style.color = "#FFD700"; // Золото
+                    el.style.textShadow = "0 0 12px rgba(255, 215, 0, 0.5)";
+                    if (el.tagName === 'BUTTON') {
+                        el.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
+                        el.style.color = "#000";
+                    }
+                } else {
+                    el.style.color = "";
+                    el.style.textShadow = "";
+                    el.style.background = "";
+                }
+
+                el.style.filter = "blur(0)";
+                el.style.opacity = "1";
+            }, 300);
+        });
     }
 };
 
-// 2. Козырное отображение адреса и балансов (Fixes: updateWalletDisplay is not defined)
+// --- ФИКСЫ ДЛЯ КОНСОЛИ (ТЕПЕРЬ ОШИБОК НЕ БУДЕТ) ---
+
+window.handlePublicKeyChange = function(pubKey) {
+    if (window.appState) window.appState.walletPublicKey = pubKey;
+    window.AurumDisplayCore.sync(pubKey);
+    
+    // Авто-апдейт стейкинга, если он есть
+    if (pubKey && typeof updateStakingAndBalanceUI === 'function') {
+        updateStakingAndBalanceUI();
+    }
+};
+
+// Та самая функция из ошибки "not defined"
 window.updateWalletDisplay = function(address) {
-    if (!address) return;
-    const shortAddr = address.slice(0, 4) + "..." + address.slice(-4);
-    
-    // Выбираем все элементы: балансы, адреса, текстовые блоки
-    const targets = document.querySelectorAll('.user-balance, #wallet-address-display, .wallet-label, .afox-amount');
-    
-    targets.forEach(el => {
-        // Эффект появления: плавно скрываем и проявляем с золотом
-        el.style.transition = "all 0.5s cubic-bezier(0.19, 1, 0.22, 1)";
-        el.style.opacity = "0";
-        
-        setTimeout(() => {
-            el.innerText = shortAddr;
-            el.style.color = "#FFD700"; // Золотой цвет
-            el.style.textShadow = "0 0 15px rgba(255, 215, 0, 0.6)"; // Козырное свечение
-            el.style.opacity = "1";
-            el.style.transform = "translateY(0)";
-        }, 300);
-    });
-
-    if (window.AurumFoxEngine) {
-        window.AurumFoxEngine.notify(`Synced: ${shortAddr}`, "ROYAL_ACCESS_GRANTED");
-    }
+    window.AurumDisplayCore.sync(address);
 };
 
-// 3. Сброс при отключении (чтобы не оставалось висеть NULL)
-window.resetDisplayToDefault = function() {
-    const targets = document.querySelectorAll('.user-balance, #wallet-address-display, .wallet-label');
-    targets.forEach(el => {
-        el.style.color = "";
-        el.style.textShadow = "";
-        if (el.classList.contains('user-balance')) el.innerText = "0.00 AFOX";
-        else el.innerText = "Not Connected";
-    });
-};
-
-// 4. Инициализация глобального состояния (Safety First)
+// Инициализация глобального стейта, чтобы система не падала
 window.appState = window.appState || {
     walletPublicKey: null,
-    provider: null,
-    connection: null,
-    userBalances: { SOL: 0n, AFOX: 0n }
+    provider: null
 };
 
-// Добавляем стили для анимации прямо в софт
-(function injectSyncStyles() {
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .user-balance { 
-            font-family: 'Monaco', monospace; 
-            letter-spacing: 1px;
-            transition: all 0.4s ease;
-        }
-        @keyframes goldPulse {
-            0% { text-shadow: 0 0 5px rgba(255,215,0,0.4); }
-            50% { text-shadow: 0 0 20px rgba(255,215,0,0.8); }
-            100% { text-shadow: 0 0 5px rgba(255,215,0,0.4); }
-        }
-        .sync-active { animation: goldPulse 2s infinite; }
-    `;
-    document.head.appendChild(style);
-})();
+console.log("%c[SYSTEM]: Autonomous Display Core Ready.", "color: #FFD700; font-weight: bold;");
 
 
 
