@@ -627,98 +627,115 @@ function getTokenDecimals(mintAddress) {
 
 
 
-
 /**
- * AURUM FOX ATOMIC CORE - Full Interface Takeover
- * Этот скрипт найдет абсолютно всё, что кликается.
+ * AURUM FOX: CYBER ENGINE v5.0 - ULTIMATE INTERFACE OVERRIDE
+ * Language: English | Mode: Advanced Diagnostic & Auto-Revive
  */
-const AurumFoxSmartBlock = {
-    count: 0,
+const AurumFoxCyberEngine = {
+    totalNodes: 0,
+    registry: [],
 
     init() {
-        console.log("%c🚀 ЗАПУСК АТОМАРНОГО СКАНЕРА...", "color: #FFD700; font-weight: bold; font-size: 20px;");
-        this.createNotifyContainer();
-        this.fullExploration();
+        console.clear();
+        console.log("%c[SYSTEM]: INITIALIZING AURUM FOX CYBER ENGINE...", "color: #FFD700; font-weight: bold; font-size: 14px;");
         
-        // Наблюдатель: если на странице появится новая кнопка (например, через JS), он её тут же захватит
-        this.watchForChanges();
-        
-        console.log(`%c✅ СИСТЕМА ГОТОВА. ОЖИВЛЕНО ЭЛЕМЕНТОВ: ${this.count}`, "color: #00ff7f; font-weight: bold;");
+        this.setupEnvironment();
+        this.deepScan();
+        this.displayDashboard();
+        this.initAutoSurveillance();
+
+        console.log(`%c[READY]: CORE SYNCHRONIZED. NODES CAPTURED: ${this.totalNodes}`, "color: #00FFAD; font-weight: bold; padding: 5px; border: 1px solid #00FFAD;");
     },
 
-    // Глубокая проверка элемента: это кнопка или нет?
+    // Check if element is a button, link, or clickable component
     isInteractive(el) {
-        const tagName = el.tagName.toLowerCase();
+        const tag = el.tagName.toLowerCase();
         const role = el.getAttribute('role');
-        const classes = el.className.toString().toLowerCase();
-        
+        const style = window.getComputedStyle(el);
+        const hasClickAttr = el.getAttribute('onclick') || el.classList.contains('btn') || el.classList.contains('button');
+
         return (
-            tagName === 'button' || 
-            tagName === 'a' || 
-            tagName === 'select' ||
-            el.onclick != null ||
-            classes.includes('btn') || 
-            classes.includes('button') ||
-            role === 'button'
+            ['button', 'a', 'select', 'input', 'details'].includes(tag) ||
+            role === 'button' ||
+            style.cursor === 'pointer' ||
+            hasClickAttr
         );
     },
 
-    // Метод тотального поиска
-    fullExploration() {
-        // Берем ВООБЩЕ ВСЕ элементы на странице
-        const allElements = document.getElementsByTagName('*');
-        this.count = 0;
+    deepScan() {
+        const allElements = document.querySelectorAll('*');
+        this.totalNodes = 0;
+        this.registry = [];
 
-        for (let el of allElements) {
+        allElements.forEach((el, index) => {
             if (this.isInteractive(el)) {
-                this.revive(el);
+                this.injectCyberLink(el, index);
             }
-        }
-    },
-
-    // Оживление конкретного узла
-    revive(el) {
-        if (el.dataset.foxAlive) return; // Чтобы не вешать дважды
-        
-        el.dataset.foxAlive = "true";
-        this.count++;
-
-        el.addEventListener('click', (e) => {
-            // Останавливаем всплытие, чтобы один клик не считался за три
-            e.stopPropagation();
-
-            let name = el.innerText.trim() 
-                || el.getAttribute('aria-label') 
-                || el.id 
-                || el.placeholder 
-                || "Интерактивный узел";
-
-            // Очистка текста от лишних переносов (для DAO кнопок)
-            name = name.split('\n')[0].substring(0, 30);
-
-            // 1. Физический отклик (анимация)
-            el.style.transition = "transform 0.1s ease";
-            el.style.transform = "scale(0.95)";
-            setTimeout(() => el.style.transform = "", 100);
-
-            // 2. Визуальное уведомление
-            this.notify(name);
-
-            // 3. Консольный лог для дебага
-            console.log(`%c[CLICK]: ${name}`, "color: #FFD700; font-weight: bold;", el);
         });
     },
 
-    // Слежка за DOM (Mutation Observer)
-    watchForChanges() {
+    injectCyberLink(el, id) {
+        if (el.dataset.foxEngine) return;
+        
+        el.dataset.foxEngine = "active";
+        this.totalNodes++;
+
+        const label = (el.innerText || el.placeholder || el.getAttribute('aria-label') || el.id || "HIDDEN_NODE")
+                      .trim().split('\n')[0].substring(0, 25);
+
+        // Add to Registry for the Dashboard
+        this.registry.push({
+            UID: id,
+            Type: el.tagName,
+            Label: label || "Undefined",
+            Class: el.className.split(' ')[0] || "No Class",
+            Status: "ONLINE 🟢"
+        });
+
+        // Forced Interaction Binding
+        el.addEventListener('click', (e) => {
+            // Visual pulse effect
+            this.triggerPulse(el);
+            
+            // On-screen notification
+            this.pushNotification(label);
+
+            // Console report
+            console.log(`%c[INTERCEPT]: Action detected on "${label}"`, "background: #FFD700; color: #000; padding: 2px 8px; font-weight: bold;");
+            console.dir(el);
+        });
+    },
+
+    triggerPulse(el) {
+        const originalTransition = el.style.transition;
+        el.style.transition = "all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+        el.style.transform = "scale(0.92) translateY(2px)";
+        el.style.filter = "brightness(1.8) drop-shadow(0 0 10px #FFD700)";
+        
+        setTimeout(() => {
+            el.style.transform = "";
+            el.style.filter = "";
+            setTimeout(() => el.style.transition = originalTransition, 150);
+        }, 150);
+    },
+
+    displayDashboard() {
+        if (this.registry.length > 0) {
+            console.group("%c📊 CYBER ENGINE: NODES DASHBOARD", "color: #00f0ff; font-weight: bold; font-size: 12px;");
+            console.table(this.registry);
+            console.groupEnd();
+        }
+    },
+
+    initAutoSurveillance() {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) { // Если это HTML элемент
-                        if (this.isInteractive(node)) this.revive(node);
-                        // Ищем кнопки внутри добавленного узла
-                        const children = node.querySelectorAll('button, a, .btn');
-                        children.forEach(child => this.revive(child));
+                    if (node.nodeType === 1) {
+                        if (this.isInteractive(node)) this.injectCyberLink(node, Math.random());
+                        node.querySelectorAll && node.querySelectorAll('*').forEach(child => {
+                            if (this.isInteractive(child)) this.injectCyberLink(child, Math.random());
+                        });
                     }
                 });
             });
@@ -726,38 +743,45 @@ const AurumFoxSmartBlock = {
         observer.observe(document.body, { childList: true, subtree: true });
     },
 
-    createNotifyContainer() {
-        if (document.getElementById('fox-notifier')) return;
-        const container = document.createElement('div');
-        container.id = 'fox-notifier';
-        container.style = "position: fixed; bottom: 20px; right: 20px; z-index: 100000; display: flex; flex-direction: column; gap: 8px;";
-        document.body.appendChild(container);
+    setupEnvironment() {
+        if (document.getElementById('cyber-notif-root')) return;
+        const root = document.createElement('div');
+        root.id = 'cyber-notif-root';
+        root.style = "position: fixed; top: 20px; right: 20px; z-index: 2147483647; pointer-events: none;";
+        document.body.appendChild(root);
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes cyberSlideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            .cyber-toast {
+                background: rgba(0, 0, 0, 0.85); border-left: 4px solid #FFD700;
+                color: #fff; padding: 12px 20px; margin-bottom: 10px;
+                font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px;
+                backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+                animation: cyberSlideIn 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+                display: flex; align-items: center; min-width: 200px;
+            }
+        `;
+        document.head.appendChild(style);
     },
 
-    notify(name) {
-        const n = document.createElement('div');
-        n.style = `
-            background: #060b1a; border: 1px solid #FFD700; color: #fff;
-            padding: 12px 20px; border-radius: 12px; font-family: 'Inter', sans-serif;
-            font-size: 13px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            animation: foxPop 0.3s ease;
-        `;
-        n.innerHTML = `<span style="color:#FFD700">🦊 FOX ACTIVE:</span> ${name}`;
+    pushNotification(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'cyber-toast';
+        toast.innerHTML = `<span style="color: #FFD700; margin-right: 10px;">⚡</span> [NODE]: ${msg}`;
         
-        document.getElementById('fox-notifier').appendChild(n);
+        const root = document.getElementById('cyber-notif-root');
+        root.appendChild(toast);
+        
         setTimeout(() => {
-            n.style.opacity = '0';
-            setTimeout(() => n.remove(), 500);
-        }, 2500);
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(50px)';
+            toast.style.transition = 'all 0.5s ease';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
     }
 };
 
-// Стили для анимации появления
-const foxStyles = document.createElement('style');
-foxStyles.innerHTML = `
-    @keyframes foxPop { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
-`;
-document.head.appendChild(foxStyles);
+// INITIALIZE SYSTEM
+setTimeout(() => AurumFoxCyberEngine.init(), 800);
 
-// Поехали!
-AurumFoxSmartBlock.init();
