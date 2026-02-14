@@ -402,82 +402,6 @@ async function updateStakingAndBalanceUI() {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-async function fetchUserStakingData() {
-    if (!appState.walletPublicKey || !appState.connection) return;
-
-    try {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userPDA = await getUserStakingPDA(appState.walletPublicKey);
-        
-        // Проверка: загружена ли библиотека корректно
-        if (!program.account || !program.account.userStakingAccount) {
-            console.error("❌ Anchor Account 'userStakingAccount' not found in IDL. Check casing.");
-            return;
-        }
-
-        // ВАЖНО: для zero_copy используем .fetch()
-        const stakingData = await program.account.userStakingAccount.fetch(userPDA);
-
-        if (stakingData) {
-            appState.userStakingData = {
-                stakedAmount: BigInt(stakingData.stakedAmount.toString()),
-                // Суммируем награды как в вашем Rust коде: rewards_to_claim + pending_rewards_due_to_limit
-                rewards: BigInt(stakingData.rewardsToClaim.toString()) + BigInt(stakingData.pendingRewardsDueToLimit.toString()),
-                lockupEndTime: Number(stakingData.lockupEndTime),
-                poolIndex: stakingData.poolIndex,
-                lending: BigInt(stakingData.lending.toString()),
-                lastUpdate: Number(stakingData.lastUpdateTime)
-            };
-            console.log("✅ Data sync success:", appState.userStakingData);
-        }
-    } catch (e) {
-        if (e.message.includes("Account does not exist")) {
-             console.log("ℹ️ User staking account not created yet.");
-             appState.userStakingData = { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n };
-        } else {
-             console.error("❌ Parsing Error:", e);
-        }
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
 // Поиск основного PDA пула (если нужно для системных вызовов)
 async function getPoolPDA() {
     const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
@@ -486,84 +410,6 @@ async function getPoolPDA() {
     );
     return pda;
 }
-
-async function handleStakeAfox() {
-    const btn = uiElements.stakeAfoxBtn;
-    const amountStr = uiElements.stakeAmountInput.value;
-    const poolIndex = parseInt(uiElements.poolSelector?.value || "0");
-
-    if (!amountStr || parseFloat(amountStr) <= 0) {
-        showNotification("Enter a valid amount", "error");
-        return;
-    }
-
-    await executeSmartActionWithFullEffects(btn, {
-        name: "Staking",
-        msg: "Success!",
-        fn: async () => {
-            const amount = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
-            const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-            const userPDA = await getUserStakingPDA(appState.walletPublicKey);
-            
-            // 1. Проверяем, существует ли аккаунт пользователя в блокчейне
-            const accountInfo = await appState.connection.getAccountInfo(userPDA);
-            let transaction = new window.solanaWeb3.Transaction();
-
-            // 2. Если аккаунта нет, добавляем инструкцию инициализации
-            if (!accountInfo) {
-                console.log("🆕 Инициализация нового аккаунта стейкинга...");
-                const initIx = await program.methods
-                    .initializeUserStake(poolIndex) // В Rust: pub fn initialize_user_stake
-                    .accounts({
-                        poolState: AFOX_POOL_STATE_PUBKEY,
-                        userStaking: userPDA,
-                        owner: appState.walletPublicKey,
-                        rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                        systemProgram: SYSTEM_PROGRAM_ID,
-                        clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                    })
-                    .instruction();
-                transaction.add(initIx);
-            }
-
-            // 3. Добавляем инструкцию депозита
-            const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
-                [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            ).then(res => res[0]);
-
-            const depositIx = await program.methods
-                .deposit(new window.anchor.BN(amount.toString()))
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    userStaking: userPDA,
-                    owner: appState.walletPublicKey,
-                    userSourceAta: userAta,
-                    vault: AFOX_POOL_VAULT_PUBKEY,
-                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                })
-                .instruction();
-            transaction.add(depositIx);
-
-            // 4. Отправляем всё одним пакетом
-            const signature = await appState.provider.sendAndConfirm(transaction);
-            console.log("✅ Транзакция подтверждена:", signature);
-            return signature;
-        }
-    });
-}
-
-
-
-
-
-
-
-
-
-
 
 /**
  * Получает динамический APR на основе общего стейкинга в пуле.
@@ -610,8 +456,6 @@ function getAnchorProgram(programId, idl) {
     return new (window.anchor.Program || window.Anchor.Program)(idl, programId, provider);
 }
 
-
-
 /**
  * Определяет количество знаков после запятой для токена.
  */
@@ -619,6 +463,177 @@ function getTokenDecimals(mintAddress) {
     if (mintAddress.equals(GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd)) return AFOX_DECIMALS;
     return 6; // По умолчанию для SOL и других
 }
+
+
+
+
+
+
+async function connectWallet() {
+    if (window.solana) {
+        wallet = window.solana;
+        await wallet.connect();
+        const connection = new Connection("https://api.mainnet-beta.solana.com"); // или devnet
+        provider = new anchor.AnchorProvider(connection, wallet, {});
+        // Загрузи IDL здесь: program = new anchor.Program(idl, programId, provider);
+        console.log("Wallet Connected:", wallet.publicKey.toString());
+    }
+}
+
+// 2. Отключение
+async function disconnectWallet() {
+    if (wallet) {
+        await wallet.disconnect();
+        console.log("Disconnected");
+    }
+}
+
+// 3. Проверка баланса (SOL и AFOX)
+async function checkBalance() {
+    const solBalance = await provider.connection.getBalance(wallet.publicKey);
+    const poolState = await program.account.poolState.fetch(poolStateAddress); // poolStateAddress - адрес твоего PDA пула
+    const afoxMint = poolState.rewardMint;
+    const userAta = await getAssociatedTokenAddress(afoxMint, wallet.publicKey);
+    const tokenBalance = await provider.connection.getTokenAccountBalance(userAta);
+    console.log(`SOL: ${solBalance / 1e9}, AFOX: ${tokenBalance.value.uiAmount}`);
+}
+
+// --- БЛОК 2: СТЕЙКИНГ ---
+
+// 4. Одобрение (Approve) - В SPL токене на Solana технически делается через Delegate, 
+// но чаще всего мы просто подписываем транзакцию перевода в Vault контракта.
+async function approveAFOX() {
+    console.log("В Solana Anchor аппрув встроен в логику передачи аккаунтов. Готово к стейкингу.");
+}
+
+// 5. Стейкинг
+async function stakeAFOX(amount, poolIndex) {
+    const [userStakeAccount] = PublicKey.findProgramAddressSync(
+        [Buffer.from("user_stake"), poolStateAddress.toBuffer(), wallet.publicKey.toBuffer(), Buffer.from([poolIndex])],
+        programId
+    );
+
+    await program.methods.deposit(poolIndex, new anchor.BN(amount))
+        .accounts({
+            poolState: poolStateAddress,
+            userStaking: userStakeAccount,
+            owner: wallet.publicKey,
+            vault: poolVault,
+            stMint: stMintAddress,
+            userSourceAta: userAta,
+            userStAta: userStAta,
+            tokenProgram: TOKEN_PROGRAM_ID,
+        }).rpc();
+}
+
+// 6. Сбор профита (Предварительный расчет)
+async function collectProfit() {
+    console.log("Профит рассчитывается автоматически в функции __sync_pool_and_user на контракте.");
+}
+
+// 7. Получение наград на кошелек
+async function claimRewards(poolIndex) {
+    await program.methods.claimRewards(poolIndex)
+        .accounts({
+            poolState: poolStateAddress,
+            userStaking: userStakeAccount,
+            owner: wallet.publicKey,
+            // ... остальные аккаунты из твоего #[derive(Accounts)] ClaimRewards
+        }).rpc();
+}
+
+// 8. Вывод из стейка (с логикой штрафа)
+async function unstakeAFOX(poolIndex, amount) {
+    await program.methods.unstake(poolIndex, new anchor.BN(amount))
+        .accounts({
+            poolState: poolStateAddress,
+            user: userStakeAccount,
+            owner: wallet.publicKey,
+            // ... аккаунты для штрафов (daoTreasury, adminFeeVault)
+        }).rpc();
+}
+
+// 9. Получить дату разблокировки
+async function getLockPeriod(poolIndex) {
+    const userAccount = await program.account.userStakingAccount.fetch(userStakeAccount);
+    const date = new Date(userAccount.lockupEndTime.toNumber() * 1000);
+    console.log("Locked until:", date.toLocaleString());
+    return date;
+}
+
+// --- БЛОК 3: ЛЕНДИНГ (LENDING) ---
+
+// 10. Поставка активов (Обеспечение)
+async function supplyAssets(amount) {
+    await program.methods.collateralizeLending(new anchor.BN(amount))
+        .accounts({
+            poolState: poolStateAddress,
+            userStaking: userStakeAccount,
+            lendingAuthority: wallet.publicKey,
+        }).rpc();
+}
+
+// 11. Вывод из обеспечения
+async function withdrawSupply(amount) {
+    await program.methods.decollateralizeLending(new anchor.BN(amount))
+        .accounts({
+            poolState: poolStateAddress,
+            userStaking: userStakeAccount,
+            lendingAuthority: wallet.publicKey,
+        }).rpc();
+}
+
+// 12. Взять взаймы SOL
+async function borrowSOL(amount) {
+    console.log("Эта функция должна вызываться на твоем ВНЕШНЕМ контракте лендинга, используя лимиты из нашего контракта.");
+}
+
+// 13. Погасить заем
+async function repayLoan(amount) {
+    console.log(`Погашение займа на сумму ${amount} SOL`);
+}
+
+// 14. Закрыть позицию
+async function repayAndCloseLoan() {
+    await withdrawSupply(0); // Пример обнуления обеспечения
+}
+
+// --- БЛОК 4: УПРАВЛЕНИЕ (DAO) ---
+
+// 15. Создать предложение
+async function createNewProposal(newRate) {
+    await program.methods.proposeRewardRate(new anchor.BN(newRate))
+        .accounts({
+            poolState: poolStateAddress,
+            governanceAuthority: wallet.publicKey,
+        }).rpc();
+}
+
+// 16. Голосовать ЗА
+async function voteFor(proposalId) {
+    console.log(`Голосование ЗА предложение ${proposalId}. В твоем контракте это вызов методов управления.`);
+}
+
+// 17. Голосовать ПРОТИВ
+async function voteAgainst(proposalId) {
+    console.log(`Голосование ПРОТИВ предложения ${proposalId}`);
+}
+
+// 18. Исполнить предложение (через 48 часов)
+async function executeProposal() {
+    await program.methods.applyConfigChange()
+        .accounts({
+            poolState: poolStateAddress,
+            governanceAuthority: wallet.publicKey,
+        }).rpc();
+}
+
+
+
+
+
+
+
 
 
 
