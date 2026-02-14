@@ -611,89 +611,25 @@ async function executeProposal() {
         }).rpc();
 }
 
-/**
- * 👑 AURUM FOX: SUPREME AUTONOMOUS CORE
- * Полная автономия: исправляет ошибки имен и обновляет балансы
- */
-
-window.AurumDisplayCore = {
-    // Автоматический поиск ВСЕХ элементов, где может быть адрес или баланс
-    findTargets() {
-        return document.querySelectorAll(`
-            .user-balance, #wallet-address-display, .wallet-label, 
-            [data-fox-category="HEADER/WALLET"], .afox-amount, 
-            #connect-btn-text, .sol-balance
-        `);
-    },
-
-    // Главная логика визуала
-    sync(publicKey) {
-        const isConnected = !!publicKey;
-        const address = isConnected ? publicKey.toString() : null;
-        const shortAddr = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : "Connect Wallet";
-
-        this.findTargets().forEach(el => {
-            el.style.transition = "all 0.4s ease";
-            
-            // Если это кнопка в шапке
-            if (el.tagName === 'BUTTON' || el.dataset.foxCategory === "HEADER/WALLET") {
-                el.innerHTML = isConnected ? `🦊 ${shortAddr}` : "🦊 Connect Wallet";
-                if (isConnected) {
-                    el.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
-                    el.style.color = "#000";
-                    el.style.boxShadow = "0 0 20px rgba(0, 255, 127, 0.4)";
-                } else {
-                    el.style.background = "";
-                    el.style.color = "";
-                    el.style.boxShadow = "";
-                }
-            } else {
-                // Если это текстовое поле (адрес или баланс)
-                el.innerText = isConnected ? shortAddr : (el.innerText.includes('AFOX') ? "0.00 AFOX" : "Not Connected");
-                if (isConnected) el.style.color = "#FFD700"; // Золотой статус
-            }
-        });
-    }
-};
-
-// --- АВТОМАТИЧЕСКИЕ МОСТЫ (ФИКСЯТ ОШИБКИ ИЗ КОНСОЛИ) ---
-
-// 1. Фикс несовпадения имен токена (самый важный фикс!)
-if (typeof AFOX_OFFICIAL_KEYS !== 'undefined') {
-    window.AFOX_TOKEN_MINT_ADDRESS = new window.solanaWeb3.PublicKey(AFOX_OFFICIAL_KEYS.TOKEN_MINT);
-}
-
-// 2. Глобальный хендлер ключа
-window.handlePublicKeyChange = function(pubKey) {
-    if (window.appState) window.appState.walletPublicKey = pubKey;
-    window.AurumDisplayCore.sync(pubKey);
-    
-    // Если есть функция обновления стейкинга — запускаем
-    if (pubKey && typeof updateStakingAndBalanceUI === 'function') {
-        updateStakingAndBalanceUI();
-    }
-};
-
-// 3. Та самая функция, которую требовала ошибка ReferenceError
-window.updateWalletDisplay = function(address) {
-    window.AurumDisplayCore.sync(address);
-};
-
-console.log("%c[ROYAL CORE]: Autonomous Display Active & ReferenceErrors Fixed.", "color: #00ff7f; font-weight: bold;");
-
-
 
 
 
 
 
 /**
- * 🦊 AURUM FOX: SMART AUTONOMOUS DISPLAY
- * Автоматический поиск элементов, фикс ошибок и люксовый визуал
+ * 👑 AURUM FOX: ULTIMATE INTEGRATED CORE
+ * Объединено: Фикс ошибок + Люксовый визуал + Автономный поиск элементов
  */
 
+// 1. Инициализация стейта (если еще нет)
+window.appState = window.appState || {
+    walletPublicKey: null,
+    provider: null,
+    userBalances: { SOL: 0n, AFOX: 0n }
+};
+
 window.AurumDisplayCore = {
-    // Автоматический поиск всех элементов баланса и адреса на странице
+    // Умный поиск: находит всё от кнопок до простых текстовых меток
     findTargets() {
         return document.querySelectorAll(`
             .user-balance, 
@@ -701,78 +637,96 @@ window.AurumDisplayCore = {
             .wallet-label, 
             [data-fox-category="HEADER/WALLET"],
             .afox-amount,
-            #connect-btn-text
+            #connect-btn-text,
+            .sol-balance
         `);
     },
 
-    // Главная "умная" функция обновления
+    // Единая функция синхронизации визуала
     sync(publicKey) {
         const isConnected = !!publicKey;
         const address = isConnected ? publicKey.toString() : null;
         const shortAddr = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : "Connect Wallet";
 
-        console.log(`%c[AUTONOMOUS SYNC]: ${isConnected ? 'LINKED' : 'DISCONNECTED'}`, 
+        console.log(`%c[FOX SYNC]: ${isConnected ? 'CONNECTED' : 'DISCONNECTED'}`, 
             `color: ${isConnected ? '#00ff7f' : '#ff4b2b'}; font-weight: bold;`);
 
         this.findTargets().forEach(el => {
-            // Эффект "Королевского проявления"
+            // Эффект плавного "проявления"
             el.style.transition = "all 0.6s cubic-bezier(0.23, 1, 0.32, 1)";
-            el.style.filter = "blur(5px)";
-            el.style.opacity = "0";
+            el.style.filter = "blur(4px)";
+            el.style.opacity = "0.5";
 
             setTimeout(() => {
-                // Умная замена текста
+                // Логика замены контента
                 if (el.tagName === 'BUTTON' || el.dataset.foxCategory === "HEADER/WALLET") {
                     el.innerHTML = isConnected ? `🦊 ${shortAddr}` : "🦊 Connect Wallet";
-                } else {
-                    el.innerText = isConnected ? shortAddr : (el.classList.contains('user-balance') ? "0.00 AFOX" : "Not Connected");
-                }
-
-                // Козырный стайлинг
-                if (isConnected) {
-                    el.style.color = "#FFD700"; // Золото
-                    el.style.textShadow = "0 0 12px rgba(255, 215, 0, 0.5)";
-                    if (el.tagName === 'BUTTON') {
+                    
+                    // Стиль кнопки
+                    if (isConnected) {
                         el.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
                         el.style.color = "#000";
+                        el.style.boxShadow = "0 0 15px rgba(0, 255, 127, 0.4)";
+                    } else {
+                        el.style.background = "";
+                        el.style.color = "";
+                        el.style.boxShadow = "";
                     }
                 } else {
-                    el.style.color = "";
-                    el.style.textShadow = "";
-                    el.style.background = "";
+                    // Логика для текстовых полей баланса
+                    if (el.innerText.includes('AFOX') || el.classList.contains('afox-amount')) {
+                        el.innerText = isConnected ? el.innerText : "0.00 AFOX";
+                    } else if (el.classList.contains('sol-balance')) {
+                        el.innerText = isConnected ? el.innerText : "0.00 SOL";
+                    } else {
+                        el.innerText = isConnected ? shortAddr : "Not Connected";
+                    }
+
+                    // Золотое свечение для активных данных
+                    if (isConnected) {
+                        el.style.color = "#FFD700";
+                        el.style.textShadow = "0 0 8px rgba(255, 215, 0, 0.4)";
+                    } else {
+                        el.style.color = "";
+                        el.style.textShadow = "";
+                    }
                 }
 
                 el.style.filter = "blur(0)";
                 el.style.opacity = "1";
-            }, 300);
+            }, 250);
         });
     }
 };
 
-// --- ФИКСЫ ДЛЯ КОНСОЛИ (ТЕПЕРЬ ОШИБОК НЕ БУДЕТ) ---
+// --- ГЛОБАЛЬНЫЕ МОСТЫ (УБИРАЮТ ОШИБКИ В КОНСОЛИ) ---
 
+// Исправляем несовпадение имен переменной минта
+if (typeof AFOX_OFFICIAL_KEYS !== 'undefined' && window.solanaWeb3) {
+    window.AFOX_TOKEN_MINT_ADDRESS = new window.solanaWeb3.PublicKey(AFOX_OFFICIAL_KEYS.TOKEN_MINT);
+}
+
+// Единый хендлер изменения ключа
 window.handlePublicKeyChange = function(pubKey) {
-    if (window.appState) window.appState.walletPublicKey = pubKey;
+    window.appState.walletPublicKey = pubKey;
     window.AurumDisplayCore.sync(pubKey);
-    
-    // Авто-апдейт стейкинга, если он есть
+
+    // Авто-апдейт балансов и стейкинга через твой модуль данных
     if (pubKey && typeof updateStakingAndBalanceUI === 'function') {
         updateStakingAndBalanceUI();
     }
 };
 
-// Та самая функция из ошибки "not defined"
+// Фикс ошибки "updateWalletDisplay is not defined"
 window.updateWalletDisplay = function(address) {
-    window.AurumDisplayCore.sync(address);
+    window.handlePublicKeyChange(address);
 };
 
-// Инициализация глобального стейта, чтобы система не падала
-window.appState = window.appState || {
-    walletPublicKey: null,
-    provider: null
-};
+console.log("%c[ROYAL SYSTEM]: Autonomous Core v11.0 Ready. Conflicts Resolved.", "color: #FFD700; font-weight: bold;");
 
-console.log("%c[SYSTEM]: Autonomous Display Core Ready.", "color: #FFD700; font-weight: bold;");
+
+
+
 
 
 
