@@ -1374,10 +1374,9 @@ window.addEventListener('load', () => {
             
 
 // ============================================================
-// 👑 AURUM FOX: LUXE ENGINE v7.5 - FINAL SYNC
+// 👑 AURUM FOX: LUXE ENGINE v7.6 - FINAL SYNC (MAX & REFUND)
 // ============================================================
 
-// Глобальная инициализация движка в самом начале блока
 window.AurumFoxEngine = {
     isWalletConnected: false,
     walletAddress: null,
@@ -1389,18 +1388,16 @@ window.AurumFoxEngine = {
         if (typeof showFoxToast === 'function') {
             showFoxToast(msg, type.toLowerCase() === 'success' ? 'success' : 'error');
         } else {
-            // Резервный лог, если тосты еще не подгрузились
             alert(`${type}: ${msg}`);
         }
     },
 
     init() {
         console.clear();
-        console.log("%c👑 AURUM FOX ENGINE v7.5 - LUXE ACTIVE", "color: #FFD700; font-size: 16px; font-weight: bold;");
+        console.log("%c👑 AURUM FOX ENGINE v7.6 - LUXE ACTIVE", "color: #FFD700; font-size: 16px; font-weight: bold;");
         this.injectGlobalLuxeStyles();
         this.scanAndCalibrate();
-        
-        // Синхронизация статуса кошелька
+
         const saved = localStorage.getItem('fox_sol_addr');
         if (saved) {
             this.walletAddress = saved;
@@ -1415,6 +1412,10 @@ window.AurumFoxEngine = {
             "initialize-user-stake-btn": "STAKING_INIT",
             "deposit-btn": "STAKING_DEPOSIT",
             "unstake-btn": "STAKING_WITHDRAW",
+            // ИНТЕГРИРОВАНО: Две кнопки MAX и Refund
+            "stake-max-btn": "STAKE_MAX_ACTION",     // ПЕРВАЯ кнопка (Депозит)
+            "unstake-max-btn": "UNSTAKE_MAX_ACTION", // ВТОРАЯ кнопка (Вывод)
+            "refund-soul-btn": "STAKING_CLOSE",      // Кнопка Close Account
             "claim-all-rewards-btn": "REWARDS_CLAIM",
             "claim-all-btn-luxe": "REWARDS_CLAIM",
             "collateralize-btn": "LENDING_COLLATERAL",
@@ -1423,18 +1424,19 @@ window.AurumFoxEngine = {
             "repay-btn": "LENDING_REPAY"
         };
 
-        const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn');
+        // Ищем кнопки по ID и классам, включая новые селекторы для MAX и Refund
+        const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn, #refund-soul-btn, #unstake-max-btn, #stake-max-btn');
         targets.forEach((el) => {
             if (el.dataset.foxSynced) return;
             let category = KEY_BUTTONS[el.id] || "GENERAL_INTERFACE";
             el.dataset.foxSynced = "true";
-            
+
             el.addEventListener('click', async (e) => {
                 if (el.id === 'connectWalletBtn') {
                     e.preventDefault();
                     if (typeof toggleWalletAction === 'function') await toggleWalletAction();
                 } else {
-                    if (el.tagName === 'BUTTON') e.preventDefault();
+                    if (el.tagName === 'BUTTON' || el.id.includes('btn')) e.preventDefault();
                     await this.handleInteraction(el, category);
                 }
             });
@@ -1448,8 +1450,36 @@ window.AurumFoxEngine = {
         el.innerHTML = `<span class="fox-loader"></span> SYNCING...`;
 
         try {
-            // Вызов функций из верхней части твоего файла
             switch(category) {
+                case "STAKE_MAX_ACTION":
+                    // ПЕРВАЯ кнопка MAX (Баланс кошелька -> Инпут Stake)
+                    if (window.appState && window.appState.userBalances) {
+                        const walletBal = formatBigInt(window.appState.userBalances.afox, AFOX_DECIMALS);
+                        const depositInput = document.getElementById('stake-input-amount');
+                        if (depositInput) {
+                            depositInput.value = walletBal;
+                            this.notify(`Wallet Balance Set: ${walletBal}`, "SUCCESS");
+                        }
+                    }
+                    break;
+
+                case "UNSTAKE_MAX_ACTION":
+                    // ВТОРАЯ кнопка MAX (Стейк из контракта -> Инпут Unstake)
+                    if (window.appState && window.appState.userStakingData) {
+                        const stakedBal = formatBigInt(window.appState.userStakingData.stakedAmount, AFOX_DECIMALS);
+                        const withdrawInput = document.getElementById('unstake-input-amount');
+                        if (withdrawInput) {
+                            withdrawInput.value = stakedBal;
+                            this.notify(`Staked Amount Set: ${stakedBal}`, "SUCCESS");
+                        }
+                    }
+                    break;
+
+                case "STAKING_CLOSE":
+                    // Кнопка Refund SOL
+                    if (typeof window.refundSoulAccount === 'function') await window.refundSoulAccount();
+                    break;
+
                 case "STAKING_INIT":
                     if (typeof window.createStakingAccount === 'function') await window.createStakingAccount(0);
                     break;
@@ -1475,7 +1505,13 @@ window.AurumFoxEngine = {
                     if (typeof window.executeRepay === 'function') await window.executeRepay("0");
                     break;
             }
-            el.innerHTML = `✅ DONE`;
+            
+            // Фидбек: для кнопок MAX не пишем DONE, чтобы не менять их вид
+            if (!category.includes('MAX')) {
+                el.innerHTML = `✅ DONE`;
+            } else {
+                el.innerHTML = originalContent;
+            }
         } catch (err) {
             console.error("TX Error:", err);
             el.innerHTML = `❌ FAILED`;
@@ -1485,7 +1521,7 @@ window.AurumFoxEngine = {
         setTimeout(() => {
             el.innerHTML = originalContent;
             el.dataset.loading = "false";
-        }, 2000);
+        }, 1500);
     },
 
     injectGlobalLuxeStyles() {
@@ -1501,5 +1537,5 @@ window.AurumFoxEngine = {
     }
 };
 
-// Запуск
+// Запуск движка
 setTimeout(() => window.AurumFoxEngine.init(), 100);
