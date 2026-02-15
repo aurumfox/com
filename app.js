@@ -646,28 +646,45 @@ window.unstakeAfox = async function() {
 window.claimAllRewards = async function() {
     try {
         const program = await getProgram();
+        const userPublicKey = program.provider.wallet.publicKey;
+        const poolIndex = 0; // Индекс пула, с которого забираем награды
+
+        // Находим PDA аккаунта стейкинга пользователя
         const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), window.solana.publicKey.toBuffer(), Buffer.from([0])], 
+            [
+                Buffer.from("user_stake"), 
+                AFOX_POOL_STATE_PUBKEY.toBuffer(), 
+                userPublicKey.toBuffer(), 
+                Buffer.from([poolIndex])
+            ], 
             program.programId
         );
+
         AurumFoxEngine.notify("COLLECTING REWARDS...", "WAIT");
-        await program.methods.claimRewards(0).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            user: pda,
-            owner: window.solana.publicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            adminFeeVault: ADMIN_FEE_VAULT_PUBKEY,
-            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-            userRewardsAta: USER_REWARD_ATA,
-            userStAta: USER_ST_TOKEN_ATA,
-            stMint: AFOX_ST_MINT_ADDRESS,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
+
+        // Вызываем метод claim_rewards (согласно #[derive(Accounts)] pub struct ClaimRewards)
+        await program.methods
+            .claimRewards(poolIndex)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: pda, // В Rust структуре ClaimRewards это поле называется user_staking
+                owner: userPublicKey,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                adminFeeVault: ADMIN_FEE_VAULT_PUBKEY,
+                userRewardsAta: USER_REWARD_ATA,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
         AurumFoxEngine.notify("REWARDS COLLECTED!", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify("CLAIM FAILED", "FAILED"); }
+    } catch (e) {
+        console.error("Claim Error:", e);
+        AurumFoxEngine.notify("CLAIM FAILED", "FAILED");
+    }
 };
+
 
 
 
