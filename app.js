@@ -638,18 +638,18 @@ const AurumFoxEngine = {
     KEY_BUTTONS: {
         // Wallet
         "connectWalletBtn": "HEADER/WALLET",
-        
+
         // Staking
         "initialize-user-stake-btn": "STAKING_INIT",
         "deposit-btn": "STAKING_DEPOSIT",
         "unstake-btn": "STAKING_WITHDRAW",
         "max-stake-btn": "INTERFACE_HELPER",
         "close-staking-account-btn": "STAKING_CLOSE",
-        
+
         // Rewards
         "claim-all-rewards-btn": "REWARDS_CLAIM", // Кнопка в статистике
         "claim-all-btn-luxe": "REWARDS_CLAIM",    // Кнопка "Claim All" в списке пулов
-        
+
         // Lending
         "collateralize-btn": "LENDING_COLLATERAL",
         "decollateralize-btn": "LENDING_DECOLLATERAL",
@@ -690,57 +690,23 @@ const AurumFoxEngine = {
         }
     },
 
+    // ВНИМАНИЕ: Эта функция теперь просто вызывает внешний toggleWalletAction для удобства
     async toggleWallet() {
-        const btn = document.getElementById('connectWalletBtn');
-        if (!btn || btn.dataset.loading === "true") return;
-        btn.dataset.loading = "true";
-
-        try {
-            const provider = window.solana || window.phantom?.solana;
-
-            if (!this.isWalletConnected) {
-                if (!provider) {
-                    this.notify("Wallet not found!", "ERROR");
-                    window.open("https://phantom.app/", "_blank");
-                    return;
-                }
-                btn.innerHTML = `<span class="fox-loader"></span> Connecting...`;
-                await provider.connect();
-                this.handleRealWalletSync();
-                this.notify("Solana Mainnet Linked", "SUCCESS");
-            } else {
-                if (provider) await provider.disconnect();
-                this.isWalletConnected = false;
-                btn.innerHTML = `🦊 Connect Wallet`;
-                btn.style.background = "";
-                btn.style.color = "";
-                this.notify("Session Terminated", "WALLET_DISCONNECTED");
-            }
-        } catch (err) {
-            this.notify("Connection Rejected", "CANCELLED");
-            btn.innerHTML = `🦊 Connect Wallet`;
-        } finally {
-            btn.dataset.loading = "false";
+        if (typeof toggleWalletAction === 'function') {
+            await toggleWalletAction();
         }
     },
 
     scanAndCalibrate() {
-        // Сканируем вообще все кнопки и ссылки
         const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn');
-        
         targets.forEach((el) => {
             if (el.dataset.foxSynced) return;
-
-            // 1. Пытаемся определить категорию по ID из нашего словаря KEY_BUTTONS
             let category = this.KEY_BUTTONS[el.id];
-
-            // 2. Если ID нет, пробуем определить по классу (для кнопок без ID)
             if (!category) {
                 if (el.classList.contains('claim-btn-luxe')) category = "REWARDS_CLAIM";
                 else if (el.classList.contains('discord-btn')) category = "SOCIAL";
                 else category = "GENERAL_INTERFACE";
             }
-
             this.syncNode(el, category);
         });
     },
@@ -748,54 +714,38 @@ const AurumFoxEngine = {
     syncNode(el, category) {
         el.dataset.foxSynced = "true";
         el.dataset.foxCategory = category;
-
         el.addEventListener('click', async (e) => {
-            // Если это кнопка кошелька - отменяем стандартный переход (если это <a>)
             if (el.id === 'connectWalletBtn') {
                 e.preventDefault();
                 await this.toggleWallet();
                 return;
             }
-
-            // Для кнопок внутри форм/стейкинга тоже гасим дефолт
             if (el.tagName === 'BUTTON') e.preventDefault();
-            
             await this.handleInteraction(el, category);
         });
     },
 
     async handleInteraction(el, category) {
         if (el.dataset.loading === "true") return;
-        
         const label = (el.innerText || "Action").trim().split('\n')[0];
         const originalContent = el.innerHTML;
-        
         el.dataset.loading = "true";
         this.triggerVisualPulse(el);
-        
-        // Визуальный отклик
         el.innerHTML = `<span class="fox-loader"></span> Processing...`;
         this.notify(`Executing: ${label}`, category);
-
         try {
-            // ИНТЕГРАЦИЯ: Здесь вызываются функции из твоего предыдущего блока JavaScript
             if (category === "REWARDS_CLAIM") {
                 if (typeof claimAllRewards === 'function') await claimAllRewards();
             } else if (category === "STAKING_DEPOSIT") {
                 this.notify("Check your wallet for approval", "STAKING");
-                // if (typeof stakeAfox === 'function') await stakeAfox(...);
             }
-
-            // Имитация задержки сети для красоты
             await new Promise(r => setTimeout(r, 1000));
-
             el.innerHTML = `✅ Complete`;
             this.notify(`${label} confirmed on chain`, "SUCCESS");
         } catch (err) {
             this.notify("Transaction rejected", "FAILED");
             el.innerHTML = `❌ Failed`;
         }
-
         setTimeout(() => {
             el.innerHTML = originalContent;
             el.dataset.loading = "false";
@@ -856,14 +806,4 @@ const AurumFoxEngine = {
     }
 };
 
-// Запуск с небольшой задержкой, чтобы DOM успел прогрузиться
 setTimeout(() => AurumFoxEngine.init(), 500);
-
-
-
-
-
-
-
-
-
