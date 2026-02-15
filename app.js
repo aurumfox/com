@@ -620,6 +620,109 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 
+/**
+ * WALLET CONNECTION MODULE (SMART MOBILE EDITION)
+ * Исправлена проблема зависания на мобильных устройствах
+ */
+
+const syncWalletUI = (isConnected, address = null) => {
+    const btn = document.getElementById('connectWalletBtn');
+    if (!btn) return;
+
+    if (isConnected && address) {
+        const shortAddr = address.slice(0, 4) + "..." + address.slice(-4);
+        btn.innerHTML = `🦊 ${shortAddr}`;
+        btn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
+        btn.style.color = "#000";
+        btn.style.boxShadow = "0 0 15px rgba(0, 255, 127, 0.4)";
+    } else {
+        btn.innerHTML = `🦊 Connect Wallet`;
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.style.boxShadow = "";
+    }
+};
+
+async function toggleWalletAction() {
+    const btn = document.getElementById('connectWalletBtn');
+    if (!btn || btn.dataset.loading === "true") return;
+    
+    btn.dataset.loading = "true";
+    const provider = window.solana || window.phantom?.solana;
+
+    // Определяем мобилку
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    try {
+        if (!AurumFoxEngine.isWalletConnected) {
+            if (!provider) {
+                AurumFoxEngine.notify("Wallet not found!", "ERROR");
+                // Если мобилка и нет провайдера — кидаем в Deep Link Phantom
+                if (isMobile) {
+                    window.location.href = "https://phantom.app/ul/browse/" + window.location.host + window.location.pathname;
+                } else {
+                    window.open("https://phantom.app/", "_blank");
+                }
+                return;
+            }
+
+            btn.innerHTML = `<span class="fox-loader"></span> Connecting...`;
+            
+            // Запуск коннекта с принудительным фокусом
+            await provider.connect();
+            
+            const addr = provider.publicKey.toString();
+            AurumFoxEngine.walletAddress = addr;
+            AurumFoxEngine.isWalletConnected = true;
+            
+            syncWalletUI(true, addr);
+            AurumFoxEngine.notify("Linked Successfully", "SUCCESS");
+
+            // --- БЛОК АВТО-ВОЗВРАТА ---
+            if (isMobile) {
+                // Магия: если мы в мобильном браузере кошелька, принудительно обновляем стейт
+                // чтобы страница "проснулась" после апрува
+                window.focus();
+                setTimeout(() => {
+                   if (document.visibilityState === 'hidden') {
+                       // Если страница всё еще скрыта (кошелек не закрылся), пробуем "вытолкнуть"
+                       window.location.href = window.location.href; 
+                   }
+                }, 800);
+            }
+
+        } else {
+            if (provider) await provider.disconnect();
+            AurumFoxEngine.isWalletConnected = false;
+            AurumFoxEngine.walletAddress = null;
+            
+            syncWalletUI(false);
+            AurumFoxEngine.notify("Session Terminated", "WALLET_DISCONNECTED");
+        }
+    } catch (err) {
+        console.error("Connection error:", err);
+        AurumFoxEngine.notify("Connection Rejected", "CANCELLED");
+        syncWalletUI(false);
+        
+        // Если на мобилке ошибка "зависла", сбрасываем состояние через 1 сек
+        if (isMobile) {
+            setTimeout(() => { btn.dataset.loading = "false"; }, 1000);
+        }
+    } finally {
+        btn.dataset.loading = "false";
+    }
+}
+
+// Дополнительный "сторож" для мобилок: проверяет коннект при возврате на вкладку
+window.addEventListener('focus', async () => {
+    const provider = window.solana || window.phantom?.solana;
+    if (provider && provider.isConnected && !AurumFoxEngine.isWalletConnected) {
+        const addr = provider.publicKey.toString();
+        AurumFoxEngine.walletAddress = addr;
+        AurumFoxEngine.isWalletConnected = true;
+        syncWalletUI(true, addr);
+    }
+});
 
 
 
