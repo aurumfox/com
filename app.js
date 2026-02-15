@@ -427,23 +427,33 @@ async function getRobustConnection() {
     throw new Error("RPC_UNREACHABLE");
 }
 
+
 /**
  * 3. ОБРАБОТКА СМЕНЫ ПУБЛИЧНОГО КЛЮЧА
  */
 function handlePublicKeyChange(newPublicKey) {
-    if (appState.walletPublicKey?.toBase58() === newPublicKey?.toBase58()) return; // Защита от повторной обработки того же ключа
+    // Защита от повторной обработки того же ключа
+    if (appState.walletPublicKey?.toBase58() === newPublicKey?.toBase58()) return;
 
+    // Сброс данных при смене аккаунта, чтобы избежать визуальных багов
     appState.walletPublicKey = newPublicKey;
+    appState.userBalances = { SOL: 0n, AFOX: 0n }; 
+    
     updateWalletDisplay();
 
     if (newPublicKey) {
+        // Вызываем обновление балансов и данных стейкинга
+        fetchUserBalances();
         updateStakingAndBalanceUI();
+    } else {
+        console.log("🔌 Wallet disconnected");
     }
 }
 
+
 /**
  * 4. ПОЛУЧЕНИЕ БАЛАНСОВ (SOL + AFOX)
- * Объединено в один поток для экономии лимитов RPC.
+ * Используется параллельный запрос для минимизации задержек.
  */
 async function fetchUserBalances() {
     const pubkey = appState.walletPublicKey;
@@ -451,29 +461,37 @@ async function fetchUserBalances() {
 
     try {
         const connection = await getRobustConnection();
-        
-        // Запускаем оба запроса одновременно (параллельно)
+
+        // Запускаем запросы параллельно: SOL баланс и все аккаунты токена AFOX
         const [solBalance, tokenAccounts] = await Promise.all([
             connection.getBalance(pubkey),
-            connection.getParsedTokenAccountsByOwner(pubkey, { mint: AFOX_TOKEN_MINT_ADDRESS })
+            connection.getParsedTokenAccountsByOwner(pubkey, { 
+                mint: new solanaWeb3.PublicKey(AFOX_TOKEN_MINT_ADDRESS) 
+            })
         ]);
 
-        // Обновляем состояние SOL
+        // 1. Обновляем SOL (в контракте u64, здесь BigInt)
         appState.userBalances.SOL = BigInt(solBalance);
 
-        // Обновляем состояние AFOX
+        // 2. Обновляем AFOX (Reward Token)
+        // Проверяем первый найденный аккаунт (обычно это основной ATA)
         if (tokenAccounts.value.length > 0) {
-            const amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
-            appState.userBalances.AFOX = BigInt(amount);
+            const tokenAmount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
+            appState.userBalances.AFOX = BigInt(tokenAmount);
         } else {
             appState.userBalances.AFOX = 0n;
         }
 
-        console.log(`📊 Balances synced: ${formatBigInt(appState.userBalances.SOL, 9)} SOL | ${formatBigInt(appState.userBalances.AFOX, 6)} AFOX`);
+        console.log(`📊 Синк балансов: SOL: ${Number(appState.userBalances.SOL) / 1e9} | AFOX: ${Number(appState.userBalances.AFOX) / 1e6}`);
+        
+        // Триггер обновления интерфейса после получения данных
+        renderBalanceInUI(); 
+
     } catch (error) {
-        console.error("❌ Balance Fetch Error:", error);
+        console.error("❌ Ошибка при получении балансов:", error);
     }
 }
+
 
 /**
  * 5. ЕДИНЫЙ ОБРАБОТЧИК ОБНОВЛЕНИЯ UI
