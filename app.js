@@ -485,47 +485,117 @@ function getTokenDecimals(mintAddress) {
 
 
 
+
+
 window.createStakingAccount = async function(poolIndex = 0) {
     try {
         const program = await getProgram();
-        const provider = program.provider;
-        
-        // 1. Находим PDA пользователя правильно
-        // Семена: "user_stake" + Ключ Пула + Твой Ключ + Индекс Пула (1 байт)
         const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [
-                Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                provider.wallet.publicKey.toBuffer(),
-                Buffer.from([poolIndex]) // Используем переданный индекс
-            ],
+            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), program.provider.wallet.publicKey.toBuffer(), Buffer.from([poolIndex])],
             program.programId
         );
 
         AurumFoxEngine.notify("INITIALIZING...", "WAIT");
 
-        // 2. Вызываем метод контракта
         await program.methods
             .initializeUserStake(poolIndex)
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: pda,
-                owner: provider.wallet.publicKey,
+                userStaking: pda, // В IDL: userStaking
+                owner: program.provider.wallet.publicKey,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 systemProgram: window.solanaWeb3.SystemProgram.programId,
                 clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                // Rent больше не нужен явно, если используешь последние версии Anchor, 
-                // но в твоём Rust он не указан как обязательный в структуре InitializeUserStake
             })
             .rpc();
 
         AurumFoxEngine.notify("ACCOUNT READY!", "SUCCESS");
     } catch (e) {
-        console.error(e);
-        // Обработка ошибки 0x1770 (уже инициализирован)
         const isAlreadyActive = e.message.includes("0x1770") || e.message.includes("already in use");
         AurumFoxEngine.notify(isAlreadyActive ? "ALREADY ACTIVE" : "INIT FAILED", "FAILED");
     }
 };
+
+window.stakeAfox = async function() {
+    const val = document.getElementById('stake-input-amount')?.value;
+    if (!val || val <= 0) return AurumFoxEngine.notify("INVALID AMOUNT", "FAILED");
+
+    try {
+        const program = await getProgram();
+        const userPubKey = program.provider.wallet.publicKey;
+        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), userPubKey.toBuffer(), Buffer.from([0])],
+            program.programId
+        );
+
+        // ИСПРАВЛЕНИЕ: Anchor требует BN для u64
+        const amountBN = new anchor.BN(parseAmountToBigInt(val, AFOX_DECIMALS).toString());
+
+        AurumFoxEngine.notify("STAKING...", "WAIT");
+
+        // ВАЖНО: В твоем IDL метод deposit принимает только amount, poolIndex не указан как аргумент
+        await program.methods
+            .deposit(amountBN)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPda,
+                owner: userPubKey,
+                userSourceAta: await getATA(userPubKey, AFOX_TOKEN_MINT_ADDRESS), // Динамический поиск ATA
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        AurumFoxEngine.notify("STAKE SUCCESS!", "SUCCESS");
+    } catch (e) {
+        console.error(e);
+        AurumFoxEngine.notify("STAKE FAILED", "FAILED");
+    }
+};
+
+window.claimAllRewards = async function() {
+    try {
+        const program = await getProgram();
+        const userPubKey = program.provider.wallet.publicKey;
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), userPubKey.toBuffer(), Buffer.from([0])],
+            program.programId
+        );
+
+        AurumFoxEngine.notify("COLLECTING...", "WAIT");
+
+        await program.methods
+            .claimRewards()
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: pda,
+                owner: userPubKey,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                adminFeeVault: AFOX_POOL_VAULT_PUBKEY, // Если нет отдельного, используем волт
+                userRewardsAta: await getATA(userPubKey, AFOX_TOKEN_MINT_ADDRESS),
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        AurumFoxEngine.notify("REWARDS CLAIMED!", "SUCCESS");
+    } catch (e) {
+        AurumFoxEngine.notify("CLAIM FAILED", "FAILED");
+    }
+};
+
+// Хелпер для поиска ATA (чтобы не было undefined)
+async function getATA(owner, mint) {
+    const [address] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+        new window.solanaWeb3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
+    );
+    return address;
+}
+
 
 
 
