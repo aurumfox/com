@@ -671,44 +671,7 @@ window.createStakingAccount = async function(poolIndex = 0) {
     }
 };
 
-window.stakeAfox = async function() {
-    const val = document.getElementById('stake-input-amount')?.value;
-    if (!val || val <= 0) return AurumFoxEngine.notify("INVALID AMOUNT", "FAILED");
 
-    try {
-        const program = await getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), userPubKey.toBuffer(), Buffer.from([0])],
-            program.programId
-        );
-
-        // ИСПРАВЛЕНИЕ: Anchor требует BN для u64
-        const amountBN = new anchor.BN(parseAmountToBigInt(val, AFOX_DECIMALS).toString());
-
-        AurumFoxEngine.notify("STAKING...", "WAIT");
-
-        // ВАЖНО: В твоем IDL метод deposit принимает только amount, poolIndex не указан как аргумент
-        await program.methods
-            .deposit(amountBN)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPda,
-                owner: userPubKey,
-                userSourceAta: await getATA(userPubKey, AFOX_TOKEN_MINT_ADDRESS), // Динамический поиск ATA
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .rpc();
-
-        AurumFoxEngine.notify("STAKE SUCCESS!", "SUCCESS");
-    } catch (e) {
-        console.error(e);
-        AurumFoxEngine.notify("STAKE FAILED", "FAILED");
-    }
-};
 
 window.claimAllRewards = async function() {
     try {
