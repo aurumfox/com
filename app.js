@@ -485,54 +485,108 @@ function getTokenDecimals(mintAddress) {
 
 
 
-//1
-
-window.createStakingAccount = async function() {
+window.createStakingAccount = async function(poolIndex = 0) {
     try {
         const program = await getProgram();
+        const provider = program.provider;
+        
+        // 1. Находим PDA пользователя правильно
+        // Семена: "user_stake" + Ключ Пула + Твой Ключ + Индекс Пула (1 байт)
         const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), window.solana.publicKey.toBuffer(), Buffer.from([0])], 
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                provider.wallet.publicKey.toBuffer(),
+                Buffer.from([poolIndex]) // Используем переданный индекс
+            ],
             program.programId
         );
+
         AurumFoxEngine.notify("INITIALIZING...", "WAIT");
-        await program.methods.initializeUserStake(0).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: pda,
-            owner: window.solana.publicKey,
-            systemProgram: window.solanaWeb3.SystemProgram.programId,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
+
+        // 2. Вызываем метод контракта
+        await program.methods
+            .initializeUserStake(poolIndex)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: pda,
+                owner: provider.wallet.publicKey,
+                systemProgram: window.solanaWeb3.SystemProgram.programId,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                // Rent больше не нужен явно, если используешь последние версии Anchor, 
+                // но в твоём Rust он не указан как обязательный в структуре InitializeUserStake
+            })
+            .rpc();
+
         AurumFoxEngine.notify("ACCOUNT READY!", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify(e.message.includes("0x1770") ? "ALREADY ACTIVE" : "INIT FAILED", "FAILED"); }
+    } catch (e) {
+        console.error(e);
+        // Обработка ошибки 0x1770 (уже инициализирован)
+        const isAlreadyActive = e.message.includes("0x1770") || e.message.includes("already in use");
+        AurumFoxEngine.notify(isAlreadyActive ? "ALREADY ACTIVE" : "INIT FAILED", "FAILED");
+    }
 };
+
 
 
 
 window.stakeAfox = async function() {
     const val = document.getElementById('stake-input-amount')?.value;
     if (!val || val <= 0) return AurumFoxEngine.notify("INVALID AMOUNT", "FAILED");
+
     try {
         const program = await getProgram();
-        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), window.solana.publicKey.toBuffer(), Buffer.from([0])], 
+        const provider = program.provider;
+        const userPublicKey = provider.wallet.publicKey;
+
+        // Индекс пула (0 для начального пула)
+        const poolIndex = 0;
+
+        // Находим PDA для аккаунта стейкинга пользователя
+        // Сиды в контракте: [b"user_stake", pool_state_pubkey, owner_pubkey, [pool_index]]
+        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPublicKey.toBuffer(),
+                Buffer.from([poolIndex])
+            ],
             program.programId
         );
+
+        // Конвертация суммы в BigInt (с учетом децималов)
         const amountBN = new anchor.BN(parseAmountToBigInt(val, AFOX_DECIMALS).toString());
+
         AurumFoxEngine.notify("STAKING...", "WAIT");
-        await program.methods.deposit(0, amountBN).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: pda,
-            owner: window.solana.publicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            stMint: AFOX_ST_MINT_ADDRESS,
-            userSourceAta: USER_TOKEN_ATA,
-            userStAta: USER_ST_TOKEN_ATA,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
+
+        // Вызов метода deposit(pool_index, amount)
+        await program.methods
+            .deposit(poolIndex, amountBN)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPda,
+                owner: userPublicKey,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                stMint: AFOX_ST_MINT_ADDRESS,
+                userSourceAta: USER_TOKEN_ATA,
+                userStAta: USER_ST_TOKEN_ATA,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                // Clock обычно передается автоматически, если он есть в структуре Accounts
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
         AurumFoxEngine.notify("STAKE SUCCESS!", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify("STAKE FAILED", "FAILED"); }
+    } catch (e) {
+        console.error("Stake error:", e);
+        AurumFoxEngine.notify("STAKE FAILED", "FAILED");
+    }
 };
+
+
+
+
+
 
 
 
