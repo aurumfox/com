@@ -547,25 +547,59 @@ export async function decollateralize(program, poolStatePDA, userStakingPDA, amo
 }
 
 // 6. Для ID: "claim-all-rewards-btn" и "claim-all-btn-luxe" (Category: REWARDS_CLAIM_ALL)
-export async function claimAllRewards(program, poolIndices, userStakingPDAs, poolStatePDA, rewardVault, userRewardAccount) {
-    console.log("💰 Claiming All Rewards...");
-    const remainingAccounts = userStakingPDAs.map(pda => ({
-        pubkey: pda, isWritable: true, isSigner: false
-    }));
+async function claimAllRewards() {
+    try {
+        console.log("🚀 Claiming All Rewards...");
 
-    return await program.methods
-        .claimAllRewards(Buffer.from(poolIndices))
-        .accounts({
-            poolState: poolStatePDA,
-            rewardVault: rewardVault,
-            userRewardAccount: userRewardAccount,
-            owner: program.provider.wallet.publicKey,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        // ПРОВЕРКА: Получаем данные. Если их нет - выходим мягко, без ошибки map
+        const rewards = await getYourRewardsData(); 
+        
+        if (!rewards || rewards.length === 0) {
+            showFoxToast("NO REWARDS TO CLAIM", "error");
+            return;
+        }
+
+        // Если награды есть, вызываем метод контракта
+        // Используем индексы [0,1,2,3,4] как в твоем контракте
+        const tx = await program.methods
+            .claimAllRewards(Buffer.from([0, 1, 2, 3, 4]))
+            .accounts({
+                poolState: poolStateAddress,
+                owner: wallet.publicKey,
+                vault: vaultAddress,
+                adminFeeVault: adminFeeVaultAddress,
+                userRewardsAta: userRewardsAta,
+                rewardMint: rewardMintAddress,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            // Тут магия: передаем аккаунты, чтобы Solana знала откуда забирать
+            .remainingAccounts(rewards.map(r => ({
+                pubkey: r.pubkey,
+                isWritable: true,
+                isSigner: false
+            })))
+            .rpc();
+
+        showFoxToast("PROFIT COLLECTED!", "success");
+        console.log("Done! Tx:", tx);
+
+    } catch (err) {
+        console.error("❌ Ошибка в кнопке:", err);
+        showFoxToast("CLAIM FAILED", "error");
+    }
 }
+
+// 2. А вот так мы её оживляем в твоем init()
+// Просто добавь этот обработчик клика
+document.addEventListener('click', async (e) => {
+    // Проверяем ID кнопки из твоего скриншота
+    if (e.target.id === 'claim-all-rewards-btn' || e.target.id === 'claim-all-btn-luxe') {
+        await claimAllRewards();
+    }
+});
+
+
 
 // 7. Для ID: "collect-profit-btn" (Category: REWARDS_SINGLE)
 export async function collectProfitSingle(program, poolIndex, poolStatePDA, userStakingPDA, rewardVault, userRewardAccount) {
