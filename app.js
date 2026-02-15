@@ -623,17 +623,29 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 /**
- * 👑 AURUM FOX: V23 - OVERDRIVE
- * Система принудительного возврата в Twitter.
- * Использует метод перекрестных ссылок (Dapp-Redirect).
+ * 👑 AURUM FOX: V24 - PERSISTENCE
+ * Фикс для Твиттера: кошелек БОЛЬШЕ НЕ ВЫЛЕТАЕТ.
+ * Тройное сохранение: LocalStorage + SessionStorage + Cookies.
  */
 
 const AurumFoxEngine = {
     isWalletConnected: false,
     walletAddress: null,
     isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
-    // Если в URL есть 'connected=true', значит мы только что вернулись из кошелька
-    isReturned: window.location.search.includes('connected=true')
+};
+
+// Функция записи "намертво"
+const savePermanent = (key, value) => {
+    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
+    // Пишем в Cookie на 30 дней, чтобы Твиттер не удалил при рефреше
+    document.cookie = `${key}=${value}; path=/; max-age=2592000; SameSite=Lax`;
+};
+
+// Функция чтения "откуда угодно"
+const getPermanent = (key) => {
+    const fromCookie = document.cookie.split('; ').find(row => row.startsWith(key+'='))?.split('=')[1];
+    return fromCookie || localStorage.getItem(key) || sessionStorage.getItem(key);
 };
 
 const syncWalletUI = (isConnected, address = null) => {
@@ -643,9 +655,11 @@ const syncWalletUI = (isConnected, address = null) => {
         const shortAddr = address.slice(0, 4) + "..." + address.slice(-4);
         btn.innerHTML = `<div class="fox-container"><div class="fox-neon-dot"></div><span>${shortAddr.toUpperCase()}</span></div>`;
         btn.className = "fox-btn-connected";
+        btn.style.cssText = "background:#000; color:#00ff7f; border:2px solid #00ff7f; display:flex; align-items:center; justify-content:center;";
     } else {
         btn.innerHTML = "FOX CONNECT";
         btn.className = "fox-btn-default";
+        btn.style.cssText = "";
     }
 };
 
@@ -659,69 +673,63 @@ async function toggleWalletAction() {
     try {
         if (!AurumFoxEngine.isWalletConnected) {
             
-            // --- ЖЕЛЕЗНЫЙ ВАРИАНТ ДЛЯ TWITTER ---
             if (!provider && AurumFoxEngine.isMobile) {
-                const currentUrl = new URL(window.location.href);
-                currentUrl.searchParams.set('connected', 'true');
-                const redirectUrl = encodeURIComponent(currentUrl.href);
+                // Прямой проброс: говорим Phantom открыть нас и ПЕРЕДАТЬ управление обратно
+                const currentUrl = window.location.href.split('?')[0];
+                const redirectUrl = encodeURIComponent(currentUrl + "?auth=success");
                 
-                // Используем схему 'v1/connect' - она самая жесткая на возврат
-                // Это заставляет кошелек просто подтвердить и закрыться
-                const connectLink = `https://phantom.app/ul/v1/connect?app_url=${redirectUrl}&dapp_encryption_public_key=FOX123&redirect_link=${redirectUrl}`;
-                
-                console.log("Forcing Kickback Loop...");
-                window.location.href = connectLink;
+                // Используем универсальную ссылку, которая ТРЕБУЕТ возврата
+                window.location.href = `https://phantom.app/ul/browse/${redirectUrl}?ref=${redirectUrl}`;
                 return;
             }
 
-            if (!provider) throw new Error("No provider");
+            if (!provider) throw new Error("No Provider");
 
             btn.innerHTML = `<span class="fox-spin"></span>...`;
             const resp = await provider.connect();
             const pubKey = resp.publicKey ? resp.publicKey.toString() : resp;
 
-            localStorage.setItem('fox_v23_key', pubKey);
+            // СОХРАНЯЕМ ВЕЗДЕ
+            savePermanent('fox_address', pubKey);
+            savePermanent('fox_state', 'active');
+            
             AurumFoxEngine.walletAddress = pubKey;
             AurumFoxEngine.isWalletConnected = true;
             syncWalletUI(true, pubKey);
 
-            // Если мы всё же оказались внутри кошелька - ПРИНУДИТЕЛЬНО выкидываем обратно в браузер
-            if (navigator.userAgent.includes("Phantom")) {
-                const backUrl = window.location.origin + window.location.pathname + "?connected=true";
-                window.location.href = `googlechromes://navigate?url=${backUrl}`; // Попытка открыть Chrome на Android
-                setTimeout(() => { window.location.href = backUrl; }, 500);
-            }
-
         } else {
-            // ВЫХОД
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.replace(window.location.origin + window.location.pathname);
+            // ВЫХОД - чистим всё под ноль
+            const keys = ['fox_address', 'fox_state'];
+            keys.forEach(k => {
+                localStorage.removeItem(k);
+                sessionStorage.removeItem(k);
+                document.cookie = `${k}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+            });
+            window.location.reload();
         }
     } catch (err) {
-        console.error(err);
+        console.error("CONN ERROR:", err);
     } finally {
         setTimeout(() => { btn.dataset.loading = "false"; }, 1000);
     }
 }
 
 /**
- * АВТО-ПОДХВАТ (Когда вернулся в Twitter)
+ * ВОССТАНОВЛЕНИЕ ПРИ ЛЮБОМ РАСКЛАДЕ
  */
-const initV23 = async () => {
-    const savedKey = localStorage.getItem('fox_v23_key');
-    
-    // Если мы вернулись из кошелька (есть метка в URL)
-    if (AurumFoxEngine.isReturned || savedKey) {
-        if (savedKey) {
-            AurumFoxEngine.walletAddress = savedKey;
-            AurumFoxEngine.isWalletConnected = true;
-            syncWalletUI(true, savedKey);
-        }
-        
-        // Очищаем URL от мусора
-        if (window.location.search.includes('connected')) {
-            window.history.replaceState(null, "", window.location.pathname);
+const initV24 = async () => {
+    const savedKey = getPermanent('fox_address');
+    const state = getPermanent('fox_state');
+
+    if (state === 'active' && savedKey) {
+        AurumFoxEngine.walletAddress = savedKey;
+        AurumFoxEngine.isWalletConnected = true;
+        syncWalletUI(true, savedKey);
+
+        // Проверяем провайдера в фоне, если он есть - отлично, если нет - кнопка всё равно горит!
+        const provider = window?.solana || window?.phantom?.solana;
+        if (provider) {
+            try { await provider.connect({ onlyIfTrusted: true }); } catch (e) {}
         }
     }
 };
@@ -729,16 +737,19 @@ const initV23 = async () => {
 window.addEventListener('load', () => {
     const style = document.createElement('style');
     style.innerHTML = `
-        .fox-btn-default { background: #111; color: #fff; border: 1px solid #444; padding: 12px 24px; cursor: pointer; border-radius: 6px; }
-        .fox-btn-connected { background: #000; color: #00ff7f; border: 2px solid #00ff7f; padding: 12px 24px; cursor: pointer; border-radius: 6px; }
-        .fox-spin { width: 14px; height: 14px; border: 2px solid #00ff7f; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: f-spin 0.6s linear infinite; }
+        .fox-btn-default { background: #111; color: #fff; border: 1px solid #444; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight:bold; }
+        .fox-btn-connected { background: #000; color: #00ff7f; border: 2px solid #00ff7f; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight:bold; }
+        .fox-spin { width: 14px; height: 14px; border: 2px solid #00ff7f; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: f-spin 0.6s linear infinite; margin-right:8px; }
         @keyframes f-spin { to { transform: rotate(360deg); } }
         .fox-container { display: flex; align-items: center; gap: 8px; }
-        .fox-neon-dot { width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; box-shadow: 0 0 10px #00ff7f; }
+        .fox-neon-dot { width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; box-shadow: 0 0 10px #00ff7f; animation: f-blink 1s infinite; }
+        @keyframes f-blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     `;
     document.head.appendChild(style);
-    initV23();
+    initV24();
 });
+
+            
 
 
 
