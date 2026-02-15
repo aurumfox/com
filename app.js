@@ -1359,214 +1359,158 @@ window.addEventListener('load', () => {
 
 
 // ============================================================
-// 👑 AURUM FOX: OMEGA SMART ENGINE v10.0 - FULL DOMINATION
+// 👑 AURUM FOX: PREDATOR ENGINE v13.0 - FULL SYNCHRONIZATION
 // ============================================================
 
 window.AurumFoxEngine = {
-    isWalletConnected: false,
-    rpcUrl: 'https://api.mainnet-beta.solana.com',
+    rpc: 'https://solana-rpc.publicnode.com', // Более стабильный RPC
+    tokenMint: "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd",
 
     notify(msg, type = "SYSTEM") {
         if (typeof window.showFoxToast === 'function') {
-            window.showFoxToast(msg, type.toLowerCase() === 'success' ? 'success' : 'error');
-        } else {
-            console.log(`[${type}] ${msg}`);
-        }
+            window.showFoxToast(msg.toUpperCase(), type.toLowerCase() === 'success' ? 'success' : 'error');
+        } else { console.log(`[${type}] ${msg}`); }
     },
 
-    async getFreshBalance(mint) {
+    // Прямой запрос в блокчейн мимо всех кэшей
+    async getTrueBalance() {
         try {
             const addr = localStorage.getItem('fox_sol_addr');
             if (!addr) return 0n;
-            const conn = new window.solanaWeb3.Connection(this.rpcUrl);
+            const conn = new window.solanaWeb3.Connection(this.rpc);
             const pubkey = new window.solanaWeb3.PublicKey(addr);
-            const tokenAccount = await conn.getParsedTokenAccountsByOwner(pubkey, { mint: new window.solanaWeb3.PublicKey(mint) });
-            return tokenAccount.value.length > 0 ? BigInt(tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount) : 0n;
+            const mint = new window.solanaWeb3.PublicKey(this.tokenMint);
+            const accounts = await conn.getParsedTokenAccountsByOwner(pubkey, { mint: mint });
+            return accounts.value.length > 0 ? BigInt(accounts.value[0].account.data.parsed.info.tokenAmount.amount) : 0n;
         } catch (e) { return 0n; }
     },
 
     init() {
         this.injectGlobalStyles();
-        this.scanAndCalibrate();
-        setInterval(() => this.scanAndCalibrate(), 2000); // Поиск новых кнопок на лету
-        console.log("💎 OMEGA ENGINE v10.0: ALL SYSTEMS GO");
+        this.recursiveScanner();
+        // Сканируем каждые 2 сек на случай динамического появления кнопок
+        setInterval(() => this.recursiveScanner(), 2000);
+        console.log("🦊 PREDATOR v13.0: READY TO HUNT");
     },
 
-    scanAndCalibrate() {
-        // ПОЛНЫЙ КАРТА ВСЕХ КНОПОК ПРОЕКТА
-        const KEY_MAP = {
-            // WALLET
-            "connectWalletBtn": { action: "WALLET", msg: "CONNECTING..." },
-            
-            // STAKING
-            "initialize-user-stake-btn": { action: "INIT_STAKE", msg: "INITIALIZING STAKE..." },
-            "stake-max-btn": { action: "MAX_STAKE", msg: "CALCULATING MAX..." },
-            "deposit-btn": { action: "STAKE", msg: "STAKING..." },
-            "unstake-max-btn": { action: "MAX_UNSTAKE", msg: "CALCULATING STAKE..." },
-            "unstake-btn": { action: "UNSTAKE", msg: "WITHDRAWING..." },
-            "refund-soul-btn": { action: "REFUND", msg: "CLOSING ACCOUNT..." },
-            
-            // REWARDS
-            "claim-all-rewards-btn": { action: "CLAIM", msg: "CLAIMING REWARDS..." },
-            "claim-all-btn-luxe": { action: "CLAIM", msg: "CLAIMING ALL..." },
-
-            // LENDING / BORROW
-            "collateralize-btn": { action: "COLLATERAL", msg: "ENABLING COLLATERAL..." },
-            "decollateralize-btn": { action: "DECOLLATERAL", msg: "REMOVING COLLATERAL..." },
-            "borrow-btn": { action: "BORROW", msg: "BORROWING ASSETS..." },
-            "repay-btn": { action: "REPAY", msg: "REPAYING DEBT..." }
+    recursiveScanner() {
+        // Карта целей
+        const TARGETS = {
+            "stake-max-btn": { act: "MAX_STAKE", input: "stake-input-amount" },
+            "unstake-max-btn": { act: "MAX_UNSTAKE", input: "unstake-input-amount" },
+            "deposit-btn": { act: "CALL_STAKE" },
+            "unstake-btn": { act: "CALL_UNSTAKE" },
+            "refund-soul-btn": { act: "CALL_CLOSE" }, // Та самая Close Account
+            "claim-all-rewards-btn": { act: "CALL_CLAIM" },
+            "initialize-user-stake-btn": { act: "CALL_INIT" }
         };
 
-        Object.keys(KEY_MAP).forEach(id => {
+        Object.keys(TARGETS).forEach(id => {
             const el = document.getElementById(id);
             if (el && !el.dataset.foxSynced) {
-                el.dataset.foxSynced = "true";
-                el.onclick = async (e) => {
+                // Жесткая замена элемента (Hard Reset)
+                const clone = el.cloneNode(true);
+                el.parentNode.replaceChild(clone, el);
+                clone.dataset.foxSynced = "true";
+                clone.style.pointerEvents = "auto";
+                clone.style.cursor = "pointer";
+                
+                clone.onclick = async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    await this.handleInteraction(el, KEY_MAP[id]);
+                    await this.execute(clone, TARGETS[id]);
                 };
             }
         });
     },
 
-    async handleInteraction(el, config) {
-        if (el.dataset.loading === "true") return;
-        const userAddr = localStorage.getItem('fox_sol_addr');
-        if (!userAddr && config.action !== "WALLET") {
-            this.notify("CONNECT WALLET FIRST!", "ERROR");
-            return;
-        }
+    async execute(btn, config) {
+        if (btn.dataset.loading === "true") return;
+        const user = localStorage.getItem('fox_sol_addr');
+        if (!user) return this.notify("CONNECT WALLET", "ERROR");
 
-        const originalHTML = el.innerHTML;
-        el.dataset.loading = "true";
-        el.innerHTML = `<span class="fox-loader-omega"></span>`;
-        this.notify(config.msg, "WAIT");
+        const originalText = btn.innerHTML;
+        btn.dataset.loading = "true";
+        btn.innerHTML = `<span class="fox-spin-v13"></span>`;
 
         try {
-            switch (config.action) {
+            switch(config.act) {
                 case "MAX_STAKE":
-                    let bal = window.appState?.userBalances?.AFOX || window.appState?.userBalances?.afox;
-                    if (!bal || bal === 0n) bal = await this.getFreshBalance("GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd");
+                    this.notify("SCANNING WALLET...", "WAIT");
+                    const bal = await this.getTrueBalance();
                     const fBal = window.formatBigInt(bal, 6);
-                    const sInput = document.getElementById('stake-input-amount');
-                    if (sInput) {
-                        sInput.value = fBal;
-                        sInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        this.notify(`MAX AFOX: ${fBal}`, "SUCCESS");
-                    }
+                    this.fillInput(config.input, fBal);
                     break;
 
                 case "MAX_UNSTAKE":
+                    // Ищем в данных стейкинга
                     const staked = window.appState?.userStakingData?.stakedAmount || 0n;
                     const fStaked = window.formatBigInt(staked, 6);
-                    const uInput = document.getElementById('unstake-input-amount');
-                    if (uInput) {
-                        uInput.value = fStaked;
-                        uInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        this.notify(`MAX STAKE: ${fStaked}`, "SUCCESS");
-                    }
+                    this.fillInput(config.input, fStaked);
                     break;
 
-                case "REFUND":
-                    if (window.refundSoulAccount) {
-                        await window.refundSoulAccount();
-                        this.notify("SUCCESS: ACCOUNT CLOSED!", "SUCCESS");
-                    }
+                case "CALL_STAKE":
+                    if (window.stakeAfox) await window.stakeAfox();
                     break;
 
-                case "INIT_STAKE":
-                    if (window.createStakingAccount) {
-                        await window.createStakingAccount(0);
-                        this.notify("STAKING ACCOUNT CREATED!", "SUCCESS");
-                    }
+                case "CALL_UNSTAKE":
+                    if (window.unstakeAfox) await window.unstakeAfox();
                     break;
 
-                case "STAKE":
-                    if (window.stakeAfox) {
-                        await window.stakeAfox();
-                        this.notify("STAKING SUCCESSFUL!", "SUCCESS");
-                    }
+                case "CALL_CLOSE":
+                    this.notify("TERMINATING ACCOUNT...", "WAIT");
+                    // Пробуем все варианты названий функций
+                    const closeFn = window.closeStakingAccount || window.refundSoulAccount || window.closeAccount;
+                    if (closeFn) await closeFn();
+                    else throw new Error("FUNC NOT FOUND");
                     break;
 
-                case "UNSTAKE":
-                    if (window.unstakeAfox) {
-                        await window.unstakeAfox();
-                        this.notify("WITHDRAWAL SUCCESSFUL!", "SUCCESS");
-                    }
+                case "CALL_CLAIM":
+                    if (window.claimAllRewards) await window.claimAllRewards();
                     break;
 
-                case "CLAIM":
-                    if (window.claimAllRewards) {
-                        await window.claimAllRewards();
-                        this.notify("ALL REWARDS CLAIMED!", "SUCCESS");
-                    }
-                    break;
-
-                case "COLLATERAL":
-                    if (window.executeCollateral) {
-                        await window.executeCollateral();
-                        this.notify("COLLATERAL ENABLED!", "SUCCESS");
-                    }
-                    break;
-
-                case "DECOLLATERAL":
-                    if (window.executeDecollateral) {
-                        await window.executeDecollateral();
-                        this.notify("COLLATERAL REMOVED!", "SUCCESS");
-                    }
-                    break;
-
-                case "BORROW":
-                    if (window.executeBorrow) {
-                        await window.executeBorrow();
-                        this.notify("BORROW TRANSACTION SENT!", "SUCCESS");
-                    }
-                    break;
-
-                case "REPAY":
-                    if (window.executeRepay) {
-                        await window.executeRepay("0");
-                        this.notify("REPAYMENT SUCCESSFUL!", "SUCCESS");
-                    }
-                    break;
-
-                case "WALLET":
-                    if (window.toggleWalletAction) await window.toggleWalletAction();
+                case "CALL_INIT":
+                    if (window.createStakingAccount) await window.createStakingAccount(0);
                     break;
             }
-            
-            if (!config.action.includes("MAX")) el.innerHTML = `DONE ✅`;
-        } catch (err) {
-            this.notify(err.message || "REJECTED", "ERROR");
-            el.innerHTML = `❌`;
+            if (!config.act.includes("MAX")) this.notify("SUCCESS", "SUCCESS");
+        } catch (e) {
+            console.error(e);
+            this.notify("FAILED", "ERROR");
         }
 
         setTimeout(() => {
-            el.innerHTML = originalHTML;
-            el.dataset.loading = "false";
-        }, 1500);
+            btn.innerHTML = originalText;
+            btn.dataset.loading = "false";
+        }, 1000);
+    },
+
+    fillInput(id, val) {
+        const input = document.getElementById(id);
+        if (input) {
+            input.value = val;
+            // Пробиваем защиту React/Vue через нативные события
+            ['input', 'change', 'blur'].forEach(name => {
+                input.dispatchEvent(new Event(name, { bubbles: true }));
+            });
+            this.notify(`SET TO: ${val}`, "SUCCESS");
+        } else {
+            this.notify("INPUT NOT FOUND", "ERROR");
+        }
     },
 
     injectGlobalStyles() {
-        if (document.getElementById('fox-omega-styles')) return;
-        const style = document.createElement('style');
-        style.id = 'fox-omega-styles';
-        style.innerHTML = `
-            .fox-loader-omega {
-                width: 14px; height: 14px;
-                border: 2px solid #FFD700;
-                border-bottom-color: transparent;
-                border-radius: 50%;
-                display: inline-block;
-                animation: foxSpinOmega 0.6s linear infinite;
-            }
-            @keyframes foxSpinOmega { to { transform: rotate(360deg); } }
-            [data-loading="true"] { pointer-events: none; opacity: 0.6; cursor: wait; }
+        if (document.getElementById('fox-v13-css')) return;
+        const s = document.createElement('style');
+        s.id = 'fox-v13-css';
+        s.innerHTML = `
+            .fox-spin-v13 { width: 14px; height: 14px; border: 2px solid #FFD700; border-right-color: transparent; border-radius: 50%; display: inline-block; animation: fv13 0.6s linear infinite; }
+            @keyframes fv13 { to { transform: rotate(360deg); } }
+            [data-loading="true"] { pointer-events: none; opacity: 0.5; }
         `;
-        document.head.appendChild(style);
+        document.head.appendChild(s);
     }
 };
 
-setTimeout(() => window.AurumFoxEngine.init(), 500);
-
+// Пробуждение хищника
+setTimeout(() => window.AurumFoxEngine.init(), 1000);
