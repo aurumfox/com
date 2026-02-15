@@ -865,30 +865,50 @@ window.executeRepay = async function(amountToRepay) {
 
 
 
-window.forceUnlock = async function() {
+
+window.forceUnlock = async function(loanId = 0) {
     try {
         const program = await getProgram();
+        const provider = program.provider;
+        
+        // 1. Находим PDA аккаунта стейкинга пользователя
+        // Важно: в контракте используется индекс пула (pool_index) как часть семян
         const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), window.solana.publicKey.toBuffer(), Buffer.from([0])], 
+            [
+                Buffer.from("user_stake"), 
+                AFOX_POOL_STATE_PUBKEY.toBuffer(), 
+                provider.wallet.publicKey.toBuffer(), 
+                Buffer.from([0]) // Здесь 0 - это pool_index. Если пулов несколько, замените на нужный.
+            ], 
             program.programId
         );
-        AurumFoxEngine.notify("FORCE UNLOCKING...", "WAIT");
-        await program.methods.forceUnlockCollateral(new anchor.BN(0)).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: pda,
-            lendingAuthority: window.solana.publicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            defaulterTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-            userStAta: USER_ST_TOKEN_ATA,
-            stMint: AFOX_ST_MINT_ADDRESS,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-        AurumFoxEngine.notify("FORCE UNLOCKED", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify("UNLOCK FAILED", "FAILED"); }
-};
 
+        AurumFoxEngine.notify("FORCE UNLOCKING...", "WAIT");
+
+        // 2. Вызов метода контракта
+        // Обратите внимание: метод в Rust force_unlock_collateral -> в JS forceUnlockCollateral
+        await program.methods
+            .forceUnlockCollateral(new anchor.BN(loanId))
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: pda,
+                lendingAuthority: provider.wallet.publicKey, // Тот, кто подписывает (Lending Authority)
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                defaulterTreasuryVault: DAO_TREASURY_VAULT_PUBKEY, // Куда уйдут изъятые средства
+                userStAta: USER_ST_TOKEN_ATA,
+                stMint: AFOX_ST_MINT_ADDRESS,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        AurumFoxEngine.notify("FORCE UNLOCKED", "SUCCESS");
+    } catch (e) {
+        console.error("Unlock error:", e);
+        AurumFoxEngine.notify("UNLOCK FAILED: " + (e.message || "Unknown error"), "FAILED");
+    }
+};
 
 
 
