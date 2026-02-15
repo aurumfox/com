@@ -619,9 +619,8 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 /**
- * 👑 AURUM FOX: V28 - SOLANA ELITE
- * Только самые актуальные кошельки Solana: Phantom, Solflare, Backpack.
- * Железный мост через Twitter WebView и авто-синхронизация.
+ * 👑 AURUM FOX: V29 - ELITE NOTIFIER
+ * Solana Elite Bridge + Smooth English Notifications.
  */
 
 const AurumFoxEngine = {
@@ -630,7 +629,6 @@ const AurumFoxEngine = {
     isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
     channel: new BroadcastChannel('fox_solana_bridge'),
     
-    // Модные кошельки Solana
     getProvider: () => {
         if (window.phantom?.solana) return window.phantom.solana;
         if (window.solflare) return window.solflare;
@@ -640,13 +638,40 @@ const AurumFoxEngine = {
     }
 };
 
-// Сохранение "Намертво" для Твиттера
+/**
+ * СИСТЕМА УВЕДОМЛЕНИЙ (CAZYR NOTIFIER)
+ */
+const showFoxToast = (message, type = 'success') => {
+    const container = document.getElementById('fox-toast-container') || createToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `fox-toast fox-toast-${type}`;
+    toast.innerHTML = `
+        <div class="fox-toast-content">
+            <div class="fox-toast-icon"></div>
+            <span>${message}</span>
+        </div>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('fox-toast-show'); }, 100);
+    setTimeout(() => {
+        toast.classList.remove('fox-toast-show');
+        setTimeout(() => toast.remove(), 500);
+    }, 3500);
+};
+
+const createToastContainer = () => {
+    const container = document.createElement('div');
+    container.id = 'fox-toast-container';
+    document.body.appendChild(container);
+    return container;
+};
+
+// Жесткое сохранение
 const savePermanent = (addr) => {
     localStorage.setItem('fox_sol_addr', addr);
-    // Куки — это единственный шанс выжить в песочнице Твиттера
     document.cookie = `fox_sol_addr=${addr}; path=/; max-age=2592000; SameSite=Lax`;
-    // Сигнал другим вкладкам
     AurumFoxEngine.channel.postMessage({ type: 'SOL_CONNECTED', address: addr });
+    showFoxToast("WALLET CONNECTED SUCCESSFULLY", "success");
 };
 
 const getSavedAddr = () => {
@@ -677,16 +702,12 @@ async function toggleWalletAction() {
 
     try {
         if (!AurumFoxEngine.isWalletConnected) {
-            
-            // ЕСЛИ В ТВИТТЕРЕ И НЕТ ПРОВАЙДЕРА (Deep Link)
             if (!provider && AurumFoxEngine.isMobile) {
-                // Кидаем через Phantom (как самый стабильный мост для Твиттера)
                 window.location.href = `https://phantom.app/ul/browse/${currentUrl}?ref=${currentUrl}`;
                 return;
             }
-
             if (!provider) {
-                alert("Solana Wallet not found! Install Phantom or Solflare.");
+                showFoxToast("WALLET NOT FOUND", "error");
                 return;
             }
 
@@ -700,44 +721,37 @@ async function toggleWalletAction() {
             syncWalletUI(true, pubKey);
 
         } else {
-            // ПОЛНЫЙ ВЫХОД
+            // DISCONNECT
             localStorage.removeItem('fox_sol_addr');
             document.cookie = "fox_sol_addr=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
             AurumFoxEngine.channel.postMessage({ type: 'SOL_DISCONNECTED' });
-            window.location.reload();
+            showFoxToast("WALLET DISCONNECTED", "error");
+            setTimeout(() => window.location.reload(), 1000);
         }
     } catch (err) {
-        console.error("FOX BRIDGE ERROR:", err);
+        console.error(err);
+        showFoxToast("CONNECTION CANCELLED", "error");
     } finally {
         setTimeout(() => { btn.dataset.loading = "false"; }, 1000);
     }
 }
 
-/**
- * СИНХРОНИЗАЦИЯ ПО ВОЗДУХУ
- */
 AurumFoxEngine.channel.onmessage = (event) => {
     if (event.data.type === 'SOL_CONNECTED') {
         AurumFoxEngine.walletAddress = event.data.address;
         AurumFoxEngine.isWalletConnected = true;
         syncWalletUI(true, event.data.address);
-    }
-    if (event.data.type === 'SOL_DISCONNECTED') {
-        window.location.reload();
+        showFoxToast("SYNCED VIA BRIDGE", "success");
     }
 };
 
-/**
- * ЗАПУСК ДВИЖКА
- */
-const initV28 = async () => {
+const initV29 = async () => {
     const saved = getSavedAddr();
     if (saved) {
         AurumFoxEngine.walletAddress = saved;
         AurumFoxEngine.isWalletConnected = true;
         syncWalletUI(true, saved);
     }
-
     const provider = AurumFoxEngine.getProvider();
     if (provider && saved) {
         try { await provider.connect({ onlyIfTrusted: true }); } catch(e) {}
@@ -745,22 +759,34 @@ const initV28 = async () => {
 };
 
 window.addEventListener('load', () => {
-    if (!document.getElementById('fox-v28-css')) {
-        const style = document.createElement('style');
-        style.id = 'fox-v28-css';
-        style.innerHTML = `
-            .fox-btn-default { background: #000; color: #fff; border: 1px solid #333; padding: 12px 24px; cursor: pointer; border-radius: 4px; font-weight: bold; transition: all 0.2s; }
-            .fox-btn-connected { background: #000; color: #00ff7f; border: 2px solid #00ff7f; padding: 12px 24px; cursor: pointer; border-radius: 4px; font-weight: bold; box-shadow: 0 0 10px rgba(0,255,127,0.1); }
-            .fox-spin { width: 14px; height: 14px; border: 2px solid #00ff7f; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: f-spin 0.5s linear infinite; margin-right: 8px; }
-            @keyframes f-spin { to { transform: rotate(360deg); } }
-            .fox-container { display: flex; align-items: center; gap: 8px; justify-content: center; }
-            .fox-neon-dot { width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; box-shadow: 0 0 8px #00ff7f; }
-        `;
-        document.head.appendChild(style);
-    }
-    initV28();
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* UI BUTTONS */
+        .fox-btn-default { background: #000; color: #fff; border: 1px solid #333; padding: 12px 24px; cursor: pointer; border-radius: 4px; font-weight: bold; transition: all 0.2s; font-family: sans-serif; }
+        .fox-btn-connected { background: #000; color: #00ff7f; border: 2px solid #00ff7f; padding: 12px 24px; cursor: pointer; border-radius: 4px; font-weight: bold; font-family: sans-serif; }
+        .fox-spin { width: 14px; height: 14px; border: 2px solid #00ff7f; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: f-spin 0.5s linear infinite; margin-right: 8px; }
+        @keyframes f-spin { to { transform: rotate(360deg); } }
+        .fox-container { display: flex; align-items: center; gap: 8px; justify-content: center; }
+        .fox-neon-dot { width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; box-shadow: 0 0 8px #00ff7f; }
 
-    // Каждые 1.5 сек проверяем память — это фиксит баг возврата из Твиттера
+        /* TOAST SYSTEM */
+        #fox-toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .fox-toast { 
+            background: #000; border: 1px solid #333; color: #fff; padding: 14px 20px; border-radius: 8px; 
+            font-family: 'Courier New', Courier, monospace; font-size: 12px; font-weight: bold; letter-spacing: 1px;
+            transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 220px;
+        }
+        .fox-toast-show { transform: translateX(0); }
+        .fox-toast-content { display: flex; align-items: center; gap: 12px; }
+        .fox-toast-icon { width: 10px; height: 10px; border-radius: 50%; }
+        .fox-toast-success { border-left: 4px solid #00ff7f; }
+        .fox-toast-success .fox-toast-icon { background: #00ff7f; box-shadow: 0 0 10px #00ff7f; }
+        .fox-toast-error { border-left: 4px solid #ff4b4b; }
+        .fox-toast-error .fox-toast-icon { background: #ff4b4b; box-shadow: 0 0 10px #ff4b4b; }
+    `;
+    document.head.appendChild(style);
+    initV29();
     setInterval(() => {
         const addr = getSavedAddr();
         if (addr && !AurumFoxEngine.isWalletConnected) {
