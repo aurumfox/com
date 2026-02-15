@@ -867,6 +867,56 @@ window.unstakeAfox = async function() {
 
 
 
+window.closeStakingAccount = async function() {
+    try {
+        const program = await getProgram();
+        const userPublicKey = program.provider.wallet.publicKey;
+        const poolIndex = 0;
+
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPublicKey.toBuffer(),
+                Buffer.from([poolIndex])
+            ], 
+            program.programId
+        );
+
+        AurumFoxEngine.notify("CLOSING ACCOUNT...", "WAIT");
+
+        // Если в контракте есть метод для полного закрытия:
+        // Если нет - мы просто выводим всё через unstake.
+        await program.methods
+            .unstake(poolIndex, new anchor.BN(0)) // Пример логики "забрать всё"
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                user: pda,
+                owner: userPublicKey,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+                adminFeeVault: AFOX_POOL_VAULT_PUBKEY,
+                userRewardsAta: await getATA(userPublicKey, AFOX_TOKEN_MINT_ADDRESS),
+                userStAta: await getATA(userPublicKey, AFOX_TOKEN_MINT_ADDRESS),
+                stMint: AFOX_TOKEN_MINT_ADDRESS,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        AurumFoxEngine.notify("ACCOUNT CLOSED!", "SUCCESS");
+    } catch (e) {
+        console.error(e);
+        AurumFoxEngine.notify("REFUND FAILED", "FAILED");
+    }
+};
+
+
+
+
+
+
 
 window.claimAllRewards = async function() {
     try {
