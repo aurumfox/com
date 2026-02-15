@@ -547,50 +547,68 @@ export async function decollateralize(program, poolStatePDA, userStakingPDA, amo
 }
 
 // 6. Для ID: "claim-all-rewards-btn" и "claim-all-btn-luxe" (Category: REWARDS_CLAIM_ALL)
+
+
 async function claimAllRewards() {
     try {
-        console.log("🚀 Claiming All Rewards...");
+        console.log("🔥 Claiming All Rewards...");
 
-        // ПРОВЕРКА: Получаем данные. Если их нет - выходим мягко, без ошибки map
-        const rewards = await getYourRewardsData(); 
-        
-        if (!rewards || rewards.length === 0) {
-            showFoxToast("NO REWARDS TO CLAIM", "error");
-            return;
+        // 1. Проверяем кошелек и программу
+        if (!window.solana || !window.solana.publicKey) {
+             AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+             return;
         }
 
-        // Если награды есть, вызываем метод контракта
-        // Используем индексы [0,1,2,3,4] как в твоем контракте
+        // Подключаем программу через твой хелпер (он уже есть в коде)
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+
+        // 2. Нам нужны активные тиры. Если их нет, берем стандартный список [0, 1, 2]
+        const poolIndices = [0, 1, 2]; 
+
+        // 3. Генерируем PDA для каждого пула, чтобы не было ошибки .map()
+        const userStakingPDAs = await Promise.all(poolIndices.map(async (index) => {
+            const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+                [
+                    window.solana.publicKey.toBuffer(),
+                    AFOX_POOL_STATE_PUBKEY.toBuffer()
+                ],
+                STAKING_PROGRAM_ID
+            );
+            return pda;
+        }));
+
+        // 4. Формируем remainingAccounts для транзакции
+        const remainingAccounts = userStakingPDAs.map(pda => ({
+            pubkey: pda,
+            isWritable: true,
+            isSigner: false
+        }));
+
+        // 5. САМ ВЫЗОВ (используем глобальные переменные, которые у тебя уже заданы в начале файла)
         const tx = await program.methods
-            .claimAllRewards(Buffer.from([0, 1, 2, 3, 4]))
+            .claimAllRewards(Buffer.from(poolIndices))
             .accounts({
-                poolState: poolStateAddress,
-                owner: wallet.publicKey,
-                vault: vaultAddress,
-                adminFeeVault: adminFeeVaultAddress,
-                userRewardsAta: userRewardsAta,
-                rewardMint: rewardMintAddress,
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                rewardVault: AFOX_REWARDS_VAULT_PUBKEY,
+                userRewardAccount: window.solana.publicKey, // Твой ATA
+                owner: window.solana.publicKey,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             })
-            // Тут магия: передаем аккаунты, чтобы Solana знала откуда забирать
-            .remainingAccounts(rewards.map(r => ({
-                pubkey: r.pubkey,
-                isWritable: true,
-                isSigner: false
-            })))
+            .remainingAccounts(remainingAccounts)
             .rpc();
 
-        showFoxToast("PROFIT COLLECTED!", "success");
-        console.log("Done! Tx:", tx);
+        console.log("✅ SUCCESS:", tx);
+        AurumFoxEngine.notify("REWARDS COLLECTED!", "SUCCESS");
 
     } catch (err) {
-        console.error("❌ Ошибка в кнопке:", err);
-        showFoxToast("CLAIM FAILED", "error");
+        console.error("❌ Error during claim:", err);
+        AurumFoxEngine.notify("CLAIM FAILED", "FAILED");
     }
 }
 
-
+// Чтобы движок AurumFoxEngine увидел функцию, привязываем её к окну:
+window.claimAllRewards = claimAllRewards;
 
 
 
