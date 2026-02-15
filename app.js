@@ -1358,165 +1358,215 @@ window.addEventListener('load', () => {
 
 
 
- // ============================================================
-// 👑 AURUM FOX: LUXE ENGINE v7.6 - MAX BALANCE FIXED
+// ============================================================
+// 👑 AURUM FOX: OMEGA SMART ENGINE v10.0 - FULL DOMINATION
 // ============================================================
 
 window.AurumFoxEngine = {
     isWalletConnected: false,
-    walletAddress: null,
-    isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+    rpcUrl: 'https://api.mainnet-beta.solana.com',
 
     notify(msg, type = "SYSTEM") {
-        console.log(`[${type}] ${msg}`);
-        if (typeof showFoxToast === 'function') {
-            showFoxToast(msg, type.toLowerCase() === 'success' ? 'success' : 'error');
+        if (typeof window.showFoxToast === 'function') {
+            window.showFoxToast(msg, type.toLowerCase() === 'success' ? 'success' : 'error');
         } else {
-            alert(`${type}: ${msg}`);
+            console.log(`[${type}] ${msg}`);
         }
+    },
+
+    async getFreshBalance(mint) {
+        try {
+            const addr = localStorage.getItem('fox_sol_addr');
+            if (!addr) return 0n;
+            const conn = new window.solanaWeb3.Connection(this.rpcUrl);
+            const pubkey = new window.solanaWeb3.PublicKey(addr);
+            const tokenAccount = await conn.getParsedTokenAccountsByOwner(pubkey, { mint: new window.solanaWeb3.PublicKey(mint) });
+            return tokenAccount.value.length > 0 ? BigInt(tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount) : 0n;
+        } catch (e) { return 0n; }
     },
 
     init() {
-        console.clear();
-        console.log("%c👑 AURUM FOX ENGINE v7.6 - MAX ACTIVE", "color: #FFD700; font-size: 16px; font-weight: bold;");
-        this.injectGlobalLuxeStyles();
+        this.injectGlobalStyles();
         this.scanAndCalibrate();
-
-        const saved = localStorage.getItem('fox_sol_addr');
-        if (saved) {
-            this.walletAddress = saved;
-            this.isWalletConnected = true;
-        }
+        setInterval(() => this.scanAndCalibrate(), 2000); // Поиск новых кнопок на лету
+        console.log("💎 OMEGA ENGINE v10.0: ALL SYSTEMS GO");
     },
 
     scanAndCalibrate() {
-        // ТЕПЕРЬ ВСЕ КНОПКИ ТУТ:
-        const KEY_BUTTONS = {
-            "connectWalletBtn": "HEADER/WALLET",
-            "initialize-user-stake-btn": "STAKING_INIT",
-            "deposit-btn": "STAKING_DEPOSIT",
-            "unstake-btn": "STAKING_WITHDRAW",
-            "stake-max-btn": "STAKE_MAX_ACTION",     // Кнопка MAX для Депозита
-            "unstake-max-btn": "UNSTAKE_MAX_ACTION", // Кнопка MAX для Вывода
-            "refund-soul-btn": "STAKING_CLOSE",      // Твоя кнопка Refund
-            "claim-all-rewards-btn": "REWARDS_CLAIM",
-            "claim-all-btn-luxe": "REWARDS_CLAIM",
-            "collateralize-btn": "LENDING_COLLATERAL",
-            "decollateralize-btn": "LENDING_DECOLLATERAL",
-            "borrow-btn": "LENDING_BORROW",
-            "repay-btn": "LENDING_REPAY"
+        // ПОЛНЫЙ КАРТА ВСЕХ КНОПОК ПРОЕКТА
+        const KEY_MAP = {
+            // WALLET
+            "connectWalletBtn": { action: "WALLET", msg: "CONNECTING..." },
+            
+            // STAKING
+            "initialize-user-stake-btn": { action: "INIT_STAKE", msg: "INITIALIZING STAKE..." },
+            "stake-max-btn": { action: "MAX_STAKE", msg: "CALCULATING MAX..." },
+            "deposit-btn": { action: "STAKE", msg: "STAKING..." },
+            "unstake-max-btn": { action: "MAX_UNSTAKE", msg: "CALCULATING STAKE..." },
+            "unstake-btn": { action: "UNSTAKE", msg: "WITHDRAWING..." },
+            "refund-soul-btn": { action: "REFUND", msg: "CLOSING ACCOUNT..." },
+            
+            // REWARDS
+            "claim-all-rewards-btn": { action: "CLAIM", msg: "CLAIMING REWARDS..." },
+            "claim-all-btn-luxe": { action: "CLAIM", msg: "CLAIMING ALL..." },
+
+            // LENDING / BORROW
+            "collateralize-btn": { action: "COLLATERAL", msg: "ENABLING COLLATERAL..." },
+            "decollateralize-btn": { action: "DECOLLATERAL", msg: "REMOVING COLLATERAL..." },
+            "borrow-btn": { action: "BORROW", msg: "BORROWING ASSETS..." },
+            "repay-btn": { action: "REPAY", msg: "REPAYING DEBT..." }
         };
 
-        // Ищем все кнопки, включая ID для MAX и Refund
-        const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn, #stake-max-btn, #unstake-max-btn, #refund-soul-btn');
-        targets.forEach((el) => {
-            if (el.dataset.foxSynced) return;
-            let category = KEY_BUTTONS[el.id] || "GENERAL_INTERFACE";
-            el.dataset.foxSynced = "true";
-
-            el.addEventListener('click', async (e) => {
-                if (el.id === 'connectWalletBtn') {
+        Object.keys(KEY_MAP).forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.dataset.foxSynced) {
+                el.dataset.foxSynced = "true";
+                el.onclick = async (e) => {
                     e.preventDefault();
-                    if (typeof toggleWalletAction === 'function') await toggleWalletAction();
-                } else {
-                    if (el.tagName === 'BUTTON' || el.id.includes('btn')) e.preventDefault();
-                    await this.handleInteraction(el, category);
-                }
-            });
+                    e.stopPropagation();
+                    await this.handleInteraction(el, KEY_MAP[id]);
+                };
+            }
         });
     },
 
-    async handleInteraction(el, category) {
+    async handleInteraction(el, config) {
         if (el.dataset.loading === "true") return;
-        const originalContent = el.innerHTML;
+        const userAddr = localStorage.getItem('fox_sol_addr');
+        if (!userAddr && config.action !== "WALLET") {
+            this.notify("CONNECT WALLET FIRST!", "ERROR");
+            return;
+        }
+
+        const originalHTML = el.innerHTML;
         el.dataset.loading = "true";
-        el.innerHTML = `<span class="fox-loader"></span>`;
+        el.innerHTML = `<span class="fox-loader-omega"></span>`;
+        this.notify(config.msg, "WAIT");
 
         try {
-            switch(category) {
-                case "STAKE_MAX_ACTION":
-                    // ЛОГИКА ДЛЯ ПЕРВОЙ КНОПКИ MAX (Твой баланс кошелька)
-                    if (window.appState && window.appState.userBalances) {
-                        const amount = formatBigInt(window.appState.userBalances.AFOX, AFOX_DECIMALS);
-                        const input = document.getElementById('stake-input-amount');
-                        if (input) input.value = amount;
-                        this.notify(`MAX BALANCE: ${amount}`, "SUCCESS");
+            switch (config.action) {
+                case "MAX_STAKE":
+                    let bal = window.appState?.userBalances?.AFOX || window.appState?.userBalances?.afox;
+                    if (!bal || bal === 0n) bal = await this.getFreshBalance("GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd");
+                    const fBal = window.formatBigInt(bal, 6);
+                    const sInput = document.getElementById('stake-input-amount');
+                    if (sInput) {
+                        sInput.value = fBal;
+                        sInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        this.notify(`MAX AFOX: ${fBal}`, "SUCCESS");
                     }
                     break;
 
-                case "UNSTAKE_MAX_ACTION":
-                    // ЛОГИКА ДЛЯ ВТОРОЙ КНОПКИ MAX (Твой стейк в контракте)
-                    if (window.appState && window.appState.userStakingData) {
-                        const amount = formatBigInt(window.appState.userStakingData.stakedAmount, AFOX_DECIMALS);
-                        const input = document.getElementById('unstake-input-amount');
-                        if (input) input.value = amount;
-                        this.notify(`MAX STAKE: ${amount}`, "SUCCESS");
+                case "MAX_UNSTAKE":
+                    const staked = window.appState?.userStakingData?.stakedAmount || 0n;
+                    const fStaked = window.formatBigInt(staked, 6);
+                    const uInput = document.getElementById('unstake-input-amount');
+                    if (uInput) {
+                        uInput.value = fStaked;
+                        uInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        this.notify(`MAX STAKE: ${fStaked}`, "SUCCESS");
                     }
                     break;
 
-                case "STAKING_CLOSE":
-                    if (typeof window.refundSoulAccount === 'function') await window.refundSoulAccount();
+                case "REFUND":
+                    if (window.refundSoulAccount) {
+                        await window.refundSoulAccount();
+                        this.notify("SUCCESS: ACCOUNT CLOSED!", "SUCCESS");
+                    }
                     break;
 
-                case "STAKING_INIT":
-                    if (typeof window.createStakingAccount === 'function') await window.createStakingAccount(0);
+                case "INIT_STAKE":
+                    if (window.createStakingAccount) {
+                        await window.createStakingAccount(0);
+                        this.notify("STAKING ACCOUNT CREATED!", "SUCCESS");
+                    }
                     break;
-                case "STAKING_DEPOSIT":
-                    if (typeof window.stakeAfox === 'function') await window.stakeAfox();
+
+                case "STAKE":
+                    if (window.stakeAfox) {
+                        await window.stakeAfox();
+                        this.notify("STAKING SUCCESSFUL!", "SUCCESS");
+                    }
                     break;
-                case "STAKING_WITHDRAW":
-                    if (typeof window.unstakeAfox === 'function') await window.unstakeAfox();
+
+                case "UNSTAKE":
+                    if (window.unstakeAfox) {
+                        await window.unstakeAfox();
+                        this.notify("WITHDRAWAL SUCCESSFUL!", "SUCCESS");
+                    }
                     break;
-                case "REWARDS_CLAIM":
-                    if (typeof window.claimAllRewards === 'function') await window.claimAllRewards();
+
+                case "CLAIM":
+                    if (window.claimAllRewards) {
+                        await window.claimAllRewards();
+                        this.notify("ALL REWARDS CLAIMED!", "SUCCESS");
+                    }
                     break;
-                case "LENDING_COLLATERAL":
-                    if (typeof window.executeCollateral === 'function') await window.executeCollateral();
+
+                case "COLLATERAL":
+                    if (window.executeCollateral) {
+                        await window.executeCollateral();
+                        this.notify("COLLATERAL ENABLED!", "SUCCESS");
+                    }
                     break;
-                case "LENDING_DECOLLATERAL":
-                    if (typeof window.executeDecollateral === 'function') await window.executeDecollateral();
+
+                case "DECOLLATERAL":
+                    if (window.executeDecollateral) {
+                        await window.executeDecollateral();
+                        this.notify("COLLATERAL REMOVED!", "SUCCESS");
+                    }
                     break;
-                case "LENDING_BORROW":
-                    if (typeof window.executeBorrow === 'function') await window.executeBorrow();
+
+                case "BORROW":
+                    if (window.executeBorrow) {
+                        await window.executeBorrow();
+                        this.notify("BORROW TRANSACTION SENT!", "SUCCESS");
+                    }
                     break;
-                case "LENDING_REPAY":
-                    if (typeof window.executeRepay === 'function') await window.executeRepay("0");
+
+                case "REPAY":
+                    if (window.executeRepay) {
+                        await window.executeRepay("0");
+                        this.notify("REPAYMENT SUCCESSFUL!", "SUCCESS");
+                    }
+                    break;
+
+                case "WALLET":
+                    if (window.toggleWalletAction) await window.toggleWalletAction();
                     break;
             }
             
-            // Если это кнопка MAX, не пишем "DONE", чтобы не стирать текст кнопки
-            if (!category.includes("MAX")) {
-                el.innerHTML = `✅ DONE`;
-            } else {
-                el.innerHTML = originalContent;
-            }
+            if (!config.action.includes("MAX")) el.innerHTML = `DONE ✅`;
         } catch (err) {
-            console.error("TX Error:", err);
+            this.notify(err.message || "REJECTED", "ERROR");
             el.innerHTML = `❌`;
-            this.notify(err.message || "Action failed", "ERROR");
         }
 
         setTimeout(() => {
-            el.innerHTML = originalContent;
+            el.innerHTML = originalHTML;
             el.dataset.loading = "false";
         }, 1500);
     },
 
-    injectGlobalLuxeStyles() {
-        if (document.getElementById('fox-engine-styles')) return;
+    injectGlobalStyles() {
+        if (document.getElementById('fox-omega-styles')) return;
         const style = document.createElement('style');
-        style.id = 'fox-engine-styles';
+        style.id = 'fox-omega-styles';
         style.innerHTML = `
-            .fox-loader { width: 12px; height: 12px; border: 2px solid currentColor; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: foxRotation 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
-            @keyframes foxRotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            [data-loading="true"] { pointer-events: none; opacity: 0.8; cursor: wait; }
-            #stake-max-btn, #unstake-max-btn { cursor: pointer; }
+            .fox-loader-omega {
+                width: 14px; height: 14px;
+                border: 2px solid #FFD700;
+                border-bottom-color: transparent;
+                border-radius: 50%;
+                display: inline-block;
+                animation: foxSpinOmega 0.6s linear infinite;
+            }
+            @keyframes foxSpinOmega { to { transform: rotate(360deg); } }
+            [data-loading="true"] { pointer-events: none; opacity: 0.6; cursor: wait; }
         `;
         document.head.appendChild(style);
     }
 };
 
-// Запуск
-setTimeout(() => window.AurumFoxEngine.init(), 100);
-
+setTimeout(() => window.AurumFoxEngine.init(), 500);
 
