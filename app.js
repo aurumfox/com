@@ -84,10 +84,10 @@ const POOLS_CONFIG = {
 const AFOX_OFFICIAL_KEYS = {
     STAKING_PROGRAM: "3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL",
     TOKEN_MINT:      "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd",
-    POOL_STATE:      "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ",
-    POOL_VAULT:      "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp",
-    REWARDS_VAULT:   "BXinWRfmkk2jo3cTJfcYT5zoC7yix5AsvmTk8NwLoiDF",
-    DAO_TREASURY:    "6BzRqaLD7CiGvSWjkp5G8RbmvGdjMRUqmz9VcXfGzfzi"
+    POOL_STATE:      "",
+    POOL_VAULT:      "",
+    REWARDS_VAULT:   "",
+    DAO_TREASURY:    ""
 };
 
 // ============================================================
