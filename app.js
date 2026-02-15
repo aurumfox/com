@@ -780,12 +780,50 @@ window.executeDecollateral = async function() {
 
 
 window.executeBorrow = async function() {
+    const val = document.getElementById('borrow-amount')?.value || "1000"; // Сумма залога
+    const poolIndex = 0; // Индекс пула, в котором лежит стейк пользователя
+
     AurumFoxEngine.notify("CONNECTING TO LENDING...", "WAIT");
+
     try {
-        console.log("Вызов внешнего кредитного модуля...");
-        AurumFoxEngine.notify("BORROW READY", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify("BORROW ERROR", "FAILED"); }
+        const program = await getProgram();
+        
+        // 1. ГЕНЕРАЦИЯ PDA (БЕЗ лишних байтов в конце)
+        // В контракте seeds: [b"user_stake", pool_state, owner, &[pool_index]]
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                window.solana.publicKey.toBuffer(),
+                Buffer.from([poolIndex])
+            ], 
+            program.programId
+        );
+
+        // Конвертируем сумму в BigInt с учетом десятичных знаков
+        const amountBN = new anchor.BN(parseAmountToBigInt(val, AFOX_DECIMALS).toString());
+
+        console.log("Блокировка залога для займа:", val);
+
+        // 2. ВЫЗОВ МЕТОДА collateralize_lending
+        // Согласно контракту: pub fn collateralize_lending(ctx: Context<CollateralizeLending>, new_lending_amount: u64)
+        await program.methods.collateralizeLending(amountBN)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: pda,
+                lendingAuthority: window.solana.publicKey,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        AurumFoxEngine.notify("COLLATERAL LOCKED. BORROW READY", "SUCCESS");
+        
+    } catch (e) { 
+        console.error("Borrow Error:", e);
+        AurumFoxEngine.notify("BORROW ERROR", "FAILED"); 
+    }
 };
+
 
 
 
