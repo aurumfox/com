@@ -785,6 +785,233 @@ const injectV18Styles = () => {
 
 
 
+/**
+ * 👑 AURUM FOX: LUXE ENGINE v7.5 - ROYAL LIQUIDITY OVERRIDE
+ * Полная синхронизация ID кнопок HTML и логики Solana Mainnet.
+ * ИСПРАВЛЕНО: Убраны конфликты объявлений и ошибок экспорта.
+ */
+
+// Защита от повторного объявления (чтобы не было ошибки в консоли)
+if (typeof AurumFoxEngineInstance === 'undefined') {
+    window.AurumFoxEngineInstance = true;
+
+    const AurumFoxEngine = {
+        isWalletConnected: false,
+        walletAddress: null, 
+
+        // Твой оригинальный реестр кнопок без изменений
+        KEY_BUTTONS: {
+            // Wallet
+            "connectWalletBtn": "HEADER/WALLET",
+
+            // Staking
+            "initialize-user-stake-btn": "STAKING_INIT",
+            "deposit-btn": "STAKING_DEPOSIT",
+            "unstake-btn": "STAKING_WITHDRAW",
+            "max-stake-btn": "INTERFACE_HELPER",
+            "close-staking-account-btn": "STAKING_CLOSE",
+
+            // Rewards
+            "claim-all-rewards-btn": "REWARDS_CLAIM", 
+            "claim-all-btn-luxe": "REWARDS_CLAIM",    
+
+            // Lending
+            "collateralize-btn": "LENDING_COLLATERAL",
+            "decollateralize-btn": "LENDING_DECOLLATERAL",
+            "borrow-btn": "LENDING_BORROW",
+            "repay-btn": "LENDING_REPAY",
+            "max-collateral-btn": "INTERFACE_HELPER"
+        },
+
+        init() {
+            console.clear();
+            this.printBanner();
+            this.buildNotificationSystem();
+            this.injectGlobalLuxeStyles();
+            this.scanAndCalibrate();
+            this.watchOrbit();
+
+            const provider = window.solana || window.phantom?.solana;
+            if (provider && provider.isConnected) {
+                this.handleRealWalletSync();
+            }
+
+            console.log(`%c[ROYAL SYSTEM]: CALIBRATED. ALL HTML IDs SYNCED.`, "color: #00ff7f; font-weight: bold; background: #000; padding: 5px;");
+        },
+
+        handleRealWalletSync() {
+            const provider = window.solana || window.phantom?.solana;
+            if (provider && provider.publicKey) {
+                const addr = provider.publicKey.toString();
+                this.walletAddress = addr.slice(0, 4) + "..." + addr.slice(-4);
+                this.isWalletConnected = true;
+
+                const walletBtn = document.getElementById('connectWalletBtn');
+                if (walletBtn) {
+                    walletBtn.innerHTML = `🦊 ${this.walletAddress}`;
+                    walletBtn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
+                    walletBtn.style.color = "#000";
+                }
+            }
+        },
+
+        async toggleWallet() {
+            // Вызывает внешний блок коннекта (V18 Singularity/Overlord)
+            if (typeof toggleWalletAction === 'function') {
+                await toggleWalletAction();
+            }
+        },
+
+        scanAndCalibrate() {
+            const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn');
+            targets.forEach((el) => {
+                if (el.dataset.foxSynced) return;
+                let category = this.KEY_BUTTONS[el.id];
+                if (!category) {
+                    if (el.classList.contains('claim-btn-luxe')) category = "REWARDS_CLAIM";
+                    else if (el.classList.contains('discord-btn')) category = "SOCIAL";
+                    else category = "GENERAL_INTERFACE";
+                }
+                this.syncNode(el, category);
+            });
+        },
+
+        syncNode(el, category) {
+            el.dataset.foxSynced = "true";
+            el.dataset.foxCategory = category;
+            el.addEventListener('click', async (e) => {
+                if (el.id === 'connectWalletBtn') {
+                    e.preventDefault();
+                    await this.toggleWallet();
+                    return;
+                }
+                
+                // Привязка твоей функции стейкинга к кнопке инициализации
+                if (el.id === 'initialize-user-stake-btn') {
+                    e.preventDefault();
+                    await this.handleInteraction(el, category);
+                    return;
+                }
+
+                if (el.tagName === 'BUTTON') e.preventDefault();
+                await this.handleInteraction(el, category);
+            });
+        },
+
+        async handleInteraction(el, category) {
+            if (el.dataset.loading === "true") return;
+            const label = (el.innerText || "Action").trim().split('\n')[0];
+            const originalContent = el.innerHTML;
+            el.dataset.loading = "true";
+            this.triggerVisualPulse(el);
+            el.innerHTML = `<span class="fox-loader"></span> Processing...`;
+            this.notify(`Executing: ${label}`, category);
+            
+            try {
+                // Вызов твоих функций блокчейна
+                if (category === "REWARDS_CLAIM") {
+                    if (typeof claimAllRewards === 'function') await claimAllRewards();
+                } else if (category === "STAKING_INIT") {
+                    // Твоя функция из второго блока
+                    if (typeof createStakingAccount === 'function') {
+                        await createStakingAccount(); 
+                    }
+                } else if (category === "STAKING_DEPOSIT") {
+                    this.notify("Check your wallet for approval", "STAKING");
+                }
+                
+                await new Promise(r => setTimeout(r, 1000));
+                el.innerHTML = `✅ Complete`;
+                this.notify(`${label} confirmed on chain`, "SUCCESS");
+            } catch (err) {
+                console.error(err);
+                this.notify("Transaction rejected", "FAILED");
+                el.innerHTML = `❌ Failed`;
+            }
+
+            setTimeout(() => {
+                el.innerHTML = originalContent;
+                el.dataset.loading = "false";
+            }, 2000);
+        },
+
+        triggerVisualPulse(el) {
+            el.style.transform = "scale(0.96)";
+            setTimeout(() => el.style.transform = "", 100);
+        },
+
+        injectGlobalLuxeStyles() {
+            if (document.getElementById('fox-engine-styles')) return;
+            const style = document.createElement('style');
+            style.id = 'fox-engine-styles';
+            style.innerHTML = `
+                .fox-loader {
+                    width: 12px; height: 12px; border: 2px solid currentColor;
+                    border-bottom-color: transparent; border-radius: 50%;
+                    display: inline-block; animation: foxRotation 0.6s linear infinite;
+                    margin-right: 8px;
+                }
+                @keyframes foxRotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                [data-loading="true"] { pointer-events: none; opacity: 0.8; }
+            `;
+            document.head.appendChild(style);
+        },
+
+        buildNotificationSystem() {
+            if (document.getElementById('fox-notif-hub')) return;
+            const hub = document.createElement('div');
+            hub.id = 'fox-notif-hub';
+            hub.style = "position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;";
+            document.body.appendChild(hub);
+        },
+
+        notify(msg, type) {
+            const alert = document.createElement('div');
+            alert.style = "background: #060b1a; border-left: 4px solid #FFD700; color: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: foxIn 0.3s ease-out; pointer-events: auto; min-width: 250px;";
+            alert.innerHTML = `
+                <div style="color: #FFD700; font-size: 9px; font-weight: 900; text-transform: uppercase;">${type}</div>
+                <div style="font-size: 13px;">${msg}</div>
+            `;
+            document.getElementById('fox-notif-hub').appendChild(alert);
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            }, 3500);
+        },
+
+        printBanner() {
+            console.log("%c👑 AURUM FOX ENGINE v7.5", "color: #FFD700; font-size: 20px; font-weight: bold;");
+        },
+
+        watchOrbit() {
+            const observer = new MutationObserver(() => this.scanAndCalibrate());
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
+    };
+
+    // --- ТВОЙ ВТОРОЙ БЛОК (STAKING LOGIC) ---
+    // Убрано слово 'export', чтобы не было ошибки SyntaxError в браузере
+    window.createStakingAccount = async function(program, poolIndex, poolStatePDA, userStakingPDA) {
+        console.log("🚀 Initializing Staking Account...");
+        if (!program) {
+            console.warn("Program not initialized yet. Waiting for wallet...");
+            return;
+        }
+        return await program.methods
+            .initializeUserStake(poolIndex)
+            .accounts({
+                poolState: poolStatePDA,
+                userStaking: userStakingPDA,
+                owner: program.provider.wallet.publicKey,
+                systemProgram: anchor.web3.SystemProgram.programId,
+                rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            })
+            .rpc();
+    };
+
+    // Запуск двигателя
+    setTimeout(() => AurumFoxEngine.init(), 500);
+}
 
 
 
