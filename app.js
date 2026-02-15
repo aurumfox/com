@@ -95,138 +95,213 @@ const AFOX_OFFICIAL_KEYS = {
 // ============================================================
 
 const STAKING_IDL = {
-    "version": "0.1.0",
-    "name": "my_new_afox_project",
-    "instructions": [
+  "version": "0.1.0",
+  "name": "fix_project",
+  "instructions": [
+    {
+      "name": "initializeBase",
+      "accounts": [
+        { "name": "poolState", "isMut": true, "isSigner": false },
+        { "name": "rewardMint", "isMut": false, "isSigner": false },
+        { "name": "initializer", "isMut": true, "isSigner": true },
+        { "name": "programData", "isMut": false, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false },
+        { "name": "clock", "isMut": false, "isSigner": false },
+        { "name": "rent", "isMut": false, "isSigner": false },
+        { "name": "governanceAuthority", "isMut": false, "isSigner": false },
+        { "name": "adminAuthority", "isMut": false, "isSigner": false },
+        { "name": "lendingAuthority", "isMut": false, "isSigner": false }
+      ],
+      "args": [
         {
-            "name": "initializeUserStake",
-            "accounts": [
-                { "name": "poolState", "isMut": true, "isSigner": false },
-                { "name": "userStaking", "isMut": true, "isSigner": false },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "rewardMint", "isMut": false, "isSigner": false },
-                { "name": "systemProgram", "isMut": false, "isSigner": false },
-                { "name": "clock", "isMut": false, "isSigner": false }
-            ],
-            "args": [{ "name": "poolIndex", "type": "u8" }]
-        },
-        {
-            "name": "deposit",
-            "accounts": [
-                { "name": "poolState", "isMut": true, "isSigner": false },
-                { "name": "userStaking", "isMut": true, "isSigner": false },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "userSourceAta", "isMut": true, "isSigner": false },
-                { "name": "vault", "isMut": true, "isSigner": false },
-                { "name": "rewardMint", "isMut": false, "isSigner": false },
-                { "name": "tokenProgram", "isMut": false, "isSigner": false },
-                { "name": "clock", "isMut": false, "isSigner": false }
-            ],
-            "args": [{ "name": "amount", "type": "u64" }]
-        },
-        {
-            "name": "claimRewards",
-            "accounts": [
-                { "name": "poolState", "isMut": true, "isSigner": false },
-                { "name": "userStaking", "isMut": true, "isSigner": false },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "vault", "isMut": true, "isSigner": false },
-                { "name": "adminFeeVault", "isMut": true, "isSigner": false },
-                { "name": "userRewardsAta", "isMut": true, "isSigner": false },
-                { "name": "rewardMint", "isMut": false, "isSigner": false },
-                { "name": "tokenProgram", "isMut": false, "isSigner": false },
-                { "name": "clock", "isMut": false, "isSigner": false }
-            ],
-            "args": []
-        },
-        {
-            "name": "unstake",
-            "accounts": [
-                { "name": "poolState", "isMut": true, "isSigner": false },
-                { "name": "userStaking", "isMut": true, "isSigner": false },
-                { "name": "owner", "isMut": true, "isSigner": true },
-                { "name": "vault", "isMut": true, "isSigner": false },
-                { "name": "daoTreasuryVault", "isMut": true, "isSigner": false },
-                { "name": "adminFeeVault", "isMut": true, "isSigner": false },
-                { "name": "userRewardsAta", "isMut": true, "isSigner": false },
-                { "name": "rewardMint", "isMut": false, "isSigner": false },
-                { "name": "tokenProgram", "isMut": false, "isSigner": false },
-                { "name": "clock", "isMut": false, "isSigner": false }
-            ],
-            "args": [
-                { "name": "amount", "type": "u64" },
-                { "name": "isEarlyExit", "type": "bool" }
-            ]
+          "name": "args",
+          "type": {
+            "defined": "InitializePoolConfigArgs"
+          }
         }
-    ],
-    "accounts": [
-        {
-            "name": "UserStakingAccount",
-            "type": {
-                "kind": "struct",
-                "fields": [
-                    { "name": "isInitialized", "type": "bool" },
-                    { "name": "stakeBump", "type": "u8" },
-                    { "name": "poolIndex", "type": "u8" },
-                    { "name": "paddingA", "type": { "array": ["u8", 5] } },
-                    { "name": "owner", "type": "publicKey" },
-                    { "name": "stakedAmount", "type": "u64" },
-                    { "name": "lockupEndTime", "type": "i64" },
-                    { "name": "rewardPerShareUser", "type": "u128" },
-                    { "name": "rewardsToClaim", "type": "u64" },
-                    { "name": "pendingRewardsDueToLimit", "type": "u64" },
-                    { "name": "lending", "type": "u64" },
-                    { "name": "lendingUnlockTime", "type": "i64" },
-                    { "name": "lastUpdateTime", "type": "i64" },
-                    { "name": "paddingFinal", "type": { "array": ["u8", 104] } } // ОБЯЗАТЕЛЬНО
-                ]
-            }
-        },
-        {
-            "name": "PoolState",
-            "type": {
-                "kind": "struct",
-                "fields": [
-                    { "name": "isInitialized", "type": "bool" },
-                    { "name": "globalPause", "type": "bool" },
-                    { "name": "poolBump", "type": "u8" },
-                    { "name": "vaultBump", "type": "u8" },
-                    { "name": "adminFeeVaultBump", "type": "u8" },
-                    { "name": "daoTreasuryVaultBump", "type": "u8" },
-                    { "name": "defaulterTreasuryVaultBump", "type": "u8" },
-                    { "name": "paddingParams", "type": { "array": ["u8", 6] } },
-                    { "name": "governanceAuthority", "type": "publicKey" },
-                    { "name": "adminAuthority", "type": "publicKey" },
-                    { "name": "lendingAuthority", "type": "publicKey" },
-                    { "name": "pendingGovernanceAuthority", "type": "publicKey" },
-                    { "name": "rewardMint", "type": "publicKey" },
-                    { "name": "vault", "type": "publicKey" },
-                    { "name": "adminFeeVault", "type": "publicKey" },
-                    { "name": "daoTreasuryVault", "type": "publicKey" },
-                    { "name": "defaulterTreasuryVault", "type": "publicKey" },
-                    { "name": "pendingChangeTime", "type": "i64" },
-                    { "name": "lastRewardTime", "type": "i64" },
-                    { "name": "maxDaoWithdrawalAmount", "type": "u64" },
-                    { "name": "sweepThreshold", "type": "u64" },
-                    { "name": "adminFeeShareBps", "type": "u16" },
-                    { "name": "paddingParamsLockup", "type": { "array": ["u8", 6] } },
-                    { "name": "lockupSeconds", "type": { "array": ["i64", 3] } },
-                    { "name": "rewardPerShareGlobal", "type": "u128" },
-                    { "name": "totalStakedAmount", "type": "u64" },
-                    { "name": "totalUnclaimedRewards", "type": "u64" },
-                    { "name": "daoWithdrawal24hCap", "type": "u64" },
-                    { "name": "daoWithdrawalResetTime", "type": "i64" },
-                    { "name": "paddingFinal", "type": { "array": ["u8", 96] } } // ОБЯЗАТЕЛЬНО
-                ]
-            }
-        }
-    ],
-    "errors": [
-        { "code": 6000, "name": "AlreadyInitialized", "msg": "Account already initialized." },
-        { "code": 6022, "name": "DaoLimitReached", "msg": "DAO daily withdrawal limit reached." }
-        // Можно добавить остальные для дебага
-    ]
+      ]
+    },
+    {
+      "name": "initializeUserStake",
+      "accounts": [
+        { "name": "poolState", "isMut": false, "isSigner": false },
+        { "name": "userStaking", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false },
+        { "name": "clock", "isMut": false, "isSigner": false }
+      ],
+      "args": [{ "name": "poolIndex", "type": "u8" }]
+    },
+    {
+      "name": "deposit",
+      "accounts": [
+        { "name": "poolState", "isMut": true, "isSigner": false },
+        { "name": "userStaking", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true },
+        { "name": "vault", "isMut": true, "isSigner": false },
+        { "name": "stMint", "isMut": true, "isSigner": false },
+        { "name": "userSourceAta", "isMut": true, "isSigner": false },
+        { "name": "userStAta", "isMut": true, "isSigner": false },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false },
+        { "name": "clock", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "poolIndex", "type": "u8" },
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "claimAllRewards",
+      "accounts": [
+        { "name": "poolState", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true },
+        { "name": "vault", "isMut": true, "isSigner": false },
+        { "name": "adminFeeVault", "isMut": true, "isSigner": false },
+        { "name": "userRewardsAta", "isMut": true, "isSigner": false },
+        { "name": "rewardMint", "isMut": false, "isSigner": false },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false },
+        { "name": "clock", "isMut": false, "isSigner": false }
+      ],
+      "args": [{ "name": "poolIndices", "type": { "vec": "u8" } }]
+    },
+    {
+      "name": "unstake",
+      "accounts": [
+        { "name": "poolState", "isMut": true, "isSigner": false },
+        { "name": "user", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true },
+        { "name": "vault", "isMut": true, "isSigner": false },
+        { "name": "daoTreasuryVault", "isMut": true, "isSigner": false },
+        { "name": "adminFeeVault", "isMut": true, "isSigner": false },
+        { "name": "userRewardsAta", "isMut": true, "isSigner": false },
+        { "name": "userStAta", "isMut": true, "isSigner": false },
+        { "name": "stMint", "isMut": false, "isSigner": false },
+        { "name": "rewardMint", "isMut": false, "isSigner": false },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false },
+        { "name": "clock", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "poolIndex", "type": "u8" },
+        { "name": "amount", "type": "u64" }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "PoolState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "rewardPerShareGlobal", "type": "u128" },
+          { "name": "rewardRatePerSec", "type": "u128" },
+          { "name": "pendingRewardRate", "type": "u128" },
+          { "name": "governanceAuthority", "type": "publicKey" },
+          { "name": "adminAuthority", "type": "publicKey" },
+          { "name": "lendingAuthority", "type": "publicKey" },
+          { "name": "pendingGovernanceAuthority", "type": "publicKey" },
+          { "name": "rewardMint", "type": "publicKey" },
+          { "name": "stMint", "type": "publicKey" },
+          { "name": "vault", "type": "publicKey" },
+          { "name": "adminFeeVault", "type": "publicKey" },
+          { "name": "daoTreasuryVault", "type": "publicKey" },
+          { "name": "defaulterTreasuryVault", "type": "publicKey" },
+          { "name": "pendingBlacklistUser", "type": "publicKey" },
+          { "name": "minInitialStake", "type": "u64" },
+          { "name": "pendingChangeTime", "type": "i64" },
+          { "name": "lastRewardTime", "type": "i64" },
+          { "name": "maxDaoWithdrawalAmount", "type": "u64" },
+          { "name": "sweepThreshold", "type": "u64" },
+          { "name": "totalStakedAmount", "type": "u64" },
+          { "name": "totalWeightedStake", "type": "u64" },
+          { "name": "totalUnclaimedRewards", "type": "u64" },
+          { "name": "daoWithdrawal24hCap", "type": "u64" },
+          { "name": "daoWithdrawalResetTime", "type": "i64" },
+          { "name": "governanceLockSeconds", "type": "i64" },
+          { "name": "lendingUnlockGraceSeconds", "type": "i64" },
+          { "name": "lockupSeconds", "type": { "array": ["i64", 5] } },
+          { "name": "pendingConfigActivationTime", "type": "i64" },
+          { "name": "blacklistUnlockTime", "type": "i64" },
+          { "name": "poolsUpdateTime", "type": "i64" },
+          { "name": "pendingIndexResetTime", "type": "i64" },
+          { "name": "tierMultipliersBps", "type": { "array": ["u16", 5] } },
+          { "name": "pendingConfigTierMultipliers", "type": { "array": ["u16", 5] } },
+          { "name": "adminFeeShareBps", "type": "u16" },
+          { "name": "earlyExitFeeBps", "type": "u16" },
+          { "name": "pendingConfigEarlyExitBps", "type": "u16" },
+          { "name": "activePoolsCount", "type": "u8" },
+          { "name": "isInitialized", "type": "u8" },
+          { "name": "globalPause", "type": "u8" },
+          { "name": "poolBump", "type": "u8" },
+          { "name": "stMintBump", "type": "u8" },
+          { "name": "vaultBump", "type": "u8" },
+          { "name": "adminFeeVaultBump", "type": "u8" },
+          { "name": "daoTreasuryVaultBump", "type": "u8" },
+          { "name": "defaulterTreasuryVaultBump", "type": "u8" },
+          { "name": "pendingActivePoolsCount", "type": "u8" },
+          { "name": "manualPadding", "type": { "array": ["u8", 4] } },
+          { "name": "reserved", "type": { "array": ["u8", 128] } }
+        ]
+      }
+    },
+    {
+      "name": "UserStakingAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "rewardPerShareUser", "type": "u128" },
+          { "name": "owner", "type": "publicKey" },
+          { "name": "poolState", "type": "publicKey" },
+          { "name": "stakedAmount", "type": "u64" },
+          { "name": "lockupEndTime", "type": "i64" },
+          { "name": "rewardsToClaim", "type": "u64" },
+          { "name": "pendingRewardsDueToLimit", "type": "u64" },
+          { "name": "lending", "type": "u64" },
+          { "name": "lendingUnlockTime", "type": "i64" },
+          { "name": "lastUpdateTime", "type": "i64" },
+          { "name": "stTokensMinted", "type": "u64" },
+          { "name": "lastDepositSlot", "type": "u64" },
+          { "name": "blacklistActivationTime", "type": "i64" },
+          { "name": "tierMultiplier", "type": "u16" },
+          { "name": "poolIndex", "type": "u8" },
+          { "name": "isInitialized", "type": "u8" },
+          { "name": "isBlacklisted", "type": "u8" },
+          { "name": "blacklistPendingStatus", "type": "u8" },
+          { "name": "stakeBump", "type": "u8" },
+          { "name": "reservedPadding", "type": "u8" },
+          { "name": "finalFix", "type": { "array": ["u8", 8] } },
+          { "name": "reserved", "type": { "array": ["u8", 16] } }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "InitializePoolConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "poolBump", "type": "u8" },
+          { "name": "maxDaoWithdrawalAmount", "type": "u64" },
+          { "name": "adminFeeShareBps", "type": "u16" },
+          { "name": "earlyExitFeeBps", "type": "u16" },
+          { "name": "lockupSeconds", "type": { "array": ["i64", 5] } },
+          { "name": "tierMultipliers", "type": { "array": ["u16", 5] } },
+          { "name": "sweepThreshold", "type": "u64" },
+          { "name": "govLock", "type": "i64" },
+          { "name": "lendingGrace", "type": "i64" },
+          { "name": "activePoolsCount", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    { "code": 6000, "name": "AlreadyInitialized", "msg": "Account already initialized." },
+    { "code": 6007, "name": "GlobalPause", "msg": "Global pause is active." },
+    { "code": 6021, "name": "DaoLimitReached", "msg": "DAO daily withdrawal limit reached." },
+    { "code": 6029, "name": "UserIsBlacklisted", "msg": "User is blacklisted." }
+  ]
 };
+
 
 
 
@@ -270,14 +345,22 @@ function setupAddresses() {
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
 
-// ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: owner + pool_state_pubkey)
-async function getUserStakingPDA(owner) {
+/**
+ * ПРАВИЛЬНЫЙ РАСЧЕТ PDA (Синхронизировано с твоим Rust: seeds + pool_index)
+ * @param {PublicKey} owner - Публичный ключ пользователя
+ * @param {PublicKey} poolStatePubkey - Адрес твоего главного контракта (PoolState)
+ * @param {number} poolIndex - Индекс пула (от 0 до 4)
+ * @param {PublicKey} programId - ID твоей программы (3ujis4s983...)
+ */
+async function getUserStakingPDA(owner, poolStatePubkey, poolIndex, programId) {
     const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
         [
-            owner.toBuffer(), 
-            AFOX_POOL_STATE_PUBKEY.toBuffer() // Это должен быть DfAaH2Xs...
+            Buffer.from("user_stake"),
+            poolStatePubkey.toBuffer(),
+            owner.toBuffer(),
+            Buffer.from([poolIndex]) // Индекс пула как массив из 1 байта
         ],
-        STAKING_PROGRAM_ID
+        programId
     );
     return pda;
 }
@@ -287,47 +370,61 @@ async function getUserStakingPDA(owner) {
 // ============================================================
 // ОПТИМИЗИРОВАННЫЙ МОДУЛЬ ДАННЫХ И RPC (БЕЗ ДУБЛИКАТОВ)
 // ============================================================
-
 /**
  * 1. УНИВЕРСАЛЬНЫЙ ПАРСЕР ЧИСЕЛ (BigInt)
- * Очищен от лишних условий, работает быстрее.
+ * Синхронизирован с логикой контракта: ввод -> u64/u128
  */
-function parseAmountToBigInt(amountStr, decimals) {
-    if (!amountStr || amountStr.trim() === '') return 0n;
+function parseAmountToBigInt(amountStr, decimals = 6) {
+    if (!amountStr || amountStr.toString().trim() === '') return 0n;
 
-    // Удаляем всё, кроме цифр и одной точки
-    const cleaned = amountStr.trim().replace(/[^\d.]/g, '');
+    // Очистка ввода: оставляем только цифры и одну точку/запятую
+    let cleaned = amountStr.toString().replace(',', '.').replace(/[^\d.]/g, '');
+    
     const parts = cleaned.split('.');
-    if (parts.length > 2) throw new Error('Invalid number format');
+    if (parts.length > 2) throw new Error('Неверный формат числа');
 
-    const integerPart = parts[0] || '0';
-    let fractionalPart = (parts[1] || '').substring(0, decimals).padEnd(decimals, '0');
+    let integerPart = parts[0] || '0';
+    let fractionalPart = parts[1] || '';
 
+    // Обрезаем лишние знаки после запятой, если пользователь ввел больше, чем поддерживает токен
+    fractionalPart = fractionalPart.substring(0, decimals).padEnd(decimals, '0');
+
+    // Формируем итоговое число для отправки в контракт (например, "1.5" при 6 dec станет 1500000n)
     return BigInt(integerPart + fractionalPart);
 }
 
 /**
- * 2. СТАБИЛЬНОЕ ПОДКЛЮЧЕНИЕ (Robust Connection)
- * Теперь создает соединение только если его нет, предотвращая утечки памяти.
+ * 2. СТАБИЛЬНОЕ ПОДКЛЮЧЕНИЕ
+ * Оптимизировано под работу с Connection и проверку работоспособности RPC
  */
 async function getRobustConnection() {
-    if (appState.connection) return appState.connection;
-
-    try {
-        const conn = new window.solanaWeb3.Connection(BACKUP_RPC_ENDPOINT, { 
-            commitment: 'confirmed'
-        });
-        // Проверка живой ли узел одним быстрым запросом
-        await conn.getSlot(); 
-        appState.connection = conn;
-        return conn;
-    } catch (e) {
-        console.error("RPC Error:", e);
-        showNotification("Primary RPC unreachable. Switching...", "warning");
-        // Резервный узел
-        appState.connection = new window.solanaWeb3.Connection(RPC_ENDPOINTS[1], 'confirmed');
-        return appState.connection;
+    // Проверяем, существует ли соединение и не "протухло" ли оно
+    if (appState.connection) {
+        try {
+            await appState.connection.getSlot();
+            return appState.connection;
+        } catch (e) {
+            console.warn("Текущее соединение потеряно, переподключаемся...");
+        }
     }
+
+    const endpoints = [BACKUP_RPC_ENDPOINT, ...RPC_ENDPOINTS];
+    
+    for (const url of endpoints) {
+        try {
+            const conn = new window.solanaWeb3.Connection(url, { commitment: 'confirmed' });
+            await conn.getSlot(); // Быстрый тест на "живость"
+            appState.connection = conn;
+            console.log(`Подключено к RPC: ${url}`);
+            return conn;
+        } catch (e) {
+            console.error(`Ошибка RPC ${url}:`, e);
+            continue; 
+        }
+    }
+    
+    showNotification("Все RPC недоступны. Проверьте интернет.", "error");
+    throw new Error("RPC_UNREACHABLE");
 }
 
 /**
