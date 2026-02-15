@@ -625,6 +625,191 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 
+// ============================================================
+// 👑 AURUM FOX: THE FINAL MONOLITH (ALL-IN-ONE)
+// ============================================================
+
+// 1. ПРИВЯЗКА ФУНКЦИЙ К ГЛОБАЛЬНОМУ ОКНУ (Чтобы движок их видел)
+window.claimAllRewards = claimAllRewards;
+window.stakeAfox = stakeAfox;
+window.unstakeAfox = unstakeAfox;
+window.createStakingAccount = createStakingAccount;
+window.executeBorrowing = executeBorrowing;
+window.decollateralize = decollateralize;
+
+// 2. ЕДИНЫЙ МОДУЛЬ УПРАВЛЕНИЯ КОШЕЛЬКОМ
+const FoxWalletCore = {
+    isLocked: false,
+    async connect() {
+        if (this.isLocked) return;
+        this.isLocked = true;
+        const btn = document.getElementById('connectWalletBtn');
+        const provider = AurumFoxEngine.getProvider();
+        try {
+            if (!provider) {
+                AurumFoxEngine.notify("Wallet not found!", "ERROR");
+                window.open("https://phantom.app/", "_blank");
+                return;
+            }
+            if (btn) btn.innerHTML = `<span class="fox-loader"></span> Syncing...`;
+            const resp = await provider.connect();
+            AurumFoxEngine.handleRealWalletSync(provider);
+            AurumFoxEngine.notify("Royal Sync: Active", "SUCCESS");
+        } catch (err) {
+            AurumFoxEngine.notify("Rejected", "CANCELLED");
+            this.resetButton(btn);
+        } finally { this.isLocked = false; }
+    },
+    async disconnect() {
+        const provider = AurumFoxEngine.getProvider();
+        if (provider?.disconnect) await provider.disconnect();
+        window.appState.walletPublicKey = null;
+        window.appState.provider = null;
+        AurumFoxEngine.isWalletConnected = false;
+        this.resetButton(document.getElementById('connectWalletBtn'));
+        window.AurumDisplayCore.sync(null);
+        AurumFoxEngine.notify("Wallet Offline", "OFFLINE");
+    },
+    resetButton(btn) {
+        if (btn) { btn.innerHTML = `🦊 Connect Wallet`; btn.style = ""; }
+    }
+};
+
+// 3. ОСНОВНОЙ ДВИЖОК AURUM FOX
+const AurumFoxEngine = {
+    isWalletConnected: false,
+    KEY_BUTTONS: {
+        "connectWalletBtn": "HEADER/WALLET",
+        "initialize-user-stake-btn": "STAKING_INIT",
+        "deposit-btn": "STAKING_DEPOSIT",
+        "unstake-btn": "STAKING_WITHDRAW",
+        "max-stake-btn": "INTERFACE_HELPER",
+        "claim-all-rewards-btn": "REWARDS_CLAIM",
+        "claim-all-btn-luxe": "REWARDS_CLAIM",
+        "collateralize-btn": "LENDING_BORROW",
+        "decollateralize-btn": "LENDING_REPAY",
+        "repay-close-btn": "LENDING_CLOSE"
+    },
+
+    init() {
+        this.injectStyles();
+        this.buildNotifHub();
+        this.scan();
+        setTimeout(() => this.syncOnStart(), 500);
+        new MutationObserver(() => this.scan()).observe(document.body, { childList: true, subtree: true });
+        console.log("%c👑 AURUM FOX ENGINE v15.0 ONLINE", "color: #FFD700; font-weight: bold;");
+    },
+
+    getProvider() { return window.phantom?.solana || window.solflare || window.solana; },
+
+    async syncOnStart() {
+        const p = this.getProvider();
+        if (p) {
+            try {
+                const r = await p.connect({ onlyIfTrusted: true });
+                if (r.publicKey) this.handleRealWalletSync(p);
+            } catch (e) {}
+        }
+    },
+
+    handleRealWalletSync(provider) {
+        this.isWalletConnected = true;
+        window.appState.walletPublicKey = provider.publicKey;
+        window.appState.provider = provider;
+        window.AurumDisplayCore.sync(provider.publicKey);
+        if (typeof updateStakingAndBalanceUI === 'function') updateStakingAndBalanceUI();
+    },
+
+    scan() {
+        document.querySelectorAll('button, .royal-btn, .web3-btn').forEach(btn => {
+            if (btn.dataset.foxSynced) return;
+            const cat = this.KEY_BUTTONS[btn.id] || (btn.classList.contains('claim-btn-luxe') ? "REWARDS_CLAIM" : null);
+            if (cat) {
+                btn.dataset.foxSynced = "true";
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    if (cat === "HEADER/WALLET") {
+                        this.isWalletConnected ? await FoxWalletCore.disconnect() : await FoxWalletCore.connect();
+                    } else {
+                        await this.handleInteraction(btn, cat);
+                    }
+                });
+            }
+        });
+    },
+
+    async handleInteraction(el, cat) {
+        if (!this.isWalletConnected) {
+            this.notify("Connect Wallet First!", "SECURITY");
+            return;
+        }
+        const original = el.innerHTML;
+        el.innerHTML = `<span class="fox-loader"></span> Processing...`;
+        el.style.pointerEvents = "none";
+
+        try {
+            const program = getAnchorProgram(window.STAKING_PROGRAM_ID, STAKING_IDL);
+            const userPDA = await getUserStakingPDA(window.appState.walletPublicKey);
+
+            // ЛОГИКА ДЕЙСТВИЙ
+            switch(cat) {
+                case "REWARDS_CLAIM":
+                    await window.claimAllRewards(program, [0, 1, 2], [userPDA], window.AFOX_POOL_STATE_PUBKEY, window.AFOX_REWARDS_VAULT_PUBKEY, window.appState.walletPublicKey);
+                    break;
+                case "STAKING_DEPOSIT":
+                    const depVal = document.querySelector('input[type="number"]')?.value || "0";
+                    await window.stakeAfox(program, 0, parseAmountToBigInt(depVal, 6), window.AFOX_POOL_STATE_PUBKEY, userPDA, /* Добавь сюда ATA через свой appState */);
+                    break;
+                case "LENDING_BORROW":
+                    const borVal = document.querySelector('.lending-input')?.value || "0";
+                    await window.executeBorrowing(program, window.AFOX_POOL_STATE_PUBKEY, userPDA, parseAmountToBigInt(borVal, 6));
+                    break;
+                case "INTERFACE_HELPER":
+                    if (typeof handleMaxButtonClick === 'function') handleMaxButtonClick('STAKING');
+                    break;
+            }
+
+            this.notify("Confirmed", "SUCCESS");
+            el.innerHTML = `✅ Complete`;
+        } catch (err) {
+            console.error(err);
+            this.notify("Failed", "ERROR");
+            el.innerHTML = `❌ Error`;
+        }
+        setTimeout(() => { el.innerHTML = original; el.style.pointerEvents = "auto"; }, 2000);
+    },
+
+    injectStyles() {
+        if (document.getElementById('fox-luxe-styles')) return;
+        const s = document.createElement('style');
+        s.id = 'fox-luxe-styles';
+        s.innerHTML = `
+            .fox-loader { width: 14px; height: 14px; border: 2px solid currentColor; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: fRot 0.6s linear infinite; vertical-align: middle; margin-right: 8px; }
+            @keyframes fRot { to { transform: rotate(360deg); } }
+        `;
+        document.head.appendChild(s);
+    },
+
+    buildNotifHub() {
+        if (document.getElementById('fox-notif-hub')) return;
+        const h = document.createElement('div');
+        h.id = 'fox-notif-hub';
+        h.style = "position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px;";
+        document.body.appendChild(h);
+    },
+
+    notify(msg, type) {
+        const hub = document.getElementById('fox-notif-hub');
+        const alert = document.createElement('div');
+        alert.style = "background: #060b1a; border-left: 4px solid #FFD700; color: #fff; padding: 12px 20px; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); min-width: 200px;";
+        alert.innerHTML = `<b style="color: #FFD700;">${type}</b><br><span style="font-size: 13px;">${msg}</span>`;
+        hub.appendChild(alert);
+        setTimeout(() => alert.remove(), 4000);
+    }
+};
+
+// Запуск
+setTimeout(() => AurumFoxEngine.init(), 300);
 
 
 
