@@ -82,7 +82,7 @@ const POOLS_CONFIG = {
 };
 
 const AFOX_OFFICIAL_KEYS = {
-    STAKING_PROGRAM: "ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH",
+    STAKING_PROGRAM: "3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL",
     TOKEN_MINT:      "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd",
     POOL_STATE:      "DfAaH2XsWsjSgPkECmZfDsmABzboJ5hJ8T32Aft2QaXZ",
     POOL_VAULT:      "328N13YrQyUAfqHEAXhtQhfan5hHRxDdZqsdpSx6KSkp",
@@ -584,26 +584,39 @@ async function updateStakingAndBalanceUI() {
 
 /**
  * Создает экземпляр программы Anchor для взаимодействия со смарт-контрактом.
+ * Синхронизировано с ID контракта: 3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL
  */
 function getAnchorProgram(programId, idl) {
+    // 1. Проверка наличия подключения кошелка
     if (!appState.connection || !appState.provider) {
-        throw new Error("Wallet not connected");
+        throw new Error("Wallet not connected. Please connect your wallet first.");
     }
-    // Используем window.anchor (маленькая 'a'), так как это стандарт для браузерного билда
-    const provider = new (window.anchor.AnchorProvider || window.Anchor.AnchorProvider)(
+
+    // 2. Инициализация Провайдера. 
+    // Обрабатываем разные способы обращения к AnchorProvider в зависимости от сборки
+    const AnchorLib = window.anchor || window.Anchor;
+    if (!AnchorLib) {
+        throw new Error("Anchor library not found in window object");
+    }
+
+    const provider = new AnchorLib.AnchorProvider(
         appState.connection,
         appState.provider,
-        { commitment: "confirmed" }
+        { 
+            commitment: "confirmed",
+            preflightCommitment: "confirmed" 
+        }
     );
-    return new (window.anchor.Program || window.Anchor.Program)(idl, programId, provider);
-}
 
-/**
- * Определяет количество знаков после запятой для токена.
- */
-function getTokenDecimals(mintAddress) {
-    if (mintAddress.equals(GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd)) return AFOX_DECIMALS;
-    return 6; // По умолчанию для SOL и других
+    // 3. Создание экземпляра программы
+    // programId должен быть: new PublicKey("3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL")
+    try {
+        const program = new AnchorLib.Program(idl, programId, provider);
+        return program;
+    } catch (error) {
+        console.error("Failed to initialize Anchor Program:", error);
+        throw error;
+    }
 }
 
 
