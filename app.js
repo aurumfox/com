@@ -1358,18 +1358,165 @@ window.addEventListener('load', () => {
 
 
 
- 
+ // ============================================================
+// 👑 AURUM FOX: LUXE ENGINE v7.6 - MAX BALANCE FIXED
+// ============================================================
 
+window.AurumFoxEngine = {
+    isWalletConnected: false,
+    walletAddress: null,
+    isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
 
+    notify(msg, type = "SYSTEM") {
+        console.log(`[${type}] ${msg}`);
+        if (typeof showFoxToast === 'function') {
+            showFoxToast(msg, type.toLowerCase() === 'success' ? 'success' : 'error');
+        } else {
+            alert(`${type}: ${msg}`);
+        }
+    },
 
+    init() {
+        console.clear();
+        console.log("%c👑 AURUM FOX ENGINE v7.6 - MAX ACTIVE", "color: #FFD700; font-size: 16px; font-weight: bold;");
+        this.injectGlobalLuxeStyles();
+        this.scanAndCalibrate();
 
+        const saved = localStorage.getItem('fox_sol_addr');
+        if (saved) {
+            this.walletAddress = saved;
+            this.isWalletConnected = true;
+        }
+    },
 
+    scanAndCalibrate() {
+        // ТЕПЕРЬ ВСЕ КНОПКИ ТУТ:
+        const KEY_BUTTONS = {
+            "connectWalletBtn": "HEADER/WALLET",
+            "initialize-user-stake-btn": "STAKING_INIT",
+            "deposit-btn": "STAKING_DEPOSIT",
+            "unstake-btn": "STAKING_WITHDRAW",
+            "stake-max-btn": "STAKE_MAX_ACTION",     // Кнопка MAX для Депозита
+            "unstake-max-btn": "UNSTAKE_MAX_ACTION", // Кнопка MAX для Вывода
+            "refund-soul-btn": "STAKING_CLOSE",      // Твоя кнопка Refund
+            "claim-all-rewards-btn": "REWARDS_CLAIM",
+            "claim-all-btn-luxe": "REWARDS_CLAIM",
+            "collateralize-btn": "LENDING_COLLATERAL",
+            "decollateralize-btn": "LENDING_DECOLLATERAL",
+            "borrow-btn": "LENDING_BORROW",
+            "repay-btn": "LENDING_REPAY"
+        };
 
+        // Ищем все кнопки, включая ID для MAX и Refund
+        const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn, #stake-max-btn, #unstake-max-btn, #refund-soul-btn');
+        targets.forEach((el) => {
+            if (el.dataset.foxSynced) return;
+            let category = KEY_BUTTONS[el.id] || "GENERAL_INTERFACE";
+            el.dataset.foxSynced = "true";
 
+            el.addEventListener('click', async (e) => {
+                if (el.id === 'connectWalletBtn') {
+                    e.preventDefault();
+                    if (typeof toggleWalletAction === 'function') await toggleWalletAction();
+                } else {
+                    if (el.tagName === 'BUTTON' || el.id.includes('btn')) e.preventDefault();
+                    await this.handleInteraction(el, category);
+                }
+            });
+        });
+    },
 
+    async handleInteraction(el, category) {
+        if (el.dataset.loading === "true") return;
+        const originalContent = el.innerHTML;
+        el.dataset.loading = "true";
+        el.innerHTML = `<span class="fox-loader"></span>`;
 
+        try {
+            switch(category) {
+                case "STAKE_MAX_ACTION":
+                    // ЛОГИКА ДЛЯ ПЕРВОЙ КНОПКИ MAX (Твой баланс кошелька)
+                    if (window.appState && window.appState.userBalances) {
+                        const amount = formatBigInt(window.appState.userBalances.AFOX, AFOX_DECIMALS);
+                        const input = document.getElementById('stake-input-amount');
+                        if (input) input.value = amount;
+                        this.notify(`MAX BALANCE: ${amount}`, "SUCCESS");
+                    }
+                    break;
 
+                case "UNSTAKE_MAX_ACTION":
+                    // ЛОГИКА ДЛЯ ВТОРОЙ КНОПКИ MAX (Твой стейк в контракте)
+                    if (window.appState && window.appState.userStakingData) {
+                        const amount = formatBigInt(window.appState.userStakingData.stakedAmount, AFOX_DECIMALS);
+                        const input = document.getElementById('unstake-input-amount');
+                        if (input) input.value = amount;
+                        this.notify(`MAX STAKE: ${amount}`, "SUCCESS");
+                    }
+                    break;
 
+                case "STAKING_CLOSE":
+                    if (typeof window.refundSoulAccount === 'function') await window.refundSoulAccount();
+                    break;
 
+                case "STAKING_INIT":
+                    if (typeof window.createStakingAccount === 'function') await window.createStakingAccount(0);
+                    break;
+                case "STAKING_DEPOSIT":
+                    if (typeof window.stakeAfox === 'function') await window.stakeAfox();
+                    break;
+                case "STAKING_WITHDRAW":
+                    if (typeof window.unstakeAfox === 'function') await window.unstakeAfox();
+                    break;
+                case "REWARDS_CLAIM":
+                    if (typeof window.claimAllRewards === 'function') await window.claimAllRewards();
+                    break;
+                case "LENDING_COLLATERAL":
+                    if (typeof window.executeCollateral === 'function') await window.executeCollateral();
+                    break;
+                case "LENDING_DECOLLATERAL":
+                    if (typeof window.executeDecollateral === 'function') await window.executeDecollateral();
+                    break;
+                case "LENDING_BORROW":
+                    if (typeof window.executeBorrow === 'function') await window.executeBorrow();
+                    break;
+                case "LENDING_REPAY":
+                    if (typeof window.executeRepay === 'function') await window.executeRepay("0");
+                    break;
+            }
             
+            // Если это кнопка MAX, не пишем "DONE", чтобы не стирать текст кнопки
+            if (!category.includes("MAX")) {
+                el.innerHTML = `✅ DONE`;
+            } else {
+                el.innerHTML = originalContent;
+            }
+        } catch (err) {
+            console.error("TX Error:", err);
+            el.innerHTML = `❌`;
+            this.notify(err.message || "Action failed", "ERROR");
+        }
+
+        setTimeout(() => {
+            el.innerHTML = originalContent;
+            el.dataset.loading = "false";
+        }, 1500);
+    },
+
+    injectGlobalLuxeStyles() {
+        if (document.getElementById('fox-engine-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'fox-engine-styles';
+        style.innerHTML = `
+            .fox-loader { width: 12px; height: 12px; border: 2px solid currentColor; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: foxRotation 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
+            @keyframes foxRotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            [data-loading="true"] { pointer-events: none; opacity: 0.8; cursor: wait; }
+            #stake-max-btn, #unstake-max-btn { cursor: pointer; }
+        `;
+        document.head.appendChild(style);
+    }
+};
+
+// Запуск
+setTimeout(() => window.AurumFoxEngine.init(), 100);
+
 
