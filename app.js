@@ -466,40 +466,39 @@ function getTokenDecimals(mintAddress) {
 
 
 
-// --- ФУНКЦИИ, ВЫЗЫВАЕМЫЕ ЧЕРЕЗ ID КНОПОК ---
 
-// 1. Для ID: "initialize-user-stake-btn" (Category: STAKING_INIT)
 
+
+
+
+
+
+
+// 1. Инициализация аккаунта стейкинга (ID: "initialize-user-stake-btn")
 window.createStakingAccount = async function() {
     try {
         console.log("🚀 Initializing Staking Account...");
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const poolIndex = 0; // По умолчанию первый пул
-
-        const [userStakingPDA] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
             [window.solana.publicKey.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
             STAKING_PROGRAM_ID
         );
 
-        const tx = await program.methods
-            .initializeUserStake(poolIndex)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPDA,
-                owner: window.solana.publicKey,
-                systemProgram: window.solanaWeb3.SystemProgram.programId,
-                rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
-            })
-            .rpc();
-        
-        AurumFoxEngine.notify("ACCOUNT INITIALIZED!", "SUCCESS");
+        await program.methods.initializeUserStake(0).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: pda,
+            owner: window.solana.publicKey,
+            systemProgram: window.solanaWeb3.SystemProgram.programId,
+            rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
+        }).rpc();
+        AurumFoxEngine.notify("ACCOUNT READY!", "SUCCESS");
     } catch (err) {
         console.error(err);
         AurumFoxEngine.notify("INIT FAILED", "FAILED");
     }
 };
 
-// 2. Депозит (STAKING_DEPOSIT)
+// 2. Депозит / Стейкинг (ID: "deposit-btn")
 window.stakeAfox = async function() {
     try {
         const amountStr = document.getElementById('stake-input-amount')?.value || "0";
@@ -507,63 +506,108 @@ window.stakeAfox = async function() {
         if (amount <= 0n) return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
 
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const [userStakingPDA] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
             [window.solana.publicKey.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
             STAKING_PROGRAM_ID
         );
 
-        // Авто-поиск ATA пользователя
-        const userSourceAta = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // Находим ATA пользователя для токена AFOX
+        const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
             [window.solana.publicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
             new window.solanaWeb3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
         ).then(res => res[0]);
 
-        await program.methods
-            .deposit(0, new anchor.BN(amount.toString()))
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPDA,
-                userSourceAta: userSourceAta,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                owner: window.solana.publicKey,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .rpc();
+        await program.methods.deposit(new anchor.BN(amount.toString())).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: pda,
+            userSourceAta: userAta,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            owner: window.solana.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
         AurumFoxEngine.notify("STAKED SUCCESSFULLY!", "SUCCESS");
     } catch (err) {
         console.error(err);
-        AurumFoxEngine.notify("DEPOSIT FAILED", "FAILED");
+        AurumFoxEngine.notify("STAKE ERROR", "FAILED");
     }
 };
 
-// 3. Вывод (STAKING_WITHDRAW)
+// 3. Вывод из стейкинга (ID: "unstake-btn")
 window.unstakeAfox = async function() {
     try {
+        const amountStr = document.getElementById('unstake-input-amount')?.value || "0";
+        const amount = parseAmountToBigInt(amountStr, AFOX_DECIMALS);
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        // Аналогичная логика поиска PDA и ATA...
-        AurumFoxEngine.notify("WITHDRAWING...", "SUCCESS");
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [window.solana.publicKey.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+            STAKING_PROGRAM_ID
+        );
+
+        await program.methods.unstake(new anchor.BN(amount.toString()), false).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: pda,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            owner: window.solana.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+        AurumFoxEngine.notify("UNSTAKED!", "SUCCESS");
+    } catch (err) {
+        console.error(err);
+        AurumFoxEngine.notify("UNSTAKE FAILED", "FAILED");
+    }
+};
+
+// 4. Залог под кредит (ID: "collateralize-btn")
+window.executeCollateral = async function() {
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [window.solana.publicKey.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+            STAKING_PROGRAM_ID
+        );
+
+        await program.methods.collateralizeLending(new anchor.BN("1000000")).accounts({ // Пример суммы
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: pda,
+            lendingAuthority: window.solana.publicKey,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+        AurumFoxEngine.notify("COLLATERAL LOCKED", "SUCCESS");
     } catch (err) { console.error(err); }
 };
 
-// 6. Сбор всех наград (REWARDS_CLAIM_ALL) - ТВОЙ ФАВОРИТ
+// 5. Возврат залога (ID: "decollateralize-btn")
+window.executeDecollateral = async function() {
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [window.solana.publicKey.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+            STAKING_PROGRAM_ID
+        );
+
+        await program.methods.decollateralizeLending(new anchor.BN("1000000")).accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: pda,
+            lendingAuthority: window.solana.publicKey,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        }).rpc();
+        AurumFoxEngine.notify("COLLATERAL RELEASED", "SUCCESS");
+    } catch (err) { console.error(err); }
+};
+
+// 6. Сбор ВСЕХ наград (ID: "claim-all-rewards-btn")
 window.claimAllRewards = async function() {
     try {
-        console.log("🔥 Claiming All Rewards...");
-        if (!window.solana || !window.solana.publicKey) return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-
-        // Прямая проверка: есть ли ID программы
-        if (typeof STAKING_PROGRAM_ID === 'undefined') {
-            window.STAKING_PROGRAM_ID = new window.solanaWeb3.PublicKey("ZiECmSCWiJvsKRbNmBw27pyWEqEPFY4sBZ3MCnbvirH");
-        }
-
-        const program = getAnchorProgram(window.STAKING_PROGRAM_ID, STAKING_IDL);
+        if (!window.solana?.publicKey) return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         const poolIndices = [0, 1, 2]; 
 
-        const userStakingPDAs = await Promise.all(poolIndices.map(async (index) => {
+        const userStakingPDAs = await Promise.all(poolIndices.map(async () => {
             const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
                 [window.solana.publicKey.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
-                window.STAKING_PROGRAM_ID
+                STAKING_PROGRAM_ID
             );
             return pda;
         }));
@@ -572,198 +616,74 @@ window.claimAllRewards = async function() {
             pubkey: pda, isWritable: true, isSigner: false
         }));
 
-        const tx = await program.methods
-            .claimAllRewards(Buffer.from(poolIndices))
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                rewardVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardAccount: window.solana.publicKey,
-                owner: window.solana.publicKey,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .remainingAccounts(remainingAccounts)
-            .rpc();
+        await program.methods.claimRewards().accounts({ // В IDL обычно просто claimRewards
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: userStakingPDAs[0], // Для базового вызова
+            owner: window.solana.publicKey,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            userRewardsAta: window.solana.publicKey, // Здесь должен быть ATA!
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+        }).remainingAccounts(remainingAccounts).rpc();
 
-        AurumFoxEngine.notify("REWARDS COLLECTED!", "SUCCESS");
+        AurumFoxEngine.notify("ALL REWARDS COLLECTED!", "SUCCESS");
     } catch (err) {
-        console.error("❌ Error during claim:", err);
+        console.error(err);
         AurumFoxEngine.notify("CLAIM FAILED", "FAILED");
     }
 };
 
-
-// 2. Для ID: "deposit-btn" (Category: STAKING_DEPOSIT)
-export async function stakeAfox(program, poolIndex, amount, poolStatePDA, userStakingPDA, userSourceAta, poolVaultAta) {
-    console.log(`💎 Staking ${amount} AFOX...`);
-    return await program.methods
-        .deposit(poolIndex, new anchor.BN(amount))
-        .accounts({
-            poolState: poolStatePDA,
-            userStaking: userStakingPDA,
-            userSourceAta: userSourceAta,
-            poolVault: poolVaultAta,
-            owner: program.provider.wallet.publicKey,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            systemProgram: anchor.web3.SystemProgram.programId,
-            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .rpc();
-}
-
-// 3. Для ID: "unstake-btn" (Category: STAKING_WITHDRAW)
-export async function unstakeAfox(program, poolIndex, amount, poolStatePDA, userStakingPDA, poolVaultAta, userDestinationAta) {
-    console.log(`📤 Unstaking ${amount} AFOX...`);
-    return await program.methods
-        .withdraw(poolIndex, new anchor.BN(amount))
-        .accounts({
-            poolState: poolStatePDA,
-            userStaking: userStakingPDA,
-            poolVault: poolVaultAta,
-            userDestinationAta: userDestinationAta,
-            owner: program.provider.wallet.publicKey,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .rpc();
-}
-
-// 4. Для ID: "collateralize-btn" (Category: LENDING_BORROW)
-export async function executeBorrowing(program, poolStatePDA, userStakingPDA, amount) {
-    console.log(`🔒 Locking Collateral: ${amount}`);
-    return await program.methods
-        .collateralizeLending(new anchor.BN(amount))
-        .accounts({
-            poolState: poolStatePDA,
-            userStaking: userStakingPDA,
-            lendingAuthority: program.provider.wallet.publicKey,
-            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .rpc();
-}
-
-// 5. Для ID: "decollateralize-btn" (Category: LENDING_REPAY)
-export async function decollateralize(program, poolStatePDA, userStakingPDA, amount) {
-    console.log(`🔓 Releasing Collateral: ${amount}`);
-    return await program.methods
-        .decollateralizeLending(new anchor.BN(amount))
-        .accounts({
-            poolState: poolStatePDA,
-            userStaking: userStakingPDA,
-            lendingAuthority: program.provider.wallet.publicKey,
-            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .rpc();
-}
-
-// 6. Для ID: "claim-all-rewards-btn" и "claim-all-btn-luxe" (Category: REWARDS_CLAIM_ALL)
-
-
-async function claimAllRewards() {
+// 7. Сбор прибыли по одному пулу (ID: "collect-profit-btn")
+window.collectProfitSingle = async function(poolIndex = 0) {
     try {
-        console.log("🔥 Claiming All Rewards...");
-
-        // 1. Проверяем кошелек и программу
-        if (!window.solana || !window.solana.publicKey) {
-             AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-             return;
-        }
-
-        // Подключаем программу через твой хелпер (он уже есть в коде)
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [window.solana.publicKey.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+            STAKING_PROGRAM_ID
+        );
 
-        // 2. Нам нужны активные тиры. Если их нет, берем стандартный список [0, 1, 2]
-        const poolIndices = [0, 1, 2]; 
-
-        // 3. Генерируем PDA для каждого пула, чтобы не было ошибки .map()
-        const userStakingPDAs = await Promise.all(poolIndices.map(async (index) => {
-            const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-                [
-                    window.solana.publicKey.toBuffer(),
-                    AFOX_POOL_STATE_PUBKEY.toBuffer()
-                ],
-                STAKING_PROGRAM_ID
-            );
-            return pda;
-        }));
-
-        // 4. Формируем remainingAccounts для транзакции
-        const remainingAccounts = userStakingPDAs.map(pda => ({
-            pubkey: pda,
-            isWritable: true,
-            isSigner: false
-        }));
-
-        // 5. САМ ВЫЗОВ (используем глобальные переменные, которые у тебя уже заданы в начале файла)
-        const tx = await program.methods
-            .claimAllRewards(Buffer.from(poolIndices))
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                rewardVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardAccount: window.solana.publicKey, // Твой ATA
-                owner: window.solana.publicKey,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .remainingAccounts(remainingAccounts)
-            .rpc();
-
-        console.log("✅ SUCCESS:", tx);
-        AurumFoxEngine.notify("REWARDS COLLECTED!", "SUCCESS");
-
-    } catch (err) {
-        console.error("❌ Error during claim:", err);
-        AurumFoxEngine.notify("CLAIM FAILED", "FAILED");
-    }
-}
-
-// Чтобы движок AurumFoxEngine увидел функцию, привязываем её к окну:
-window.claimAllRewards = claimAllRewards;
-
-
-
-// 7. Для ID: "collect-profit-btn" (Category: REWARDS_SINGLE)
-export async function collectProfitSingle(program, poolIndex, poolStatePDA, userStakingPDA, rewardVault, userRewardAccount) {
-    console.log(`💵 Collecting Profit for Pool ${poolIndex}...`);
-    return await program.methods
-        .claimAllRewards(Buffer.from([poolIndex]))
-        .accounts({
-            poolState: poolStatePDA,
-            rewardVault: rewardVault,
-            userRewardAccount: userRewardAccount,
-            owner: program.provider.wallet.publicKey,
+        await program.methods.claimRewards().accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: pda,
+            owner: window.solana.publicKey,
+            vault: AFOX_POOL_VAULT_PUBKEY,
+            userRewardsAta: window.solana.publicKey, 
             tokenProgram: TOKEN_PROGRAM_ID,
             clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .remainingAccounts([{
-            pubkey: userStakingPDA, isWritable: true, isSigner: false
-        }])
-        .rpc();
-}
+        }).rpc();
+        AurumFoxEngine.notify("PROFIT COLLECTED", "SUCCESS");
+    } catch (err) { console.error(err); }
+};
 
-// 8. Для ID: "force-unlock-btn" (Category: LENDING_LIQUIDATE)
-export async function forceUnlockCollateral(program, poolStatePDA, userStakingPDA, treasuryAta, poolVaultAta) {
-    console.log("⚠️ Executing Force Unlock/Liquidation...");
-    return await program.methods
-        .forceUnlockCollateral()
-        .accounts({
-            poolState: poolStatePDA,
-            userStaking: userStakingPDA,
-            defaulterTreasury: treasuryAta,
-            poolVault: poolVaultAta,
-            lendingAuthority: program.provider.wallet.publicKey,
+// 8. Принудительная разблокировка (ID: "force-unlock-btn")
+window.forceUnlock = async function() {
+    try {
+        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [window.solana.publicKey.toBuffer(), AFOX_POOL_STATE_PUBKEY.toBuffer()],
+            STAKING_PROGRAM_ID
+        );
+
+        await program.methods.forceUnlockCollateral().accounts({
+            poolState: AFOX_POOL_STATE_PUBKEY,
+            userStaking: pda,
+            defaulterTreasury: DAO_TREASURY_VAULT_PUBKEY,
+            poolVault: AFOX_POOL_VAULT_PUBKEY,
+            lendingAuthority: window.solana.publicKey,
             tokenProgram: TOKEN_PROGRAM_ID,
             clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .rpc();
-}
+        }).rpc();
+        AurumFoxEngine.notify("FORCE UNLOCKED", "SUCCESS");
+    } catch (err) { console.error(err); }
+};
 
-// 9. Для ID: "repay-close-btn" (Category: LENDING_CLOSE)
-export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, amount) {
-    console.log("🏁 Closing Position and Repaying...");
-    // Вызываем деколлатерализацию как финальный этап
-    return await decollateralize(program, poolStatePDA, userStakingPDA, amount);
-}
+// 9. Закрытие займа и возврат (ID: "repay-close-btn")
+window.repayAndClose = async function() {
+    try {
+        await window.executeDecollateral(); // Переиспользуем логику
+        AurumFoxEngine.notify("POSITION CLOSED", "SUCCESS");
+    } catch (err) { console.error(err); }
+};
 
 
 
