@@ -738,23 +738,43 @@ window.executeCollateral = async function() {
 
 window.executeDecollateral = async function() {
     const val = document.getElementById('decollateral-amount')?.value || "1000";
+    
     try {
         const program = await getProgram();
+        const poolIndex = 0; // Должен совпадать с индексом в collateralize
+
+        // 1. ГЕНЕРАЦИЯ PDA (БЕЗ ЛИШНИХ БАЙТОВ)
         const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), window.solana.publicKey.toBuffer(), Buffer.from([0])], 
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                window.solana.publicKey.toBuffer(),
+                Buffer.from([poolIndex])
+            ], 
             program.programId
         );
+
         const amountBN = new anchor.BN(parseAmountToBigInt(val, AFOX_DECIMALS).toString());
-        AurumFoxEngine.notify("RELEASING...", "WAIT");
-        await program.methods.decollateralizeLending(0, amountBN).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: pda,
-            lendingAuthority: window.solana.publicKey,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
-        AurumFoxEngine.notify("RELEASED SUCCESS", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify("RELEASE FAILED", "FAILED"); }
+
+        AurumFoxEngine.notify("RELEASING COLLATERAL...", "WAIT");
+
+        // 2. ВЫЗОВ МЕТОДА
+        await program.methods.decollateralizeLending(amountBN) // В контракте только 1 аргумент: amount
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: pda,
+                lendingAuthority: window.solana.publicKey,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        AurumFoxEngine.notify("COLLATERAL RELEASED", "SUCCESS");
+    } catch (e) { 
+        console.error("Decollateral Error:", e);
+        AurumFoxEngine.notify("RELEASE FAILED", "FAILED"); 
+    }
 };
+
 
 
 
