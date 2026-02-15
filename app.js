@@ -494,62 +494,89 @@ async function fetchUserBalances() {
 
 
 /**
- * 5. ЕДИНЫЙ ОБРАБОТЧИК ОБНОВЛЕНИЯ UI
- * Предотвращает множественные вызовы при быстрой смене вкладок.
+ * Поиск основного PDA пула.
+ * В контракте сид — просто "pool" без дополнительных данных.
  */
-let isUpdatingUI = false;
-async function updateStakingAndBalanceUI() {
-    if (isUpdatingUI) return;
-    isUpdatingUI = true;
-
-    try {
-        await Promise.all([
-            fetchUserBalances(),
-            typeof fetchUserStakingData === 'function' ? fetchUserStakingData() : Promise.resolve()
-        ]);
-        
-        if (typeof updateStakingUI === 'function') updateStakingUI();
-    } catch (e) {
-        console.error("UI Refresh Failed:", e);
-    } finally {
-        isUpdatingUI = false;
-    }
-}
-
-
-// Поиск основного PDA пула (если нужно для системных вызовов)
 async function getPoolPDA() {
     const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
         [Buffer.from("pool")],
-        STAKING_PROGRAM_ID
+        new window.solanaWeb3.PublicKey("3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL")
     );
     return pda;
 }
 
 /**
- * Получает динамический APR на основе общего стейкинга в пуле.
+ * Получает динамический APR на основе данных из контракта.
  */
-
 async function getLiveAPR() {
     try {
         if (!appState.connection || !appState.walletPublicKey) return "Connect Wallet";
+        
         const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
         
-        // Используем fetch для poolState
+        // ВАЖНО: Твой контракта использует AccountLoader (zero_copy), 
+        // поэтому во фронтенде используем .fetch() или .load()
         const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
-        
-        // В Rust это поле total_staked_amount (u64)
+
+        // 1. Получаем общую сумму стейкинга (totalStakedAmount в Rust)
         const totalStaked = Number(poolAccount.totalStakedAmount) / Math.pow(10, AFOX_DECIMALS);
-
-        // Расчет на основе твоего REWARD_RATE_PER_SEC = 100
-        const rewardsPerYear = (100 / Math.pow(10, AFOX_DECIMALS)) * 31536000;
-
-        if (totalStaked < 1) return "100% (Genesis)";
         
+        // 2. Получаем текущую скорость наград из контракта (rewardRatePerSec)
+        // Если в контракте rewardRatePerSec = 100 (с учетом децималов)
+        const rps = Number(poolAccount.rewardRatePerSec) / Math.pow(10, AFOX_DECIMALS);
+        
+        const secondsPerYear = 31536000;
+        const rewardsPerYear = rps * secondsPerYear;
+
+        if (totalStaked < 0.01) return "100% (Genesis)";
+
+        // Расчет APR: (Награды за год / Весь стейк) * 100
         const realAPR = (rewardsPerYear / totalStaked) * 100;
-        return realAPR > 5000 ? "5000%+" : realAPR.toFixed(2) + "%";
+
+        if (realAPR > 10000) return "10000%++";
+        return realAPR.toFixed(2) + "%";
+        
     } catch (e) {
-        return "500% (Base)"; 
+        console.error("APR Fetch Error:", e);
+        return "---%"; 
+    }
+}
+
+
+
+/**
+ * 5. ЕДИНЫЙ ОБРАБОТЧИК ОБНОВЛЕНИЯ UI
+ * Синхронизирует данные кошелька и данные из контракта.
+ */
+let isUpdatingUI = false;
+
+async function updateStakingAndBalanceUI() {
+    if (isUpdatingUI) return;
+    isUpdatingUI = true;
+
+    try {
+        // Запускаем параллельное получение данных
+        const results = await Promise.allSettled([
+            fetchUserBalances(),
+            typeof fetchUserStakingData === 'function' ? fetchUserStakingData() : Promise.resolve()
+        ]);
+
+        // Проверяем, не упали ли запросы
+        results.forEach((res, index) => {
+            if (res.status === 'rejected') {
+                console.warn(`Source ${index} failed to refresh:`, res.reason);
+            }
+        });
+
+        // Вызываем рендер интерфейса
+        if (typeof updateStakingUI === 'function') {
+            updateStakingUI();
+        }
+        
+    } catch (e) {
+        console.error("Global UI Refresh Failed:", e);
+    } finally {
+        isUpdatingUI = false;
     }
 }
 
