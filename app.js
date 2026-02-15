@@ -622,19 +622,18 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 
-
-
 /**
- * 👑 AURUM FOX: V22 - TELEPORT
- * Железный вылет обратно в Twitter.
- * Использует прямые глубокие ссылки кошелька для авто-возврата.
+ * 👑 AURUM FOX: V23 - OVERDRIVE
+ * Система принудительного возврата в Twitter.
+ * Использует метод перекрестных ссылок (Dapp-Redirect).
  */
 
 const AurumFoxEngine = {
     isWalletConnected: false,
     walletAddress: null,
     isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
-    isWebView: /Twitter|FBAN|FBAV|Instagram/i.test(navigator.userAgent)
+    // Если в URL есть 'connected=true', значит мы только что вернулись из кошелька
+    isReturned: window.location.search.includes('connected=true')
 };
 
 const syncWalletUI = (isConnected, address = null) => {
@@ -644,17 +643,12 @@ const syncWalletUI = (isConnected, address = null) => {
         const shortAddr = address.slice(0, 4) + "..." + address.slice(-4);
         btn.innerHTML = `<div class="fox-container"><div class="fox-neon-dot"></div><span>${shortAddr.toUpperCase()}</span></div>`;
         btn.className = "fox-btn-connected";
-        btn.style.cssText = "background:#000; color:#00ff7f; border:2px solid #00ff7f;";
     } else {
         btn.innerHTML = "FOX CONNECT";
         btn.className = "fox-btn-default";
-        btn.style.cssText = "";
     }
 };
 
-/**
- * ФУНКЦИЯ ТЕЛЕПОРТА (ВЫХОД ИЗ КОШЕЛЬКА ОБРАТНО)
- */
 async function toggleWalletAction() {
     const btn = document.getElementById('connectWalletBtn');
     if (!btn || btn.dataset.loading === "true") return;
@@ -665,48 +659,44 @@ async function toggleWalletAction() {
     try {
         if (!AurumFoxEngine.isWalletConnected) {
             
-            // ЕСЛИ МЫ В ТВИТТЕРЕ И НЕТ ПРОВАЙДЕРА
+            // --- ЖЕЛЕЗНЫЙ ВАРИАНТ ДЛЯ TWITTER ---
             if (!provider && AurumFoxEngine.isMobile) {
-                const host = window.location.hostname;
-                const path = window.location.pathname;
-                const fullUrl = "https://" + host + path;
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('connected', 'true');
+                const redirectUrl = encodeURIComponent(currentUrl.href);
                 
-                // ЖЕЛЕЗНЫЙ ТЕЛЕПОРТ: 
-                // Вместо того чтобы просто "бродить", мы шлем сигнал на коннект с возвратом (ref)
-                const phantomDeepLink = `phantom://browse/${host}${path}?ref=${fullUrl}`;
+                // Используем схему 'v1/connect' - она самая жесткая на возврат
+                // Это заставляет кошелек просто подтвердить и закрыться
+                const connectLink = `https://phantom.app/ul/v1/connect?app_url=${redirectUrl}&dapp_encryption_public_key=FOX123&redirect_link=${redirectUrl}`;
                 
-                console.log("Teleporting to Phantom...");
-                window.location.href = phantomDeepLink;
-                
-                // Если через 2 секунды ничего не произошло (нет Phantom), шлем на обычный маркет
-                setTimeout(() => {
-                    if (!document.hidden) {
-                        window.location.href = `https://phantom.app/ul/browse/${fullUrl}`;
-                    }
-                }, 2000);
+                console.log("Forcing Kickback Loop...");
+                window.location.href = connectLink;
                 return;
             }
 
-            if (!provider) throw new Error("No Provider");
+            if (!provider) throw new Error("No provider");
 
-            btn.innerHTML = `<span class="fox-spin"></span> LINKING...`;
+            btn.innerHTML = `<span class="fox-spin"></span>...`;
             const resp = await provider.connect();
             const pubKey = resp.publicKey ? resp.publicKey.toString() : resp;
 
-            // ФИКСИРУЕМ В ПАМЯТИ
-            localStorage.setItem('fox_v22_state', 'active');
-            localStorage.setItem('fox_v22_key', pubKey);
-            
+            localStorage.setItem('fox_v23_key', pubKey);
             AurumFoxEngine.walletAddress = pubKey;
             AurumFoxEngine.isWalletConnected = true;
             syncWalletUI(true, pubKey);
 
+            // Если мы всё же оказались внутри кошелька - ПРИНУДИТЕЛЬНО выкидываем обратно в браузер
+            if (navigator.userAgent.includes("Phantom")) {
+                const backUrl = window.location.origin + window.location.pathname + "?connected=true";
+                window.location.href = `googlechromes://navigate?url=${backUrl}`; // Попытка открыть Chrome на Android
+                setTimeout(() => { window.location.href = backUrl; }, 500);
+            }
+
         } else {
-            // ЧИСТЫЙ ВЫХОД
-            if (provider?.disconnect) await provider.disconnect();
+            // ВЫХОД
             localStorage.clear();
             sessionStorage.clear();
-            window.location.replace(window.location.origin + window.location.pathname + "?v=" + Date.now());
+            window.location.replace(window.location.origin + window.location.pathname);
         }
     } catch (err) {
         console.error(err);
@@ -716,41 +706,40 @@ async function toggleWalletAction() {
 }
 
 /**
- * ИНИЦИАЛИЗАЦИЯ: ПРОВЕРКА ПОСЛЕ ВОЗВРАТА
+ * АВТО-ПОДХВАТ (Когда вернулся в Twitter)
  */
-const initV22 = async () => {
-    const savedKey = localStorage.getItem('fox_v22_key');
-    const state = localStorage.getItem('fox_v22_state');
-
-    if (state === 'active' && savedKey) {
-        // Мы уже знаем адрес, сразу рисуем UI чтобы не тупило
-        AurumFoxEngine.walletAddress = savedKey;
-        AurumFoxEngine.isWalletConnected = true;
-        syncWalletUI(true, savedKey);
-
-        // В фоне пробуем подцепить живой провайдер если он появился
-        const provider = window?.solana || window?.phantom?.solana;
-        if (provider) {
-            try { await provider.connect({ onlyIfTrusted: true }); } catch (e) {}
+const initV23 = async () => {
+    const savedKey = localStorage.getItem('fox_v23_key');
+    
+    // Если мы вернулись из кошелька (есть метка в URL)
+    if (AurumFoxEngine.isReturned || savedKey) {
+        if (savedKey) {
+            AurumFoxEngine.walletAddress = savedKey;
+            AurumFoxEngine.isWalletConnected = true;
+            syncWalletUI(true, savedKey);
+        }
+        
+        // Очищаем URL от мусора
+        if (window.location.search.includes('connected')) {
+            window.history.replaceState(null, "", window.location.pathname);
         }
     }
 };
 
 window.addEventListener('load', () => {
-    // Инъекция стилей
     const style = document.createElement('style');
     style.innerHTML = `
-        .fox-btn-default { background: #111; color: #fff; border: 1px solid #444; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight: bold; }
+        .fox-btn-default { background: #111; color: #fff; border: 1px solid #444; padding: 12px 24px; cursor: pointer; border-radius: 6px; }
         .fox-btn-connected { background: #000; color: #00ff7f; border: 2px solid #00ff7f; padding: 12px 24px; cursor: pointer; border-radius: 6px; }
-        .fox-spin { width: 14px; height: 14px; border: 2px solid #00ff7f; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: f-spin 0.6s linear infinite; margin-right: 8px; }
+        .fox-spin { width: 14px; height: 14px; border: 2px solid #00ff7f; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: f-spin 0.6s linear infinite; }
         @keyframes f-spin { to { transform: rotate(360deg); } }
         .fox-container { display: flex; align-items: center; gap: 8px; }
-        .fox-neon-dot { width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; box-shadow: 0 0 10px #00ff7f; animation: f-blink 1s infinite; }
-        @keyframes f-blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        .fox-neon-dot { width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; box-shadow: 0 0 10px #00ff7f; }
     `;
     document.head.appendChild(style);
-    initV22();
+    initV23();
 });
+
 
 
 
