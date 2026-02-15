@@ -590,14 +590,7 @@ async function claimAllRewards() {
     }
 }
 
-// 2. А вот так мы её оживляем в твоем init()
-// Просто добавь этот обработчик клика
-document.addEventListener('click', async (e) => {
-    // Проверяем ID кнопки из твоего скриншота
-    if (e.target.id === 'claim-all-rewards-btn' || e.target.id === 'claim-all-btn-luxe') {
-        await claimAllRewards();
-    }
-});
+
 
 
 
