@@ -644,30 +644,57 @@ function getAnchorProgram(programId, idl) {
 
 window.createStakingAccount = async function(poolIndex = 0) {
     try {
-        const program = await getProgram();
-        const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), program.provider.wallet.publicKey.toBuffer(), Buffer.from([poolIndex])],
+        // 1. Автономная проверка окружения
+        if (!window.solana?.isConnected) {
+            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        }
+
+        const program = await getProgram(); // Использует твой существующий хелпер
+        const userPubKey = program.provider.wallet.publicKey;
+
+        // 2. Умный расчет PDA (Автоматически подхватывает контекст)
+        // Сиды: [b"user_stake", pool_state, owner, pool_index]
+        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPubKey.toBuffer(),
+                Buffer.from([poolIndex])
+            ],
             program.programId
         );
 
-        AurumFoxEngine.notify("INITIALIZING...", "WAIT");
+        AurumFoxEngine.notify("PREPARING STORAGE...", "WAIT");
 
-        await program.methods
+        // 3. Вызов метода с автоматическим маппингом аккаунтов
+        // Мы берем системные переменные напрямую из глобального объекта solanaWeb3
+        const tx = await program.methods
             .initializeUserStake(poolIndex)
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: pda, // В IDL: userStaking
-                owner: program.provider.wallet.publicKey,
+                userStaking: userStakingPda,
+                owner: userPubKey,
                 rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 systemProgram: window.solanaWeb3.SystemProgram.programId,
                 clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY, // Добавил на всякий случай для новых аккаунтов
             })
             .rpc();
 
-        AurumFoxEngine.notify("ACCOUNT READY!", "SUCCESS");
+        console.log("🚀 Initialization Signature:", tx);
+        AurumFoxEngine.notify("ACCOUNT DEPLOYED!", "SUCCESS");
+
     } catch (e) {
-        const isAlreadyActive = e.message.includes("0x1770") || e.message.includes("already in use");
-        AurumFoxEngine.notify(isAlreadyActive ? "ALREADY ACTIVE" : "INIT FAILED", "FAILED");
+        console.error("🛠️ Init Error:", e);
+
+        // Умный перехват ошибок
+        if (e.message.includes("0x1770") || e.message.includes("already in use")) {
+            AurumFoxEngine.notify("ALREADY INITIALIZED", "SUCCESS");
+        } else if (e.message.includes("User rejected")) {
+            AurumFoxEngine.notify("CANCELLED BY USER", "FAILED");
+        } else {
+            AurumFoxEngine.notify("INIT FAILED", "FAILED");
+        }
     }
 };
 
