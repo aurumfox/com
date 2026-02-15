@@ -594,30 +594,50 @@ window.stakeAfox = async function() {
 window.unstakeAfox = async function() {
     const val = document.getElementById('unstake-input-amount')?.value;
     if (!val || val <= 0) return AurumFoxEngine.notify("INVALID AMOUNT", "FAILED");
+    
     try {
         const program = await getProgram();
+        const userPublicKey = program.provider.wallet.publicKey;
+        const poolIndex = 0; // Индекс пула, соответствующий депозиту
+
+        // Находим PDA (seeds должны строго совпадать с #[account(seeds = [...])] в контракте)
         const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), window.solana.publicKey.toBuffer(), Buffer.from([0])], 
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPublicKey.toBuffer(),
+                Buffer.from([poolIndex])
+            ], 
             program.programId
         );
+
         const amountBN = new anchor.BN(parseAmountToBigInt(val, AFOX_DECIMALS).toString());
+        
         AurumFoxEngine.notify("WITHDRAWING...", "WAIT");
-        await program.methods.unstake(0, amountBN).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            user: pda,
-            owner: window.solana.publicKey,
-            vault: AFOX_POOL_VAULT_PUBKEY,
-            daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
-            adminFeeVault: ADMIN_FEE_VAULT_PUBKEY,
-            userRewardsAta: USER_REWARD_ATA,
-            userStAta: USER_ST_TOKEN_ATA,
-            stMint: AFOX_ST_MINT_ADDRESS,
-            rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
+
+        await program.methods
+            .unstake(poolIndex, amountBN)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                user: pda, // В Rust коде аккаунт называется 'user'
+                owner: userPublicKey,
+                vault: AFOX_POOL_VAULT_PUBKEY,
+                daoTreasuryVault: DAO_TREASURY_VAULT_PUBKEY,
+                adminFeeVault: ADMIN_FEE_VAULT_PUBKEY,
+                userRewardsAta: USER_REWARD_ATA,
+                userStAta: USER_ST_TOKEN_ATA,
+                stMint: AFOX_ST_MINT_ADDRESS,
+                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
         AurumFoxEngine.notify("WITHDRAWN!", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify("WITHDRAW FAILED", "FAILED"); }
+    } catch (e) {
+        console.error("Unstake error:", e);
+        AurumFoxEngine.notify("WITHDRAW FAILED", "FAILED");
+    }
 };
 
 
