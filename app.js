@@ -828,13 +828,39 @@ window.executeBorrow = async function() {
 
 
 
-window.executeRepay = async function() {
+window.executeRepay = async function(amountToRepay) {
     try {
+        // 1. Уведомление о начале процесса
         AurumFoxEngine.notify("REPAYING DEBT...", "WAIT");
-        await window.executeDecollateral(); 
+
+        // 2. Получаем данные (предполагается, что anchor и program инициализированы)
+        const amount = new anchor.BN(amountToRepay); 
+        
+        // Вызов метода контракта
+        await program.methods
+            .decollateralizeLending(amount)
+            .accounts({
+                poolState: poolStateAddress,
+                userStaking: userStakingAddress,
+                lendingAuthority: provider.wallet.publicKey,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        // 3. Успешное завершение
         AurumFoxEngine.notify("DEBT FULLY REPAID", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify("REPAY FAILED", "FAILED"); }
+        
+    } catch (e) {
+        console.error("Repay error:", e);
+        // Обработка специфической ошибки GracePeriodExpired из контракта
+        if (e.message.includes("GracePeriodExpired")) {
+            AurumFoxEngine.notify("REPAY FAILED: TIME EXPIRED", "FAILED");
+        } else {
+            AurumFoxEngine.notify("REPAY FAILED", "FAILED");
+        }
+    }
 };
+
 
 
 
