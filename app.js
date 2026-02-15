@@ -1356,12 +1356,13 @@ window.addEventListener('load', () => {
 
 
 
-
-
-
 // ============================================================
-// 👑 AURUM FOX: OMEGA SMART ENGINE v10.0 - FULL DOMINATION
+// 👑 AURUM FOX: OMEGA SMART ENGINE v10.0 - FULL DOMINATION (STABLE)
 // ============================================================
+
+// --- КРИТИЧЕСКИЕ НАСТРОЙКИ АДРЕСОВ (БЕЗ НИХ КНОПКИ НЕ РАБОТАЮТ) ---
+const AFOX_ST_MINT_ADDRESS = new window.solanaWeb3.PublicKey("GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd"); // Укажите stAFOX если другой
+const ADMIN_FEE_VAULT_PUBKEY = new window.solanaWeb3.PublicKey("3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL"); // Заглушка
 
 window.AurumFoxEngine = {
     isWalletConnected: false,
@@ -1389,29 +1390,21 @@ window.AurumFoxEngine = {
     init() {
         this.injectGlobalStyles();
         this.scanAndCalibrate();
-        setInterval(() => this.scanAndCalibrate(), 2000); // Поиск новых кнопок на лету
+        setInterval(() => this.scanAndCalibrate(), 2000);
         console.log("💎 OMEGA ENGINE v10.0: ALL SYSTEMS GO");
     },
 
     scanAndCalibrate() {
-        // ПОЛНЫЙ КАРТА ВСЕХ КНОПОК ПРОЕКТА (ОБНОВЛЕННЫЙ СПИСОК)
         const KEY_MAP = {
-            // WALLET & GENERAL
             "connectWalletBtn": { action: "WALLET", msg: "CONNECTING..." },
             "collect-all-profit-btn": { action: "CLAIM", msg: "COLLECTING PROFIT..." },
-
-            // STAKING
             "create-staking-account-btn": { action: "INIT_STAKE", msg: "CREATING ACCOUNT..." },
             "stake-max-btn": { action: "MAX_STAKE", msg: "CALCULATING MAX..." },
             "stake-afox-btn": { action: "STAKE", msg: "STAKING AFOX..." },
             "unstake-max-btn": { action: "MAX_UNSTAKE", msg: "CALCULATING MAX..." },
             "unstake-afox-btn": { action: "UNSTAKE", msg: "UNSTAKING AFOX..." },
             "close-account-refund-btn": { action: "REFUND", msg: "CLOSING & REFUNDING..." },
-
-            // REWARDS
             "claim-all-rewards-btn": { action: "CLAIM", msg: "CLAIMING ALL..." },
-
-            // LENDING / BORROW
             "collateralize-btn": { action: "COLLATERAL", msg: "ENABLING COLLATERAL..." },
             "decollateralize-btn": { action: "DECOLLATERAL", msg: "REMOVING COLLATERAL..." },
             "execute-borrowing-btn": { action: "BORROW", msg: "EXECUTING BORROW..." },
@@ -1448,10 +1441,10 @@ window.AurumFoxEngine = {
         try {
             switch (config.action) {
                 case "MAX_STAKE":
-                    let bal = window.appState?.userBalances?.AFOX || window.appState?.userBalances?.afox;
-                    if (!bal || bal === 0n) bal = await this.getFreshBalance("GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd");
+                    let bal = window.appState?.userBalances?.AFOX || 0n;
+                    if (bal === 0n) bal = await this.getFreshBalance("GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd");
                     const fBal = window.formatBigInt(bal, 6);
-                    const sInput = document.getElementById('stake-input-amount');
+                    const sInput = document.getElementById('stake-input-amount') || document.getElementById('collateral-amount');
                     if (sInput) {
                         sInput.value = fBal;
                         sInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1462,7 +1455,7 @@ window.AurumFoxEngine = {
                 case "MAX_UNSTAKE":
                     const staked = window.appState?.userStakingData?.stakedAmount || 0n;
                     const fStaked = window.formatBigInt(staked, 6);
-                    const uInput = document.getElementById('unstake-input-amount');
+                    const uInput = document.getElementById('unstake-input-amount') || document.getElementById('decollateral-amount');
                     if (uInput) {
                         uInput.value = fStaked;
                         uInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1471,73 +1464,43 @@ window.AurumFoxEngine = {
                     break;
 
                 case "REFUND":
-                    if (window.refundSoulAccount) {
-                        await window.refundSoulAccount();
-                        this.notify("SUCCESS: ACCOUNT CLOSED!", "SUCCESS");
-                    }
+                    if (window.closeStakingAccount) await window.closeStakingAccount();
                     break;
 
                 case "INIT_STAKE":
-                    if (window.createStakingAccount) {
-                        await window.createStakingAccount(0);
-                        this.notify("STAKING ACCOUNT CREATED!", "SUCCESS");
-                    }
+                    if (window.createStakingAccount) await window.createStakingAccount(0);
                     break;
 
                 case "STAKE":
-                    if (window.stakeAfox) {
-                        await window.stakeAfox();
-                        this.notify("STAKING SUCCESSFUL!", "SUCCESS");
-                    }
+                    if (window.stakeAfox) await window.stakeAfox();
                     break;
 
                 case "UNSTAKE":
-                    if (window.unstakeAfox) {
-                        await window.unstakeAfox();
-                        this.notify("WITHDRAWAL SUCCESSFUL!", "SUCCESS");
-                    }
+                    if (window.unstakeAfox) await window.unstakeAfox();
                     break;
 
                 case "CLAIM":
-                    if (window.claimAllRewards) {
-                        await window.claimAllRewards();
-                        this.notify("ALL REWARDS CLAIMED!", "SUCCESS");
-                    }
+                    if (window.claimAllRewards) await window.claimAllRewards();
                     break;
 
                 case "COLLATERAL":
-                    if (window.executeCollateral) {
-                        await window.executeCollateral();
-                        this.notify("COLLATERAL ENABLED!", "SUCCESS");
-                    }
+                    if (window.executeCollateral) await window.executeCollateral();
                     break;
 
                 case "DECOLLATERAL":
-                    if (window.executeDecollateral) {
-                        await window.executeDecollateral();
-                        this.notify("COLLATERAL REMOVED!", "SUCCESS");
-                    }
+                    if (window.executeDecollateral) await window.executeDecollateral();
                     break;
 
                 case "BORROW":
-                    if (window.executeBorrow) {
-                        await window.executeBorrow();
-                        this.notify("BORROW TRANSACTION SENT!", "SUCCESS");
-                    }
+                    if (window.executeBorrow) await window.executeBorrow();
                     break;
 
                 case "REPAY":
-                    if (window.executeRepay) {
-                        await window.executeRepay("0");
-                        this.notify("REPAYMENT SUCCESSFUL!", "SUCCESS");
-                    }
+                    if (window.executeRepay) await window.executeRepay("0");
                     break;
 
                 case "REPAY_CLOSE":
-                    if (window.executeRepay) {
-                        await window.executeRepay("100"); // Пример логики закрытия
-                        this.notify("LOAN CLOSED!", "SUCCESS");
-                    }
+                    if (window.executeRepay) await window.executeRepay("1000000000"); // Условная сумма для закрытия
                     break;
 
                 case "WALLET":
@@ -1547,6 +1510,7 @@ window.AurumFoxEngine = {
 
             if (!config.action.includes("MAX")) el.innerHTML = `DONE ✅`;
         } catch (err) {
+            console.error(err);
             this.notify(err.message || "REJECTED", "ERROR");
             el.innerHTML = `❌`;
         }
@@ -1578,3 +1542,6 @@ window.AurumFoxEngine = {
 };
 
 setTimeout(() => window.AurumFoxEngine.init(), 500);
+
+
+
