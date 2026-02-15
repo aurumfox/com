@@ -1394,28 +1394,29 @@ window.AurumFoxEngine = {
     },
 
     scanAndCalibrate() {
-        // ПОЛНЫЙ КАРТА ВСЕХ КНОПОК ПРОЕКТА
+        // ПОЛНЫЙ КАРТА ВСЕХ КНОПОК ПРОЕКТА (ОБНОВЛЕННЫЙ СПИСОК)
         const KEY_MAP = {
-            // WALLET
+            // WALLET & GENERAL
             "connectWalletBtn": { action: "WALLET", msg: "CONNECTING..." },
+            "collect-all-profit-btn": { action: "CLAIM", msg: "COLLECTING PROFIT..." },
 
             // STAKING
-            "initialize-user-stake-btn": { action: "INIT_STAKE", msg: "INITIALIZING STAKE..." },
+            "create-staking-account-btn": { action: "INIT_STAKE", msg: "CREATING ACCOUNT..." },
             "stake-max-btn": { action: "MAX_STAKE", msg: "CALCULATING MAX..." },
-            "deposit-btn": { action: "STAKE", msg: "STAKING..." },
-            "unstake-max-btn": { action: "MAX_UNSTAKE", msg: "CALCULATING STAKE..." },
-            "unstake-btn": { action: "UNSTAKE", msg: "WITHDRAWING..." },
-            "refund-soul-btn": { action: "REFUND", msg: "CLOSING ACCOUNT..." },
+            "stake-afox-btn": { action: "STAKE", msg: "STAKING AFOX..." },
+            "unstake-max-btn": { action: "MAX_UNSTAKE", msg: "CALCULATING MAX..." },
+            "unstake-afox-btn": { action: "UNSTAKE", msg: "UNSTAKING AFOX..." },
+            "close-account-refund-btn": { action: "REFUND", msg: "CLOSING & REFUNDING..." },
 
             // REWARDS
-            "claim-all-rewards-btn": { action: "CLAIM", msg: "CLAIMING REWARDS..." },
-            "claim-all-btn-luxe": { action: "CLAIM", msg: "CLAIMING ALL..." },
+            "claim-all-rewards-btn": { action: "CLAIM", msg: "CLAIMING ALL..." },
 
             // LENDING / BORROW
             "collateralize-btn": { action: "COLLATERAL", msg: "ENABLING COLLATERAL..." },
             "decollateralize-btn": { action: "DECOLLATERAL", msg: "REMOVING COLLATERAL..." },
-            "borrow-btn": { action: "BORROW", msg: "BORROWING ASSETS..." },
-            "repay-btn": { action: "REPAY", msg: "REPAYING DEBT..." }
+            "execute-borrowing-btn": { action: "BORROW", msg: "EXECUTING BORROW..." },
+            "repay-debt-btn": { action: "REPAY", msg: "REPAYING DEBT..." },
+            "repay-close-loan-btn": { action: "REPAY_CLOSE", msg: "CLOSING LOAN..." }
         };
 
         Object.keys(KEY_MAP).forEach(id => {
@@ -1529,6 +1530,13 @@ window.AurumFoxEngine = {
                     if (window.executeRepay) {
                         await window.executeRepay("0");
                         this.notify("REPAYMENT SUCCESSFUL!", "SUCCESS");
+                    }
+                    break;
+
+                case "REPAY_CLOSE":
+                    if (window.executeRepay) {
+                        await window.executeRepay("100"); // Пример логики закрытия
+                        this.notify("LOAN CLOSED!", "SUCCESS");
                     }
                     break;
 
