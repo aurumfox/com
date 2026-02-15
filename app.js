@@ -626,8 +626,9 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 /**
- * 👑 AURUM FOX: ARMOR-TECH V10.0 - DEEP INTERCEPTOR
- * Самый мощный блок коннекта: принудительный возврат + авто-восстановление
+ * 👑 AURUM FOX: SOCIAL-BYPASS V11.0
+ * Специально для встроенных браузеров Telegram, Twitter и Discord.
+ * Пробивает "залипание" внутри WebView.
  */
 
 const syncWalletUI = (isConnected, address = null) => {
@@ -637,12 +638,12 @@ const syncWalletUI = (isConnected, address = null) => {
     if (isConnected && address) {
         const shortAddr = address.slice(0, 4) + "..." + address.slice(-4);
         btn.innerHTML = `
-            <div style="display:flex; align-items:center; justify-content:center; gap:12px; font-weight:900;">
-                <div class="status-orb"></div>
-                <span>${shortAddr}</span>
-                <div class="exit-trigger">EXIT</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                <div class="neon-dot"></div>
+                <span style="font-family: monospace;">${shortAddr}</span>
+                <span class="exit-badge">LOGOUT</span>
             </div>`;
-        btn.style.cssText = "background:#000 !important; border:2px solid #00ff7f !important; color:#00ff7f !important; box-shadow: 0 0 30px rgba(0,255,127,0.4) !important; letter-spacing:1px;";
+        btn.style.cssText = "background:#050505 !important; border:1px solid #00ff7f !important; color:#00ff7f !important; box-shadow: inset 0 0 10px rgba(0,255,127,0.2), 0 0 20px rgba(0,255,127,0.2) !important;";
     } else {
         btn.innerHTML = `🦊 CONNECT WALLET`;
         btn.style = ""; 
@@ -655,26 +656,23 @@ async function toggleWalletAction() {
     
     btn.dataset.loading = "true";
     const provider = window.solana || window.phantom?.solana;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-    // Функция силового возврата (Mobile Nuke)
-    const forceBackToApp = () => {
-        if (isMobile) {
-            // Создаем временную ссылку-приманку для системы
-            const jumpUrl = window.location.origin + window.location.pathname + '?refreshed=' + Date.now();
-            window.location.replace(jumpUrl); 
-        }
-    };
+    
+    // Проверка на социальные WebView (Telegram, Twitter и др.)
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isSocialUA = (ua.indexOf("Telegram") > -1) || (ua.indexOf("Twitter") > -1) || (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
 
     try {
         if (!AurumFoxEngine.isWalletConnected) {
-            // --- ЭТАП 1: УМНЫЙ КОННЕКТ ---
+            // --- ПОДКЛЮЧЕНИЕ ---
             if (!provider) {
                 if (isMobile) {
-                    const cleanUrl = window.location.href.split('://')[1];
-                    window.location.href = `https://phantom.app/ul/browse/${cleanUrl}`;
+                    // Универсальный метод пробития для соцсетей
+                    const link = window.location.href.replace(/^https?:\/\//, '');
+                    const universalLink = `https://phantom.app/ul/browse/${link}?ref=${encodeURIComponent(window.location.href)}`;
+                    window.location.replace(universalLink);
                 } else {
-                    AurumFoxEngine.notify("PHANTOM NOT FOUND", "SYSTEM");
+                    AurumFoxEngine.notify("PHANTOM NOT FOUND", "ERROR");
                     window.open("https://phantom.app/", "_blank");
                 }
                 return;
@@ -682,110 +680,115 @@ async function toggleWalletAction() {
 
             btn.innerHTML = `<span class="fox-loader"></span> SYNCING...`;
             
-            // Запуск провайдера
+            // Запрос соединения
             const resp = await provider.connect();
-            
-            // Если дошли сюда - значит апрув получен
             AurumFoxEngine.walletAddress = resp.publicKey.toString();
             AurumFoxEngine.isWalletConnected = true;
-            localStorage.setItem('fox_session_active', 'true');
+            localStorage.setItem('fox_active_session', 'true');
 
             syncWalletUI(true, AurumFoxEngine.walletAddress);
-            AurumFoxEngine.notify("CHAIN LINKED", "SUCCESS");
+            AurumFoxEngine.notify("CONNECTED", "SUCCESS");
 
-            // --- ЭТАП 2: СИЛОВОЙ ВЫБРОС ИЗ КОШЕЛЬКА ---
+            // --- МАГИЯ ВЫХОДА ИЗ ЗАЛИПАНИЯ ---
             if (isMobile) {
-                // Ждем 400мс чтобы Phantom успел записать сессию и «вышибаем» юзера обратно
-                setTimeout(() => forceBackToApp(), 400);
+                // Если мы в Telegram/Twitter, нам нужно "встряхнуть" WebView
+                setTimeout(() => {
+                    if (isSocialUA) {
+                        // Трюк с хешем: заставляет WebView перерисоваться без перезагрузки всей страницы
+                        window.location.hash = "connected_" + Date.now();
+                        // И следом жесткий пинок фокуса
+                        window.dispatchEvent(new Event('resize'));
+                    } else {
+                        // Для обычных мобильных браузеров
+                        window.location.replace(window.location.href);
+                    }
+                }, 500);
             }
 
         } else {
-            // --- ЭТАП 3: ЖЕСТКИЙ ДИСКОННЕКТ ---
-            btn.innerHTML = `<span class="fox-loader"></span> EXITING...`;
+            // --- ДИСКОННЕКТ ---
+            btn.innerHTML = `<span class="fox-loader"></span> DISCONNECTING...`;
             
             if (provider) await provider.disconnect();
             
             AurumFoxEngine.isWalletConnected = false;
             AurumFoxEngine.walletAddress = null;
-            localStorage.removeItem('fox_session_active');
+            localStorage.removeItem('fox_active_session');
             
             syncWalletUI(false);
-            AurumFoxEngine.notify("LINK BROKEN", "DISCONNECTED");
+            AurumFoxEngine.notify("OFFLINE", "DISCONNECTED");
 
-            // Полная очистка памяти
+            // Полный сброс для очистки WebView кэша
             setTimeout(() => {
-                window.location.replace(window.location.origin + window.location.pathname);
+                window.location.href = window.location.origin + window.location.pathname;
             }, 300);
         }
     } catch (err) {
-        console.error("Critical Engine Error", err);
-        AurumFoxEngine.notify("LINK REJECTED", "ERROR");
+        console.error("Auth Failure", err);
+        AurumFoxEngine.notify("REJECTED", "ERROR");
         syncWalletUI(false);
     } finally {
-        setTimeout(() => { btn.dataset.loading = "false"; }, 1500);
+        setTimeout(() => { btn.dataset.loading = "false"; }, 1000);
     }
 }
 
 /**
- * ГВАРДИЯ СЕССИИ (Session Guardian)
- * Проверяет коннект при каждой загрузке и возврате фокуса
+ * АВТО-ВОССТАНОВЛЕНИЕ (WebView Guard)
  */
-const autoVerify = async () => {
+const autoRecover = async () => {
     const provider = window.solana || window.phantom?.solana;
-    const session = localStorage.getItem('fox_session_active');
-
-    if (provider && session === 'true') {
+    if (localStorage.getItem('fox_active_session') === 'true' && provider) {
         try {
             const resp = await provider.connect({ onlyIfTrusted: true });
             AurumFoxEngine.walletAddress = resp.publicKey.toString();
             AurumFoxEngine.isWalletConnected = true;
             syncWalletUI(true, AurumFoxEngine.walletAddress);
         } catch (e) {
-            localStorage.removeItem('fox_session_active');
+            localStorage.removeItem('fox_active_session');
         }
     }
 };
 
-// Слушатели для "брони"
-window.addEventListener('load', autoVerify);
+window.addEventListener('load', autoRecover);
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') autoVerify();
+    if (document.visibilityState === 'visible') autoRecover();
 });
 
-/**
- * ИНЪЕКЦИЯ СТИЛЕЙ (ARMOR UI)
- */
-const injectArmorStyles = () => {
-    if (document.getElementById('armor-tech-css')) return;
+// Стили для социального UI
+const injectSocialStyles = () => {
+    if (document.getElementById('fox-social-css')) return;
     const style = document.createElement('style');
-    style.id = 'armor-tech-css';
+    style.id = 'fox-social-css';
     style.innerHTML = `
-        .status-orb {
-            width: 12px; height: 12px; background: #00ff7f; border-radius: 50%;
-            box-shadow: 0 0 15px #00ff7f; animation: orb-pulse 1.5s infinite;
+        .neon-dot {
+            width: 8px; height: 8px; background: #00ff7f; border-radius: 50%;
+            box-shadow: 0 0 10px #00ff7f, 0 0 20px rgba(0,255,127,0.5);
+            animation: neon-flicker 2s infinite;
         }
-        @keyframes orb-pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
+        @keyframes neon-flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
-        .exit-trigger {
-            background: rgba(255,255,255,0.1); padding: 2px 6px; 
-            border-radius: 4px; font-size: 10px; color: #fff;
+        .exit-badge {
+            font-size: 9px; background: rgba(255,255,255,0.15); 
+            padding: 2px 5px; border-radius: 3px; color: #fff;
         }
         .fox-loader {
-            width: 16px; height: 16px; border: 2px solid #00ff7f;
+            width: 14px; height: 14px; border: 2px solid #00ff7f;
             border-top-color: transparent; border-radius: 50%;
-            display: inline-block; animation: armor-spin 0.6s linear infinite;
+            display: inline-block; animation: fox-spin 0.6s linear infinite;
         }
-        @keyframes armor-spin { to { transform: rotate(360deg); } }
+        @keyframes fox-spin { to { transform: rotate(360deg); } }
     `;
     document.head.appendChild(style);
 };
-injectArmorStyles();
+injectSocialStyles();
 
 
 
+
+
+            
 
 
 
