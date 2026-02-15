@@ -624,66 +624,37 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 
-
-
- /**
- * 👑 AURUM FOX: V19 - NEBULA
- * Ультимативное решение для Twitter/GitHub Mobile.
- * Исправляет "залипание" сессии и ошибки выхода.
+/**
+ * 👑 AURUM FOX: V21 - BOOMERANG
+ * Решает проблему "застревания" внутри кошелька.
+ * Принудительный возврат сессии в Twitter/Browser.
  */
 
 const AurumFoxEngine = {
     isWalletConnected: false,
     walletAddress: null,
     isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
-    isLockedEnv: /Twitter|FBAN|FBAV|Instagram|Telegram/i.test(navigator.userAgent) || (window.self !== window.top),
-
-    notify: (msg, type) => {
-        console.warn(`[FOX-V19] [${type}]: ${msg}`);
-        // Вызываем уведомление из твоего основного движка, если он есть
-        if (window.AurumFoxEngineInstance && typeof window.AurumFoxEngineInstance.notify === 'function') {
-            window.AurumFoxEngineInstance.notify(msg, type);
-        }
-    }
+    // Проверяем, не открыты ли мы СЕЙЧАС внутри браузера кошелька
+    isInWalletBrowser: window.ethereum?.isPhantom || window.solana?.isPhantom || navigator.userAgent.includes("Phantom"),
+    isTwitter: /Twitter|FBAN|FBAV|Instagram/i.test(navigator.userAgent)
 };
 
 const syncWalletUI = (isConnected, address = null) => {
     const btn = document.getElementById('connectWalletBtn');
     if (!btn) return;
-
     if (isConnected && address) {
         const shortAddr = address.slice(0, 4) + "..." + address.slice(-4);
-        btn.innerHTML = `
-            <div class="fox-container">
-                <div class="fox-neon-dot"></div>
-                <span>${shortAddr.toUpperCase()}</span>
-            </div>`;
+        btn.innerHTML = `<div class="fox-container"><div class="fox-neon-dot"></div><span>${shortAddr.toUpperCase()}</span></div>`;
         btn.className = "fox-btn-connected";
-        btn.style.cssText = "background:#000; color:#00ff7f; border:2px solid #00ff7f; box-shadow:0 0 15px rgba(0,255,127,0.5);";
     } else {
         btn.innerHTML = "FOX CONNECT";
         btn.className = "fox-btn-default";
-        btn.style.cssText = ""; // Сброс стилей до дефолтных
     }
 };
 
 /**
- * ФОРСИРОВАННЫЙ ВЫХОД ИЗ ЦИКЛА
+ * ПРОТОКОЛ "БУМЕРАНГ"
  */
-const nuclearExit = () => {
-    // 1. Чистим всё физически
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    // 2. Убиваем историю, чтобы кнопка "Назад" не вернула коннект
-    window.history.pushState(null, "", "/");
-    window.history.replaceState(null, "", "/");
-
-    // 3. Редирект с жестким сбросом кэша через временную метку
-    const cleanUrl = window.location.origin + window.location.pathname;
-    window.location.replace(cleanUrl + "?logout=" + Date.now());
-};
-
 async function toggleWalletAction() {
     const btn = document.getElementById('connectWalletBtn');
     if (!btn || btn.dataset.loading === "true") return;
@@ -693,92 +664,100 @@ async function toggleWalletAction() {
 
     try {
         if (!AurumFoxEngine.isWalletConnected) {
-            // ЛОГИКА ПОДКЛЮЧЕНИЯ
-            if (!provider && (AurumFoxEngine.isMobile || AurumFoxEngine.isLockedEnv)) {
-                const cleanUrl = window.location.origin + window.location.pathname;
-                const phantomUrl = `https://phantom.app/ul/browse/${cleanUrl}?ref=${encodeURIComponent(cleanUrl)}`;
-                window.top.location.replace(phantomUrl);
+            
+            // Если мы в Twitter и нет провайдера - запускаем петлю Phantom
+            if (!provider && AurumFoxEngine.isMobile) {
+                const currentUrl = encodeURIComponent(window.location.href);
+                // Используем универсальную ссылку с возвратом
+                const phantomDeepLink = `https://phantom.app/ul/browse/${currentUrl}?ref=${currentUrl}`;
+                
+                window.location.href = phantomDeepLink;
                 return;
             }
 
             if (!provider) throw new Error("Wallet not found");
 
-            btn.innerHTML = `<span class="fox-spin"></span> SYNCING...`;
+            btn.innerHTML = `<span class="fox-spin"></span> CONNECTION...`;
             const resp = await provider.connect();
             const pubKey = resp.publicKey ? resp.publicKey.toString() : resp;
 
+            // СОХРАНЯЕМ ЖЕЛЕЗНО
+            localStorage.setItem('fox_v21_state', 'active');
+            localStorage.setItem('fox_v21_key', pubKey);
+            
             AurumFoxEngine.walletAddress = pubKey;
             AurumFoxEngine.isWalletConnected = true;
-
-            localStorage.setItem('fox_v19_state', 'active');
-            localStorage.setItem('fox_v19_key', pubKey);
-
             syncWalletUI(true, pubKey);
-        } else {
-            // ЛОГИКА ВЫХОДА (Исправленная)
-            btn.innerHTML = `<span class="fox-spin"></span> ABORTING...`;
-            
-            if (provider?.disconnect) {
-                try { await provider.disconnect(); } catch(e) { console.log("Silent disconnect"); }
+
+            // ФИШКА: Если мы зашли через браузер Phantom, даем юзеру сигнал вернуться
+            if (AurumFoxEngine.isInWalletBrowser) {
+                alert("✅ SUCCESS! Now return to Twitter/Browser to continue.");
             }
 
-            nuclearExit();
+        } else {
+            // ВЫХОД
+            if (provider?.disconnect) await provider.disconnect();
+            localStorage.clear();
+            sessionStorage.clear();
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.location.replace(cleanUrl + "?v=" + Date.now());
         }
     } catch (err) {
-        AurumFoxEngine.notify("REJECTED", "ERROR");
         console.error(err);
+        syncWalletUI(false);
     } finally {
         setTimeout(() => { btn.dataset.loading = "false"; }, 1000);
     }
 }
 
 /**
- * ИНИЦИАЛИЗАЦИЯ С ЗАЩИТОЙ ОТ ТУПНЯКОВ
+ * ИНИЦИАЛИЗАЦИЯ (ПРОВЕРКА ВЕРНУВШЕГОСЯ ЮЗЕРА)
  */
-const initV19 = async () => {
-    // Если в URL есть метка логаута - не пытаемся восстановиться!
-    if (window.location.search.includes('logout=')) {
-        // Очищаем URL от мусора через 1 сек
-        setTimeout(() => {
-            window.history.replaceState(null, "", window.location.pathname);
-        }, 1000);
-        return;
-    }
-
-    const savedKey = localStorage.getItem('fox_v19_key');
-    const state = localStorage.getItem('fox_v19_state');
+const initV21 = async () => {
+    const savedKey = localStorage.getItem('fox_v21_key');
+    const state = localStorage.getItem('fox_v21_state');
 
     if (state === 'active' && savedKey) {
-        AurumFoxEngine.walletAddress = savedKey;
-        AurumFoxEngine.isWalletConnected = true;
-        syncWalletUI(true, savedKey);
-        
-        // Тихая проверка провайдера
         const provider = window?.solana || window?.phantom?.solana;
+        
+        // Если провайдер есть (вернулись из кошелька в браузер)
         if (provider) {
-            try { await provider.connect({ onlyIfTrusted: true }); } catch(e) {}
+            try {
+                const resp = await provider.connect({ onlyIfTrusted: true });
+                const pubKey = resp.publicKey.toString();
+                AurumFoxEngine.walletAddress = pubKey;
+                AurumFoxEngine.isWalletConnected = true;
+                syncWalletUI(true, pubKey);
+            } catch (e) {
+                // Если не получилось тихо - всё равно показываем UI, так как ключ в памяти
+                AurumFoxEngine.isWalletConnected = true;
+                syncWalletUI(true, savedKey);
+            }
+        } else {
+            // Если провайдера нет, но есть ключ (мы в Twitter WebView)
+            AurumFoxEngine.isWalletConnected = true;
+            syncWalletUI(true, savedKey);
         }
     }
 };
 
-// Запуск
 window.addEventListener('load', () => {
-    if (!document.getElementById('fox-v19-css')) {
-        const style = document.createElement('style');
-        style.id = 'fox-v19-css';
-        style.innerHTML = `
-            .fox-btn-default { background: #111; color: #fff; border: 1px solid #333; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight: bold; }
-            .fox-spin { width: 14px; height: 14px; border: 2px solid #00ff7f; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: f-spin 0.6s linear infinite; margin-right: 8px; }
-            @keyframes f-spin { to { transform: rotate(360deg); } }
-            .fox-container { display: flex; align-items: center; gap: 8px; }
-            .fox-neon-dot { width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; box-shadow: 0 0 10px #00ff7f; animation: fox-blink 1s infinite; }
-            @keyframes fox-blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-        `;
-        document.head.appendChild(style);
-    }
-    initV19();
+    // Внедрение стилей
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .fox-btn-default { background: #111; color: #fff; border: 1px solid #333; padding: 12px 24px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .fox-btn-connected { background: #000; color: #00ff7f; border: 2px solid #00ff7f; padding: 12px 24px; cursor: pointer; border-radius: 4px; }
+        .fox-spin { width: 14px; height: 14px; border: 2px solid #00ff7f; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: f-spin 0.5s linear infinite; margin-right: 8px; }
+        @keyframes f-spin { to { transform: rotate(360deg); } }
+        .fox-container { display: flex; align-items: center; gap: 8px; }
+        .fox-neon-dot { width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; box-shadow: 0 0 10px #00ff7f; }
+    `;
+    document.head.appendChild(style);
+    initV21();
 });
 
+
+ 
 
 
 
