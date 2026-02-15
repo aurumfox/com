@@ -616,6 +616,156 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 
+/**
+ * ARMORED WALLET MODULE — Максимальная автоматизация и принудительный возврат
+ * Поддержка PC/Mobile + Auto-Session Recovery
+ */
+
+const syncWalletUI = (isConnected, address = null) => {
+    const btn = document.getElementById('connectWalletBtn');
+    if (!btn) return;
+
+    if (isConnected && address) {
+        const shortAddr = address.slice(0, 4) + "..." + address.slice(-4);
+        btn.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                <div class="pulse-green"></div>
+                <span>${shortAddr}</span>
+                <span style="opacity:0.5; font-size:10px; margin-left:5px;">[EXIT]</span>
+            </div>`;
+        btn.style.background = "#000";
+        btn.style.border = "2px solid #00ff7f";
+        btn.style.color = "#00ff7f";
+        btn.style.boxShadow = "0 0 20px rgba(0, 255, 127, 0.2)";
+    } else {
+        btn.innerHTML = `🦊 Connect Wallet`;
+        btn.style = ""; // Сброс к базовому CSS
+    }
+};
+
+async function toggleWalletAction() {
+    const btn = document.getElementById('connectWalletBtn');
+    if (!btn || btn.dataset.loading === "true") return;
+    
+    btn.dataset.loading = "true";
+    const provider = window.solana || window.phantom?.solana;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    try {
+        if (!AurumFoxEngine.isWalletConnected) {
+            // --- ЛОГИКА ВХОДА ---
+            if (!provider) {
+                if (isMobile) {
+                    const currentUrl = window.location.href.replace(/^https?:\/\//, '');
+                    window.location.href = `https://phantom.app/ul/browse/${currentUrl}`;
+                } else {
+                    AurumFoxEngine.notify("Install Phantom", "ERROR");
+                    window.open("https://phantom.app/", "_blank");
+                }
+                return;
+            }
+
+            btn.innerHTML = `<span class="fox-loader"></span> OPENING WALLET...`;
+            
+            // Принудительный запрос аккаунта
+            const resp = await provider.connect();
+            const addr = resp.publicKey.toString();
+
+            // Сохраняем состояние в движок и в локальное хранилище для брони
+            AurumFoxEngine.walletAddress = addr;
+            AurumFoxEngine.isWalletConnected = true;
+            localStorage.setItem('fox_wallet_remember', 'true');
+            
+            syncWalletUI(true, addr);
+            AurumFoxEngine.notify("Access Granted", "SUCCESS");
+
+            // ПРИНУДИТЕЛЬНЫЙ РЕБУТ/ВОЗВРАТ (Mobile Fix)
+            if (isMobile) {
+                setTimeout(() => {
+                    // Используем замену истории, чтобы выкинуть UI кошелька обратно на сайт
+                    window.location.replace(window.location.href);
+                }, 600); 
+            }
+
+        } else {
+            // --- ЛОГИКА ВЫХОДА ---
+            btn.innerHTML = `<span class="fox-loader"></span> TERMINATING...`;
+            
+            if (provider) await provider.disconnect();
+            
+            AurumFoxEngine.isWalletConnected = false;
+            AurumFoxEngine.walletAddress = null;
+            localStorage.removeItem('fox_wallet_remember');
+            
+            syncWalletUI(false);
+            AurumFoxEngine.notify("Session Closed", "OFFLINE");
+
+            // Принудительная очистка страницы для сброса всех кэшей
+            setTimeout(() => { window.location.reload(); }, 300);
+        }
+    } catch (err) {
+        console.error("Critical Connection Error:", err);
+        AurumFoxEngine.notify("Action Cancelled", "REJECTED");
+        syncWalletUI(false);
+    } finally {
+        btn.dataset.loading = "false";
+    }
+}
+
+/**
+ * БРОНИРОВАННЫЙ АВТО-КОННЕКТ (Session Recovery)
+ * Если юзер уже залогинился ранее, сайт подхватит его САМ при входе
+ */
+const autoRecoverSession = async () => {
+    const provider = window.solana || window.phantom?.solana;
+    const shouldRemember = localStorage.getItem('fox_wallet_remember');
+
+    if (shouldRemember === 'true' && provider) {
+        try {
+            // Пытаемся подключиться в фоновом режиме без вызова окна
+            const resp = await provider.connect({ onlyIfTrusted: true });
+            const addr = resp.publicKey.toString();
+            
+            AurumFoxEngine.walletAddress = addr;
+            AurumFoxEngine.isWalletConnected = true;
+            syncWalletUI(true, addr);
+            console.log("🛡️ Session recovered automatically");
+        } catch (e) {
+            localStorage.removeItem('fox_wallet_remember');
+        }
+    }
+};
+
+// Запуск восстановления при загрузке
+window.addEventListener('load', autoRecoverSession);
+
+// Слежка за вкладкой: если юзер вернулся из аппы Phantom вручную
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !AurumFoxEngine.isWalletConnected) {
+        autoRecoverSession();
+    }
+});
+
+// Доп. стили для "пульса" подключенного кошелька
+const injectPulseStyle = () => {
+    if (document.getElementById('fox-pulse-css')) return;
+    const style = document.createElement('style');
+    style.id = 'fox-pulse-css';
+    style.innerHTML = `
+        .pulse-green {
+            width: 8px; height: 8px; background: #00ff7f; border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(0, 255, 127, 0.7);
+            animation: fox-pulse 1.5s infinite;
+        }
+        @keyframes fox-pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 127, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 127, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 127, 0); }
+        }
+    `;
+    document.head.appendChild(style);
+};
+injectPulseStyle();
 
 
 
