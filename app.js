@@ -468,7 +468,20 @@ function getTokenDecimals(mintAddress) {
 
 // --- ФУНКЦИИ, ВЫЗЫВАЕМЫЕ ЧЕРЕЗ ID КНОПОК ---
 
-
+// 1. Для ID: "initialize-user-stake-btn" (Category: STAKING_INIT)
+export async function createStakingAccount(program, poolIndex, poolStatePDA, userStakingPDA) {
+    console.log("🚀 Initializing Staking Account...");
+    return await program.methods
+        .initializeUserStake(poolIndex)
+        .accounts({
+            poolState: poolStatePDA,
+            userStaking: userStakingPDA,
+            owner: program.provider.wallet.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        })
+        .rpc();
+}
 
 // 2. Для ID: "deposit-btn" (Category: STAKING_DEPOSIT)
 export async function stakeAfox(program, poolIndex, amount, poolStatePDA, userStakingPDA, userSourceAta, poolVaultAta) {
