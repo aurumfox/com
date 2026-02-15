@@ -690,24 +690,48 @@ window.claimAllRewards = async function() {
 
 
 window.executeCollateral = async function() {
+    // 1. Получаем значение. Убедись, что decimals (AFOX_DECIMALS) совпадают с контрактом
     const val = document.getElementById('collateral-amount')?.value || "1000";
+    
     try {
         const program = await getProgram();
+        const poolIndex = 0; // Индекс пула (u8), должен совпадать с тем, где открыт стейк
+
+        // 2. ГЕНЕРАЦИЯ PDA (ИСПРАВЛЕНО)
+        // В контракте: ["user_stake", pool_state_pubkey, owner_pubkey, [pool_index]]
         const [pda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), window.solana.publicKey.toBuffer(), Buffer.from([0])], 
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                window.solana.publicKey.toBuffer(),
+                Buffer.from([poolIndex]) // Важно: только индекс пула, без лишних байтов
+            ], 
             program.programId
         );
+
+        // 3. Подготовка суммы (BigNumber для Anchor)
         const amountBN = new anchor.BN(parseAmountToBigInt(val, AFOX_DECIMALS).toString());
+
         AurumFoxEngine.notify("LOCKING COLLATERAL...", "WAIT");
-        await program.methods.collateralizeLending(0, amountBN).accounts({
-            poolState: AFOX_POOL_STATE_PUBKEY,
-            userStaking: pda,
-            lendingAuthority: window.solana.publicKey,
-            clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-        }).rpc();
+
+        // 4. ВЫЗОВ МЕТОДА (ИСПРАВЛЕНО)
+        // Передаем poolIndex и сумму
+        await program.methods.collateralizeLending(poolIndex, amountBN)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: pda,
+                lendingAuthority: window.solana.publicKey, // Должен быть Signer-ом в транзакции
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
         AurumFoxEngine.notify("COLLATERAL LOCKED", "SUCCESS");
-    } catch (e) { AurumFoxEngine.notify("LOCK FAILED", "FAILED"); }
+    } catch (e) { 
+        console.error("Collateral Error:", e);
+        AurumFoxEngine.notify("LOCK FAILED", "FAILED"); 
+    }
 };
+
 
 
 
