@@ -1376,7 +1376,7 @@ window.AurumFoxEngine = {
     
     // Карта команд и соответствующих текстов на кнопках для "умного" поиска
     INTELLIGENT_MAP: {
-        "WALLET":       { ids: ["connectWalletBtn"], keywords: ["connect", "wallet", "fox connect"] },
+        
         "CLAIM":        { ids: ["collect-all-profit-btn", "claim-all-rewards-btn"], keywords: ["collect", "claim", "profit"] },
         "INIT_STAKE":   { ids: ["create-staking-account-btn"], keywords: ["create staking", "init stake"] },
         "MAX_STAKE":    { ids: ["stake-max-btn"], keywords: ["max"], context: "stake" },
@@ -1505,9 +1505,7 @@ window.AurumFoxEngine = {
                     await this.ensureExecution(window.closeStakingAccount);
                     break;
 
-                case "WALLET":
-                    if (window.toggleWalletAction) await window.toggleWalletAction();
-                    break;
+               
             }
             if (!action.includes("MAX")) el.innerHTML = `DONE ✅`;
         } catch (err) {
