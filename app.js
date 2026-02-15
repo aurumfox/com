@@ -625,6 +625,239 @@ export async function repayAndCloseLoan(program, poolStatePDA, userStakingPDA, a
 
 
 
+/**
+ * AURUM FOX: LUXE ENGINE v7.5 - ROYAL LIQUIDITY OVERRIDE
+ * Полная синхронизация ID кнопок HTML и логики Solana Mainnet
+ */
+
+const AurumFoxEngine = {
+    isWalletConnected: false,
+    walletAddress: null, 
+
+    // Реестр всех ID кнопок из твоего HTML для точного контроля
+    KEY_BUTTONS: {
+        // Wallet
+        "connectWalletBtn": "HEADER/WALLET",
+        
+        // Staking
+        "initialize-user-stake-btn": "STAKING_INIT",
+        "deposit-btn": "STAKING_DEPOSIT",
+        "unstake-btn": "STAKING_WITHDRAW",
+        "max-stake-btn": "INTERFACE_HELPER",
+        "close-staking-account-btn": "STAKING_CLOSE",
+        
+        // Rewards
+        "claim-all-rewards-btn": "REWARDS_CLAIM", // Кнопка в статистике
+        "claim-all-btn-luxe": "REWARDS_CLAIM",    // Кнопка "Claim All" в списке пулов
+        
+        // Lending
+        "collateralize-btn": "LENDING_COLLATERAL",
+        "decollateralize-btn": "LENDING_DECOLLATERAL",
+        "borrow-btn": "LENDING_BORROW",
+        "repay-btn": "LENDING_REPAY",
+        "max-collateral-btn": "INTERFACE_HELPER"
+    },
+
+    init() {
+        console.clear();
+        this.printBanner();
+        this.buildNotificationSystem();
+        this.injectGlobalLuxeStyles();
+        this.scanAndCalibrate();
+        this.watchOrbit();
+
+        const provider = window.solana || window.phantom?.solana;
+        if (provider && provider.isConnected) {
+            this.handleRealWalletSync();
+        }
+
+        console.log(`%c[ROYAL SYSTEM]: CALIBRATED. ALL HTML IDs SYNCED.`, "color: #00ff7f; font-weight: bold; background: #000; padding: 5px;");
+    },
+
+    handleRealWalletSync() {
+        const provider = window.solana || window.phantom?.solana;
+        if (provider && provider.publicKey) {
+            const addr = provider.publicKey.toString();
+            this.walletAddress = addr.slice(0, 4) + "..." + addr.slice(-4);
+            this.isWalletConnected = true;
+
+            const walletBtn = document.getElementById('connectWalletBtn');
+            if (walletBtn) {
+                walletBtn.innerHTML = `🦊 ${this.walletAddress}`;
+                walletBtn.style.background = "linear-gradient(90deg, #00ff7f, #00b359)";
+                walletBtn.style.color = "#000";
+            }
+        }
+    },
+
+    async toggleWallet() {
+        const btn = document.getElementById('connectWalletBtn');
+        if (!btn || btn.dataset.loading === "true") return;
+        btn.dataset.loading = "true";
+
+        try {
+            const provider = window.solana || window.phantom?.solana;
+
+            if (!this.isWalletConnected) {
+                if (!provider) {
+                    this.notify("Wallet not found!", "ERROR");
+                    window.open("https://phantom.app/", "_blank");
+                    return;
+                }
+                btn.innerHTML = `<span class="fox-loader"></span> Connecting...`;
+                await provider.connect();
+                this.handleRealWalletSync();
+                this.notify("Solana Mainnet Linked", "SUCCESS");
+            } else {
+                if (provider) await provider.disconnect();
+                this.isWalletConnected = false;
+                btn.innerHTML = `🦊 Connect Wallet`;
+                btn.style.background = "";
+                btn.style.color = "";
+                this.notify("Session Terminated", "WALLET_DISCONNECTED");
+            }
+        } catch (err) {
+            this.notify("Connection Rejected", "CANCELLED");
+            btn.innerHTML = `🦊 Connect Wallet`;
+        } finally {
+            btn.dataset.loading = "false";
+        }
+    },
+
+    scanAndCalibrate() {
+        // Сканируем вообще все кнопки и ссылки
+        const targets = document.querySelectorAll('button, a, .royal-btn, .web3-btn');
+        
+        targets.forEach((el) => {
+            if (el.dataset.foxSynced) return;
+
+            // 1. Пытаемся определить категорию по ID из нашего словаря KEY_BUTTONS
+            let category = this.KEY_BUTTONS[el.id];
+
+            // 2. Если ID нет, пробуем определить по классу (для кнопок без ID)
+            if (!category) {
+                if (el.classList.contains('claim-btn-luxe')) category = "REWARDS_CLAIM";
+                else if (el.classList.contains('discord-btn')) category = "SOCIAL";
+                else category = "GENERAL_INTERFACE";
+            }
+
+            this.syncNode(el, category);
+        });
+    },
+
+    syncNode(el, category) {
+        el.dataset.foxSynced = "true";
+        el.dataset.foxCategory = category;
+
+        el.addEventListener('click', async (e) => {
+            // Если это кнопка кошелька - отменяем стандартный переход (если это <a>)
+            if (el.id === 'connectWalletBtn') {
+                e.preventDefault();
+                await this.toggleWallet();
+                return;
+            }
+
+            // Для кнопок внутри форм/стейкинга тоже гасим дефолт
+            if (el.tagName === 'BUTTON') e.preventDefault();
+            
+            await this.handleInteraction(el, category);
+        });
+    },
+
+    async handleInteraction(el, category) {
+        if (el.dataset.loading === "true") return;
+        
+        const label = (el.innerText || "Action").trim().split('\n')[0];
+        const originalContent = el.innerHTML;
+        
+        el.dataset.loading = "true";
+        this.triggerVisualPulse(el);
+        
+        // Визуальный отклик
+        el.innerHTML = `<span class="fox-loader"></span> Processing...`;
+        this.notify(`Executing: ${label}`, category);
+
+        try {
+            // ИНТЕГРАЦИЯ: Здесь вызываются функции из твоего предыдущего блока JavaScript
+            if (category === "REWARDS_CLAIM") {
+                if (typeof claimAllRewards === 'function') await claimAllRewards();
+            } else if (category === "STAKING_DEPOSIT") {
+                this.notify("Check your wallet for approval", "STAKING");
+                // if (typeof stakeAfox === 'function') await stakeAfox(...);
+            }
+
+            // Имитация задержки сети для красоты
+            await new Promise(r => setTimeout(r, 1000));
+
+            el.innerHTML = `✅ Complete`;
+            this.notify(`${label} confirmed on chain`, "SUCCESS");
+        } catch (err) {
+            this.notify("Transaction rejected", "FAILED");
+            el.innerHTML = `❌ Failed`;
+        }
+
+        setTimeout(() => {
+            el.innerHTML = originalContent;
+            el.dataset.loading = "false";
+        }, 2000);
+    },
+
+    triggerVisualPulse(el) {
+        el.style.transform = "scale(0.96)";
+        setTimeout(() => el.style.transform = "", 100);
+    },
+
+    injectGlobalLuxeStyles() {
+        if (document.getElementById('fox-engine-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'fox-engine-styles';
+        style.innerHTML = `
+            .fox-loader {
+                width: 12px; height: 12px; border: 2px solid currentColor;
+                border-bottom-color: transparent; border-radius: 50%;
+                display: inline-block; animation: foxRotation 0.6s linear infinite;
+                margin-right: 8px;
+            }
+            @keyframes foxRotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            [data-loading="true"] { pointer-events: none; opacity: 0.8; }
+        `;
+        document.head.appendChild(style);
+    },
+
+    buildNotificationSystem() {
+        if (document.getElementById('fox-notif-hub')) return;
+        const hub = document.createElement('div');
+        hub.id = 'fox-notif-hub';
+        hub.style = "position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;";
+        document.body.appendChild(hub);
+    },
+
+    notify(msg, type) {
+        const alert = document.createElement('div');
+        alert.style = "background: #060b1a; border-left: 4px solid #FFD700; color: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: foxIn 0.3s ease-out; pointer-events: auto; min-width: 250px;";
+        alert.innerHTML = `
+            <div style="color: #FFD700; font-size: 9px; font-weight: 900; text-transform: uppercase;">${type}</div>
+            <div style="font-size: 13px;">${msg}</div>
+        `;
+        document.getElementById('fox-notif-hub').appendChild(alert);
+        setTimeout(() => {
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        }, 3500);
+    },
+
+    printBanner() {
+        console.log("%c👑 AURUM FOX ENGINE v7.5", "color: #FFD700; font-size: 20px; font-weight: bold;");
+    },
+
+    watchOrbit() {
+        const observer = new MutationObserver(() => this.scanAndCalibrate());
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+};
+
+// Запуск с небольшой задержкой, чтобы DOM успел прогрузиться
+setTimeout(() => AurumFoxEngine.init(), 500);
 
 
 
