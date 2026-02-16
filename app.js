@@ -1885,70 +1885,59 @@ window.addEventListener('load', () => {
 
 
 
-    // Умная логика для кнопок MAX (ищет баланс и поле ввода)
-    async logicMax(type) {
+        async logicMax(type) {
         let amount = 0n;
-        let decimals = 6; // По умолчанию для AFOX
+        const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
         
+        this.notify(`FETCHING ${type.toUpperCase()}...`, "WAIT");
+
         try {
+            // 1. Сначала пробуем получить СВЕЖИЕ данные прямо из сети, забив на кэш
             if (type === 'stake') {
-                // Пытаемся взять баланс из стейта, если нет - лезем в блокчейн
-                amount = window.appState?.userBalances?.AFOX;
-                if (amount === undefined || amount === 0n) {
-                    amount = await this.getFreshBalance("GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd");
-                }
+                // Если appState пуст из-за ошибки RPC, пробуем дёрнуть баланс напрямую
+                amount = await this.getFreshBalance(AFOX_MINT);
                 
-                // Если юзер хочет застейкать максимум, и это очень маленькая сумма - выходим
-                if (amount === 0n) return this.notify("BALANCE IS EMPTY", "ERROR");
-
-            } else if (type === 'unstake') {
-                // Для анстейка берем данные из контракта (то, что уже в стейке)
+                // Если всё еще 0, проверяем, может в appState что-то есть
+                if (amount === 0n && window.appState?.userBalances?.AFOX) {
+                    amount = window.appState.userBalances.AFOX;
+                }
+            } else {
+                // Для анстейка смотрим, что реально лежит в контракте
                 amount = window.appState?.userStakingData?.stakedAmount || 0n;
-                if (amount === 0n) return this.notify("NOTHING TO UNSTAKE", "ERROR");
-
-            } else if (type === 'sol') {
-                // Если вдруг добавишь кнопку МАКС для SOL
-                const solRaw = window.appState?.userBalances?.SOL || 0n;
-                // Оставляем 0.005 SOL на газ (5000000 лапортов)
-                const reserve = 5000000n;
-                amount = solRaw > reserve ? solRaw - reserve : 0n;
-                decimals = 9;
             }
 
-            // Форматируем BigInt в строку для инпута
-            const formatted = window.formatBigInt ? 
-                window.formatBigInt(amount, decimals) : 
-                (Number(amount) / Math.pow(10, decimals)).toFixed(decimals).replace(/\.?0+$/, "");
+            // 2. Если всё равно 0 — значит либо реально пусто, либо RPC совсем сдох
+            if (amount === 0n) {
+                console.error("❌ Balance is 0 or RPC unreachable");
+                return this.notify("BALANCE IS 0 (OR RPC ERROR)", "ERROR");
+            }
 
-            // АВТО-ПОИСК ИНПУТА (Самая важная часть)
-            // Ищем по ID, потом по атрибутам, потом ближайший в том же контейнере
+            // 3. Форматируем число (AFOX = 6 децималов)
+            const formatted = (Number(amount) / 1_000_000).toString();
+
+            // 4. УМНЫЙ ПОИСК ИНПУТА (по ID или по соседству с кнопкой)
             const inputId = type === 'stake' ? 'stake-input-amount' : 'unstake-input-amount';
-            let input = document.getElementById(inputId) || 
-                        document.querySelector(`input[data-type="${type}"]`) ||
-                        document.querySelector(`input[placeholder*="${type}"]`) ||
-                        document.querySelector('input[type="number"]');
+            let input = document.getElementById(inputId);
+            
+            if (!input) {
+                // Если ID не найден, ищем любой числовой инпут рядом
+                input = document.querySelector('input[type="number"]') || document.querySelector('input[placeholder*="0"]');
+            }
 
             if (input) {
                 input.value = formatted;
-                
-                // Триггерим события, чтобы React/Vue или другие скрипты увидели изменения
+                // Обязательно "пинаем" инпут, чтобы скрипты стейкинга увидели цифру
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
                 
-                // Визуальный эффект для инпута (подсветка)
-                input.style.transition = "0.3s";
-                input.style.boxShadow = "0 0 15px #FFD700";
-                setTimeout(() => { input.style.boxShadow = "none"; }, 500);
-
-                this.notify(`MAX ${type.toUpperCase()}: ${formatted}`, "SUCCESS");
+                this.notify(`MAX SET: ${formatted}`, "SUCCESS");
             } else {
-                console.error("Input not found for type:", type);
-                this.notify("INPUT FIELD NOT FOUND", "ERROR");
+                this.notify("INPUT NOT FOUND", "ERROR");
             }
 
         } catch (e) {
-            console.error("LogicMax Error:", e);
-            this.notify("MAX CALCULATION FAILED", "ERROR");
+            console.error("Critical Max Logic Error:", e);
+            this.notify("CONNECTION ERROR", "ERROR");
         }
     },
 
