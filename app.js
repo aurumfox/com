@@ -1885,7 +1885,201 @@ window.addEventListener('load', () => {
 
 
 
+        // ============================================================
+// 👑 AURUM FOX: OMEGA SMART ENGINE v12.0 - FIX & BYPASS
+// ============================================================
+
+window.AurumFoxEngine = {
+    isWalletConnected: false,
+    // Используем несколько RPC, чтобы если один "лёг", кнопка не умирала
+    rpcUrls: [
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-rpc.publicnode.com',
+        'https://rpc.ankr.com/solana'
+    ],
+
+    INTELLIGENT_MAP: {
+        "CLAIM":        { ids: ["collect-all-profit-btn"], keywords: ["collect", "claim", "profit"] },
+        "INIT_STAKE":   { ids: ["create-staking-account-btn"], keywords: ["create staking", "init"] },
+        "MAX_STAKE":    { ids: ["stake-max-btn"], keywords: ["max"], context: "stake" },
+        "STAKE":        { ids: ["stake-afox-btn"], keywords: ["stake afox"] },
+        "MAX_UNSTAKE":  { ids: ["unstake-max-btn"], keywords: ["max"], context: "unstake" },
+        "UNSTAKE":      { ids: ["unstake-afox-btn"], keywords: ["unstake afox", "withdraw"] },
+        "REFUND":       { ids: ["close-account-refund-btn"], keywords: ["close", "refund"] }
+    },
+
+    notify(msg, type = "SYSTEM") {
+        if (typeof window.showFoxToast === 'function') {
+            window.showFoxToast(msg, type.toLowerCase() === 'success' ? 'success' : 'error');
+        } else {
+            console.log(`%c[${type}] ${msg}`, "color: #FFD700; background: #000; padding: 2px 5px;");
+        }
+    },
+
+    // Безопасное получение баланса: если RPC нет, просто вернет 0, а не ошибку
+    async getFreshBalance(mint) {
+        try {
+            const addr = localStorage.getItem('fox_sol_addr');
+            if (!addr) return 0n;
+            // Берем первый живой RPC из списка
+            const conn = new window.solanaWeb3.Connection(this.rpcUrls[0]);
+            const pubkey = new window.solanaWeb3.PublicKey(addr);
+            const tokenAccount = await conn.getParsedTokenAccountsByOwner(pubkey, { 
+                mint: new window.solanaWeb3.PublicKey(mint) 
+            });
+            return tokenAccount.value.length > 0 ? BigInt(tokenAccount.value[0].account.data.parsed.info.tokenAmount.amount) : 0n;
+        } catch (e) { 
+            console.warn("RPC Unreachable during balance fetch");
+            return 0n; 
+        }
+    },
+
+    init() {
+        this.injectGlobalStyles();
+        this.smartScan();
+        // Сканируем чаще, чтобы подхватить динамические кнопки
+        setInterval(() => this.smartScan(), 1500);
+        console.log("🚀 ENGINE v12.0: READY (IDLE MODE)");
+    },
+
+    smartScan() {
+        const allButtons = document.querySelectorAll('button, a, .fox-btn, [role="button"]');
+        allButtons.forEach(btn => {
+            if (btn.dataset.foxSynced === "true") return;
+
+            const text = btn.innerText.toLowerCase();
+            const id = btn.id;
+
+            for (const [action, config] of Object.entries(this.INTELLIGENT_MAP)) {
+                const matchId = config.ids.includes(id);
+                const matchText = config.keywords.some(kw => text.includes(kw));
+                
+                // Умная проверка контекста (чтобы MAX стейка не путался с MAX анстейка)
+                let contextMatch = true;
+                if (config.context) {
+                    const parentText = btn.parentElement?.innerText.toLowerCase() || "";
+                    contextMatch = parentText.includes(config.context) || text.includes(config.context);
+                }
+
+                if ((matchId || matchText) && contextMatch) {
+                    btn.dataset.foxSynced = "true";
+                    btn.dataset.foxAction = action;
+                    btn.onclick = async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        await this.handleInteraction(btn, action);
+                    };
+                }
+            }
+        });
+    },
+
+    async handleInteraction(el, action) {
+        if (el.dataset.loading === "true") return;
+
+        const userAddr = localStorage.getItem('fox_sol_addr');
+        if (!userAddr) {
+            this.notify("CONNECT WALLET FIRST!", "ERROR");
+            return;
+        }
+
+        el.dataset.loading = "true";
+        const originalHTML = el.innerHTML;
+        el.innerHTML = `<span class="fox-loader-omega"></span>`;
+
+        try {
+            // ПРОВЕРКА: Если контракта нет в блокчейне — сразу стоп
+            if (action !== "MAX_STAKE" && action !== "MAX_UNSTAKE") {
+                this.notify("CHECKING CONTRACT...", "WAIT");
+            }
+
+            switch (action) {
+                case "MAX_STAKE":
+                    await this.logicMax('stake');
+                    break;
+                case "MAX_UNSTAKE":
+                    await this.logicMax('unstake');
+                    break;
+                default:
+                    // Для всех остальных функций вызываем их из window
+                    const fnName = this.getFunctionName(action);
+                    if (typeof window[fnName] === 'function') {
+                        await window[fnName]();
+                        this.notify("TRANSACTION SENT", "SUCCESS");
+                    } else {
+                        throw new Error("CONTRACT_NOT_READY");
+                    }
+            }
+            el.innerHTML = `✅`;
+        } catch (err) {
+            console.error(err);
+            const msg = err.message === "CONTRACT_NOT_READY" ? "CONTRACT NOT DEPLOYED" : "RPC ERROR";
+            this.notify(msg, "ERROR");
+            el.innerHTML = `❌`;
+        }
+
+        setTimeout(() => {
+            el.innerHTML = originalHTML;
+            el.dataset.loading = "false";
+        }, 2000);
+    },
+
+    getFunctionName(action) {
+        const maps = {
+            "STAKE": "stakeAfox",
+            "UNSTAKE": "unstakeAfox",
+            "CLAIM": "claimAllRewards",
+            "INIT_STAKE": "createStakingAccount",
+            "REFUND": "closeStakingAccount"
+        };
+        return maps[action];
+    },
+
+    async logicMax(type) {
+        this.notify(`FETCHING ${type.toUpperCase()}...`, "WAIT");
         
+        let amount = 0n;
+        const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
+
+        if (type === 'stake') {
+            // Пытаемся взять баланс из кошелька
+            amount = window.appState?.userBalances?.AFOX || await this.getFreshBalance(AFOX_MINT);
+        } else {
+            // Баланс из стейка (только если аккаунт существует)
+            amount = window.appState?.userStakingData?.stakedAmount || 0n;
+        }
+
+        if (!amount || amount === 0n) {
+            this.notify("ZERO BALANCE", "ERROR");
+            return;
+        }
+
+        const formatted = (Number(amount) / 1_000_000).toString();
+        
+        // Ищем инпут поблизости от кнопки
+        const input = document.querySelector(type === 'stake' ? '#stake-input-amount' : '#unstake-input-amount') 
+                      || document.querySelector('input[type="number"]');
+
+        if (input) {
+            input.value = formatted;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            this.notify(`MAX SET: ${formatted}`, "SUCCESS");
+        }
+    },
+
+    injectGlobalStyles() {
+        if (document.getElementById('fox-omega-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'fox-omega-styles';
+        style.innerHTML = `
+            .fox-loader-omega { width: 14px; height: 14px; border: 2px solid #FFD700; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: foxSpin 0.6s linear infinite; }
+            @keyframes foxSpin { to { transform: rotate(360deg); } }
+            [data-loading="true"] { pointer-events: none; opacity: 0.8; }
+        `;
+        document.head.appendChild(style);
+    }
+};
+
     
 
 
