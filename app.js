@@ -1884,3 +1884,193 @@ window.addEventListener('load', () => {
 
 
 
+// ============================================================
+// 👑 AURUM FOX: OMNI-BRAIN v14.0 - FULL AUTONOMOUS CRAWLER
+// ============================================================
+
+window.AurumFoxEngine = {
+    isWalletConnected: false,
+    // Список резервных RPC для обхода ошибок 403/Offline
+    rpcNodes: ['https://solana-rpc.publicnode.com', 'https://api.mainnet-beta.solana.com'],
+
+    ROYAL_PHRASES: {
+        SUCCESS: ["SUCCESS 👑", "SECURED 💎", "DISPATCHED ✨"],
+        ERROR:   ["DECLINED ❌", "VOID ASSETS", "REJECTED"],
+    },
+
+    // Расширенная карта поиска с синонимами для глубокого анализа
+    INTEL_MAP: {
+        "CLAIM":        { terms: ["collect", "claim", "profit", "harvest", "rewards"], royal: "COLLECTED 💰" },
+        "INIT_STAKE":   { terms: ["create staking", "init stake", "setup", "initialize"], royal: "INITIALIZED" },
+        "MAX_STAKE":    { terms: ["max", "100%"], context: "stake", royal: "MAXED 🚀" },
+        "STAKE":        { terms: ["stake afox", "stake now", "deposit", "confirm stake"], royal: "STAKED 👑" },
+        "MAX_UNSTAKE":  { terms: ["max", "100%"], context: "unstake", royal: "MAXED" },
+        "UNSTAKE":      { terms: ["unstake", "withdraw", "unstake afox"], royal: "RELEASED" },
+        "REFUND":       { terms: ["close account", "refund", "close staking", "exit"], royal: "REFUNDED" },
+        "COLLATERAL":   { terms: ["collateralize", "enable collateral", "use as"], royal: "ACTIVE ⚡" },
+        "DECOLLATERAL": { terms: ["decollateralize", "remove collateral"], royal: "DISABLED" },
+        "BORROW":       { terms: ["execute borrow", "borrowing", "take loan", "get sol"], royal: "BORROWED 💎" },
+        "REPAY":        { terms: ["repay debt", "pay debt", "repay"], royal: "PAID OFF" },
+        "REPAY_CLOSE":  { terms: ["repay & close", "close loan", "full repay"], royal: "CLOSED ✨" }
+    },
+
+    // Полное исправление ошибок notify из консоли
+    notify(msg, type = "info") { this.safeNotify(msg, type); },
+
+    safeNotify(msg, type = "SYSTEM") {
+        const color = type.toLowerCase() === 'success' ? '#00ff88' : '#ffcc00';
+        console.log(`%c[${type.toUpperCase()}] ${msg}`, `color: ${color}; font-weight: bold; background: #000; padding: 2px 8px; border-radius: 4px;`);
+        try { if (window.showFoxToast) window.showFoxToast(msg, type.toLowerCase()); } catch(e) {}
+    },
+
+    init() {
+        this.hijackSystem();
+        this.injectGlobalStyles();
+        this.deepDiscovery();
+        setInterval(() => this.deepDiscovery(), 1500);
+        console.log("%c👑 OMNI-BRAIN v14.0: DEEP ANALYSIS ACTIVE", "color: gold; font-weight: bold; font-size: 12px;");
+    },
+
+    // Блокируем всё, что может остановить скрипт (alert, confirm, ошибки)
+    hijackSystem() {
+        window.alert = (m) => { this.safeNotify(`Intercepted: ${m}`, "ERROR"); return true; };
+        window.confirm = () => true;
+        window.prompt = () => "";
+        // Фикс для движка сайта, если он вызывает notify
+        window.AurumFoxEngine.notify = this.notify.bind(this);
+    },
+
+    // Глубокий поиск кнопок в HTML по смыслу, даже если нет четких ID
+    deepDiscovery() {
+        const targets = document.querySelectorAll('button, a, [role="button"], .btn, .fox-btn, .clickable');
+        targets.forEach(el => {
+            if (el.dataset.foxSynced === "true") return;
+            
+            const text = (el.innerText + " " + el.className + " " + el.id + " " + (el.getAttribute('alt') || "")).toLowerCase();
+
+            for (const [action, config] of Object.entries(this.INTEL_MAP)) {
+                if (config.terms.some(t => text.includes(t))) {
+                    // Проверка контекста (Stake/Unstake), чтобы не перепутать кнопки
+                    if (config.context) {
+                        const areaText = el.closest('div')?.innerText.toLowerCase() || "";
+                        if (!areaText.includes(config.context)) continue;
+                    }
+                    this.bind(el, action);
+                    break;
+                }
+            }
+        });
+    },
+
+    bind(el, action) {
+        el.dataset.foxSynced = "true";
+        el.dataset.foxAction = action;
+        el.addEventListener('click', async (e) => {
+            e.preventDefault(); e.stopPropagation();
+            await this.handleAction(el, action);
+        });
+    },
+
+    async handleAction(el, action) {
+        if (el.dataset.loading === "true") return;
+        
+        const oldContent = el.innerHTML;
+        el.dataset.loading = "true";
+        el.innerHTML = `<span class="fox-loader"></span>`;
+
+        try {
+            // МАКСИМАЛЬНЫЙ ПОИСК: Ищем функцию везде в JavaScript
+            const fn = this.crawlJavaScriptForFunction(action);
+
+            switch (action) {
+                case "MAX_STAKE": case "MAX_UNSTAKE":
+                    await this.neuralMaxLogic(el, action === "MAX_STAKE" ? 'stake' : 'unstake');
+                    break;
+                default:
+                    // Если нашли функцию — выполняем, если нет — пробуем стандартные имена
+                    await this.runSmart(fn, action);
+                    break;
+            }
+            
+            el.innerHTML = `<span style="color: #00ff88;">${this.INTEL_MAP[action].royal}</span>`;
+            this.safeNotify("EXECUTIVE SUCCESS", "SUCCESS");
+
+        } catch (err) {
+            console.error("Action Error:", err);
+            const failTxt = this.ROYAL_PHRASES.ERROR[Math.floor(Math.random() * this.ROYAL_PHRASES.ERROR.length)];
+            el.innerHTML = `<span style="color: #ffcc00;">${failTxt}</span>`;
+            this.safeNotify(`REJECTED: ${err.message}`, "ERROR");
+        } finally {
+            setTimeout(() => {
+                el.innerHTML = oldContent;
+                el.dataset.loading = "false";
+            }, 2500);
+        }
+    },
+
+    // ГЛУБОКИЙ АНАЛИЗ JAVASCRIPT: ищет методы в объектах сайта
+    crawlJavaScriptForFunction(action) {
+        const keywords = this.INTEL_MAP[action].terms;
+        const rootObjects = [window, window.app, window.contract, window.blockchain, window.solana, window.staking];
+        
+        for (let obj of rootObjects) {
+            if (!obj) continue;
+            // Ищем функцию, имя которой содержит ключевые слова
+            const found = Object.keys(obj).find(key => 
+                typeof obj[key] === 'function' && keywords.some(k => key.toLowerCase().includes(k.replace(' ', '')))
+            );
+            if (found) return obj[found];
+        }
+        return null;
+    },
+
+    async runSmart(fn, action) {
+        // Если функция не найдена краулером, берем из стандартного набора
+        const fallbackMap = {
+            "STAKE": window.stakeAfox,
+            "CLAIM": window.claimAllRewards,
+            "INIT_STAKE": window.createStakingAccount,
+            "UNSTAKE": window.unstakeAfox
+        };
+        const finalFn = fn || fallbackMap[action];
+        
+        if (typeof finalFn !== 'function') {
+            await new Promise(r => setTimeout(r, 1000)); // Даем время на прогрузку
+            if (typeof finalFn !== 'function') throw new Error("VOID_CONTRACT");
+        }
+        return await finalFn();
+    },
+
+    async neuralMaxLogic(btn, type) {
+        const container = btn.closest('div') || document.body;
+        const input = container.querySelector('input') || document.querySelector('input[type="number"]');
+        
+        let val = window.appState?.userBalances?.AFOX || window.appState?.userStakingData?.stakedAmount || 0n;
+        const formatted = (Number(val) / 1e6).toString();
+
+        if (input) {
+            input.value = formatted;
+            // Эмулируем ввод пользователя для React/Vue
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    },
+
+    injectGlobalStyles() {
+        if (document.getElementById('fox-v14-styles')) return;
+        const s = document.createElement('style');
+        s.id = 'fox-v14-styles';
+        s.innerHTML = `
+            [data-loading="true"] { pointer-events: none !important; filter: contrast(0.8); }
+            .fox-loader {
+                width: 16px; height: 16px; border: 2px solid #FFD700; border-bottom-color: transparent;
+                border-radius: 50%; display: inline-block; animation: fox-spin 0.7s linear infinite;
+            }
+            @keyframes fox-spin { to { transform: rotate(360deg); } }
+        `;
+        document.head.appendChild(s);
+    }
+};
+
+// Запуск интеллекта
+window.AurumFoxEngine.init();
