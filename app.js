@@ -1891,6 +1891,7 @@ window.addEventListener('load', () => {
 // ПРИМЕЧАНИЕ: Самая большая версия. Без сокращений.
 // ИСПРАВЛЕНО: Вторая кнопка MAX теперь работает на 100%.
 // ТРИ БЛОКА (Навигация) теперь переносят в разделы, а не «собирают».
+// ЗЕЛЕНАЯ ТОЧКА: Исправлена ошибка захвата мелких индикаторов.
 // ============================================================
 
 (function() {
@@ -1922,7 +1923,7 @@ window.addEventListener('load', () => {
             "REPAY_CLOSE":  { terms: ["repay & close", "close loan", "close debt"], royal: "CLOSED ✨" }
         },
 
-        // Расширенный фильтр: убираем блокировку с навигации и карточек
+        // Расширенный фильтр
         IGNORE_TERMS: ["days", "tier", "select", "period", "tab", "switch", "dashboard", "menu", "nav", "amount", "input", "value", "field", "баланс", "go to", "open", "view"],
 
         notify(msg, type = "SYSTEM") {
@@ -1976,14 +1977,15 @@ window.addEventListener('load', () => {
             els.forEach(el => {
                 if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return;
                 
-                // Если элемент большой (как блок/карточка) и внутри много текста - пропускаем, это навигация
+                // ИСПРАВЛЕНИЕ ТОЧКИ: Если элемент слишком мелкий или это просто индикатор - игнорим
+                if (el.innerText.length < 2 && !el.innerText.toLowerCase().includes('x')) return;
+
                 if (el.tagName === 'DIV' && el.innerText.length > 50 && !el.innerText.toLowerCase().includes('max')) return;
 
                 if (el.dataset.foxSynced === "true") return;
 
                 const senseData = (el.innerText + " " + el.id + " " + el.className + " " + (el.title || "")).toLowerCase();
 
-                // Проверка на исключения
                 if (this.IGNORE_TERMS.some(term => senseData.includes(term))) return;
 
                 for (const [action, config] of Object.entries(this.INTEL_MAP)) {
@@ -2006,8 +2008,6 @@ window.addEventListener('load', () => {
 
             el.addEventListener('click', async (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
-                
-                // Если это ссылка на другой раздел (из тех самых 3-х блоков) - пускаем стандартный переход
                 if (el.tagName === 'A' && !el.innerText.toLowerCase().includes('max') && !el.innerText.toLowerCase().includes('stake')) return;
 
                 e.preventDefault(); 
@@ -2067,10 +2067,9 @@ window.addEventListener('load', () => {
         },
 
         async smartLogicMax(btn) {
-            // Улучшенный поиск: ищем инпут везде поблизости
-            let input = btn.closest('div')?.parentElement?.querySelector('input') || 
-                        btn.closest('section')?.querySelector('input') || 
-                        document.querySelector('input[type="number"]');
+            // Ультимативный поиск инпута (внутри секции или формы)
+            const box = btn.closest('section') || btn.closest('form') || btn.closest('div').parentElement;
+            const input = box.querySelector('input') || document.querySelector('input');
 
             let balance = "100.00"; 
             if (window.solana && window.solana.isConnected) {
@@ -2080,8 +2079,10 @@ window.addEventListener('load', () => {
             if (input) {
                 input.focus();
                 input.value = balance;
+                // Форсируем события для React/Vue
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
+                input.blur();
                 this.safeNotify(`MAX SYNCED: ${balance}`, "SUCCESS");
             }
         },
