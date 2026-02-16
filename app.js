@@ -345,11 +345,477 @@ function setupAddresses() {
 let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
 
+/**
+ * УЛЬТРА-АВТОНОМНЫЙ РАСЧЕТ PDA
+ * Самый важный узел для связи фронтенда с контрактом Rust.
+ */
+async function getUserStakingPDA(owner, poolStatePubkey, poolIndex = 0, programId) {
+    try {
+        // 1. Авто-приведение типов (если переданы строки вместо PublicKey)
+        const ownerPk = typeof owner === 'string' ? new window.solanaWeb3.PublicKey(owner) : owner;
+        const poolPk = typeof poolStatePubkey === 'string' ? new window.solanaWeb3.PublicKey(poolStatePubkey) : poolStatePubkey;
+        const progId = typeof programId === 'string' ? new window.solanaWeb3.PublicKey(programId) : programId;
+
+        // 2. Валидация входных данных
+        if (!ownerPk || !poolPk || !progId) {
+            throw new Error("Missing public keys for PDA derivation");
+        }
+
+        // 3. Генерация адреса (seeds должны строго совпадать с #[account(seeds = ...)] в Rust)
+        const [pda, bump] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),      // Первый сид: константа
+                poolPk.toBuffer(),              // Второй сид: адрес состояния пула
+                ownerPk.toBuffer(),             // Третий сид: кошелек юзера
+                Buffer.from([poolIndex])        // Четвертый сид: индекс пула (u8)
+            ],
+            progId
+        );
+
+        console.log(`🎯 PDA Calculated for Pool ${poolIndex}:`, pda.toBase58());
+        return pda;
+
+    } catch (e) {
+        console.error("❌ PDA Calculation Failed:", e);
+        // Возвращаем null, чтобы вызывающая функция могла корректно выдать ошибку
+        return null;
+    }
+}
 
 
 
 
 
+/**
+ * 1. УЛЬТРА-ПАРСЕР ЧИСЕЛ (BigInt)
+ * Гарантирует точность до последнего знака для u64/u128 в Rust.
+ */
+window.parseAmountToBigInt = function(amountStr, decimals = 9) {
+    try {
+        if (!amountStr || amountStr.toString().trim() === '') return 0n;
+
+        // 1. Приводим к стандарту: меняем запятые на точки, убираем всё кроме цифр и точки
+        let cleaned = amountStr.toString().replace(',', '.').replace(/[^\d.]/g, '');
+        
+        // 2. Проверка на двойные точки
+        const parts = cleaned.split('.');
+        if (parts.length > 2) return 0n;
+
+        let [integerPart, fractionalPart = ''] = parts;
+
+        // 3. Дополняем или обрезаем дробную часть до нужных decimals
+        fractionalPart = fractionalPart.substring(0, decimals).padEnd(decimals, '0');
+
+        // 4. Собираем строку и превращаем в BigInt (избегаем потери точности Float)
+        const resultStr = (integerPart === '0' ? '' : integerPart) + fractionalPart;
+        return BigInt(resultStr || '0');
+    } catch (e) {
+        console.error("Math Error:", e);
+        return 0n;
+    }
+};
+
+/**
+ * 2. СТАБИЛЬНОЕ ПОДКЛЮЧЕНИЕ (Robust Connection)
+ * Пытается подключиться к твоему RPC с проверкой "живучести".
+ */
+window.getRobustConnection = async function() {
+    // Список твоих RPC (основной и запасной)
+    const RPC_ENDPOINTS = [
+        window.RPC_URL, // Твой кастомный из конфига
+        "https://api.mainnet-beta.solana.com",
+        "https://solana-api.projectserum.com"
+    ].filter(Boolean);
+
+    for (let url of RPC_ENDPOINTS) {
+        try {
+            const conn = new window.solanaWeb3.Connection(url, "processed");
+            // Быстрая проверка: запрашиваем версию блокчейна
+            await conn.getVersion(); 
+            console.log("✅ Connected to RPC:", url);
+            return conn;
+        } catch (e) {
+            console.warn(`⚠️ RPC ${url} is down, trying next...`);
+            continue;
+        }
+    }
+    throw new Error("All RPC endpoints are down. Check your internet.");
+};
+
+
+
+
+
+async function getRobustConnection() {
+    // 1. Проверяем кэшированное соединение на "свежесть"
+    if (window.appState?.connection) {
+        try {
+            // Быстрый пинг сети (таймаут 2 сек, чтобы не висеть долго)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            
+            await window.appState.connection.getSlot({ signal: controller.signal });
+            clearTimeout(timeoutId);
+            return window.appState.connection;
+        } catch (e) {
+            console.warn("🔄 Connection stale, rotating to next RPC...");
+        }
+    }
+
+    // 2. Список узлов (приоритет: кастомный конфиг -> бэкап -> публичные)
+    const endpoints = [
+        window.RPC_URL,
+        window.BACKUP_RPC_ENDPOINT,
+        "https://api.mainnet-beta.solana.com",
+        "https://solana-mainnet.g.alchemy.com/v2/demo" // Запасной вариант
+    ].filter(Boolean);
+
+    // 3. Перебор узлов до победного
+    for (const url of endpoints) {
+        try {
+            const conn = new window.solanaWeb3.Connection(url, { 
+                commitment: 'confirmed',
+                confirmTransactionInitialTimeout: 60000 // Ждем до 60 сек на загруженных сетях
+            });
+
+            // Тест на "живость"
+            await conn.getLatestBlockhash(); 
+            
+            // Сохраняем рабочее соединение в глобальный стейт
+            if (!window.appState) window.appState = {};
+            window.appState.connection = conn;
+            
+            console.log(`🚀 Connected to stable RPC: ${url}`);
+            return conn;
+        } catch (e) {
+            console.error(`❌ RPC Fail (${url}):`, e.message);
+            continue; 
+        }
+    }
+
+    // 4. Если всё упало — сигналим юзеру
+    const errorMsg = "ALL RPC NODES OFFLINE. CHECK INTERNET.";
+    if (window.AurumFoxEngine?.notify) {
+        window.AurumFoxEngine.notify(errorMsg, "FAILED");
+    } else {
+        alert(errorMsg);
+    }
+    throw new Error("RPC_UNREACHABLE");
+}
+
+
+
+
+/**
+ * УМНЫЙ ОБРАБОТЧИК СМЕНЫ КОШЕЛЬКА
+ * Гарантирует, что данные одного юзера никогда не смешаются с данными другого.
+ */
+window.handlePublicKeyChange = async function(newPublicKey) {
+    try {
+        // 1. Быстрая проверка на идентичность (строковое сравнение надежнее)
+        const newKeyStr = newPublicKey ? newPublicKey.toBase58() : null;
+        const oldKeyStr = window.appState?.walletPublicKey ? window.appState.walletPublicKey.toBase58() : null;
+
+        if (newKeyStr === oldKeyStr) return;
+
+        console.log(`🔄 Wallet changed: ${oldKeyStr || 'None'} -> ${newKeyStr || 'Disconnected'}`);
+
+        // 2. Инициализация/Сброс глобального стейта
+        if (!window.appState) window.appState = {};
+        
+        window.appState.walletPublicKey = newPublicKey;
+        window.appState.userBalances = { SOL: 0n, AFOX: 0n, ST_AFOX: 0n };
+        window.appState.stakingData = null; // Сбрасываем данные стейкинга
+
+        // 3. Визуальный фидбек: зануляем элементы интерфейса немедленно
+        if (window.updateWalletDisplay) window.updateWalletDisplay(newKeyStr);
+        
+        // Маленький хак: если есть элементы баланса в DOM, ставим им "..." пока грузятся новые
+        const balanceElements = document.querySelectorAll('.balance-value');
+        balanceElements.forEach(el => el.innerText = "...");
+
+        // 4. Логика при подключении/смене
+        if (newPublicKey) {
+            AurumFoxEngine.notify("ACCOUNT SWITCHED", "SUCCESS");
+            
+            // Запускаем параллельную загрузку всех данных
+            await Promise.allSettled([
+                window.fetchUserBalances ? window.fetchUserBalances() : Promise.resolve(),
+                window.updateStakingAndBalanceUI ? window.updateStakingAndBalanceUI() : Promise.resolve(),
+                window.updateLendingStats ? window.updateLendingStats() : Promise.resolve()
+            ]);
+        } else {
+            // Логика при полном отключении
+            AurumFoxEngine.notify("WALLET DISCONNECTED", "FAILED");
+            if (window.clearAllDisplays) window.clearAllDisplays();
+        }
+
+    } catch (e) {
+        console.error("❌ Critical Wallet Sync Error:", e);
+    }
+};
+
+
+
+
+/**
+ * 4. УЛЬТРА-СИНХРОНИЗАЦИЯ БАЛАНСОВ (SOL + AFOX + ST_AFOX)
+ * Работает через параллельные потоки для мгновенного отклика.
+ */
+window.fetchUserBalances = async function() {
+    const pubkey = window.appState?.walletPublicKey;
+    if (!pubkey) return;
+
+    try {
+        const connection = await getRobustConnection();
+        
+        // 1. Запускаем 3 запроса параллельно (SOL + Основной Токен + Стейк Токен)
+        // Используем getParsedTokenAccountsByOwner для автоматического парсинга данных
+        const [solBalance, afoxAccounts, stAfoxAccounts] = await Promise.all([
+            connection.getBalance(pubkey),
+            connection.getParsedTokenAccountsByOwner(pubkey, { 
+                mint: new window.solanaWeb3.PublicKey(AFOX_TOKEN_MINT_ADDRESS) 
+            }),
+            // Добавляем проверку стейк-токенов (ST_AFOX), если они на другом минте
+            connection.getParsedTokenAccountsByOwner(pubkey, { 
+                mint: new window.solanaWeb3.PublicKey(AFOX_ST_MINT_ADDRESS || AFOX_TOKEN_MINT_ADDRESS) 
+            })
+        ]);
+
+        // 2. Сохраняем SOL (лапорты -> BigInt)
+        window.appState.userBalances.SOL = BigInt(solBalance);
+
+        // 3. Обработка AFOX (Суммируем все аккаунты, если их несколько)
+        const totalAfox = afoxAccounts.value.reduce((sum, acc) => {
+            return sum + BigInt(acc.account.data.parsed.info.tokenAmount.amount);
+        }, 0n);
+        window.appState.userBalances.AFOX = totalAfox;
+
+        // 4. Обработка ST_AFOX (Твои токены в стейке)
+        const totalStAfox = stAfoxAccounts.value.reduce((sum, acc) => {
+            return sum + BigInt(acc.account.data.parsed.info.tokenAmount.amount);
+        }, 0n);
+        window.appState.userBalances.ST_AFOX = totalStAfox;
+
+        // 5. Логирование для отладки
+        console.log(`
+            📊 BALANCE SYNC COMPLETE:
+            - SOL: ${Number(solBalance) / 1e9}
+            - AFOX: ${Number(totalAfox) / Math.pow(10, AFOX_DECIMALS)}
+            - ST_AFOX: ${Number(totalStAfox) / Math.pow(10, AFOX_DECIMALS)}
+        `);
+
+        // 6. Вызов рендера (Обновляем цифры на экране)
+        if (window.renderBalanceInUI) {
+            window.renderBalanceInUI();
+        } else {
+            // Если функции рендера нет, просто обновляем текстовые поля по ID
+            const solEl = document.getElementById('user-sol-balance');
+            const afoxEl = document.getElementById('user-afox-balance');
+            if (solEl) solEl.innerText = (Number(solBalance) / 1e9).toFixed(4);
+            if (afoxEl) afoxEl.innerText = (Number(totalAfox) / Math.pow(10, AFOX_DECIMALS)).toFixed(2);
+        }
+
+    } catch (error) {
+        console.error("❌ Balance Fetch Error:", error);
+        // Не пугаем юзера алертом, просто пишем в консоль
+    }
+};
+
+
+
+
+
+/**
+ * ПОИСК ГЛАВНОГО PDA ПУЛА
+ * Этот аккаунт хранит все настройки: APR, лимиты и общую сумму стейка.
+ */
+window.getPoolPDA = async function() {
+    // 1. Кэширование: если мы уже нашли адрес, возвращаем его сразу
+    if (window._cachedPoolPda) return window._cachedPoolPda;
+
+    try {
+        const programId = new window.solanaWeb3.PublicKey("3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL");
+        
+        // 2. Расчет PDA (seeds: ["pool"])
+        // Важно: в Rust это обычно выглядит как #[account(seeds = [b"pool"], bump)]
+        const [pda, bump] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [Buffer.from("pool")],
+            programId
+        );
+
+        console.log("🏛️ Global Pool PDA Found:", pda.toBase58());
+        
+        // Сохраняем в кэш
+        window._cachedPoolPda = pda;
+        return pda;
+
+    } catch (e) {
+        console.error("❌ Failed to derive Pool PDA:", e);
+        // Возвращаем хардкод как запасной вариант, если расчет упал
+        return new window.solanaWeb3.PublicKey("3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL");
+    }
+};
+
+
+
+/**
+ * ДИНАМИЧЕСКИЙ РАСЧЕТ APR
+ * Формула: (Награды_в_год / Всего_в_стейке) * 100
+ */
+window.getLiveAPR = async function() {
+    try {
+        // 1. Проверка готовности системы
+        if (!window.STAKING_PROGRAM_ID || !window.AFOX_POOL_STATE_PUBKEY) return "---%";
+
+        const program = await getProgram(); // Используем наш надежный движок
+
+        // 2. Фетчим данные аккаунта пула (AccountLoader / zero_copy поддерживается через .fetch)
+        const poolAccount = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+
+        if (!poolAccount) throw new Error("Pool account not found");
+
+        // 3. Извлекаем данные (u64/u128 из Rust приходят как BigNumber/BN)
+        const totalStakedBN = poolAccount.totalStakedAmount;
+        const rewardRateBN = poolAccount.rewardRatePerSec;
+
+        // Конвертируем в обычные числа для математики (учитываем децималы)
+        const totalStaked = Number(totalStakedBN) / Math.pow(10, AFOX_DECIMALS);
+        const rps = Number(rewardRateBN) / Math.pow(10, AFOX_DECIMALS);
+
+        // 4. Математика наград за год
+        const SECONDS_PER_YEAR = 31536000;
+        const rewardsPerYear = rps * SECONDS_PER_YEAR;
+
+        // 5. Логика расчета APR
+        // Если в пуле пусто — APR максимальный (стимул зайти первым)
+        if (totalStaked < 1) return "🔥 1000%+";
+
+        const realAPR = (rewardsPerYear / totalStaked) * 100;
+
+        // Ограничиваем визуально слишком большие значения
+        if (realAPR > 5000) return "5000%++";
+        if (realAPR < 0.01) return "0.00%";
+
+        return realAPR.toFixed(2) + "%";
+
+    } catch (e) {
+        console.error("❌ APR Calculation Error:", e);
+        // Возвращаем дефолтное значение из конфига, если расчет упал
+        return window.DEFAULT_APR || "---%"; 
+    }
+};
+
+
+
+/**
+ * ГЛОБАЛЬНЫЙ СИНХРОНИЗАТОР ИНТЕРФЕЙСА
+ * Гарантирует актуальность балансов и стейков без лишней нагрузки на RPC.
+ */
+let isUpdatingUI = false;
+
+window.updateStakingAndBalanceUI = async function() {
+    // 1. Защита от "гонки условий" (Race Condition)
+    // Если обновление уже идет, не запускаем второе параллельно
+    if (isUpdatingUI) return;
+    isUpdatingUI = true;
+
+    try {
+        console.log("🔄 Global Refresh Started...");
+
+        // 2. Параллельный сбор данных из всех источников
+        // Используем Promise.allSettled, чтобы ошибка в одном блоке не ломала остальные
+        const results = await Promise.allSettled([
+            // Обновляем SOL и AFOX в кошельке
+            window.fetchUserBalances ? window.fetchUserBalances() : Promise.resolve(),
+            
+            // Получаем данные конкретного юзера из контракта (APR, Reward Debt и т.д.)
+            window.fetchUserStakingData ? window.fetchUserStakingData() : Promise.resolve(),
+            
+            // Обновляем статистику лендинга (лимиты и займы)
+            window.updateLendingStats ? window.updateLendingStats() : Promise.resolve()
+        ]);
+
+        // Логируем ошибки, если какой-то модуль подвел
+        results.forEach((res, i) => {
+            if (res.status === 'rejected') console.error(`❌ Source ${i} failed:`, res.reason);
+        });
+
+        // 3. Вызов финального рендера (отрисовка DOM)
+        // Если у тебя есть функции отрисовки, вызываем их здесь
+        if (typeof window.renderAllUI === 'function') {
+            window.renderAllUI();
+        } else if (typeof window.updateStakingUI === 'function') {
+            window.updateStakingUI();
+        }
+
+        console.log("✅ Global Refresh Complete.");
+
+    } catch (e) {
+        console.error("🚨 Critical UI Update Failure:", e);
+    } finally {
+        // Всегда снимаем блокировку, даже если всё упало
+        isUpdatingUI = false;
+    }
+};
+
+
+
+/**
+ * ФАБРИКА ПРОГРАММЫ ANCHOR
+ * Создает экземпляр для прямого вызова методов контракта.
+ */
+window.getAnchorProgram = function(programId, idl) {
+    try {
+        // 1. Проверка библиотек (поддержка разных версий сборки)
+        const AnchorLib = window.anchor || window.Anchor;
+        if (!AnchorLib) {
+            throw new Error("Anchor SDK not found. Check script imports.");
+        }
+
+        // 2. Валидация Program ID (превращаем в PublicKey, если пришла строка)
+        const progId = typeof programId === 'string' 
+            ? new window.solanaWeb3.PublicKey(programId) 
+            : programId;
+
+        // 3. Проверка подключения (используем глобальный стейт)
+        // Если кошелек Phantom, провайдером выступает window.solana
+        const walletProvider = window.solana || window.appState?.provider;
+        const connection = window.appState?.connection;
+
+        if (!connection || !walletProvider) {
+            throw new Error("Connection or Wallet provider missing.");
+        }
+
+        // 4. Инициализация AnchorProvider
+        // Commitment 'confirmed' — золотая середина между скоростью и надежностью
+        const provider = new AnchorLib.AnchorProvider(
+            connection,
+            walletProvider,
+            { 
+                commitment: "confirmed",
+                preflightCommitment: "confirmed",
+                skipPreflight: false 
+            }
+        );
+
+        // 5. Создание экземпляра программы
+        // Проверяем, что IDL передан (это JSON твоего контракта)
+        if (!idl) throw new Error("IDL is required to initialize the program.");
+
+        const program = new AnchorLib.Program(idl, progId, provider);
+        
+        console.log(`📡 Anchor Program Ready: ${progId.toBase58()}`);
+        return program;
+
+    } catch (error) {
+        console.error("🛠️ Program Factory Error:", error.message);
+        if (window.AurumFoxEngine?.notify) {
+            window.AurumFoxEngine.notify("BRIDGE ERROR", "FAILED");
+        }
+        throw error;
+    }
+};
 
 
 
