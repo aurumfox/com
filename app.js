@@ -1884,5 +1884,195 @@ window.addEventListener('load', () => {
 
 
 
+// ============================================================
+// 👑 AURUM FOX: OMEGA SMART ENGINE v12.0 - ULTRA-AUTONOMOUS
+// ============================================================
+
+window.AurumFoxEngine = {
+    isWalletConnected: false,
+    rpcUrl: 'https://solana-rpc.publicnode.com',
+
+    ROYAL_PHRASES: {
+        SUCCESS: ["SUCCESS, BOSS 👑", "PROFIT SECURED 💎", "GOLDEN TOUCH ✨", "EXECUTIVE DONE", "BULLISH MOVE 📈"],
+        ERROR:   ["VIP LOADING... ⏳", "DEPLOYING EMPIRE 🛠️", "SYSTEM UPGRADE", "ACCESS PENDING"],
+        WAIT:    ["PREPARING GOLD...", "ESTABLISHING ASSETS"]
+    },
+
+    // Расширенная карта с глубоким поиском
+    INTELLIGENT_MAP: {
+        "CLAIM":        { keywords: ["collect", "claim", "profit", "harvest", "get rewards"], royal: "HARVESTED 💰" },
+        "INIT_STAKE":   { keywords: ["create staking", "init stake", "open account"], royal: "EMPIRE FOUNDED" },
+        "MAX_STAKE":    { keywords: ["max", "100%"], context: "stake", royal: "ALL IN, SIR 🚀" },
+        "STAKE":        { keywords: ["stake afox", "stake now", "deposit fox"], royal: "ROYAL STAKE 👑" },
+        "MAX_UNSTAKE":  { keywords: ["max"], context: "unstake", royal: "CASH OUT" },
+        "UNSTAKE":      { keywords: ["unstake", "withdraw", "unstake afox"], royal: "FUNDS RELEASED" },
+        "REFUND":       { keywords: ["close account", "refund", "close staking"], royal: "GOLD RETURNED" },
+        "COLLATERAL":   { keywords: ["collateralize", "enable collateral", "use as collateral"], royal: "VIP LEVERAGE ⚡" },
+        "DECOLLATERAL": { keywords: ["decollateralize", "remove collateral"], royal: "RISK REDUCED" },
+        "BORROW":       { keywords: ["execute borrow", "borrowing", "take loan"], royal: "LOAN GRANTED 💎" },
+        "REPAY":        { keywords: ["repay debt", "pay back"], royal: "DEBT CLEARED" },
+        "REPAY_CLOSE":  { keywords: ["repay & close", "close loan", "full repay"], royal: "TOTAL FREEDOM ✨" }
+    },
+
+    safeNotify(msg, type = "SYSTEM") {
+        try {
+            if (typeof window.showFoxToast === 'function') {
+                window.showFoxToast(msg, type.toLowerCase() === 'success' ? 'success' : 'error');
+            }
+        } catch(e) {}
+        console.log(`%c[${type}] ${msg}`, "color: #FFD700; font-weight: bold; text-shadow: 0 0 8px gold;");
+    },
+
+    init() {
+        this.injectGlobalStyles();
+        this.autoDiscovery();
+        // Запуск бесконечного умного сканера (каждые 1.5 сек)
+        setInterval(() => this.autoDiscovery(), 1500);
+        console.log("%c👑 ULTRA-AUTONOMOUS v12.0: ACTIVE", "color: gold; font-weight: bold; background: #000; padding: 5px;");
+    },
+
+    // Автоматический поиск ВСЕХ элементов управления на странице
+    autoDiscovery() {
+        const potentialTargets = document.querySelectorAll('button, a, [role="button"], .btn, .fox-btn, .clickable');
+        
+        potentialTargets.forEach(el => {
+            if (el.dataset.foxSynced === "true") return;
+
+            // Собираем весь текст из элемента и его окружения для анализа
+            const contentText = (el.innerText + " " + el.title + " " + (el.getAttribute('alt') || "")).toLowerCase();
+            const elId = el.id.toLowerCase();
+            const elClass = el.className.toLowerCase();
+
+            for (const [action, config] of Object.entries(this.INTELLIGENT_MAP)) {
+                const matchKeyword = config.keywords.some(kw => 
+                    contentText.includes(kw) || elId.includes(kw) || elClass.includes(kw)
+                );
+
+                // Если нашли совпадение по смыслу
+                if (matchKeyword) {
+                    // Проверка контекста (например, чтобы отличить MAX для стейка от MAX для анстейка)
+                    if (config.context) {
+                        const parentText = el.closest('div')?.innerText.toLowerCase() || "";
+                        if (!parentText.includes(config.context)) continue;
+                    }
+
+                    this.bindElement(el, action);
+                    break;
+                }
+            }
+        });
+    },
+
+    bindElement(el, action) {
+        el.dataset.foxSynced = "true";
+        el.dataset.foxAction = action;
+        el.classList.add('fox-royal-btn');
+        
+        // Убиваем старые события, чтобы не было дублей
+        const newEl = el.cloneNode(true);
+        el.parentNode.replaceChild(newEl, el);
+
+        newEl.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await this.handleInteraction(newEl, action);
+        });
+    },
+
+    async handleInteraction(el, action) {
+        if (el.dataset.loading === "true") return;
+        const userAddr = localStorage.getItem('fox_sol_addr');
+        if (!userAddr) {
+            this.safeNotify("BOSS, CONNECT YOUR WALLET!", "ERROR");
+            return;
+        }
+
+        const originalHTML = el.innerHTML;
+        el.dataset.loading = "true";
+        el.innerHTML = `<span class="fox-royal-loader"></span>`;
+
+        try {
+            switch (action) {
+                case "MAX_STAKE": case "MAX_UNSTAKE":
+                    await this.logicMax(action === "MAX_STAKE" ? 'stake' : 'unstake');
+                    break;
+                case "INIT_STAKE": await this.executeAny(window.createStakingAccount, [0]); break;
+                case "STAKE": await this.executeAny(window.stakeAfox); break;
+                case "UNSTAKE": await this.executeAny(window.unstakeAfox); break;
+                case "CLAIM": await this.executeAny(window.claimAllRewards, [[0]]); break;
+                case "COLLATERAL": await this.executeAny(window.executeCollateral); break;
+                case "DECOLLATERAL": await this.executeAny(window.executeDecollateral); break;
+                case "BORROW": await this.executeAny(window.executeBorrow); break;
+                case "REPAY": await this.executeAny(window.executeRepay); break;
+                case "REPAY_CLOSE": await this.executeAny(window.executeRepay, ["max"]); break;
+                case "REFUND": await this.executeAny(window.closeStakingAccount); break;
+            }
+            
+            el.innerHTML = `<span style="color: #00ff88;">${this.INTELLIGENT_MAP[action].royal}</span>`;
+            this.safeNotify(this.ROYAL_PHRASES.SUCCESS[Math.floor(Math.random() * this.ROYAL_PHRASES.SUCCESS.length)], "SUCCESS");
+
+        } catch (err) {
+            const isMissing = err.message === "VOID";
+            el.innerHTML = `<span style="color: gold; font-size: 0.8em;">${isMissing ? "VIP LOADING..." : "DENIED"}</span>`;
+            this.safeNotify(isMissing ? "CONTRACT DEPLOYING..." : "CHAIN REJECTED", "ERROR");
+        } finally {
+            setTimeout(() => {
+                el.innerHTML = originalHTML;
+                el.dataset.loading = "false";
+            }, 2500);
+        }
+    },
+
+    async logicMax(type) {
+        // Умный поиск баланса: из стейта или напрямую
+        let amount = window.appState?.userBalances?.AFOX || window.appState?.userStakingData?.stakedAmount || 0n;
+        const formatted = (Number(amount) / 1e6).toString();
+        
+        // Авто-поиск инпута по всей странице по близости к кнопке
+        const inputs = document.querySelectorAll('input[type="number"], input[type="text"]');
+        let bestInput = null;
+        
+        inputs.forEach(input => {
+            const p = input.placeholder?.toLowerCase() || "";
+            if (p.includes(type) || p.includes("amount") || p.includes("0.0")) {
+                bestInput = input;
+            }
+        });
+
+        if (bestInput) {
+            bestInput.value = formatted;
+            bestInput.dispatchEvent(new Event('input', { bubbles: true }));
+            this.safeNotify(`BOSS, MAX SET: ${formatted}`, "SUCCESS");
+        }
+    },
+
+    async executeAny(fn, args = []) {
+        if (typeof fn !== 'function') {
+            await new Promise(r => setTimeout(r, 600)); // Короткое ожидание
+            if (typeof fn !== 'function') throw new Error("VOID");
+        }
+        return await fn(...args);
+    },
+
+    injectGlobalStyles() {
+        if (document.getElementById('fox-ultra-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'fox-ultra-styles';
+        style.innerHTML = `
+            .fox-royal-btn { cursor: pointer !important; transition: all 0.3s ease !important; }
+            .fox-royal-btn:hover { filter: brightness(1.2); transform: translateY(-1px); box-shadow: 0 5px 15px rgba(255,215,0,0.3); }
+            .fox-royal-loader {
+                width: 16px; height: 16px; border: 2px solid #FFD700; border-bottom-color: transparent;
+                border-radius: 50%; display: inline-block; animation: f-spin 0.8s linear infinite;
+            }
+            @keyframes f-spin { to { transform: rotate(360deg); } }
+            [data-loading="true"] { pointer-events: none !important; opacity: 0.7; }
+        `;
+        document.head.appendChild(style);
+    }
+};
+
+// Мгновенный запуск
+window.AurumFoxEngine.init();
 
 
