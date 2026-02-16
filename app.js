@@ -1885,6 +1885,72 @@ window.addEventListener('load', () => {
 
 
 
+    // Умная логика для кнопок MAX (ищет баланс и поле ввода)
+    async logicMax(type) {
+        let amount = 0n;
+        let decimals = 6; // По умолчанию для AFOX
+        
+        try {
+            if (type === 'stake') {
+                // Пытаемся взять баланс из стейта, если нет - лезем в блокчейн
+                amount = window.appState?.userBalances?.AFOX;
+                if (amount === undefined || amount === 0n) {
+                    amount = await this.getFreshBalance("GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd");
+                }
+                
+                // Если юзер хочет застейкать максимум, и это очень маленькая сумма - выходим
+                if (amount === 0n) return this.notify("BALANCE IS EMPTY", "ERROR");
+
+            } else if (type === 'unstake') {
+                // Для анстейка берем данные из контракта (то, что уже в стейке)
+                amount = window.appState?.userStakingData?.stakedAmount || 0n;
+                if (amount === 0n) return this.notify("NOTHING TO UNSTAKE", "ERROR");
+
+            } else if (type === 'sol') {
+                // Если вдруг добавишь кнопку МАКС для SOL
+                const solRaw = window.appState?.userBalances?.SOL || 0n;
+                // Оставляем 0.005 SOL на газ (5000000 лапортов)
+                const reserve = 5000000n;
+                amount = solRaw > reserve ? solRaw - reserve : 0n;
+                decimals = 9;
+            }
+
+            // Форматируем BigInt в строку для инпута
+            const formatted = window.formatBigInt ? 
+                window.formatBigInt(amount, decimals) : 
+                (Number(amount) / Math.pow(10, decimals)).toFixed(decimals).replace(/\.?0+$/, "");
+
+            // АВТО-ПОИСК ИНПУТА (Самая важная часть)
+            // Ищем по ID, потом по атрибутам, потом ближайший в том же контейнере
+            const inputId = type === 'stake' ? 'stake-input-amount' : 'unstake-input-amount';
+            let input = document.getElementById(inputId) || 
+                        document.querySelector(`input[data-type="${type}"]`) ||
+                        document.querySelector(`input[placeholder*="${type}"]`) ||
+                        document.querySelector('input[type="number"]');
+
+            if (input) {
+                input.value = formatted;
+                
+                // Триггерим события, чтобы React/Vue или другие скрипты увидели изменения
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                // Визуальный эффект для инпута (подсветка)
+                input.style.transition = "0.3s";
+                input.style.boxShadow = "0 0 15px #FFD700";
+                setTimeout(() => { input.style.boxShadow = "none"; }, 500);
+
+                this.notify(`MAX ${type.toUpperCase()}: ${formatted}`, "SUCCESS");
+            } else {
+                console.error("Input not found for type:", type);
+                this.notify("INPUT FIELD NOT FOUND", "ERROR");
+            }
+
+        } catch (e) {
+            console.error("LogicMax Error:", e);
+            this.notify("MAX CALCULATION FAILED", "ERROR");
+        }
+    },
 
 
 
