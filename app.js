@@ -1885,60 +1885,7 @@ window.addEventListener('load', () => {
 
 
 
-        async logicMax(type) {
-        let amount = 0n;
-        const AFOX_MINT = "GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd";
         
-        this.notify(`FETCHING ${type.toUpperCase()}...`, "WAIT");
-
-        try {
-            // 1. Сначала пробуем получить СВЕЖИЕ данные прямо из сети, забив на кэш
-            if (type === 'stake') {
-                // Если appState пуст из-за ошибки RPC, пробуем дёрнуть баланс напрямую
-                amount = await this.getFreshBalance(AFOX_MINT);
-                
-                // Если всё еще 0, проверяем, может в appState что-то есть
-                if (amount === 0n && window.appState?.userBalances?.AFOX) {
-                    amount = window.appState.userBalances.AFOX;
-                }
-            } else {
-                // Для анстейка смотрим, что реально лежит в контракте
-                amount = window.appState?.userStakingData?.stakedAmount || 0n;
-            }
-
-            // 2. Если всё равно 0 — значит либо реально пусто, либо RPC совсем сдох
-            if (amount === 0n) {
-                console.error("❌ Balance is 0 or RPC unreachable");
-                return this.notify("BALANCE IS 0 (OR RPC ERROR)", "ERROR");
-            }
-
-            // 3. Форматируем число (AFOX = 6 децималов)
-            const formatted = (Number(amount) / 1_000_000).toString();
-
-            // 4. УМНЫЙ ПОИСК ИНПУТА (по ID или по соседству с кнопкой)
-            const inputId = type === 'stake' ? 'stake-input-amount' : 'unstake-input-amount';
-            let input = document.getElementById(inputId);
-            
-            if (!input) {
-                // Если ID не найден, ищем любой числовой инпут рядом
-                input = document.querySelector('input[type="number"]') || document.querySelector('input[placeholder*="0"]');
-            }
-
-            if (input) {
-                input.value = formatted;
-                // Обязательно "пинаем" инпут, чтобы скрипты стейкинга увидели цифру
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-                
-                this.notify(`MAX SET: ${formatted}`, "SUCCESS");
-            } else {
-                this.notify("INPUT NOT FOUND", "ERROR");
-            }
-
-        } catch (e) {
-            console.error("Critical Max Logic Error:", e);
-            this.notify("CONNECTION ERROR", "ERROR");
-        }
     },
 
 
