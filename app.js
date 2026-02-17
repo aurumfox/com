@@ -1940,20 +1940,19 @@ window.addEventListener('load', () => {
             "collateralize", "decollateralize", "execute borrowing", "repay debt", "repay & close loan"
         ],
 
-                INTEL_MAP: {
-            "CLAIM":        { terms: ["collect all profit"], royal: "REQUESTING SETTLEMENT..." },
-            "INIT_STAKE":   { terms: ["create staking account"], royal: "ESTABLISHING ACCOUNT..." },
-            "MAX":          { terms: ["max"], royal: "CALCULATING LIMITS..." },
-            "STAKE":        { terms: ["stake afox"], royal: "AUTHORIZING DEPOSIT..." },
-            "UNSTAKE":      { terms: ["unstake afox"], royal: "INITIATING WITHDRAWAL..." },
-            "REFUND":       { terms: ["close account"], royal: "PROCESSING REFUND..." },
-            "COLLATERAL":   { terms: ["collateralize"], royal: "ACTIVATING ASSET..." },
-            "DECOLLATERAL": { terms: ["decollateralize"], royal: "RELEASING ASSET..." },
-            "BORROW":       { terms: ["execute borrowing"], royal: "EXECUTING DISBURSEMENT..." },
-            "REPAY":        { terms: ["repay debt"], royal: "SETTLING LIABILITY..." },
-            "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "CLOSING POSITION..." }
+        INTEL_MAP: {
+            "CLAIM":        { terms: ["collect all profit", "claim all rewards"], royal: "COLLECTED 💰" },
+            "INIT_STAKE":   { terms: ["create staking account"], royal: "INITIALIZED" },
+            "MAX":          { terms: ["max"], royal: "MAXED 🚀" },
+            "STAKE":        { terms: ["stake afox"], royal: "STAKED 👑" },
+            "UNSTAKE":      { terms: ["unstake afox"], royal: "RELEASED" },
+            "REFUND":       { terms: ["close account & refund sol"], royal: "REFUNDED" },
+            "COLLATERAL":   { terms: ["collateralize"], royal: "ACTIVE ⚡" },
+            "DECOLLATERAL": { terms: ["decollateralize"], royal: "DISABLED" },
+            "BORROW":       { terms: ["execute borrowing"], royal: "BORROWED 💎" },
+            "REPAY":        { terms: ["repay debt"], royal: "PAID OFF" },
+            "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "CLOSED ✨" }
         },
-
 
         IGNORE_TERMS: ["individual", "notice", "zero fee", "audited", "disclaimer", "advice", "fees", "staked", "rewards", "farming", "unclaimed", "your staking", "utilize", "institutional", "liquidity", "health", "threshold"],
 
