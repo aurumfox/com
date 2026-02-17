@@ -701,6 +701,58 @@
 </style>
 
 
+
+<style>
+    /* 1. ГЛАВНЫЙ СЕКРЕТ: Растягиваем все контейнеры на 100% ширины */
+    .container {
+        max-width: 100% !important; /* Убираем лимит в 1000px */
+        width: 100% !important;
+        padding-left: 5% !important;  /* Оставляем 5% воздуха слева */
+        padding-right: 5% !important; /* Оставляем 5% воздуха справа */
+        box-sizing: border-box;
+    }
+
+    /* 2. СТЕЙКИНГ: Делаем блоки "один под другим" на весь экран */
+    #staking-section .container > div:last-child {
+        display: block !important; /* Отключаем Flexbox (две колонки) */
+        flex-wrap: nowrap !important;
+    }
+
+    #staking-section .container > div:last-child > div {
+        width: 100% !important;     /* Каждый блок (депозит и управление) теперь на весь экран */
+        max-width: 100% !important;
+        border-right: none !important; /* Убираем разделительную полосу */
+        margin-bottom: 20px;           /* Делаем отступ между ними */
+        box-sizing: border-box;
+    }
+
+    /* 3. РЕГЕНЕРАЦИЯ СЕТОК: Чтобы карточки тоже стали огромными */
+    .staking-stats-grid, .features-grid, .roadmap-grid {
+        grid-template-columns: 1fr !important; /* На компе теперь тоже всё в одну колонку */
+        gap: 30px !important;
+    }
+
+    /* 4. КОРРЕКЦИЯ ЛЕНДИНГА (Кредитование) */
+    #lending-section .container > div:nth-child(3) {
+        grid-template-columns: 1fr !important; /* Карточки кредитования теперь одна под другой */
+    }
+
+    /* 5. УВЕЛИЧИВАЕМ ШРИФТЫ ДЛЯ ШИРОКОГО ЭКРАНА */
+    @media (min-width: 1025px) {
+        h2.aurum-heading, #staking-section h2, #rewards-section h2, #lending-section h2 {
+            font-size: 4em !important; /* Гигантские заголовки для гигантского экрана */
+            text-align: center;
+        }
+        
+        input, select, button {
+            font-size: 1.2em !important; /* Чтобы кнопки не казались мелкими на фоне широкого экрана */
+        }
+    }
+</style>
+
+
+      
+
         </main> <footer class="footer" style="background: #040814; padding: 60px 0 30px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); font-family: 'Inter', sans-serif;">
         <div class="container" style="max-width: 1000px; margin: 0 auto; padding: 0 20px; text-align: center;">
 
