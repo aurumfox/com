@@ -1940,12 +1940,13 @@ window.addEventListener('load', () => {
             "collateralize", "decollateralize", "execute borrowing", "repay debt", "repay & close loan"
         ],
 
-                INTEL_MAP: {
+                        INTEL_MAP: {
             "CLAIM":        { terms: ["collect all profit", "claim all rewards"], royal: "CLAIM SUCCESSFUL" },
             "INIT_STAKE":   { terms: ["create staking account"], royal: "ACCOUNT VERIFIED" },
             "MAX":          { terms: ["max"], royal: "MAXIMUM APPLIED" },
-            "STAKE":        { terms: ["stake afox"], royal: "STAKE CONFIRMED" },
-            "UNSTAKE":      { terms: ["unstake afox"], royal: "WITHDRAWAL SUCCESS" },
+            // Сначала проверяем UNSTAKE, чтобы он не перехватывался обычным стейком
+            "UNSTAKE":      { terms: ["unstake afox", "unstake"], royal: "WITHDRAWAL SUCCESS" },
+            "STAKE":        { terms: ["stake afox", "stake"], royal: "STAKE CONFIRMED" },
             "REFUND":       { terms: ["close account & refund sol"], royal: "REFUND COMPLETED" },
             "COLLATERAL":   { terms: ["collateralize"], royal: "ASSET ACTIVATED" },
             "DECOLLATERAL": { terms: ["decollateralize"], royal: "ASSET RELEASED" },
@@ -1953,6 +1954,7 @@ window.addEventListener('load', () => {
             "REPAY":        { terms: ["repay debt"], royal: "PAYMENT SUCCESS" },
             "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "POSITION CLOSED" }
         },
+
 
 
         IGNORE_TERMS: ["individual", "notice", "zero fee", "audited", "disclaimer", "advice", "fees", "staked", "rewards", "farming", "unclaimed", "your staking", "utilize", "institutional", "liquidity", "health", "threshold"],
