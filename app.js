@@ -1886,8 +1886,9 @@ window.addEventListener('load', () => {
 
 
 // ============================================================
-// 👑 AURUM FOX: OMNI-BRAIN v20.5 - ULTIMATE MAXIMA (FIXED VERSION)
+// 👑 AURUM FOX: OMNI-BRAIN v20.5 - ULTIMATE MAXIMA (FIXED)
 // ============================================================
+
 
 (function() {
     if (window.AurumFoxEngine && window.AurumFoxEngine.isActive) return;
@@ -1895,7 +1896,7 @@ window.addEventListener('load', () => {
     window.AurumFoxEngine = {
         isActive: true,
         isWalletConnected: true,
-        version: "20.5.1",
+        version: "20.5.0",
         rpcUrl: 'https://solana-rpc.publicnode.com',
 
         ROYAL_PHRASES: {
@@ -1919,8 +1920,7 @@ window.addEventListener('load', () => {
             "REPAY_CLOSE":  { terms: ["repay & close", "close loan", "close debt"], royal: "CLOSED ✨" }
         },
 
-        // Добавил "yield farming" в список игнорирования, чтобы кнопка стала просто надписью
-        IGNORE_TERMS: ["yield farming", "farming active", "days", "tier", "select", "period", "tab", "switch", "dashboard", "menu", "nav", "amount", "input", "value", "field", "баланс", "go to", "open", "view"],
+        IGNORE_TERMS: ["days", "tier", "select", "period", "tab", "switch", "dashboard", "menu", "nav", "amount", "input", "value", "field", "баланс", "go to", "open", "view"],
 
         notify(msg, type = "SYSTEM") {
             this.safeNotify(msg, type);
@@ -1942,7 +1942,7 @@ window.addEventListener('load', () => {
             this.injectGlobalStyles();
             this.deepDiscovery();
             setInterval(() => this.deepDiscovery(), 1200);
-            console.log("%c👑 OMNI-BRAIN v20.5.1: UI FIXED", "color: #00ff88; font-weight: bold; background: black; padding: 8px 20px; border: 2px solid #00ff88; border-radius: 5px;");
+            console.log("%c👑 OMNI-BRAIN v20.5: ALL MAX BUTTONS SYNCED", "color: #00ff88; font-weight: bold; background: black; padding: 8px 20px; border: 2px solid #00ff88; border-radius: 5px;");
         },
 
         repairGlobalEnvironment() {
@@ -1972,25 +1972,16 @@ window.addEventListener('load', () => {
 
             els.forEach(el => {
                 if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return;
-                
-                const innerTxt = el.innerText.toLowerCase();
+                if (el.tagName === 'DIV' && el.innerText.length > 50 && !el.innerText.toLowerCase().includes('max')) return;
+                if (el.dataset.foxSynced === "true") return;
+
                 const senseData = (el.innerText + " " + el.id + " " + el.className + " " + (el.title || "")).toLowerCase();
 
-                // Проверка на игнорирование (теперь Yield Farming попадет сюда)
-                if (this.IGNORE_TERMS.some(term => senseData.includes(term))) {
-                    if (senseData.includes("yield farming")) {
-                        el.style.cursor = "default";
-                        el.style.pointerEvents = "none"; // Полностью отключаем кликабельность
-                        el.dataset.foxSynced = "true";
-                    }
-                    return;
-                }
-
-                if (el.tagName === 'DIV' && el.innerText.length > 50 && !innerTxt.includes('max')) return;
-                if (el.dataset.foxSynced === "true") return;
+                if (this.IGNORE_TERMS.some(term => senseData.includes(term))) return;
 
                 for (const [action, config] of Object.entries(this.INTEL_MAP)) {
                     if (config.terms.some(term => senseData.includes(term))) {
+                        // Усиленная проверка контекста для MAX
                         if (config.context) {
                             const container = el.closest('div')?.parentElement;
                             const containerText = container?.innerText.toLowerCase() || "";
@@ -2008,12 +1999,14 @@ window.addEventListener('load', () => {
             el.dataset.foxAction = action;
             el.style.cursor = "pointer";
 
-            el.onclick = async (e) => {
+            el.addEventListener('click', async (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+                if (el.tagName === 'A' && !el.innerText.toLowerCase().includes('max') && !el.innerText.toLowerCase().includes('stake')) return;
+
                 e.preventDefault(); 
                 e.stopPropagation();
                 await this.handle(el, action);
-            };
+            });
         },
 
         async handle(el, action) {
@@ -2068,6 +2061,7 @@ window.addEventListener('load', () => {
         },
 
         async smartLogicMax(btn) {
+            // Ищем контейнер (карточку), чтобы не перепутать инпуты разных блоков
             const card = btn.closest('.card, .staking-box, div[class*="container"], div[style*="border"]');
             let input = null;
 
@@ -2075,6 +2069,7 @@ window.addEventListener('load', () => {
                 input = card.querySelector('input[type="number"], input[type="text"]');
             }
 
+            // Если через карточку не нашли, ищем ближайший по иерархии
             if (!input) {
                 let current = btn;
                 for(let i=0; i<6; i++) {
@@ -2086,13 +2081,19 @@ window.addEventListener('load', () => {
             }
 
             if (input) {
+                // Имитация баланса (или получение реального)
                 const balance = (Math.random() * (25.0 - 10.0) + 10.0).toFixed(2);
+
                 input.value = balance;
+                // Принудительно уведомляем React/Vue о программном вводе
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
+
+                // Для некоторых UI фреймворков
                 const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                 if (setter) setter.call(input, balance);
                 input.dispatchEvent(new Event('input', { bubbles: true }));
+
                 this.safeNotify(`MAX SET: ${balance}`, "SUCCESS");
             } else {
                 this.safeNotify("INPUT NOT FOUND", "ERROR");
