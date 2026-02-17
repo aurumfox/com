@@ -876,66 +876,75 @@
 
 
     
-<style>
-    /* 1. КОНТЕЙНЕР: Центрируем всё содержимое */
-    .container {
-        max-width: 900px !important; /* Сузили для удобства чтения в одну колонку */
-        width: 95% !important;
-        margin: 0 auto !important;
-        padding: 20px !important;
-        box-sizing: border-box;
-    }
 
-    /* 2. ВСЕ СЕТКИ ТЕПЕРЬ В КОЛОНКУ (Статистика, фичи, кредитование) */
-    .staking-stats-grid, 
-    .features-grid, 
-    #lending-section .container > div:nth-child(3),
-    #staking-section .container > div:last-child {
-        display: flex !important;
-        flex-direction: column !important; /* Строго вертикально */
-        align-items: center !important;    /* Центрируем карточки */
-        gap: 20px !important;
-        grid-template-columns: 1fr !important; /* На всякий случай сбрасываем гриды */
-    }
-
-    /* 3. КАРТОЧКИ: Делаем их аккуратными в столбик */
-    .staking-stats-grid > div, 
-    .features-grid > div, 
-    #lending-section .container > div:nth-child(3) > div,
-    #staking-section .container > div:last-child > div {
-        width: 100% !important;
-        max-width: 800px !important; /* Ограничиваем ширину, чтобы не растягивались на весь экран */
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 25px !important;
-        margin-bottom: 10px !important;
-        padding: 30px !important;
-        box-sizing: border-box;
-    }
-
-    /* 4. ЗАГОЛОВКИ: Уменьшаем, чтобы в колонке смотрелись пропорционально */
-    h2.aurum-heading, 
-    #staking-section h2, 
-    #rewards-section h2, 
-    #lending-section h2 {
-        font-size: 2.2em !important;
-        text-align: center !important;
-        margin-bottom: 30px !important;
-    }
-
-    /* Убираем лишние отступы и плавающие элементы на десктопе */
-    @media (min-width: 1025px) {
-        #lending-section .container > div:nth-child(3) {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-    }
-</style>
+ 
+   
 
 
 
 
    
 
+<style>
+    /* 1. КОНТЕЙНЕР: Центрируем всё содержимое */
+    .container {
+        max-width: 900px !important;
+        width: 95% !important;
+        margin: 0 auto !important;
+        padding: 20px !important;
+        box-sizing: border-box;
+    }
+
+    /* 2. ВСЕ СЕТКИ И ГЛАВНЫЕ БЛОКИ В КОЛОНКУ */
+    /* Добавлен селектор для блоков Deposit и Manage */
+    .staking-stats-grid, 
+    .features-grid, 
+    #lending-section .container > div:nth-child(3),
+    #staking-section .container > div:last-child,
+    .staking-main-grid { /* Добавьте этот класс в HTML родителя блоков Deposit и Manage */
+        display: flex !important;
+        flex-direction: column !important; /* Строго вниз */
+        align-items: center !important;
+        gap: 25px !important;
+        grid-template-columns: 1fr !important; /* Убираем деление на колонки */
+    }
+
+    /* 3. КАРТОЧКИ (Deposit и Manage): Делаем их аккуратными */
+    .staking-stats-grid > div, 
+    .features-grid > div, 
+    #lending-section .container > div:nth-child(3) > div,
+    #staking-section .container > div:last-child > div,
+    .deposit-card, .manage-card { /* Добавьте эти классы вашим блокам */
+        width: 100% !important;
+        max-width: 600px !important; /* Ограничил чуть больше, чтобы блоки не были слишком широкими */
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 25px !important;
+        margin: 0 auto 15px auto !important;
+        padding: 30px !important;
+        box-sizing: border-box;
+        display: block !important;
+    }
+
+    /* 4. ЗАГОЛОВКИ */
+    h2.aurum-heading, 
+    #staking-section h2, 
+    #rewards-section h2, 
+    #lending-section h2 {
+        font-size: 2.2em !important;
+        text-align: center !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* Принудительный сброс сетки для десктопа */
+    @media (min-width: 1025px) {
+        .staking-stats-grid, 
+        .features-grid, 
+        #staking-section .container > div:last-child {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+    }
+</style>
 
 
   
