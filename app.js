@@ -1944,7 +1944,7 @@ window.addEventListener('load', () => {
 
         INTEL_MAP: {
             "CLAIM":        { terms: ["collect all profit", "claim all rewards"], royal: "COLLECTED 💰" },
-            "INIT_STAKE":   { terms: ["create stakingaccount"], royal: "INITIALIZED" },
+            "INIT_STAKE":   { terms: ["create staking account"], royal: "INITIALIZED" },
             "MAX":          { terms: ["max"], royal: "MAXED 🚀" },
             "STAKE":        { terms: ["stake afox"], royal: "STAKED 👑" },
             "UNSTAKE":      { terms: ["unstake afox"], royal: "RELEASED" },
