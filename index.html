@@ -635,22 +635,16 @@
                     <h3 style="color: #fff; margin: 0; font-size: 1.5em;">Staked Collateral</h3>
                 </div>
 
-                <div style="margin-bottom: 25px;">
-                    <label style="color: #888; font-size: 0.85em; display: block; margin-bottom: 10px;">Amount to Lock/Unlock</label>
-                    <div style="position: relative;">
-                        <input type="number" id="collateral-amount-input" placeholder="0.00" style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; padding: 16px; border-radius: 14px; font-size: 1.1em; outline: none;">
-                        <button id="max-collateral-btn" style="position: absolute; right: 12px; top: 12px; background: #FFD700; border: none; color: #000; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8em;">MAX</button>
-                    </div>
-                </div>
+                <div style="display: flex; gap: 15px; justify-content: flex-start; margin-top: 15px;">
+    <button id="collateralize-btn" style="flex: 1; max-width: 200px; background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); color: #fff; border: 1px solid #8b6508; padding: 12px 20px; border-radius: 12px; font-size: 0.9em; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        Collateralize
+    </button>
 
-                <div style="display: flex; gap: 15px;">
-                    <button id="collateralize-btn" style="width: 100%; background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); color: #fff; border: 1px solid #8b6508; padding: 18px; border-radius: 12px; font-size: 1.1em; font-weight: 800; cursor: pointer; transition: 0.3s; ">Collateralize</button>
-                   
-
-    <button id="decollateralize-btn" style="width: 100%; background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); color: #fff; border: 1px solid #8b6508; padding: 18px; border-radius: 12px; font-size: 1.1em; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase;">
+    <button id="decollateralize-btn" style="flex: 1; max-width: 200px; background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); color: #fff; border: 1px solid #8b6508; padding: 12px 20px; border-radius: 12px; font-size: 0.9em; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
         Decollateralize
     </button>
 </div>
+
 
 
             <div class="lending-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 255, 255, 0.1); border-radius: 28px; padding: 35px;">
