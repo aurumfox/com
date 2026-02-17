@@ -742,35 +742,6 @@ li {
 
 
 
-/* --- НОВАЯ СЕТКА МЕНЮ --- */
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 30px;
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 0 20px;
-}
-
-.feature-card-royal {
-    background: var(--color-bg-card); /* Использует твой синий цвет */
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    border-radius: var(--border-radius-base);
-    padding: 30px;
-    text-align: center;
-    transition: 0.3s ease;
-}
-
-.feature-card-royal:hover {
-    transform: translateY(-5px);
-    border-color: var(--primary-color);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-}
-
-/* Адаптивность для телефонов */
-@media (max-width: 992px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 650px) { .features-grid { grid-template-columns: 1fr; } }
-
 
 
 
