@@ -861,6 +861,77 @@
 
 
 
+<style>
+    /* 1. Общие настройки контейнера для стабильной ширины */
+    .container {
+        max-width: 1200px !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 20px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 2. Секция STATS (баланс, стейкинг, награды) - строго в один ряд */
+    .staking-stats-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important; /* Запрет переноса */
+        gap: 20px !important;
+        margin-bottom: 40px !important;
+        align-items: stretch !important;
+    }
+
+    .staking-stats-grid > .stat-card {
+        flex: 1 !important; /* Равномерное распределение */
+        min-width: 0 !important; /* Позволяет блокам сжиматься корректно */
+        margin: 0 !important;
+    }
+
+    /* 3. Секции управления (Deposit & Manage / Lending) - строго 2 колонки */
+    #staking-section .container > div[style*="display: flex"],
+    #lending-section .container > div[style*="display: grid"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important; /* Запрет переноса на новую строку */
+        gap: 25px !important;
+        width: 100% !important;
+    }
+
+    /* Настройка внутренних карточек (левая и правая) */
+    #staking-section div[style*="flex: 1"], 
+    .lending-card {
+        flex: 1 !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 4. Отступы внутри элементов, чтобы ничего не липло */
+    input, select, button {
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* 5. Исправление для мобильных устройств (адаптивность) */
+    @media (max-width: 992px) {
+        /* На планшетах и телефонах разрешаем перенос, чтобы не было слишком узко */
+        .staking-stats-grid, 
+        #staking-section .container > div[style*="display: flex"],
+        #lending-section .container > div[style*="display: grid"] {
+            flex-wrap: wrap !important;
+        }
+        
+        .staking-stats-grid > .stat-card,
+        .lending-card {
+            flex: none !important;
+            width: 100% !important; /* На мобилках один под другим */
+        }
+    }
+
+    /* Убираем лишние внешние отступы у заголовков внутри карточек */
+    .staking-stats-grid h3, .lending-card h3 {
+        margin-top: 0 !important;
+    }
+</style>
 
 
       
