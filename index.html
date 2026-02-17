@@ -703,52 +703,60 @@
 
 
 <style>
-    /* 1. ГЛАВНЫЙ СЕКРЕТ: Растягиваем все контейнеры на 100% ширины */
+    /* 1. КОНТЕЙНЕР: Теперь он компактный и по центру */
     .container {
-        max-width: 100% !important; /* Убираем лимит в 1000px */
-        width: 100% !important;
-        padding-left: 5% !important;  /* Оставляем 5% воздуха слева */
-        padding-right: 5% !important; /* Оставляем 5% воздуха справа */
+        max-width: 1200px !important; /* Оптимальная ширина для глаз */
+        width: 95% !important;
+        margin: 0 auto !important;
+        padding-left: 20px !important;
+        padding-right: 20px !important;
         box-sizing: border-box;
     }
 
-    /* 2. СТЕЙКИНГ: Делаем блоки "один под другим" на весь экран */
+    /* 2. СТЕЙКИНГ: Одна под другой, но не на весь горизонт */
     #staking-section .container > div:last-child {
-        display: block !important; /* Отключаем Flexbox (две колонки) */
-        flex-wrap: nowrap !important;
-    }
-
-    #staking-section .container > div:last-child > div {
-        width: 100% !important;     /* Каждый блок (депозит и управление) теперь на весь экран */
-        max-width: 100% !important;
-        border-right: none !important; /* Убираем разделительную полосу */
-        margin-bottom: 20px;           /* Делаем отступ между ними */
-        box-sizing: border-box;
-    }
-
-    /* 3. РЕГЕНЕРАЦИЯ СЕТОК: Чтобы карточки тоже стали огромными */
-    .staking-stats-grid, .features-grid, .roadmap-grid {
-        grid-template-columns: 1fr !important; /* На компе теперь тоже всё в одну колонку */
+        display: flex !important;
+        flex-direction: column !important; /* Оставляем в одну колонку */
+        align-items: center !important;    /* Центрируем блоки внутри */
         gap: 30px !important;
     }
 
-    /* 4. КОРРЕКЦИЯ ЛЕНДИНГА (Кредитование) */
-    #lending-section .container > div:nth-child(3) {
-        grid-template-columns: 1fr !important; /* Карточки кредитования теперь одна под другой */
+    /* Ограничиваем ширину самих карточек стейкинга */
+    #staking-section .container > div:last-child > div {
+        width: 100% !important;
+        max-width: 900px !important; /* Карточки станут аккуратнее */
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 30px !important;
+        margin-bottom: 0 !important;
     }
 
-    /* 5. УВЕЛИЧИВАЕМ ШРИФТЫ ДЛЯ ШИРОКОГО ЭКРАНА */
+    /* 3. СЕТКИ (Статистика, фичи): По 3 в ряд на компе, чтобы было компактно */
     @media (min-width: 1025px) {
-        h2.aurum-heading, #staking-section h2, #rewards-section h2, #lending-section h2 {
-            font-size: 4em !important; /* Гигантские заголовки для гигантского экрана */
-            text-align: center;
+        .staking-stats-grid, .features-grid {
+            grid-template-columns: repeat(3, 1fr) !important; /* Возвращаем компактный ряд */
+            gap: 20px !important;
         }
         
-        input, select, button {
-            font-size: 1.2em !important; /* Чтобы кнопки не казались мелкими на фоне широкого экрана */
+        /* Лендинг (Кредитование) — делаем две карточки рядом для компактности */
+        #lending-section .container > div:nth-child(3) {
+            grid-template-columns: 1fr 1fr !important;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h2.aurum-heading, #staking-section h2, #rewards-section h2, #lending-section h2 {
+            font-size: 2.8em !important; /* Уменьшаем размер заголовков */
+        }
+    }
+
+    /* Для телефона оставляем всё в одну колонку */
+    @media (max-width: 1024px) {
+        .staking-stats-grid, .features-grid, #lending-section .container > div:nth-child(3) {
+            grid-template-columns: 1fr !important;
         }
     }
 </style>
+
 
 
       
