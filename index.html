@@ -866,10 +866,10 @@
 
 
      
-   <style>
-    /* 1. ГЛОБАЛЬНЫЙ КОНТЕЙНЕР */
+<style>
+    /* 1. ГЛОБАЛЬНЫЙ КОНТЕЙНЕР: Расширяем до максимума */
     .container {
-        max-width: 1200px !important;
+        max-width: 1400px !important; /* Увеличили общий лимит */
         width: 95% !important;
         margin: 0 auto !important;
         display: flex !important;
@@ -878,8 +878,7 @@
         box-sizing: border-box;
     }
 
-    /* 2. ВСЕ СЕКЦИИ В КОЛОННУ (Staking, Rewards, Lending) */
-    /* Убираем сетки и заставляем все дочерние блоки встать друг под друга */
+    /* 2. ВСЕ СЕКЦИИ: Выстраиваем широкие блоки в одну линию вниз */
     #staking-section .container > div,
     #rewards-section .container > div,
     #lending-section .container > div,
@@ -889,52 +888,63 @@
         flex-direction: column !important;
         align-items: center !important;
         width: 100% !important;
-        gap: 20px !important;
+        gap: 30px !important; /* Увеличили зазор между широкими блоками */
     }
 
-    /* 3. ОГРАНИЧЕНИЕ ШИРИНЫ КАРТОЧЕК (чтобы были как на фото) */
-    /* Это применится к блокам Deposit, Manage, Rewards и Borrow */
+    /* 3. ШИРИНА КАРТОЧЕК: Делаем их широкими, почти до конца экрана */
     #staking-section .container > div:last-child > div,
     #rewards-section .container > div > div,
     #lending-section .container > div:nth-child(3) > div,
     .staking-stats-grid > div,
     .features-grid > div {
         width: 100% !important;
-        max-width: 500px !important; /* Оптимальная ширина для колонны */
+        max-width: 1100px !important; /* ТЕПЕРЬ ОНИ ШИРОКИЕ, КАК ВЫ ПРОСИЛИ */
         margin: 0 auto !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        border-radius: 20px !important;
-        padding: 20px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 24px !important;
+        padding: 40px !important; /* Больше внутреннего пространства для красоты */
         box-sizing: border-box;
+        background: rgba(255, 255, 255, 0.02); /* Легкий фон для объема */
     }
 
-    /* 4. СБРОС ДЛЯ ДЕСКТОПА (убираем колонки 2х2 и 3х3) */
+    /* 4. АДАПТАЦИЯ ПОД ДЕСКТОП */
     @media (min-width: 1025px) {
-        /* Отменяем сетку для всех блоков, чтобы они не прыгали в ряд */
         .staking-stats-grid, 
         .features-grid,
         #lending-section .container > div:nth-child(3) {
             display: flex !important;
-            grid-template-columns: none !important; 
             flex-direction: column !important;
+            grid-template-columns: none !important;
         }
 
+        /* Заголовки делаем крупнее под широкие блоки */
         h2.aurum-heading, 
         #staking-section h2, 
         #rewards-section h2, 
         #lending-section h2 {
-            font-size: 2.5em !important;
+            font-size: 3em !important;
             text-align: center !important;
-            margin-bottom: 30px !important;
+            margin-top: 40px !important;
+            margin-bottom: 40px !important;
         }
     }
 
-    /* Специальный отступ для предупреждения в Lending (красный текст) */
+    /* Красное предупреждение в лендинге тоже делаем широким */
     #lending-section .container > div:nth-child(3) > div:last-child {
-        max-width: 600px !important; /* Предупреждение может быть чуть шире */
+        max-width: 1100px !important;
         text-align: center;
     }
+
+    /* Для мобильных устройств возвращаем адекватную ширину */
+    @media (max-width: 768px) {
+        #staking-section .container > div:last-child > div,
+        #rewards-section .container > div > div,
+        #lending-section .container > div:nth-child(3) > div {
+            padding: 20px !important;
+        }
+    }
 </style>
+
 
 
 
