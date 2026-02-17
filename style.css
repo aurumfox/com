@@ -78,6 +78,36 @@
 /* ==========================================================================
    Base Styles (СБРОС, ТИПОГРАФИКА, ДОСТУПНОСТЬ)
 ========================================================================== */
+<style>
+    /* Основная сетка для компьютеров */
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* Ровно 3 колонки на ПК */
+        gap: 30px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* На планшетах делаем 2 колонки */
+    @media (max-width: 992px) {
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* На телефонах (как на твоем фото) — 1 колонка */
+    @media (max-width: 600px) {
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+        .feature-card-royal {
+            padding: 30px 20px; /* Чуть меньше отступы для мобилок */
+        }
+    }
+</style>
+
+
+
 * {
     box-sizing: border-box;
     margin: 0;
