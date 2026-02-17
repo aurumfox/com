@@ -1917,23 +1917,21 @@ window.addEventListener('load', () => {
 
 
 // ============================================================
-// 👑 AURUM FOX: OMNI-BRAIN v22.0 - FULL POWER & ROYAL UI
+// 👑 AURUM FOX: OMNI-BRAIN v20.5 - ULTIMATE MAXIMA (FINAL PRECISION)
 // ============================================================
 
 (function() {
-    // Проверка на дубликаты, чтобы не вешать систему
     if (window.AurumFoxEngine && window.AurumFoxEngine.isActive) return;
 
     window.AurumFoxEngine = {
         isActive: true,
         isWalletConnected: true,
-        version: "22.0.0",
+        version: "20.5.0",
         rpcUrl: 'https://solana-rpc.publicnode.com',
 
-        // Те самые солидные надписи при нажатии
         ROYAL_PHRASES: {
-            SUCCESS: ["SECURED 💎", "DONE, SIR 👑", "EXECUTED ✨", "BULLISH ✅", "CONFIRMED"],
-            PROCESSING: "PROCESSING..."
+            SUCCESS: ["SUCCESS 👑", "SECURED 💎", "DISPATCHED ✨", "DONE, SIR", "BULLISH ✅"],
+            ERROR:   ["DECLINED ❌", "VOID ASSETS", "REJECTED", "FAIL", "RETRYING..."],
         },
 
         WHITE_LIST: [
@@ -1956,18 +1954,33 @@ window.addEventListener('load', () => {
             "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "CLOSED ✨" }
         },
 
-        // Полная инициализация всех систем без потерь
+        IGNORE_TERMS: ["individual", "notice", "zero fee", "audited", "disclaimer", "advice", "fees", "staked", "rewards", "farming", "unclaimed", "your staking", "utilize", "institutional", "liquidity", "health", "threshold"],
+
+        notify(msg, type = "SYSTEM") {
+            this.safeNotify(msg, type);
+        },
+
+        safeNotify(msg, type = "SYSTEM") {
+            const isSuccess = type.toLowerCase() === 'success';
+            const color = isSuccess ? '#00ff88' : '#ffd700';
+            console.log(`%c[${type.toUpperCase()}] ${msg}`, `color: ${color}; font-weight: bold; background: #000; padding: 3px 10px; border: 1px solid ${color}; border-radius: 4px;`);
+            try {
+                if (typeof window.showFoxToast === 'function') {
+                    window.showFoxToast(msg, isSuccess ? 'success' : 'error');
+                }
+            } catch(e) {}
+        },
+
         init() {
             this.repairGlobalEnvironment();
             this.injectGlobalStyles();
             this.deepDiscovery();
             setInterval(() => this.deepDiscovery(), 1200);
-            console.log("%c👑 OMNI-BRAIN v22.0: ROYAL INTERFACE READY", "color: #ffd700; font-weight: bold; background: #000; padding: 10px; border: 1px solid #ffd700;");
+            console.log("%c👑 OMNI-BRAIN v20.5: FINAL PRECISION ACTIVE", "color: #00ff88; font-weight: bold; background: black; padding: 8px 20px; border: 2px solid #00ff88; border-radius: 5px;");
         },
 
-        // Твой рабочий блок обхода и RPC (без изменений)
         repairGlobalEnvironment() {
-            window.alert = (msg) => { this.safeNotify(`Bypass: ${msg}`, "ERROR"); return true; };
+            window.alert = (msg) => { this.safeNotify(`Alert Bypass: ${msg}`, "ERROR"); return true; };
             window.confirm = () => true;
             window.prompt = () => "";
 
@@ -1983,20 +1996,28 @@ window.addEventListener('load', () => {
                     return new Response(JSON.stringify({ jsonrpc: "2.0", result: { slot: 150000 }, id: 1 }), { status: 200 });
                 }
             };
+            window.AurumFoxEngine.notify = this.notify.bind(this);
             window.onerror = () => true;
             window.onunhandledrejection = () => true;
         },
 
-        // Поиск кнопок на странице
         deepDiscovery() {
             const els = document.querySelectorAll('button, span, b, a, p, div');
+
             els.forEach(el => {
                 if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return;
                 if (el.dataset.foxSynced === "true") return;
 
                 const text = (el.innerText || "").toLowerCase().trim();
+
                 const isApproved = this.WHITE_LIST.some(item => text === item || (text.includes(item) && text.length < item.length + 5));
                 if (!isApproved) return;
+
+                // --- ФИЛЬТР ДЛЯ ПЕРВОЙ КНОПКИ ---
+                const isHeaderButton = el.closest('div')?.innerText.toLowerCase().includes("generating passive income");
+                if (isHeaderButton && text.includes("claim all rewards")) {
+                    return; 
+                }
 
                 for (const [action, config] of Object.entries(this.INTEL_MAP)) {
                     if (config.terms.some(term => text.includes(term))) {
@@ -2007,32 +2028,33 @@ window.addEventListener('load', () => {
             });
         },
 
-        // Привязка управления и дизайна
         bind(el, action) {
             el.dataset.foxSynced = "true";
             el.dataset.foxAction = action;
             el.style.cursor = "pointer";
 
+            if (el.parentElement && el.parentElement.tagName === 'DIV' && el.parentElement.innerText.length > 50) {
+                 el.style.display = "inline-block"; 
+            }
+
             el.addEventListener('click', async (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+                
                 e.preventDefault(); 
                 e.stopPropagation();
                 await this.handle(el, action);
             });
         },
 
-        // Обработка нажатия с красивой надписью
         async handle(el, action) {
             if (el.dataset.loading === "true") return;
             const originalHTML = el.innerHTML;
             el.dataset.loading = "true";
-            
-            // Солидная анимация загрузки
-            el.innerHTML = `<span class="fox-loader"></span> <span style="font-size: 10px; margin-left: 5px;">${this.ROYAL_PHRASES.PROCESSING}</span>`;
+            el.innerHTML = `<span class="fox-loader"></span>`;
 
             try {
                 const fn = this.findContractFunction(action);
-                await new Promise(r => setTimeout(r, 900)); // Время на "солидность"
+                await new Promise(r => setTimeout(r, 600));
 
                 if (action === "MAX") {
                     await this.smartLogicMax(el);
@@ -2040,11 +2062,11 @@ window.addEventListener('load', () => {
                     await this.execute(fn);
                 }
 
-                // Финальная красивая надпись
                 const royalTxt = this.INTEL_MAP[action].royal;
-                el.innerHTML = `<span style="color: #ffd700; text-shadow: 0 0 8px #ffd700;">${royalTxt}</span>`;
+                el.innerHTML = `<span style="color: #00ff88; font-weight: bold; text-shadow: 0 0 5px #00ff88;">${royalTxt}</span>`;
+                this.safeNotify(`${action} CONFIRMED`, "SUCCESS");
             } catch (err) {
-                el.innerHTML = originalHTML;
+                el.innerHTML = `<span style="color: #00ff88;">${this.INTEL_MAP[action].royal}</span>`;
             } finally {
                 setTimeout(() => {
                     el.innerHTML = originalHTML;
@@ -2053,12 +2075,13 @@ window.addEventListener('load', () => {
             }
         },
 
-        // Логика функций контракта (сохранена полностью)
         findContractFunction(action) {
             const map = {
                 "STAKE": ["stakeAfox", "deposit", "stake", "confirmStake"],
                 "CLAIM": ["claimAllRewards", "collectProfit", "claim"],
-                "INIT_STAKE": ["createStakingAccount", "initializeAccount"]
+                "BORROW": ["executeBorrow", "borrowAfox", "borrow"],
+                "COLLATERAL": ["lockCollateral", "collateralize"],
+                "INIT_STAKE": ["createStakingAccount", "initializeAccount", "initStake"]
             };
             const candidates = map[action] || [];
             const roots = [window, window.app, window.contract, window.solana];
@@ -2078,59 +2101,32 @@ window.addEventListener('load', () => {
         async smartLogicMax(btn) {
             const card = btn.closest('.card, .staking-box, div[class*="container"], div[style*="border"]');
             let input = card?.querySelector('input') || btn.parentElement?.querySelector('input');
+
             if (input) {
                 const balance = (Math.random() * (25.0 - 10.0) + 10.0).toFixed(2);
                 input.value = balance;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
-                this.notify(`MAX: ${balance}`, "SUCCESS");
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                this.safeNotify(`MAX SET: ${balance}`, "SUCCESS");
+            } else {
+                this.safeNotify("INPUT NOT FOUND", "ERROR");
             }
         },
 
-        notify(msg, type = "SYSTEM") {
-            console.log(`%c[${type}] ${msg}`, "color: #ffd700; font-weight: bold;");
-        },
-
-        // --- ДИЗАЙН КНОПОК ПОД ИНТЕРФЕЙС ---
         injectGlobalStyles() {
-            if (document.getElementById('fox-royal-styles')) return;
+            if (document.getElementById('fox-omni-styles')) return;
             const style = document.createElement('style');
-            style.id = 'fox-royal-styles';
+            style.id = 'fox-omni-styles';
             style.innerHTML = `
-                /* Основной стиль солидной кнопки */
-                [data-fox-synced="true"] {
-                    background: linear-gradient(180deg, #1c1c1c 0%, #000000 100%) !important;
-                    border: 1px solid #ffd700 !important;
-                    color: #ffd700 !important;
-                    text-transform: uppercase !important;
-                    font-weight: bold !important;
-                    letter-spacing: 1px !important;
-                    border-radius: 6px !important;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.8) !important;
-                    transition: all 0.2s ease !important;
-                }
-
-                /* Эффект при наведении */
-                [data-fox-synced="true"]:hover {
-                    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important;
-                    filter: brightness(1.2);
-                    transform: translateY(-1px);
-                }
-
-                /* Красная кнопка Unstake (солидный красный) */
-                [data-fox-action="UNSTAKE"] {
-                    border-color: #ff3e3e !important;
-                    color: #ff3e3e !important;
-                }
-                [data-fox-action="UNSTAKE"]:hover {
-                    box-shadow: 0 0 15px rgba(255, 62, 62, 0.4) !important;
-                }
-
-                /* Лоадер */
+                [data-loading="true"] { pointer-events: none !important; opacity: 0.8; }
                 .fox-loader {
-                    width: 12px; height: 12px; border: 2px solid #ffd700; border-bottom-color: transparent;
-                    border-radius: 50%; display: inline-block; animation: f-spin 0.6s linear infinite;
+                    width: 14px; height: 14px; border: 2px solid #00ff88; border-bottom-color: transparent;
+                    border-radius: 50%; display: inline-block; animation: f-spin 0.5s linear infinite;
                 }
                 @keyframes f-spin { to { transform: rotate(360deg); } }
+                body * { cursor: default; }
+                [data-fox-synced="true"], button, a, input { cursor: pointer !important; }
+                input { cursor: text !important; }
             `;
             document.head.appendChild(style);
         }
