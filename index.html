@@ -245,6 +245,86 @@
 
 
 
+<style>
+    /* Базовая настройка сетки */
+    .features-grid {
+        display: grid;
+        gap: 30px;
+        padding: 60px 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* Для компьютеров (от 992px и выше) — 3 колонки */
+    @media (min-width: 992px) {
+        .features-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+        }
+    }
+
+    /* Для планшетов (от 600px до 991px) — 2 колонки */
+    @media (min-width: 600px) and (max-width: 991px) {
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+
+    /* Для телефонов — 1 колонка */
+    @media (max-width: 599px) {
+        .features-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    /* Эффект при наведении */
+    .feature-card-royal:hover {
+        transform: translateY(-10px);
+        border-color: #FFD700 !important;
+        box-shadow: 0 30px 60px rgba(255, 215, 0, 0.1) !important;
+    }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+
+
+
+<div class="features-grid">
+    <div class="feature-card-royal" style="position: relative; background: linear-gradient(145deg, #0a1229, #040814); border: 1px solid rgba(255, 215, 0, 0.2); padding: 40px 30px; border-radius: 24px; text-align: center; transition: 0.4s; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, transparent, #FFD700, transparent);"></div>
+        <div style="font-size: 3.5em; margin-bottom: 20px;">💰</div>
+        <h3 style="color: #fff; font-size: 1.8em; font-weight: 800; margin-bottom: 15px;">Staking <span style="color: #FFD700;">Rewards</span></h3>
+        <p style="color: #888; line-height: 1.6; margin-bottom: 30px;">Collect your profits in one click. Your tokens work for you, generating passive income 24/7.</p>
+        <a href="#rewards-section" class="royal-btn" style="display: block; background: linear-gradient(90deg, #FFD700, #b8860b); color: #000; font-weight: 900; text-decoration: none; padding: 15px; border-radius: 14px; text-transform: uppercase;">Claim All Rewards</a>
+    </div>
+
+    <div class="feature-card-royal" style="position: relative; background: linear-gradient(145deg, #0a1229, #040814); border: 1px solid rgba(255, 215, 0, 0.2); padding: 40px 30px; border-radius: 24px; text-align: center; transition: 0.4s; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, transparent, #FFD700, transparent);"></div>
+        <div style="font-size: 3.5em; margin-bottom: 20px;">👑</div>
+        <h3 style="color: #fff; font-size: 1.8em; font-weight: 800; margin-bottom: 15px;">Royal <span style="color: #FFD700;">Staking</span></h3>
+        <p style="color: #888; line-height: 1.6; margin-bottom: 30px;">Put your gold to work. Earn royal dividends within a highly secured vault.</p>
+        <a href="#staking-section" class="royal-btn" style="display: block; background: linear-gradient(90deg, #FFD700, #b8860b); color: #000; font-weight: 900; text-decoration: none; padding: 15px; border-radius: 14px; text-transform: uppercase;">Start Earning</a>
+    </div>
+
+    <div class="feature-card-royal" style="position: relative; background: linear-gradient(145deg, #0a1229, #040814); border: 1px solid rgba(255, 215, 0, 0.2); padding: 40px 30px; border-radius: 24px; text-align: center; transition: 0.4s; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, transparent, #FFD700, transparent);"></div>
+        <div style="font-size: 3.5em; margin-bottom: 20px;">🏦</div>
+        <h3 style="color: #fff; font-size: 1.8em; font-weight: 800; margin-bottom: 15px;">Alpha <span style="color: #FFD700;">Lending</span></h3>
+        <p style="color: #888; line-height: 1.6; margin-bottom: 30px;">Instant liquidity backed by your assets. Unlock limitless capital opportunities.</p>
+        <a href="#lending-section" class="royal-btn" style="display: block; background: linear-gradient(90deg, #FFD700, #b8860b); color: #000; font-weight: 900; text-decoration: none; padding: 15px; border-radius: 14px; text-transform: uppercase;">Access Capital</a>
+    </div>
+</div>
 
 
 
