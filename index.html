@@ -865,99 +865,136 @@
 
       
 
-    
-<style>
-    /* 1. ГЛАВНЫЙ КОНТЕЙНЕР: Центрируем всё */
+    <style>
+    /* 1. ГЛАВНЫЙ КОНТЕЙНЕР: Солидная ширина, без "расползания" */
     .container {
-        max-width: 1200px !important; /* Уменьшил ширину для компактности */
+        max-width: 1200px !important; 
         width: 95% !important;
         margin: 0 auto !important;
-        padding: 20px !important;
+        padding: 40px 20px !important;
+        box-sizing: border-box;
     }
 
-    /* 2. ВЕРТИКАЛЬНАЯ ЛЕНТА: Блоки один под другим */
-    .staking-stats-grid, 
+    /* 2. СТАТИСТИКА: 3 четких карточки в ряд */
+    .staking-stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+        gap: 25px !important;
+        margin-bottom: 50px !important;
+    }
+
+    .staking-stats-grid > div {
+        background: rgba(13, 17, 28, 0.9) !important;
+        border: 1px solid rgba(255, 215, 0, 0.2) !important;
+        border-radius: 24px !important;
+        padding: 30px !important;
+        text-align: center !important;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    }
+
+    /* 3. ОСНОВНЫЕ ПАНЕЛИ (Deposit & Manage) */
+    /* На ПК они стоят РЯДОМ, на мобилке — друг под другом */
     #staking-section .container > div:last-child, 
     #lending-section .container > div:nth-child(3) {
         display: flex !important;
-        flex-direction: column !important;
-        gap: 25px !important;
-        align-items: center !important; /* Центрируем блоки */
+        flex-wrap: wrap !important;
+        gap: 30px !important;
+        justify-content: center !important;
+        width: 100% !important;
     }
 
-    /* 3. КОМПАКТНЫЕ КАРТОЧКИ: Тот самый "Шикарный" вид */
-    .staking-stats-grid > div,
+    /* Сами блоки управления */
     #staking-section .container > div:last-child > div,
     #lending-section .container > div:nth-child(3) > div {
-        width: 100% !important;
-        max-width: 800px !important; /* Ограничил ширину, чтобы блок не был слишком длинным */
-        background: linear-gradient(145deg, rgba(20, 25, 40, 0.9), rgba(10, 14, 23, 0.95)) !important;
-        border: 1px solid rgba(255, 215, 0, 0.2) !important;
-        border-radius: 24px !important;
-        padding: 35px !important; /* Умеренные отступы */
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 0 20px rgba(255,215,0,0.02);
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
+        flex: 1 1 500px !important; /* Даем им базу в 500px, чтобы они были широкими */
+        max-width: 580px !important;
+        background: #0d111c !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 28px !important;
+        padding: 45px !important;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
     }
 
-    /* 4. ЗАГОЛОВКИ И ЭЛЕМЕНТЫ */
+    /* 4. ЗАГОЛОВКИ: Крупные и четкие */
     h3 {
-        color: #fff;
-        font-size: 1.8em !important;
-        text-align: center;
-        margin-bottom: 20px !important;
-        text-transform: uppercase;
+        font-size: 2rem !important;
+        font-weight: 800 !important;
+        color: #fff !important;
+        margin-bottom: 30px !important;
+        text-align: center !important;
         letter-spacing: 1px;
     }
 
-    /* Инпуты делаем аккуратными */
+    /* 5. ИНПУТЫ: Современный темный стиль */
     input[type="number"], select {
-        background: rgba(0, 0, 0, 0.3) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 12px !important;
-        padding: 15px !important;
+        background: #040814 !important;
+        border: 1px solid #2d3343 !important;
+        border-radius: 14px !important;
+        padding: 18px !important;
         color: #fff !important;
-        font-size: 1.1em !important;
+        font-size: 1.1rem !important;
         width: 100% !important;
-        margin-bottom: 15px;
+        margin-bottom: 20px !important;
+        transition: 0.3s;
     }
 
-    /* 5. КНОПКИ: Золотые и компактные */
+    input:focus {
+        border-color: #FFD700 !important;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.1) !important;
+    }
+
+    /* 6. КНОПКИ: Козырные, градиентные */
     button {
         width: 100% !important;
-        max-width: 400px !important; /* Кнопки не на весь экран, а по центру */
-        margin: 10px auto !important;
-        display: block !important;
-        height: 55px !important;
-        border-radius: 12px !important;
+        height: 60px !important;
+        border-radius: 14px !important;
+        font-size: 1.1rem !important;
         font-weight: 800 !important;
         text-transform: uppercase;
         cursor: pointer;
         transition: 0.3s !important;
+        border: none !important;
+        margin-top: 10px !important;
     }
 
-    /* Основная золотая кнопка */
+    /* Золотая кнопка (Stake/Claim) */
     #deposit-btn, #stake-btn, #claim-all-rewards-btn {
         background: linear-gradient(180deg, #FFD700 0%, #B8860B 100%) !important;
         color: #000 !important;
-        border: none !important;
-        box-shadow: 0 5px 15px rgba(184, 134, 11, 0.4) !important;
+        box-shadow: 0 8px 20px rgba(184, 134, 11, 0.3) !important;
+    }
+
+    /* Красная кнопка (Unstake) */
+    #unstake-btn {
+        background: linear-gradient(180deg, #ff4d4d 0%, #8b0000 100%) !important;
+        color: #fff !important;
+        box-shadow: 0 8px 20px rgba(139, 0, 0, 0.3) !important;
     }
 
     button:hover {
-        transform: translateY(-2px) !important;
-        filter: brightness(1.1);
+        transform: translateY(-3px) !important;
+        filter: brightness(1.2) !important;
     }
 
-    /* Адаптив для мобилок */
-    @media (max-width: 768px) {
-        .staking-stats-grid > div,
+    /* 7. АДАПТИВНОСТЬ: Чтобы на ноуте и телефоне было "Огонь" */
+    @media (max-width: 1100px) {
         #staking-section .container > div:last-child > div {
-            padding: 20px !important;
-            max-width: 95% !important;
+            max-width: 100% !important;
         }
     }
+
+    @media (max-width: 600px) {
+        .container { padding: 20px 10px !important; }
+        h3 { font-size: 1.5rem !important; }
+        #staking-section .container > div:last-child > div { padding: 25px !important; }
+    }
 </style>
+
+
 
 
    
