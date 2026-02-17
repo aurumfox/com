@@ -255,6 +255,369 @@
 
 
 
+<section id="staking-section" class="web3-staking-luxe" style="background: radial-gradient(circle at bottom left, #060b1a, #040814); padding: 40px 0; font-family: 'Inter', sans-serif;">
+    <div class="container" style="max-width: 450px; margin: 0 auto; padding: 0 20px;">
+
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h2 style="color: #fff; font-size: 2.2em; font-weight: 800; margin-bottom: 10px;">
+                <span style="color: #FFD700;">AFOX</span> Staking Vault
+            </h2>
+            <div style="display: flex; flex-direction: column; gap: 8px; color: #00ff7f; font-size: 0.8em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                <span>🛡️ Smart Contract Audited</span>
+                <span>🔒 Liquidity Locked</span>
+            </div>
+        </div>
+
+        <div style="background: rgba(255, 165, 0, 0.1); border: 1px solid #FFA500; border-radius: 15px; padding: 15px; margin-bottom: 25px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.8em;">⚠️</span>
+            <div>
+                <h4 style="color: #FFA500; margin: 0 0 5px 0; text-transform: uppercase; font-size: 0.85em; letter-spacing: 1px;">Security Warning</h4>
+                <p style="color: #ddd; margin: 0; font-size: 0.8em; line-height: 1.4;">
+                    Please ensure you are connected to the official AFOX dApp. Never share your private keys or seed phrases.
+                </p>
+            </div>
+        </div>
+
+        <div class="staking-stats-grid" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
+
+            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 20px; backdrop-filter: blur(10px);">
+                <span style="color: #888; font-size: 0.75em; display: block; margin-bottom: 5px;">Your Balance</span>
+                <span id="user-afox-balance" style="color: #fff; font-size: 1.5em; font-weight: 700;">0.00 <small style="font-size: 0.6em; color: #FFD700;">AFOX</small></span>
+            </div>
+
+            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 20px; backdrop-filter: blur(10px);">
+                <span style="color: #888; font-size: 0.75em; display: block; margin-bottom: 5px;">Total Staked</span>
+                <span id="user-staked-amount" style="color: #fff; font-size: 1.5em; font-weight: 700;">0.00 <small style="font-size: 0.6em; color: #FFD700;">AFOX</small></span>
+            </div>
+
+            <div class="stat-card" style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(255,215,0,0.05);">
+                <span style="color: #FFD700; font-size: 0.75em; display: block; margin-bottom: 5px;">Earned Rewards</span>
+                <span id="user-rewards-amount" style="color: #FFD700; font-size: 1.5em; font-weight: 800; text-shadow: 0 0 15px rgba(255,215,0,0.3);">+0.00</span>
+                <button id="claim-all-rewards-btn" style="margin-top: 10px; width: 100%; background: #FFD700; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;">Collect All Profit</button>
+            </div>
+        </div>
+
+        <div style="background: #060b1a; border: 1px solid rgba(255,255,255,0.05); border-radius: 30px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 60px rgba(0,0,0,0.4);">
+
+            <div style="padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: #fff; margin-bottom: 20px; font-size: 1.3em;">Deposit Tokens</h3>
+
+                <div id="init-zone" style="background: rgba(0, 255, 127, 0.03); border: 1px dashed rgba(0, 255, 127, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                    <p style="color: #00ff7f; font-size: 0.7em; margin-bottom: 10px; text-transform: uppercase; font-weight: bold;">Step 1: Initialize Account</p>
+                    <button id="initialize-user-stake-btn" style="width: 100%; background: transparent; border: 1px solid #00ff7f; color: #00ff7f; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s;">
+                        Create Staking Account
+                    </button>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="color: #666; font-size: 0.75em; margin-bottom: 8px; display: block;">Select Duration (APR increases)</label>
+                    <select id="pool-selector" style="width: 100%; background: #040814; color: #fff; border: 1px solid #1a2a44; padding: 12px; border-radius: 10px; outline: none; cursor: pointer;">
+                        <option value="0">🌱 Tier 1: 7 Days (5% APR)</option>
+                        <option value="1">🌿 Tier 2: 30 Days (12% APR)</option>
+                        <option value="2">🌳 Tier 3: 90 Days (20% APR)</option>
+                        <option value="3">💎 Tier 4: 180 Days (30% APR)</option>
+                        <option value="4">👑 Tier 5: 360 Days (45% APR)</option>
+                    </select>
+                </div>
+
+                <div style="position: relative; margin-bottom: 25px;">
+                    <input type="number" id="stake-amount" placeholder="0.00" style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; padding: 15px; border-radius: 10px; font-size: 1em; box-sizing: border-box;">
+                    <button id="max-stake-btn" style="position: absolute; right: 10px; top: 10px; background: rgba(255,215,0,0.1); border: 1px solid #FFD700; color: #FFD700; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75em; font-weight: bold;">MAX</button>
+                </div>
+
+                <button id="deposit-btn" style="width: 100%; background: #FFD700; color: #000; border: none; padding: 15px; border-radius: 12px; font-size: 1.1em; font-weight: 800; cursor: pointer; transition: 0.3s;">
+                    Stake AFOX
+                </button>
+            </div>
+
+            <div style="padding: 30px; background: rgba(0,0,0,0.2);">
+                <h3 style="color: #fff; margin-bottom: 20px; font-size: 1.3em;">Manage Assets</h3>
+
+                <div class="management-info" style="margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; font-size: 0.85em;">
+                        <span style="color: #666;">Locked until:</span>
+                        <span id="unlock-date" style="color: #fff; font-family: monospace;">--.--.----</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em;">
+                        <span style="color: #666;">Penalty:</span>
+                        <span style="color: #ff4d4d; font-weight: bold;">15.0%</span>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255, 77, 77, 0.05); border: 1px solid rgba(255, 77, 77, 0.2); padding: 20px; border-radius: 20px; margin-bottom: 15px;">
+                    <label style="color: #fff; font-size: 0.75em; display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin-bottom: 15px;">
+                        <input type="checkbox" id="early-exit-checkbox" style="margin-top: 2px;">
+                        <span>I understand early unstaking burns 15% and I lose all rewards.</span>
+                    </label>
+
+                    <button id="unstake-btn" style="width: 100%; background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s;">
+                        Unstake AFOX
+                    </button>
+                </div>
+
+                <button id="close-staking-account-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #888; padding: 10px; border-radius: 10px; font-size: 0.75em; font-weight: bold; cursor: pointer; transition: 0.3s;">
+                    Close Account & Refund SOL
+                </button>
+
+                <p style="text-align: center; color: #444; font-size: 0.7em; margin-top: 20px;">
+                    Transaction ID: <span id="last-tx-id">None</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    #deposit-btn:hover { transform: translateY(-2px); background: #ffae00; }
+    #initialize-user-stake-btn:hover { background: rgba(0, 255, 127, 0.1); }
+    #claim-all-rewards-btn:hover { transform: scale(1.02); }
+    #unstake-btn:hover { background: rgba(255, 77, 77, 0.1); }
+    #close-staking-account-btn:hover { border-color: #fff; color: #fff; }
+    input:focus { border-color: #FFD700 !important; outline: none; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+<section id="rewards-section" class="web3-rewards-luxury" style="background: radial-gradient(circle at top right, #0a1025, #040814); padding: 60px 0; font-family: 'Inter', sans-serif; overflow: hidden; position: relative;">
+
+    <div style="position: absolute; top: 10%; left: -5%; width: 300px; height: 300px; background: rgba(0, 255, 127, 0.03); filter: blur(100px); border-radius: 50%;"></div>
+    <div style="position: absolute; bottom: 10%; right: -5%; width: 400px; height: 400px; background: rgba(255, 215, 0, 0.02); filter: blur(120px); border-radius: 50%;"></div>
+
+    <div class="container" style="max-width: 450px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 2;">
+
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h2 style="color: #fff; font-size: 2.2em; font-weight: 800; letter-spacing: -1px; margin-bottom: 15px; text-shadow: 0 0 20px rgba(0,255,127,0.2);">
+                Staking <span style="color: #00ff7f;">Rewards</span>
+            </h2>
+            <div style="display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); padding: 8px 20px; border-radius: 50px; border: 1px solid rgba(0, 255, 127, 0.2);">
+                <span style="width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; display: inline-block; margin-right: 10px; box-shadow: 0 0 10px #00ff7f;"></span>
+                <span style="color: #eee; font-size: 0.8em; font-weight: 500;">Yield Farming Active</span>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
+
+            <div class="reward-card-glass" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 24px; backdrop-filter: blur(15px); transition: 0.4s ease;">
+                <p style="color: #888; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Total Unclaimed Profit</p>
+                <h3 id="totalRewards" style="color: #fff; font-size: 1.8em; margin: 0;">4,520 <span style="color: #00ff7f; font-size: 0.6em;">AFOX</span></h3>
+                <div style="margin-top: 15px; height: 4px; background: rgba(0,255,127,0.1); border-radius: 2px;">
+                    <div style="width: 75%; height: 100%; background: linear-gradient(90deg, #00ff7f, #00b359); border-radius: 2px;"></div>
+                </div>
+            </div>
+
+            <div class="reward-card-glass" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 24px; backdrop-filter: blur(15px);">
+                <p style="color: #888; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Average APY</p>
+                <h3 style="color: #fff; font-size: 1.8em; margin: 0;">124.5% <span style="color: #FFD700; font-size: 0.5em;">Compounding</span></h3>
+                <p style="color: #555; font-size: 0.7em; margin-top: 10px;">Next distribution in: 04h 12m</p>
+            </div>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 28px; padding: 25px; box-shadow: 0 30px 60px rgba(0,0,0,0.4);">
+
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h3 style="color: #fff; margin: 0 0 10px 0; font-size: 1.3em;">Your Staking Pools</h3>
+                <button onclick="claimAllRewards()" class="claim-btn-luxe" style="width: 100%; background: #00ff7f; color: #000; border: none; padding: 15px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; box-shadow: 0 10px 20px rgba(0, 255, 127, 0.15);">
+                    <span>💰</span> Claim All Rewards
+                </button>
+            </div>
+
+            <div class="pool-list-smart" style="display: flex; flex-direction: column; gap: 15px;">
+
+                <div class="pool-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 20px; transition: 0.3s;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <span style="color: #00ff7f; font-family: monospace; font-size: 0.8em;">#001 (7 Days)</span>
+                        <span style="background: rgba(255, 215, 0, 0.1); color: #FFD700; padding: 3px 8px; border-radius: 6px; font-size: 0.65em; font-weight: bold;">ACCUMULATING</span>
+                    </div>
+                    <h4 style="color: #fff; font-size: 1.1em; margin: 0 0 8px 0;">Short-term Liquidity</h4>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #eee; font-size: 0.75em; font-weight: 600;">1,200 AFOX</span>
+                            <span style="color: #666; font-size: 0.75em;">50k Staked</span>
+                        </div>
+                        <div style="height: 10px; background: #111; border-radius: 5px; overflow: hidden; display: flex; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="width: 45%; background: linear-gradient(90deg, #00ff7f, #00e672); box-shadow: 0 0 15px rgba(0,255,127,0.3);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pool-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 20px; transition: 0.3s;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <span style="color: #00ff7f; font-family: monospace; font-size: 0.8em;">#002 (90 Days)</span>
+                        <span style="background: rgba(255, 215, 0, 0.1); color: #FFD700; padding: 3px 8px; border-radius: 6px; font-size: 0.65em; font-weight: bold;">HIGH YIELD</span>
+                    </div>
+                    <h4 style="color: #fff; font-size: 1.1em; margin: 0 0 8px 0;">Long-term Loyalty</h4>
+
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #eee; font-size: 0.75em; font-weight: 600;">3,320 AFOX</span>
+                            <span style="color: #666; font-size: 0.75em;">100k Staked</span>
+                        </div>
+                        <div style="height: 10px; background: #111; border-radius: 5px; overflow: hidden; display: flex; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="width: 90%; background: linear-gradient(90deg, #00ff7f, #00e672); box-shadow: 0 0 15px rgba(0,255,127,0.3);"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <p style="margin-top: 20px; color: #666; font-size: 0.7em; text-align: center; line-height: 1.4;">
+                <span style="color: #00ff7f;">●</span> <strong>Notice:</strong> Rewards are sent to your wallet. Gas fees apply.
+            </p>
+        </div>
+
+        <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px; align-items: center; opacity: 0.7;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.75em;">
+                <span>⚡</span> Zero Fee Claiming
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.75em;">
+                <span>💎</span> Auto-Compounding
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.75em;">
+                <span>🔒</span> Audited Contracts
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .reward-card-glass:hover {
+        background: rgba(255, 255, 255, 0.06) !important;
+        transform: translateY(-5px);
+        border-color: rgba(0, 255, 127, 0.3) !important;
+    }
+    .claim-btn-luxe:hover {
+        transform: scale(1.02);
+        background: #00ff8c !important;
+    }
+    .pool-item:hover {
+        border-color: rgba(0, 255, 127, 0.2) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+</style>
+
+
+
+
+
+<section id="lending-section" class="web3-lending-terminal" style="background: radial-gradient(circle at center, #0a1025, #040814); padding: 60px 0; font-family: 'Inter', sans-serif;">
+    
+    <div class="container" style="max-width: 450px; margin: 0 auto; padding: 0 20px;">
+
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h2 style="color: #fff; font-size: 2.2em; font-weight: 800; margin-bottom: 10px;">
+                Institutional <span style="color: #FFD700;">Liquidity</span>
+            </h2>
+            <p style="color: #888; font-size: 0.95em;">Supply AFOX as collateral and borrow SOL instantly</p>
+        </div>
+
+        <div class="risk-dashboard" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(10px);">
+            <div style="margin-bottom: 20px;">
+                <span style="color: #666; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px;">Safety Monitor</span>
+                <h3 style="color: #fff; margin: 5px 0 10px 0; font-size: 1.5em;">Health Factor: <span id="health-factor-value" style="color: #00ff7f;">Excellent</span></h3>
+                <span style="color: #ff4d4d; font-size: 0.75em; font-weight: bold;">Liquidation Threshold: <span id="liq-threshold">1.10</span></span>
+            </div>
+
+            <div style="position: relative; height: 10px; background: #111; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden;">
+                <div id="health-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d 0%, #ffd700 50%, #00ff7f 100%); transition: 0.5s ease;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 10px; color: #444; font-size: 0.65em; font-weight: bold;">
+                <span>DANGER</span>
+                <span>STABLE</span>
+                <span>SECURE</span>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+
+            <div class="lending-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 215, 0, 0.1); border-radius: 28px; padding: 25px; transition: 0.3s;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
+                    <div style="background: rgba(255,215,0,0.1); padding: 10px; border-radius: 12px; font-size: 1.2em;">🦊</div>
+                    <h3 style="color: #fff; margin: 0; font-size: 1.3em;">Staked Collateral</h3>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="color: #888; font-size: 0.8em; display: block; margin-bottom: 10px;">Amount to Lock/Unlock</label>
+                    <div style="position: relative;">
+                        <input type="number" id="collateral-amount-input" placeholder="0.00" style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; padding: 14px; border-radius: 12px; font-size: 1em; outline: none; box-sizing: border-box;">
+                        <button id="max-collateral-btn" style="position: absolute; right: 8px; top: 8px; background: #FFD700; border: none; color: #000; padding: 5px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.7em;">MAX</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button id="collateralize-btn" style="width: 100%; background: #FFD700; color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s;">Collateralize</button>
+                    <button id="decollateralize-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold;">Decollateralize</button>
+                </div>
+
+                <p style="color: #555; font-size: 0.75em; margin-top: 15px; text-align: center;">
+                    Utilize your stake as borrowing power
+                </p>
+            </div>
+
+            <div class="lending-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 255, 255, 0.1); border-radius: 28px; padding: 25px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
+                    <div style="background: rgba(0,255,255,0.1); padding: 10px; border-radius: 12px; font-size: 1.2em;">💧</div>
+                    <h3 style="color: #fff; margin: 0; font-size: 1.3em;">Borrow SOL</h3>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="color: #888; font-size: 0.8em; display: block; margin-bottom: 10px;">Borrow Amount</label>
+                    <input type="number" id="borrow-amount-input" placeholder="Enter SOL" style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; padding: 14px; border-radius: 12px; font-size: 1em; outline: none; margin-bottom: 12px; box-sizing: border-box;">
+
+                    <button id="borrow-btn" style="width: 100%; background: #fff; color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; margin-bottom: 20px;">
+                        Execute Borrowing
+                    </button>
+
+                    <h4 style="color: #666; font-size: 0.85em; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px; margin-bottom: 12px; text-align: center;">Repay Debt</h4>
+                    <input type="number" id="repay-amount-input" placeholder="SOL Amount" style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; padding: 14px; border-radius: 12px; font-size: 1em; outline: none; margin-bottom: 12px; box-sizing: border-box;">
+                    <button id="repay-btn" style="width: 100%; background: transparent; border: 1px solid #FFD700; color: #FFD700; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s;">Repay & Close Loan</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div style="margin-top: 30px; background: rgba(255, 77, 77, 0.05); border: 1px dashed rgba(255, 77, 77, 0.3); padding: 20px; border-radius: 16px; display: flex; flex-direction: column; gap: 15px;">
+            <div style="font-size: 1.5em; text-align: center;">⚠️</div>
+            <div style="color: #ccc; font-size: 0.8em; line-height: 1.5; text-align: center;">
+                <strong style="color: #ff4d4d;">Critical Warning:</strong> This lending protocol is non-custodial. If AFOX value drops significantly, liquidation is automatic. <strong>Monitor your Health Factor!</strong>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .lending-card:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+        transform: translateY(-5px);
+        border-color: rgba(255, 215, 0, 0.3) !important;
+    }
+    #borrow-btn:hover {
+        background: #00f2ff !important;
+        box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
+    }
+    #collateralize-btn:hover {
+        background: #ffae00 !important;
+        box-shadow: 0 10px 20px rgba(255, 215, 0, 0.2);
+    }
+    #decollateralize-btn:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: #fff !important;
+    }
+    #repay-btn:hover {
+        background: rgba(255, 215, 0, 0.1) !important;
+    }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
 
 
       
