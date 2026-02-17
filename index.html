@@ -861,13 +861,10 @@
     
 
  
-   
-
-
-<style>
-    /* 1. КОНТЕЙНЕР: Теперь он компактный и по центру */
+   <style>
+    /* 1. КОНТЕЙНЕР: Оставляем как есть */
     .container {
-        max-width: 1200px !important; /* Оптимальная ширина для глаз */
+        max-width: 1200px !important; 
         width: 95% !important;
         margin: 0 auto !important;
         padding-left: 20px !important;
@@ -875,49 +872,67 @@
         box-sizing: border-box;
     }
 
-    /* 2. СТЕЙКИНГ: Одна под другой, но не на весь горизонт */
+    /* 2. СТЕЙКИНГ: Теперь адаптивный ряд */
     #staking-section .container > div:last-child {
         display: flex !important;
-        flex-direction: column !important; /* Оставляем в одну колонку */
-        align-items: center !important;    /* Центрируем блоки внутри */
+        /* ИЗМЕНЕНО: row для ряда, wrap чтобы не ломалось на мелких экранах */
+        flex-direction: row !important; 
+        flex-wrap: wrap !important;
+        justify-content: center !important; 
+        align-items: stretch !important;    
         gap: 30px !important;
     }
 
-    /* Ограничиваем ширину самих карточек стейкинга */
+    /* Карточки стейкинга */
     #staking-section .container > div:last-child > div {
-        width: 100% !important;
-        max-width: 900px !important; /* Карточки станут аккуратнее */
+        /* ИЗМЕНЕНО: flex: 1 позволяет им делиться поровну в ряду */
+        flex: 1 !important; 
+        min-width: 350px !important; /* Чтобы не сжимались слишком сильно */
+        max-width: 550px !important; /* Чтобы не были слишком широкими */
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
         border-radius: 30px !important;
         margin-bottom: 0 !important;
     }
 
-    /* 3. СЕТКИ (Статистика, фичи): По 3 в ряд на компе, чтобы было компактно */
+    /* 3. СЕТКИ (Статистика, фичи): По 3 в ряд */
     @media (min-width: 1025px) {
         .staking-stats-grid, .features-grid {
-            grid-template-columns: repeat(3, 1fr) !important; /* Возвращаем компактный ряд */
+            display: grid !important; /* Добавил display для надежности */
+            grid-template-columns: repeat(3, 1fr) !important; 
             gap: 20px !important;
         }
-        
-        /* Лендинг (Кредитование) — делаем две карточки рядом для компактности */
+
         #lending-section .container > div:nth-child(3) {
+            display: grid !important;
             grid-template-columns: 1fr 1fr !important;
             max-width: 1100px;
             margin: 0 auto;
         }
 
         h2.aurum-heading, #staking-section h2, #rewards-section h2, #lending-section h2 {
-            font-size: 2.8em !important; /* Уменьшаем размер заголовков */
+            font-size: 2.8em !important; 
         }
     }
 
-    /* Для телефона оставляем всё в одну колонку */
+    /* Для телефона: принудительно в колонку */
     @media (max-width: 1024px) {
         .staking-stats-grid, .features-grid, #lending-section .container > div:nth-child(3) {
             grid-template-columns: 1fr !important;
         }
+        
+        #staking-section .container > div:last-child {
+            flex-direction: column !important;
+        }
+        
+        #staking-section .container > div:last-child > div {
+            max-width: 100% !important;
+        }
     }
 </style>
+
+
+
+
 
 
    
