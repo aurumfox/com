@@ -1938,7 +1938,7 @@ window.addEventListener('load', () => {
         // БЕЛЫЙ СПИСОК: Только эти фразы станут кнопками
         WHITE_LIST: [
             "collect all profit", "create stakingaccount", "max", "stake afox", 
-            "unstake afox", "close account & refund sol", "claim all rewards", 
+            "unstake afox", "close account & refund sol", "claim all rewards💰", 
             "collateralize", "decollateralize", "execute borrowing", "repay debt", "repay & close loan"
         ],
 
