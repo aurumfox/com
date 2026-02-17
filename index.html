@@ -235,7 +235,53 @@
 
 </header>
 
-    
+
+
+
+
+
+
+
+
+
+
+<style>
+    /* ПРИНУДИТЕЛЬНАЯ СЕТКА ДЛЯ КОМПЬЮТЕРА */
+    @media (min-width: 992px) {
+        .features-grid {
+            display: grid !important;
+            /* Ровно 3 колонки одинаковой ширины */
+            grid-template-columns: repeat(3, 1fr) !important; 
+            gap: 30px !important;
+            max-width: 1200px !important;
+            margin: 40px auto !important;
+            align-items: stretch !important;
+        }
+
+        .feature-card-royal {
+            /* Убираем фиксированную ширину, чтобы сетка сама распределяла место */
+            width: auto !important; 
+            max-width: none !important;
+            min-height: 450px;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+        }
+    }
+
+    /* АДАПТИВНОСТЬ ДЛЯ ТЕЛЕФОНОВ */
+    @media (max-width: 991px) {
+        .features-grid {
+            display: grid !important;
+            grid-template-columns: 1fr !important; /* Одна колонка */
+            gap: 20px !important;
+            padding: 20px !important;
+        }
+    }
+</style>
+
+
+      
           
 
 
