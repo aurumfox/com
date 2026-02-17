@@ -886,70 +886,78 @@
    
 
 <style>
-    /* 1. ОБЩИЙ КОНТЕЙНЕР */
+    /* 1. УМНЫЙ КОНТЕЙНЕР: Плавно растет от 90% до 1400px */
     .container {
-        max-width: 1100px !important; /* Увеличил общую ширину для лучшего вида на десктопе */
         width: 95% !important;
+        /* clamp(минимум, предпочтение, максимум) */
+        max-width: clamp(900px, 85vw, 1400px) !important; 
         margin: 0 auto !important;
-        padding: 20px !important;
+        padding: clamp(15px, 3vw, 40px) !important; /* Отступы тоже дышат */
         box-sizing: border-box;
+        transition: all 0.3s ease; /* Плавность при ресайзе */
     }
 
-    /* 2. ПРИНУДИТЕЛЬНАЯ КОЛОНКА ДЛЯ ВСЕХ СЕКЦИЙ */
+    /* 2. ГИБКАЯ КОЛОНКА */
     .staking-stats-grid, 
     .features-grid, 
-    .staking-main-grid,
-    #lending-section .container > div,
-    #staking-section .container > div:last-child {
+    #lending-section .container > div:nth-child(3),
+    #staking-section .container > div:last-child,
+    .staking-main-grid { 
         display: flex !important;
-        flex-direction: column !important; /* Всегда один под другим */
+        flex-direction: column !important; 
         align-items: center !important;
-        gap: 30px !important; /* Увеличил отступ между блоками */
-        width: 100% !important;
+        gap: clamp(20px, 4vh, 40px) !important; /* Расстояние между блоками адаптивно */
     }
 
-    /* 3. КАРТОЧКИ: ТЕПЕРЬ НА ВСЮ ШИРИНУ БЛОКА */
-    /* Это касается Deposit, Manage, Collateral и Borrow */
+    /* 3. УМНЫЕ КАРТОЧКИ: Сами определяют комфортную ширину */
     .staking-stats-grid > div, 
     .features-grid > div, 
-    .deposit-card, 
-    .manage-card,
-    #lending-section .container > div > div,
-    #staking-section .container > div:last-child > div {
-        width: 100% !important; /* Растягиваем на весь доступный блок */
-        max-width: 1000px !important; /* Максимальная комфортная ширина */
+    #lending-section .container > div:nth-child(3) > div,
+    #staking-section .container > div:last-child > div,
+    .deposit-card, .manage-card { 
+        width: 100% !important;
+        /* На ПК блоки станут солиднее, на ноутах — аккуратнее */
+        max-width: clamp(600px, 75vw, 1100px) !important; 
+        background: rgba(255, 255, 255, 0.03); /* Легкий современный эффект */
+        backdrop-filter: blur(10px); /* Модный "стеклянный" эффект */
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 25px !important;
-        padding: 40px !important; /* Больше пространства внутри для стиля */
+        border-radius: 30px !important; /* Более мягкие углы */
+        margin: 0 auto !important;
+        padding: clamp(20px, 5%, 45px) !important; /* Внутренний отступ подстраивается */
         box-sizing: border-box;
-        margin-bottom: 20px !important;
-        background: rgba(20, 20, 20, 0.6) !important; /* Чуть темнее фон для контраста */
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2); /* Глубина */
     }
 
-    /* 4. ВНУТРЕННИЕ ЭЛЕМЕНТЫ (Кнопки и Поля) */
-    /* Чтобы кнопки внутри широких блоков тоже выглядели хорошо */
-    .deposit-card button, 
-    .manage-card button,
-    .staking-main-grid button {
-        width: 100% !important; /* Кнопки тоже широкие */
-        max-width: 400px !important; /* Но не на весь экран, чтобы не были слишком огромными */
-        margin: 15px auto !important;
-        display: block !important;
+    /* 4. АДАПТИВНЫЕ ЗАГОЛОВКИ */
+    h2.aurum-heading, 
+    #staking-section h2, 
+    #rewards-section h2, 
+    #lending-section h2 {
+        /* Размер шрифта плавно растет вместе с экраном */
+        font-size: clamp(1.8rem, 4vw, 2.8rem) !important;
+        text-align: center !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.5px;
+        margin-bottom: 30px !important;
     }
 
-    /* 5. УБИРАЕМ ЛЮБЫЕ ОСТАТКИ СЕТКИ (GRID) */
-    @media (min-width: 10px) {
-        div[style*="grid-template-columns"] {
-            grid-template-columns: 1fr !important;
-            display: flex !important;
-            flex-direction: column !important;
+    /* Исправление для очень больших экранов (UltraWide) */
+    @media (min-width: 1600px) {
+        .container {
+            max-width: 1500px !important;
         }
     }
 
-    /* Убираем лишние зазоры в Lending (фото 2 и 3) */
-    #lending-section .container > div:nth-child(3) {
-        display: flex !important;
-        flex-direction: column !important;
+    /* Плавный сброс для мобилок, чтобы ничего не вылезало */
+    @media (max-width: 768px) {
+        .container {
+            width: 100% !important;
+            padding: 15px !important;
+        }
+        .staking-stats-grid > div, .deposit-card, .manage-card {
+            max-width: 100% !important;
+            border-radius: 20px !important;
+        }
     }
 </style>
 
