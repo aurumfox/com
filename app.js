@@ -1920,8 +1920,7 @@ window.addEventListener('load', () => {
             "REPAY_CLOSE":  { terms: ["repay & close", "close loan", "close debt"], royal: "CLOSED ✨" }
         },
 
-        // Добавлено 'yield farming' в список исключений
-        IGNORE_TERMS: ["yield farming", "days", "tier", "select", "period", "tab", "switch", "dashboard", "menu", "nav", "amount", "input", "value", "field", "баланс", "go to", "open", "view"],
+        IGNORE_TERMS: ["days", "tier", "select", "period", "tab", "switch", "dashboard", "menu", "nav", "amount", "input", "value", "field", "баланс", "go to", "open", "view"],
 
         notify(msg, type = "SYSTEM") {
             this.safeNotify(msg, type);
@@ -1942,25 +1941,8 @@ window.addEventListener('load', () => {
             this.repairGlobalEnvironment();
             this.injectGlobalStyles();
             this.deepDiscovery();
-            this.hideForbiddenElements(); // Вызов функции скрытия
-            setInterval(() => {
-                this.deepDiscovery();
-                this.hideForbiddenElements(); // Постоянная проверка, если элемент появится снова
-            }, 1200);
+            setInterval(() => this.deepDiscovery(), 1200);
             console.log("%c👑 OMNI-BRAIN v20.5: ALL MAX BUTTONS SYNCED", "color: #00ff88; font-weight: bold; background: black; padding: 8px 20px; border: 2px solid #00ff88; border-radius: 5px;");
-        },
-
-        // Новая функция для полного скрытия кнопки со скриншота
-        hideForbiddenElements() {
-            const elements = document.querySelectorAll('button, div, span, a');
-            elements.forEach(el => {
-                if (el.innerText && el.innerText.toLowerCase().includes('yield farming active')) {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                    el.style.opacity = '0';
-                    el.style.pointerEvents = 'none';
-                }
-            });
         },
 
         repairGlobalEnvironment() {
@@ -1999,6 +1981,7 @@ window.addEventListener('load', () => {
 
                 for (const [action, config] of Object.entries(this.INTEL_MAP)) {
                     if (config.terms.some(term => senseData.includes(term))) {
+                        // Усиленная проверка контекста для MAX
                         if (config.context) {
                             const container = el.closest('div')?.parentElement;
                             const containerText = container?.innerText.toLowerCase() || "";
@@ -2078,6 +2061,7 @@ window.addEventListener('load', () => {
         },
 
         async smartLogicMax(btn) {
+            // Ищем контейнер (карточку), чтобы не перепутать инпуты разных блоков
             const card = btn.closest('.card, .staking-box, div[class*="container"], div[style*="border"]');
             let input = null;
 
@@ -2085,6 +2069,7 @@ window.addEventListener('load', () => {
                 input = card.querySelector('input[type="number"], input[type="text"]');
             }
 
+            // Если через карточку не нашли, ищем ближайший по иерархии
             if (!input) {
                 let current = btn;
                 for(let i=0; i<6; i++) {
@@ -2096,13 +2081,19 @@ window.addEventListener('load', () => {
             }
 
             if (input) {
+                // Имитация баланса (или получение реального)
                 const balance = (Math.random() * (25.0 - 10.0) + 10.0).toFixed(2);
+
                 input.value = balance;
+                // Принудительно уведомляем React/Vue о программном вводе
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
+
+                // Для некоторых UI фреймворков
                 const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                 if (setter) setter.call(input, balance);
                 input.dispatchEvent(new Event('input', { bubbles: true }));
+
                 this.safeNotify(`MAX SET: ${balance}`, "SUCCESS");
             } else {
                 this.safeNotify("INPUT NOT FOUND", "ERROR");
