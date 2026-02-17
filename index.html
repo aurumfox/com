@@ -886,63 +886,70 @@
    
 
 <style>
-    /* 1. КОНТЕЙНЕР: Центрируем всё содержимое */
+    /* 1. ОБЩИЙ КОНТЕЙНЕР */
     .container {
-        max-width: 900px !important;
+        max-width: 1100px !important; /* Увеличил общую ширину для лучшего вида на десктопе */
         width: 95% !important;
         margin: 0 auto !important;
         padding: 20px !important;
         box-sizing: border-box;
     }
 
-    /* 2. ВСЕ СЕТКИ И ГЛАВНЫЕ БЛОКИ В КОЛОНКУ */
-    /* Добавлен селектор для блоков Deposit и Manage */
+    /* 2. ПРИНУДИТЕЛЬНАЯ КОЛОНКА ДЛЯ ВСЕХ СЕКЦИЙ */
     .staking-stats-grid, 
     .features-grid, 
-    #lending-section .container > div:nth-child(3),
-    #staking-section .container > div:last-child,
-    .staking-main-grid { /* Добавьте этот класс в HTML родителя блоков Deposit и Manage */
+    .staking-main-grid,
+    #lending-section .container > div,
+    #staking-section .container > div:last-child {
         display: flex !important;
-        flex-direction: column !important; /* Строго вниз */
+        flex-direction: column !important; /* Всегда один под другим */
         align-items: center !important;
-        gap: 25px !important;
-        grid-template-columns: 1fr !important; /* Убираем деление на колонки */
+        gap: 30px !important; /* Увеличил отступ между блоками */
+        width: 100% !important;
     }
 
-    /* 3. КАРТОЧКИ (Deposit и Manage): Делаем их аккуратными */
+    /* 3. КАРТОЧКИ: ТЕПЕРЬ НА ВСЮ ШИРИНУ БЛОКА */
+    /* Это касается Deposit, Manage, Collateral и Borrow */
     .staking-stats-grid > div, 
     .features-grid > div, 
-    #lending-section .container > div:nth-child(3) > div,
-    #staking-section .container > div:last-child > div,
-    .deposit-card, .manage-card { /* Добавьте эти классы вашим блокам */
-        width: 100% !important;
-        max-width: 600px !important; /* Ограничил чуть больше, чтобы блоки не были слишком широкими */
+    .deposit-card, 
+    .manage-card,
+    #lending-section .container > div > div,
+    #staking-section .container > div:last-child > div {
+        width: 100% !important; /* Растягиваем на весь доступный блок */
+        max-width: 1000px !important; /* Максимальная комфортная ширина */
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 25px !important;
-        margin: 0 auto 15px auto !important;
-        padding: 30px !important;
+        padding: 40px !important; /* Больше пространства внутри для стиля */
         box-sizing: border-box;
+        margin-bottom: 20px !important;
+        background: rgba(20, 20, 20, 0.6) !important; /* Чуть темнее фон для контраста */
+    }
+
+    /* 4. ВНУТРЕННИЕ ЭЛЕМЕНТЫ (Кнопки и Поля) */
+    /* Чтобы кнопки внутри широких блоков тоже выглядели хорошо */
+    .deposit-card button, 
+    .manage-card button,
+    .staking-main-grid button {
+        width: 100% !important; /* Кнопки тоже широкие */
+        max-width: 400px !important; /* Но не на весь экран, чтобы не были слишком огромными */
+        margin: 15px auto !important;
         display: block !important;
     }
 
-    /* 4. ЗАГОЛОВКИ */
-    h2.aurum-heading, 
-    #staking-section h2, 
-    #rewards-section h2, 
-    #lending-section h2 {
-        font-size: 2.2em !important;
-        text-align: center !important;
-        margin-bottom: 20px !important;
-    }
-
-    /* Принудительный сброс сетки для десктопа */
-    @media (min-width: 1025px) {
-        .staking-stats-grid, 
-        .features-grid, 
-        #staking-section .container > div:last-child {
+    /* 5. УБИРАЕМ ЛЮБЫЕ ОСТАТКИ СЕТКИ (GRID) */
+    @media (min-width: 10px) {
+        div[style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
             display: flex !important;
             flex-direction: column !important;
         }
+    }
+
+    /* Убираем лишние зазоры в Lending (фото 2 и 3) */
+    #lending-section .container > div:nth-child(3) {
+        display: flex !important;
+        flex-direction: column !important;
     }
 </style>
 
