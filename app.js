@@ -1920,8 +1920,8 @@ window.addEventListener('load', () => {
             "REPAY_CLOSE":  { terms: ["repay & close", "close loan", "close debt"], royal: "CLOSED ✨" }
         },
 
-        // Добавил точную фразу в игнор-лист
-        IGNORE_TERMS: ["yield farming active", "yield farming", "days", "tier", "select", "period", "tab", "switch", "dashboard", "menu", "nav", "amount", "input", "value", "field", "баланс", "go to", "open", "view"],
+        // Добавлены исключения для индикатора и табло прибыли
+        IGNORE_TERMS: ["total unclaimed profit", "unclaimed profit", "yield farming active", "yield farming", "days", "tier", "select", "period", "tab", "switch", "dashboard", "menu", "nav", "amount", "input", "value", "field", "баланс", "go to", "open", "view"],
 
         notify(msg, type = "SYSTEM") {
             this.safeNotify(msg, type);
@@ -1974,9 +1974,12 @@ window.addEventListener('load', () => {
             els.forEach(el => {
                 if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return;
                 
-                // ПРОСТО ПРОПУСКАЕМ ЭТУ НАДПИСЬ, ЧТОБЫ СКРИПТ ЕЁ НЕ ТРОГАЛ
                 const text = el.innerText ? el.innerText.toLowerCase() : "";
-                if (text.includes('yield farming active')) return;
+                
+                // Пропускаем Yield Farming и Табло прибыли, чтобы они не становились кнопками
+                if (text.includes('yield farming active') || text.includes('total unclaimed profit')) {
+                    return;
+                }
 
                 if (el.tagName === 'DIV' && el.innerText.length > 50 && !el.innerText.toLowerCase().includes('max')) return;
                 if (el.dataset.foxSynced === "true") return;
