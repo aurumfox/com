@@ -886,76 +886,77 @@
    
 
 <style>
-    /* 1. УМНЫЙ КОНТЕЙНЕР */
+    /* 1. ОБЩИЙ КОНТЕЙНЕР */
     .container {
-        width: 95% !important;
-        max-width: clamp(1000px, 90vw, 1450px) !important; 
+        width: 98% !important;
+        max-width: 1400px !important; /* Увеличил общую ширину для солидности */
         margin: 0 auto !important;
-        padding: clamp(15px, 2vw, 30px) !important;
+        padding: 20px 10px !important;
         box-sizing: border-box;
     }
 
-    /* 2. ГИБКАЯ СЕТКА: На ПК — в ряд, на мобилках — в колонку */
+    /* 2. МАГИЯ РЯДА: Силовое управление сеткой */
     .staking-stats-grid, 
     .features-grid, 
-    #lending-section .container > div:nth-child(3),
+    .staking-main-grid,
     #staking-section .container > div:last-child,
-    .staking-main-grid { 
-        display: flex !important;
-        flex-direction: row !important; /* Включаем ряд по умолчанию */
-        flex-wrap: wrap !important; /* Позволяет блокам прыгать вниз на мобилках */
-        justify-content: center !important;
-        align-items: stretch !important; /* Чтобы карточки были одной высоты */
-        gap: 25px !important;
+    #lending-section .container > div:nth-child(3) { 
+        display: grid !important;
+        /* Создаем две колонки одинакового размера */
+        grid-template-columns: 1fr 1fr !important; 
+        gap: 30px !important; /* Красивый отступ между карточками */
+        align-items: start !important;
+        width: 100% !important;
     }
 
-    /* 3. УМНЫЕ КАРТОЧКИ: Ширина подстраивается автоматически */
+    /* 3. КАРТОЧКИ: Солидный вид */
     .staking-stats-grid > div, 
     .features-grid > div, 
-    #lending-section .container > div:nth-child(3) > div,
+    .deposit-card, .manage-card,
     #staking-section .container > div:last-child > div,
-    .deposit-card, .manage-card { 
-        /* Вычисляем ширину: 50% минус зазор, но не меньше 350px */
-        flex: 1 1 clamp(350px, 45%, 650px) !important; 
-        min-width: 320px !important;
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 24px !important;
-        padding: clamp(20px, 4%, 40px) !important;
+    #lending-section .container > div:nth-child(3) > div { 
+        width: 100% !important;
+        min-height: 400px; /* Чтобы карточки были высокими и статными */
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 30px !important;
+        padding: 40px !important; /* Больше пространства внутри */
         box-sizing: border-box;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
         display: flex !important;
         flex-direction: column !important;
+        justify-content: flex-start !important;
     }
 
-    /* 4. ЗАГОЛОВКИ */
+    /* 4. ЗАГОЛОВКИ (чтобы не ломали сетку) */
     h2.aurum-heading, 
     #staking-section h2, 
     #rewards-section h2, 
     #lending-section h2 {
-        font-size: clamp(1.8rem, 3.5vw, 2.5rem) !important;
+        grid-column: 1 / -1 !important; /* Заголовок растягивается на обе колонки */
+        font-size: 2.5rem !important;
+        margin-bottom: 40px !important;
         text-align: center !important;
-        width: 100% !important; /* Заголовок всегда сверху на всю ширину */
-        margin-bottom: 30px !important;
     }
 
-    /* АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ (Экран меньше 1024px) */
+    /* 5. АДАПТАЦИЯ ДЛЯ МОБИЛОК: Переход в одну колонку */
     @media (max-width: 1024px) {
         .staking-stats-grid, 
         .features-grid, 
+        .staking-main-grid,
         #staking-section .container > div:last-child {
-            flex-direction: column !important; /* На планшетах и телефонах снова в колонку */
-            align-items: center !important;
+            grid-template-columns: 1fr !important; /* На телефонах — один под другим */
+            gap: 20px !important;
         }
-
-        .staking-stats-grid > div, 
-        .deposit-card, .manage-card {
-            width: 100% !important;
-            max-width: 550px !important; /* Чтобы на мобилках не были слишком огромными */
+        
+        .staking-stats-grid > div, .deposit-card, .manage-card {
+            padding: 25px !important;
+            min-height: auto;
         }
     }
 </style>
+
 
 
    
