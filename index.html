@@ -861,80 +861,86 @@
 
 
 
-<style>
-    /* 1. Общие настройки контейнера для стабильной ширины */
+
+
+
+      <style>
+    /* 1. Основной контейнер — центрируем и даем отступы по бокам */
     .container {
         max-width: 1200px !important;
-        width: 100% !important;
         margin: 0 auto !important;
         padding: 0 20px !important;
-        box-sizing: border-box !important;
+        display: block !important;
     }
 
-    /* 2. Секция STATS (баланс, стейкинг, награды) - строго в один ряд */
+    /* 2. Верхние карточки (Balance, Staked, Rewards) — ровный ряд */
     .staking-stats-grid {
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important; /* Запрет переноса */
-        gap: 20px !important;
-        margin-bottom: 40px !important;
-        align-items: stretch !important;
+        justify-content: space-between !important;
+        gap: 20px !important; /* Расстояние между карточками */
+        margin-bottom: 30px !important;
     }
 
-    .staking-stats-grid > .stat-card {
-        flex: 1 !important; /* Равномерное распределение */
-        min-width: 0 !important; /* Позволяет блокам сжиматься корректно */
-        margin: 0 !important;
+    .stat-card {
+        flex: 1 !important; /* Все карточки одной ширины */
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 215, 0, 0.2) !important;
+        border-radius: 15px !important;
+        padding: 20px !important;
+        text-align: center !important;
+        min-width: 200px !important;
     }
 
-    /* 3. Секции управления (Deposit & Manage / Lending) - строго 2 колонки */
-    #staking-section .container > div[style*="display: flex"],
-    #lending-section .container > div[style*="display: grid"] {
+    /* 3. Главные блоки (Deposit Tokens и Manage Assets) — два ряда рядом */
+    #staking-section .container > div:last-child,
+    .web3-staking-luxe .container > div[style*="display: flex"] {
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important; /* Запрет переноса на новую строку */
-        gap: 25px !important;
-        width: 100% !important;
+        align-items: flex-start !important;
+        gap: 30px !important; /* Мощный отступ, чтобы не слипались */
+        margin-top: 20px !important;
     }
 
-    /* Настройка внутренних карточек (левая и правая) */
+    /* Левая и правая колонки (панели управления) */
     #staking-section div[style*="flex: 1"], 
-    .lending-card {
+    .lending-card,
+    #staking-section .container > div:last-child > div {
         flex: 1 !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
+        background: #0d111c !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 20px !important;
+        padding: 30px !important; /* Внутренний отступ */
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
     }
 
-    /* 4. Отступы внутри элементов, чтобы ничего не липло */
-    input, select, button {
-        margin-top: 10px !important;
-        margin-bottom: 10px !important;
+    /* 4. Чтобы элементы внутри (кнопки, инпуты) не липли друг к другу */
+    input, select, .web3-button, button {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 15px !important; /* Отступ снизу для каждого элемента */
+        border-radius: 10px !important;
     }
 
-    /* 5. Исправление для мобильных устройств (адаптивность) */
-    @media (max-width: 992px) {
-        /* На планшетах и телефонах разрешаем перенос, чтобы не было слишком узко */
+    /* 5. Исправляем кнопки «Collect All Profit» и другие — даем им отступ от текста */
+    button {
+        margin-top: 15px !important;
+    }
+
+    /* 6. Адаптация для мобильных: если экран узкий, ставим ряды друг под друга */
+    @media (max-width: 900px) {
         .staking-stats-grid, 
-        #staking-section .container > div[style*="display: flex"],
-        #lending-section .container > div[style*="display: grid"] {
-            flex-wrap: wrap !important;
+        #staking-section .container > div:last-child {
+            flex-direction: column !important; /* Вниз на телефоне */
         }
         
-        .staking-stats-grid > .stat-card,
-        .lending-card {
-            flex: none !important;
-            width: 100% !important; /* На мобилках один под другим */
+        .stat-card, .lending-card {
+            width: 100% !important;
+            margin-bottom: 15px !important;
         }
-    }
-
-    /* Убираем лишние внешние отступы у заголовков внутри карточек */
-    .staking-stats-grid h3, .lending-card h3 {
-        margin-top: 0 !important;
     }
 </style>
 
-
-      
 
     
 
