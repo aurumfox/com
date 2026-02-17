@@ -862,84 +862,89 @@
 
 
 
-
-
-      <style>
-    /* 1. Основной контейнер — центрируем и даем отступы по бокам */
+<style>
+    /* 1. Общий фон и центрирование как на фото */
     .container {
-        max-width: 1200px !important;
+        max-width: 1100px !important;
         margin: 0 auto !important;
-        padding: 0 20px !important;
-        display: block !important;
+        padding: 40px 20px !important;
     }
 
-    /* 2. Верхние карточки (Balance, Staked, Rewards) — ровный ряд */
-    .staking-stats-grid {
+    /* 2. Стилизация рядов: делаем их редкими (большие отступы) */
+    .staking-stats-grid, 
+    #staking-section .container > div,
+    #lending-section .container > div {
         display: flex !important;
-        flex-direction: row !important;
-        justify-content: space-between !important;
-        gap: 20px !important; /* Расстояние между карточками */
-        margin-bottom: 30px !important;
+        gap: 40px !important; /* Большое расстояние между блоками */
+        margin-bottom: 50px !important; /* Расстояние между горизонтальными рядами */
     }
 
-    .stat-card {
-        flex: 1 !important; /* Все карточки одной ширины */
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 215, 0, 0.2) !important;
-        border-radius: 15px !important;
-        padding: 20px !important;
-        text-align: center !important;
-        min-width: 200px !important;
-    }
-
-    /* 3. Главные блоки (Deposit Tokens и Manage Assets) — два ряда рядом */
-    #staking-section .container > div:last-child,
-    .web3-staking-luxe .container > div[style*="display: flex"] {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: flex-start !important;
-        gap: 30px !important; /* Мощный отступ, чтобы не слипались */
-        margin-top: 20px !important;
-    }
-
-    /* Левая и правая колонки (панели управления) */
-    #staking-section div[style*="flex: 1"], 
-    .lending-card,
-    #staking-section .container > div:last-child > div {
+    /* 3. Карточки управления (как Deposit и Manage Assets) */
+    .stat-card, .lending-card, #staking-section div[style*="flex: 1"] {
+        background: #0d111c !important; /* Глубокий темный цвет */
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 24px !important; /* Более мягкие закругления */
+        padding: 40px !important; /* Больше пространства внутри */
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
         flex: 1 !important;
-        background: #0d111c !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 20px !important;
-        padding: 30px !important; /* Внутренний отступ */
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
     }
 
-    /* 4. Чтобы элементы внутри (кнопки, инпуты) не липли друг к другу */
-    input, select, .web3-button, button {
-        display: block !important;
+    /* 4. СТИЛЬ КНОПКИ КАК "CLAIM ALL REWARDS" (Фото №3) */
+    button, .web3-button, #claim-all-btn {
         width: 100% !important;
-        margin-bottom: 15px !important; /* Отступ снизу для каждого элемента */
-        border-radius: 10px !important;
+        height: 60px !important; /* Высокая, солидная кнопка */
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%) !important; /* Зеленый градиент */
+        color: white !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1.5px !important;
+        border: none !important;
+        border-radius: 12px !important;
+        margin-top: 25px !important;
+        cursor: pointer !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
     }
 
-    /* 5. Исправляем кнопки «Collect All Profit» и другие — даем им отступ от текста */
-    button {
-        margin-top: 15px !important;
+    button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4) !important;
     }
 
-    /* 6. Адаптация для мобильных: если экран узкий, ставим ряды друг под друга */
+    /* 5. Поля ввода (Инпуты) — делаем их в ряд и чистыми */
+    input {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 15px !important;
+        color: white !important;
+        border-radius: 12px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* 6. Заголовки (как Staking Rewards) — по центру */
+    h1, h2, .section-title {
+        text-align: center !important;
+        margin-bottom: 40px !important;
+        font-size: 2.5rem !important;
+        font-weight: 900 !important;
+        color: #fff !important;
+    }
+
+    /* Специальный отступ для прогресс-баров (фото 5) */
+    .progress-bar-container {
+        margin: 20px 0 !important;
+    }
+
+    /* Адаптация: на телефонах всё в одну колонку */
     @media (max-width: 900px) {
-        .staking-stats-grid, 
-        #staking-section .container > div:last-child {
-            flex-direction: column !important; /* Вниз на телефоне */
+        .staking-stats-grid, #staking-section .container > div {
+            flex-direction: column !important;
         }
-        
-        .stat-card, .lending-card {
-            width: 100% !important;
-            margin-bottom: 15px !important;
-        }
+        .container { padding: 20px !important; }
     }
 </style>
+
+
+     
 
 
     
