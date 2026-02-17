@@ -867,69 +867,100 @@
 
     
 <style>
-    /* 1. ГЛАВНЫЙ КОНТЕЙНЕР: На весь экран */
+    /* 1. ГЛАВНЫЙ КОНТЕЙНЕР: Центрируем всё */
     .container {
-        max-width: 100% !important; /* Убираем лимиты по бокам */
-        width: 98% !important;
+        max-width: 1200px !important; /* Уменьшил ширину для компактности */
+        width: 95% !important;
         margin: 0 auto !important;
-        padding: 0 10px !important;
+        padding: 20px !important;
     }
 
-    /* 2. ПРИНУДИТЕЛЬНЫЙ ВЫВОД В ОДИН РЯД (Один за другим) */
-    /* Применяем к статистике и к панелям управления */
+    /* 2. ВЕРТИКАЛЬНАЯ ЛЕНТА: Блоки один под другим */
     .staking-stats-grid, 
     #staking-section .container > div:last-child, 
     #lending-section .container > div:nth-child(3) {
         display: flex !important;
-        flex-direction: column !important; /* Только вертикально! */
-        gap: 30px !important; /* Солидный отступ между широкими блоками */
-        width: 100% !important;
-        align-items: center !important;
+        flex-direction: column !important;
+        gap: 25px !important;
+        align-items: center !important; /* Центрируем блоки */
     }
 
-    /* 3. ДЕЛАЕМ САМИ БЛОКИ МАКСИМАЛЬНО ШИРОКИМИ */
+    /* 3. КОМПАКТНЫЕ КАРТОЧКИ: Тот самый "Шикарный" вид */
     .staking-stats-grid > div,
     #staking-section .container > div:last-child > div,
     #lending-section .container > div:nth-child(3) > div {
         width: 100% !important;
-        max-width: 1400px !important; /* Ограничим чуть-чуть, чтобы не расплылось на ультра-широких мониторах */
-        background: rgba(13, 17, 28, 0.9) !important;
-        border: 1px solid rgba(255, 215, 0, 0.3) !important; /* Более заметная золотая рамка */
-        border-radius: 30px !important;
-        padding: 50px !important; /* Очень много места внутри для красоты */
-        box-sizing: border-box !important;
-        backdrop-filter: blur(20px);
-        box-shadow: 0 30px 60px rgba(0,0,0,0.7);
-        transition: transform 0.3s ease;
+        max-width: 800px !important; /* Ограничил ширину, чтобы блок не был слишком длинным */
+        background: linear-gradient(145deg, rgba(20, 25, 40, 0.9), rgba(10, 14, 23, 0.95)) !important;
+        border: 1px solid rgba(255, 215, 0, 0.2) !important;
+        border-radius: 24px !important;
+        padding: 35px !important; /* Умеренные отступы */
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 0 20px rgba(255,215,0,0.02);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
     }
 
-    /* Специальный стиль для блока наград, чтобы он выделялся */
-    #user-rewards-amount, .reward-card {
-        background: linear-gradient(90deg, rgba(13,17,28,1) 0%, rgba(40,35,10,1) 100%) !important;
-    }
-
-    /* 4. ЗАГОЛОВКИ И ТЕКСТ: Делаем крупнее под широкие блоки */
+    /* 4. ЗАГОЛОВКИ И ЭЛЕМЕНТЫ */
     h3 {
-        font-size: 2.2em !important;
-        margin-bottom: 25px !important;
+        color: #fff;
+        font-size: 1.8em !important;
         text-align: center;
+        margin-bottom: 20px !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
-    /* 5. КНОПКИ: Тоже широкие и мощные */
+    /* Инпуты делаем аккуратными */
+    input[type="number"], select {
+        background: rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        color: #fff !important;
+        font-size: 1.1em !important;
+        width: 100% !important;
+        margin-bottom: 15px;
+    }
+
+    /* 5. КНОПКИ: Золотые и компактные */
     button {
-        height: 70px !important;
-        font-size: 1.3em !important;
-        letter-spacing: 2px !important;
+        width: 100% !important;
+        max-width: 400px !important; /* Кнопки не на весь экран, а по центру */
+        margin: 10px auto !important;
+        display: block !important;
+        height: 55px !important;
+        border-radius: 12px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: 0.3s !important;
     }
 
-    /* Убираем лишние сдвиги на мобилках */
+    /* Основная золотая кнопка */
+    #deposit-btn, #stake-btn, #claim-all-rewards-btn {
+        background: linear-gradient(180deg, #FFD700 0%, #B8860B 100%) !important;
+        color: #000 !important;
+        border: none !important;
+        box-shadow: 0 5px 15px rgba(184, 134, 11, 0.4) !important;
+    }
+
+    button:hover {
+        transform: translateY(-2px) !important;
+        filter: brightness(1.1);
+    }
+
+    /* Адаптив для мобилок */
     @media (max-width: 768px) {
         .staking-stats-grid > div,
         #staking-section .container > div:last-child > div {
-            padding: 30px 20px !important;
+            padding: 20px !important;
+            max-width: 95% !important;
         }
     }
 </style>
+
+
+   
 
 
 
