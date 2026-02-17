@@ -862,86 +862,64 @@
 
 
 
-<style>
-    /* 1. Общий фон и центрирование как на фото */
+
+
+
+      <style>
+    /* 1. КОНТЕЙНЕР: Теперь он компактный и по центру */
     .container {
-        max-width: 1100px !important;
+        max-width: 1200px !important; /* Оптимальная ширина для глаз */
+        width: 95% !important;
         margin: 0 auto !important;
-        padding: 40px 20px !important;
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+        box-sizing: border-box;
     }
 
-    /* 2. Стилизация рядов: делаем их редкими (большие отступы) */
-    .staking-stats-grid, 
-    #staking-section .container > div,
-    #lending-section .container > div {
+    /* 2. СТЕЙКИНГ: Одна под другой, но не на весь горизонт */
+    #staking-section .container > div:last-child {
         display: flex !important;
-        gap: 40px !important; /* Большое расстояние между блоками */
-        margin-bottom: 50px !important; /* Расстояние между горизонтальными рядами */
+        flex-direction: column !important; /* Оставляем в одну колонку */
+        align-items: center !important;    /* Центрируем блоки внутри */
+        gap: 30px !important;
     }
 
-    /* 3. Карточки управления (как Deposit и Manage Assets) */
-    .stat-card, .lending-card, #staking-section div[style*="flex: 1"] {
-        background: #0d111c !important; /* Глубокий темный цвет */
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 24px !important; /* Более мягкие закругления */
-        padding: 40px !important; /* Больше пространства внутри */
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
-        flex: 1 !important;
-    }
-
-    /* 4. СТИЛЬ КНОПКИ КАК "CLAIM ALL REWARDS" (Фото №3) */
-    button, .web3-button, #claim-all-btn {
+    /* Ограничиваем ширину самих карточек стейкинга */
+    #staking-section .container > div:last-child > div {
         width: 100% !important;
-        height: 60px !important; /* Высокая, солидная кнопка */
-        background: linear-gradient(90deg, #10b981 0%, #059669 100%) !important; /* Зеленый градиент */
-        color: white !important;
-        font-weight: 800 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 1.5px !important;
-        border: none !important;
-        border-radius: 12px !important;
-        margin-top: 25px !important;
-        cursor: pointer !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        max-width: 900px !important; /* Карточки станут аккуратнее */
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 30px !important;
+        margin-bottom: 0 !important;
     }
 
-    button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4) !important;
-    }
-
-    /* 5. Поля ввода (Инпуты) — делаем их в ряд и чистыми */
-    input {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        padding: 15px !important;
-        color: white !important;
-        border-radius: 12px !important;
-        margin-bottom: 10px !important;
-    }
-
-    /* 6. Заголовки (как Staking Rewards) — по центру */
-    h1, h2, .section-title {
-        text-align: center !important;
-        margin-bottom: 40px !important;
-        font-size: 2.5rem !important;
-        font-weight: 900 !important;
-        color: #fff !important;
-    }
-
-    /* Специальный отступ для прогресс-баров (фото 5) */
-    .progress-bar-container {
-        margin: 20px 0 !important;
-    }
-
-    /* Адаптация: на телефонах всё в одну колонку */
-    @media (max-width: 900px) {
-        .staking-stats-grid, #staking-section .container > div {
-            flex-direction: column !important;
+    /* 3. СЕТКИ (Статистика, фичи): По 3 в ряд на компе, чтобы было компактно */
+    @media (min-width: 1025px) {
+        .staking-stats-grid, .features-grid {
+            grid-template-columns: repeat(3, 1fr) !important; /* Возвращаем компактный ряд */
+            gap: 20px !important;
         }
-        .container { padding: 20px !important; }
+        
+        /* Лендинг (Кредитование) — делаем две карточки рядом для компактности */
+        #lending-section .container > div:nth-child(3) {
+            grid-template-columns: 1fr 1fr !important;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h2.aurum-heading, #staking-section h2, #rewards-section h2, #lending-section h2 {
+            font-size: 2.8em !important; /* Уменьшаем размер заголовков */
+        }
+    }
+
+    /* Для телефона оставляем всё в одну колонку */
+    @media (max-width: 1024px) {
+        .staking-stats-grid, .features-grid, #lending-section .container > div:nth-child(3) {
+            grid-template-columns: 1fr !important;
+        }
     }
 </style>
+
 
 
      
