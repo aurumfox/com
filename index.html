@@ -886,80 +886,80 @@
    
 
 <style>
-    /* 1. УМНЫЙ КОНТЕЙНЕР: Плавно растет от 90% до 1400px */
+    /* 1. УМНЫЙ КОНТЕЙНЕР */
     .container {
         width: 95% !important;
-        /* clamp(минимум, предпочтение, максимум) */
-        max-width: clamp(900px, 85vw, 1400px) !important; 
+        max-width: clamp(1000px, 90vw, 1450px) !important; 
         margin: 0 auto !important;
-        padding: clamp(15px, 3vw, 40px) !important; /* Отступы тоже дышат */
+        padding: clamp(15px, 2vw, 30px) !important;
         box-sizing: border-box;
-        transition: all 0.3s ease; /* Плавность при ресайзе */
     }
 
-    /* 2. ГИБКАЯ КОЛОНКА */
+    /* 2. ГИБКАЯ СЕТКА: На ПК — в ряд, на мобилках — в колонку */
     .staking-stats-grid, 
     .features-grid, 
     #lending-section .container > div:nth-child(3),
     #staking-section .container > div:last-child,
     .staking-main-grid { 
         display: flex !important;
-        flex-direction: column !important; 
-        align-items: center !important;
-        gap: clamp(20px, 4vh, 40px) !important; /* Расстояние между блоками адаптивно */
+        flex-direction: row !important; /* Включаем ряд по умолчанию */
+        flex-wrap: wrap !important; /* Позволяет блокам прыгать вниз на мобилках */
+        justify-content: center !important;
+        align-items: stretch !important; /* Чтобы карточки были одной высоты */
+        gap: 25px !important;
     }
 
-    /* 3. УМНЫЕ КАРТОЧКИ: Сами определяют комфортную ширину */
+    /* 3. УМНЫЕ КАРТОЧКИ: Ширина подстраивается автоматически */
     .staking-stats-grid > div, 
     .features-grid > div, 
     #lending-section .container > div:nth-child(3) > div,
     #staking-section .container > div:last-child > div,
     .deposit-card, .manage-card { 
-        width: 100% !important;
-        /* На ПК блоки станут солиднее, на ноутах — аккуратнее */
-        max-width: clamp(600px, 75vw, 1100px) !important; 
-        background: rgba(255, 255, 255, 0.03); /* Легкий современный эффект */
-        backdrop-filter: blur(10px); /* Модный "стеклянный" эффект */
+        /* Вычисляем ширину: 50% минус зазор, но не меньше 350px */
+        flex: 1 1 clamp(350px, 45%, 650px) !important; 
+        min-width: 320px !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(12px) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 30px !important; /* Более мягкие углы */
-        margin: 0 auto !important;
-        padding: clamp(20px, 5%, 45px) !important; /* Внутренний отступ подстраивается */
+        border-radius: 24px !important;
+        padding: clamp(20px, 4%, 40px) !important;
         box-sizing: border-box;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2); /* Глубина */
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        display: flex !important;
+        flex-direction: column !important;
     }
 
-    /* 4. АДАПТИВНЫЕ ЗАГОЛОВКИ */
+    /* 4. ЗАГОЛОВКИ */
     h2.aurum-heading, 
     #staking-section h2, 
     #rewards-section h2, 
     #lending-section h2 {
-        /* Размер шрифта плавно растет вместе с экраном */
-        font-size: clamp(1.8rem, 4vw, 2.8rem) !important;
+        font-size: clamp(1.8rem, 3.5vw, 2.5rem) !important;
         text-align: center !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.5px;
+        width: 100% !important; /* Заголовок всегда сверху на всю ширину */
         margin-bottom: 30px !important;
     }
 
-    /* Исправление для очень больших экранов (UltraWide) */
-    @media (min-width: 1600px) {
-        .container {
-            max-width: 1500px !important;
+    /* АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ (Экран меньше 1024px) */
+    @media (max-width: 1024px) {
+        .staking-stats-grid, 
+        .features-grid, 
+        #staking-section .container > div:last-child {
+            flex-direction: column !important; /* На планшетах и телефонах снова в колонку */
+            align-items: center !important;
         }
-    }
 
-    /* Плавный сброс для мобилок, чтобы ничего не вылезало */
-    @media (max-width: 768px) {
-        .container {
+        .staking-stats-grid > div, 
+        .deposit-card, .manage-card {
             width: 100% !important;
-            padding: 15px !important;
-        }
-        .staking-stats-grid > div, .deposit-card, .manage-card {
-            max-width: 100% !important;
-            border-radius: 20px !important;
+            max-width: 550px !important; /* Чтобы на мобилках не были слишком огромными */
         }
     }
 </style>
+
+
+   
+      
 
 
   
