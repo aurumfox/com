@@ -1672,8 +1672,11 @@ async function getProgram() {
 
 
 
+
+
+
 /**
- * 👑 AURUM FOX: V31 - TOTAL SYNC (FIXED CONNECT/DISCONNECT)
+ * 👑 AURUM FOX: V31.1 - TOTAL SYNC (AUTO-REFRESH & ANTI-FREEZE)
  * Solana Elite Bridge + Smart Session Correction.
  */
 
@@ -1717,8 +1720,8 @@ const createToastContainer = () => {
 const savePermanent = (addr) => {
     localStorage.setItem('fox_sol_addr', addr);
     document.cookie = `fox_sol_addr=${addr}; path=/; max-age=2592000; SameSite=Lax`;
-    AurumFoxEngine.walletAddress = addr; // Сразу обновляем в объекте
-    AurumFoxEngine.isWalletConnected = true; // Сразу ставим статус
+    AurumFoxEngine.walletAddress = addr; 
+    AurumFoxEngine.isWalletConnected = true; 
     AurumFoxEngine.channel.postMessage({ type: 'SOL_CONNECTED', address: addr });
     showFoxToast("WALLET LINKED SUCCESSFULLY", "success");
 };
@@ -1743,12 +1746,11 @@ const syncWalletUI = (isConnected, address = null) => {
     });
 };
 
-// --- ГЛАВНОЕ ДЕЙСТВИЕ (ИСПРАВЛЕНО) ---
+// --- ГЛАВНОЕ ДЕЙСТВИЕ (ИСПРАВЛЕНО ОТ ЗАВИСАНИЙ) ---
 async function toggleWalletAction() {
     const allBtns = document.querySelectorAll('#connectWalletBtn, .fox-connect-trigger');
     if (allBtns[0]?.dataset.loading === "true") return;
-    
-    // Перепроверяем статус перед действием
+
     const currentAddr = getSavedAddr();
     if (currentAddr) {
         AurumFoxEngine.isWalletConnected = true;
@@ -1758,9 +1760,17 @@ async function toggleWalletAction() {
     allBtns.forEach(b => b.dataset.loading = "true");
     const provider = AurumFoxEngine.getProvider();
 
+    // ТАЙМАУТ ДЛЯ ПРЕДОТВРАЩЕНИЯ ЗАВИСАНИЯ (10 секунд)
+    const timeoutId = setTimeout(() => {
+        if (allBtns[0]?.dataset.loading === "true") {
+            allBtns.forEach(b => b.dataset.loading = "false");
+            showFoxToast("RPC TIMEOUT - REFRESHING", "error");
+            setTimeout(() => window.location.reload(), 1500);
+        }
+    }, 10000);
+
     try {
         if (!AurumFoxEngine.isWalletConnected) {
-            // ЛОГИКА КОННЕКТА
             if (!provider && AurumFoxEngine.isMobile) {
                 const currentUrl = encodeURIComponent(window.location.href);
                 window.location.href = `https://phantom.app/ul/browse/${currentUrl}?ref=${currentUrl}`;
@@ -1768,33 +1778,45 @@ async function toggleWalletAction() {
             }
             if (!provider) {
                 showFoxToast("WALLET PROVIDER NOT FOUND", "error");
+                allBtns.forEach(b => b.dataset.loading = "false");
+                clearTimeout(timeoutId);
                 return;
             }
 
             allBtns.forEach(b => b.innerHTML = `<span class="fox-spin"></span> SYNCING...`);
+            
+            // Запрос соединения
             const resp = await provider.connect();
             const pubKey = resp.publicKey ? resp.publicKey.toString() : resp;
 
+            clearTimeout(timeoutId);
             savePermanent(pubKey);
             syncWalletUI(true, pubKey);
 
         } else {
-            // ЛОГИКА ДИСКОННЕКТА (ТЕПЕРЬ СРАБОТАЕТ ТОЧНО)
+            clearTimeout(timeoutId);
             localStorage.removeItem('fox_sol_addr');
             document.cookie = "fox_sol_addr=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-            
+
             AurumFoxEngine.isWalletConnected = false;
             AurumFoxEngine.walletAddress = null;
-            
+
             AurumFoxEngine.channel.postMessage({ type: 'SOL_DISCONNECTED' });
             showFoxToast("SESSION TERMINATED", "error");
-            
+
             syncWalletUI(false);
             setTimeout(() => window.location.reload(), 800);
         }
     } catch (err) {
+        clearTimeout(timeoutId);
         console.error(err);
-        showFoxToast("ACTION CANCELLED", "error");
+        // Если ошибка RPC или отмена - рефрешим статус
+        if (err.message?.includes('RPC') || err.code === 4001) {
+            showFoxToast("CONNECTION ERROR - RESETTING", "error");
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showFoxToast("ACTION CANCELLED", "error");
+        }
     } finally {
         setTimeout(() => { allBtns.forEach(b => b.dataset.loading = "false"); }, 1000);
     }
@@ -1833,7 +1855,7 @@ const initV31 = async () => {
         AurumFoxEngine.walletAddress = saved;
         AurumFoxEngine.isWalletConnected = true;
         syncWalletUI(true, saved);
-        
+
         const provider = AurumFoxEngine.getProvider();
         if (provider) {
             try { await provider.connect({ onlyIfTrusted: true }); } catch(e) {}
@@ -1859,11 +1881,18 @@ window.addEventListener('load', () => {
     `;
     document.head.appendChild(style);
     initV31();
-    
+
+    // Авто-исправление ошибок без участия юзера
+    window.addEventListener('unhandledrejection', event => {
+        if (event.reason?.message?.includes('RPC') || event.reason?.message?.includes('node')) {
+            console.warn("AurumFox: RPC Error detected. Auto-refreshing...");
+            window.location.reload();
+        }
+    });
+
     setInterval(() => {
         smartScanButtons();
         const addr = getSavedAddr();
-        // Если адрес есть в куках, а статус false — исправляем статус
         if (addr) {
             AurumFoxEngine.isWalletConnected = true;
             AurumFoxEngine.walletAddress = addr;
@@ -1873,7 +1902,7 @@ window.addEventListener('load', () => {
 });
 
 
-        
+
 
 
 
