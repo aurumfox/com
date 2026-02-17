@@ -1935,16 +1935,16 @@ window.addEventListener('load', () => {
             ERROR:   ["DECLINED ❌", "VOID ASSETS", "REJECTED", "FAIL", "RETRYING..."],
         },
 
-        // БЕЛЫЙ СПИСОК: Эти фразы скрипт ДОЛЖЕН превращать в свои кнопки
+        // БЕЛЫЙ СПИСОК: Только эти фразы станут кнопками
         WHITE_LIST: [
-            "collect all profit", "create staking account", "create stakingaccount", "max", "stake afox", 
+            "collect all profit", "create stakingaccount", "max", "stake afox", 
             "unstake afox", "close account & refund sol", "claim all rewards", 
             "collateralize", "decollateralize", "execute borrowing", "repay debt", "repay & close loan"
         ],
 
         INTEL_MAP: {
             "CLAIM":        { terms: ["collect all profit", "claim all rewards"], royal: "COLLECTED 💰" },
-            "INIT_STAKE":   { terms: ["create staking account", "create stakingaccount"], royal: "INITIALIZED" },
+            "INIT_STAKE":   { terms: ["create staking account"], royal: "INITIALIZED" },
             "MAX":          { terms: ["max"], royal: "MAXED 🚀" },
             "STAKE":        { terms: ["stake afox"], royal: "STAKED 👑" },
             "UNSTAKE":      { terms: ["unstake afox"], royal: "RELEASED" },
@@ -1956,8 +1956,8 @@ window.addEventListener('load', () => {
             "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "CLOSED ✨" }
         },
 
-        // ИГНОР: Сюда пишем только то, что мешает. Я убрал лишнее, чтобы кнопки заработали.
-        IGNORE_TERMS: ["yield farming active", "individual", "notice", "zero fee", "audited", "disclaimer"],
+        // ЖЕСТКИЙ ИГНОР (на всякий случай для инфо-надписей)
+        IGNORE_TERMS: ["individual", "notice", "zero fee", "audited", "disclaimer", "advice", "fees", "staked", "rewards", "farming", "unclaimed", "your staking", "utilize", "institutional", "liquidity", "health", "threshold"],
 
         notify(msg, type = "SYSTEM") {
             this.safeNotify(msg, type);
@@ -1979,7 +1979,7 @@ window.addEventListener('load', () => {
             this.injectGlobalStyles();
             this.deepDiscovery();
             setInterval(() => this.deepDiscovery(), 1200);
-            console.log("%c👑 OMNI-BRAIN v20.5: RELOADED & ACTIVE", "color: #00ff88; font-weight: bold; background: black; padding: 8px 20px; border: 2px solid #00ff88; border-radius: 5px;");
+            console.log("%c👑 OMNI-BRAIN v20.5: FINAL PRECISION ACTIVE", "color: #00ff88; font-weight: bold; background: black; padding: 8px 20px; border: 2px solid #00ff88; border-radius: 5px;");
         },
 
         repairGlobalEnvironment() {
@@ -2005,31 +2005,26 @@ window.addEventListener('load', () => {
         },
 
         deepDiscovery() {
+            // Ищем только в элементах, которые могут быть текстом кнопки
             const els = document.querySelectorAll('button, span, b, a, p, div');
 
             els.forEach(el => {
                 if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return;
                 if (el.dataset.foxSynced === "true") return;
 
-                const rawText = el.innerText || "";
-                const text = rawText.toLowerCase().replace(/\s+/g, ' ').trim();
+                const text = (el.innerText || "").toLowerCase().trim();
 
-                // 1. ПРОПУСКАЕМ ТОЛЬКО ЯВНЫЙ ИГНОР
-                if (this.IGNORE_TERMS.some(term => text.includes(term))) {
+                // ПРОВЕРКА ПО БЕЛОМУ СПИСКУ: если текста нет в твоем списке - игнорируем полностью
+                const isApproved = this.WHITE_LIST.some(item => text === item || (text.includes(item) && text.length < item.length + 5));
+                
+                if (!isApproved) {
+                    // Дополнительная защита: если это DIV и в нем много лишнего текста - блокируем
                     return;
                 }
 
-                // 2. ПРОВЕРКА ПО БЕЛОМУ СПИСКУ
-                const isApproved = this.WHITE_LIST.some(item => {
-                    const cleanItem = item.toLowerCase().trim();
-                    return text === cleanItem || (text.includes(cleanItem) && text.length < cleanItem.length + 15);
-                });
-
-                if (!isApproved) return;
-
-                // 3. ПРИВЯЗКА
+                // Если попало в White List, привязываем действие
                 for (const [action, config] of Object.entries(this.INTEL_MAP)) {
-                    if (config.terms.some(term => text.includes(term.toLowerCase()))) {
+                    if (config.terms.some(term => text.includes(term))) {
                         this.bind(el, action);
                         break;
                     }
@@ -2041,10 +2036,9 @@ window.addEventListener('load', () => {
             el.dataset.foxSynced = "true";
             el.dataset.foxAction = action;
             el.style.cursor = "pointer";
-
-            if (el.parentElement && el.parentElement.tagName === 'DIV' && el.parentElement.innerText.length > 100) {
-                 el.style.position = "relative";
-                 el.style.zIndex = "9999";
+            // Убираем pointer-events у родителя, если это мелкий текст внутри большого блока
+            if (el.parentElement && el.parentElement.tagName === 'DIV' && el.parentElement.innerText.length > 50) {
+                 el.style.display = "inline-block"; 
             }
 
             el.addEventListener('click', async (e) => {
@@ -2072,7 +2066,7 @@ window.addEventListener('load', () => {
                 }
 
                 const royalTxt = this.INTEL_MAP[action].royal;
-                el.innerHTML = `<span style="color: #00ff88; font-weight: bold;">${royalTxt}</span>`;
+                el.innerHTML = `<span style="color: #00ff88; font-weight: bold; text-shadow: 0 0 5px #00ff88;">${royalTxt}</span>`;
                 this.safeNotify(`${action} CONFIRMED`, "SUCCESS");
             } catch (err) {
                 el.innerHTML = `<span style="color: #00ff88;">${this.INTEL_MAP[action].royal}</span>`;
@@ -2089,8 +2083,7 @@ window.addEventListener('load', () => {
                 "STAKE": ["stakeAfox", "deposit", "stake", "confirmStake"],
                 "CLAIM": ["claimAllRewards", "collectProfit", "claim"],
                 "BORROW": ["executeBorrow", "borrowAfox", "borrow"],
-                "COLLATERAL": ["lockCollateral", "collateralize"],
-                "INIT_STAKE": ["initializeAccount", "createStakeAccount", "initStake"]
+                "COLLATERAL": ["lockCollateral", "collateralize"]
             };
             const candidates = map[action] || [];
             const roots = [window, window.app, window.contract, window.solana];
@@ -2116,6 +2109,9 @@ window.addEventListener('load', () => {
                 input.value = balance;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
+                this.safeNotify(`MAX SET: ${balance}`, "SUCCESS");
+            } else {
+                this.safeNotify("INPUT NOT FOUND", "ERROR");
             }
         },
 
@@ -2130,7 +2126,10 @@ window.addEventListener('load', () => {
                     border-radius: 50%; display: inline-block; animation: f-spin 0.5s linear infinite;
                 }
                 @keyframes f-spin { to { transform: rotate(360deg); } }
+                /* Запрещаем всей странице менять курсор на палец, кроме наших кнопок */
+                body * { cursor: default; }
                 [data-fox-synced="true"], button, a, input { cursor: pointer !important; }
+                input { cursor: text !important; }
             `;
             document.head.appendChild(style);
         }
