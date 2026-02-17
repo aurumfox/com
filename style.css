@@ -323,6 +323,49 @@ li {
    Sections and Layout - ИСПРАВЛЕНО (БЕЛЫЙ ЦВЕТ УДАЛЕН)
 ========================================================================== */
 
+
+
+
+
+
+
+
+@media (min-width: 1025px) {
+    /* Делаем фон чуть более живым */
+    body {
+        background: radial-gradient(circle at center, #0a1631 0%, #040814 100%) !important;
+    }
+
+    /* Добавляем неоновое свечение кнопкам и карточкам */
+    .staking-card, .feature-card-royal, #staking-section > div > div:last-child > div {
+        box-shadow: 0 0 20px rgba(0, 255, 127, 0.1), inset 0 0 15px rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* Усиливаем яркость золотой кнопки */
+    #deposit-btn, .royal-btn {
+        filter: saturate(1.2) brightness(1.1);
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.2) !important;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 .section, .aurum-fox-section {
     padding: var(--spacing-xl) 0; 
     text-align: center;
