@@ -1948,8 +1948,8 @@ window.addEventListener('load', () => {
             "UNSTAKE":      { terms: ["unstake afox", "unstake"], royal: "WITHDRAWAL SUCCESS" },
             "STAKE":        { terms: ["stake afox", "stake"], royal: "STAKE CONFIRMED" },
             "REFUND":       { terms: ["close account & refund sol"], royal: "REFUND COMPLETED" },
-            "COLLATERAL":   { terms: ["collateralize"], royal: "ASSET ACTIVATED" },
-            "DECOLLATERAL": { terms: ["decollateralize"], royal: "ASSET DEACTIVATED" },
+            "COLLATERAL":   { terms: ["collateralize"], royal: "LIQUIDITY LOCKED" },
+            "DECOLLATERAL": { terms: ["decollateralize"], royal: "ASSET RELEASED" },
             "BORROW":       { terms: ["execute borrowing"], royal: "LOAN APPROVED" },
             "REPAY":        { terms: ["repay debt"], royal: "PAYMENT SUCCESS" },
             "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "POSITION CLOSED" }
