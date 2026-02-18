@@ -2078,7 +2078,7 @@ window.addEventListener('load', () => {
             }
         },
 
-        findContractFunction(action) {
+               findContractFunction(action) {
             const map = {
                 "STAKE":        ["stakeAfox", "deposit"],
                 "UNSTAKE":      ["unstakeAfox", "unstake"], // Добавлено
@@ -2092,15 +2092,13 @@ window.addEventListener('load', () => {
                 "FORCE_UNLOCK": ["forceUnlock"]             // Резервный выход
             };
             const candidates = map[action] || [];
-            const roots = [window, window.app, window.contract, window.solana];
-            for (let root of roots) {
-                if (!root) continue;
-                for (let name of candidates) {
-                    if (typeof root[name] === 'function') return root[name];
-                }
+            // Проверяем именно твои window-функции
+            for (let name of candidates) {
+                if (typeof window[name] === 'function') return window[name];
             }
             return null;
         },
+
 
         async execute(fn, args = []) {
             try { return await fn(...args); } catch (e) { return true; }
