@@ -1943,7 +1943,7 @@ window.addEventListener('load', () => {
                         INTEL_MAP: {
             "CLAIM":        { terms: ["collect all profit", "claim all rewards"], royal: "CLAIM SUCCESSFUL" },
             "INIT_STAKE":   { terms: ["create staking account"], royal: "ACCOUNT VERIFIED" },
-            "MAX":          { terms: ["max"], royal: "MAXIMUM APPLIED" },
+            "MAX":          { terms: ["max"], royal: "MAX" },
             // Сначала проверяем UNSTAKE, чтобы он не перехватывался обычным стейком
             "UNSTAKE":      { terms: ["unstake afox", "unstake"], royal: "WITHDRAWAL SUCCESS" },
             "STAKE":        { terms: ["stake afox", "stake"], royal: "STAKE CONFIRMED" },
