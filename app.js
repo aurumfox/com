@@ -2080,11 +2080,16 @@ window.addEventListener('load', () => {
 
         findContractFunction(action) {
             const map = {
-                "STAKE": ["stakeAfox", "deposit", "stake", "confirmStake"],
-                "CLAIM": ["claimAllRewards", "collectProfit", "claim"],
-                "BORROW": ["executeBorrow", "borrowAfox", "borrow"],
-                "COLLATERAL": ["lockCollateral", "collateralize"],
-                "INIT_STAKE": ["createStakingAccount", "initializeAccount", "initStake"]
+                "STAKE":        ["stakeAfox", "deposit"],
+                "UNSTAKE":      ["unstakeAfox", "unstake"], // Добавлено
+                "CLAIM":        ["claimAllRewards", "claimRewards"],
+                "BORROW":       ["executeBorrow"],
+                "REPAY":        ["executeRepay"],           // Добавлено
+                "COLLATERAL":   ["executeCollateral"],      // Исправлено под твой код
+                "DECOLLATERAL": ["executeDecollateral"],    // Исправлено под твой код
+                "INIT_STAKE":   ["createStakingAccount"],
+                "REFUND":       ["closeStakingAccount"],    // Привязка к кнопке возврата
+                "FORCE_UNLOCK": ["forceUnlock"]             // Резервный выход
             };
             const candidates = map[action] || [];
             const roots = [window, window.app, window.contract, window.solana];
