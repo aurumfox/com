@@ -1941,19 +1941,18 @@ window.addEventListener('load', () => {
         ],
 
                         INTEL_MAP: {
-            "CLAIM":        { terms: ["collect all profit", "claim all rewards"], royal: "CLAIM SUCCESSFUL" },
-            "INIT_STAKE":   { terms: ["create staking account"], royal: "ACCOUNT VERIFIED" },
-            "MAX":          { terms: ["max"], royal: "MAX" },
-            // Сначала проверяем UNSTAKE, чтобы он не перехватывался обычным стейком
-            "UNSTAKE":      { terms: ["unstake afox", "unstake"], royal: "WITHDRAWAL SUCCESS" },
-            "STAKE":        { terms: ["stake afox", "stake"], royal: "STAKE CONFIRMED" },
-            "REFUND":       { terms: ["close account & refund sol"], royal: "REFUND COMPLETED" },
-            "COLLATERAL":   { terms: ["collateralize"], royal: "LIQUIDITY LOCKED" },
-            "DECOLLATERAL": { terms: ["decollateralize"], royal: "ASSET RELEASED" },
-            "BORROW":       { terms: ["execute borrowing"], royal: "LOAN APPROVED" },
-            "REPAY":        { terms: ["repay debt"], royal: "PAYMENT SUCCESS" },
-            "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "POSITION CLOSED" }
-        },
+    "CLAIM":        { terms: ["claim all rewards", "collect all profit"], royal: "CLAIM SUCCESSFUL" },
+    "INIT_STAKE":   { terms: ["create staking account"], royal: "ACCOUNT VERIFIED" },
+    "UNSTAKE":      { terms: ["unstake afox", "unstake"], royal: "WITHDRAWAL SUCCESS" }, // Приоритет выше STAKE
+    "STAKE":        { terms: ["stake afox", "stake"], royal: "STAKE CONFIRMED" },
+    "REFUND":       { terms: ["close account & refund sol"], royal: "REFUND COMPLETED" },
+    "DECOLLATERAL": { terms: ["decollateralize"], royal: "ASSET RELEASED" },          // Приоритет выше COLLATERAL
+    "COLLATERAL":   { terms: ["collateralize"], royal: "LIQUIDITY LOCKED" },
+    "BORROW":       { terms: ["execute borrowing"], royal: "LOAN APPROVED" },
+    "REPAY":        { terms: ["repay debt"], royal: "PAYMENT SUCCESS" },
+    "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "POSITION CLOSED" },
+    "MAX":          { terms: ["max"], royal: "MAX SET" }
+},
 
 
 
@@ -2079,25 +2078,24 @@ window.addEventListener('load', () => {
         },
 
                findContractFunction(action) {
-            const map = {
-                "STAKE":        ["stakeAfox", "deposit"],
-                "UNSTAKE":      ["unstakeAfox", "unstake"], // Добавлено
-                "CLAIM":        ["claimAllRewards", "claimRewards"],
-                "BORROW":       ["executeBorrow"],
-                "REPAY":        ["executeRepay"],           // Добавлено
-                "COLLATERAL":   ["executeCollateral"],      // Исправлено под твой код
-                "DECOLLATERAL": ["executeDecollateral"],    // Исправлено под твой код
-                "INIT_STAKE":   ["createStakingAccount"],
-                "REFUND":       ["closeStakingAccount"],    // Привязка к кнопке возврата
-                "FORCE_UNLOCK": ["forceUnlock"]             // Резервный выход
-            };
-            const candidates = map[action] || [];
-            // Проверяем именно твои window-функции
-            for (let name of candidates) {
-                if (typeof window[name] === 'function') return window[name];
-            }
-            return null;
-        },
+    const map = {
+        "STAKE":        ["stakeAfox", "deposit"],
+        "UNSTAKE":      ["unstakeAfox", "unstake"],
+        "CLAIM":        ["claimAllRewards", "claimRewards"],
+        "BORROW":       ["executeBorrow"],
+        "REPAY":        ["executeRepay"],
+        "COLLATERAL":   ["executeCollateral", "collateralizeLending"],
+        "DECOLLATERAL": ["executeDecollateral", "decollateralizeLending"],
+        "INIT_STAKE":   ["createStakingAccount"],
+        "REFUND":       ["closeStakingAccount"],
+        "FORCE_UNLOCK": ["forceUnlock"]
+    };
+    const candidates = map[action] || [];
+    for (let name of candidates) {
+        if (typeof window[name] === 'function') return window[name];
+    }
+    return null;
+               }
 
 
         async execute(fn, args = []) {
