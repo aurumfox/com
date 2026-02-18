@@ -1917,7 +1917,7 @@ window.addEventListener('load', () => {
 
 
 // ============================================================
-// 👑 AURUM FOX: OMNI-BRAIN v20.5 - ULTIMATE MAXIMA (FINAL PRECISION)
+// 👑 AURUM FOX: OMNI-BRAIN v20.5 - ULTIMATE MAXIMA (FIXED)
 // ============================================================
 
 (function() {
@@ -1940,21 +1940,19 @@ window.addEventListener('load', () => {
             "collateralize", "decollateralize", "execute borrowing", "repay debt", "repay & close loan"
         ],
 
-                        INTEL_MAP: {
-    "CLAIM":        { terms: ["claim all rewards", "collect all profit"], royal: "CLAIM SUCCESSFUL" },
-    "INIT_STAKE":   { terms: ["create staking account"], royal: "ACCOUNT VERIFIED" },
-    "UNSTAKE":      { terms: ["unstake afox", "unstake"], royal: "WITHDRAWAL SUCCESS" }, // Приоритет выше STAKE
-    "STAKE":        { terms: ["stake afox", "stake"], royal: "STAKE CONFIRMED" },
-    "REFUND":       { terms: ["close account & refund sol"], royal: "REFUND COMPLETED" },
-    "DECOLLATERAL": { terms: ["decollateralize"], royal: "ASSET RELEASED" },          // Приоритет выше COLLATERAL
-    "COLLATERAL":   { terms: ["collateralize"], royal: "LIQUIDITY LOCKED" },
-    "BORROW":       { terms: ["execute borrowing"], royal: "LOAN APPROVED" },
-    "REPAY":        { terms: ["repay debt"], royal: "PAYMENT SUCCESS" },
-    "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "POSITION CLOSED" },
-    "MAX":          { terms: ["max"], royal: "MAX SET" }
-},
-
-
+        INTEL_MAP: {
+            "CLAIM":        { terms: ["claim all rewards", "collect all profit"], royal: "CLAIM SUCCESSFUL" },
+            "INIT_STAKE":   { terms: ["create staking account"], royal: "ACCOUNT VERIFIED" },
+            "UNSTAKE":      { terms: ["unstake afox", "unstake"], royal: "WITHDRAWAL SUCCESS" },
+            "STAKE":        { terms: ["stake afox", "stake"], royal: "STAKE CONFIRMED" },
+            "REFUND":       { terms: ["close account & refund sol"], royal: "REFUND COMPLETED" },
+            "DECOLLATERAL": { terms: ["decollateralize"], royal: "ASSET RELEASED" },
+            "COLLATERAL":   { terms: ["collateralize"], royal: "LIQUIDITY LOCKED" },
+            "BORROW":       { terms: ["execute borrowing"], royal: "LOAN APPROVED" },
+            "REPAY":        { terms: ["repay debt"], royal: "PAYMENT SUCCESS" },
+            "REPAY_CLOSE":  { terms: ["repay & close loan"], royal: "POSITION CLOSED" },
+            "MAX":          { terms: ["max"], royal: "MAX SET" }
+        },
 
         IGNORE_TERMS: ["individual", "notice", "zero fee", "audited", "disclaimer", "advice", "fees", "staked", "rewards", "farming", "unclaimed", "your staking", "utilize", "institutional", "liquidity", "health", "threshold"],
 
@@ -2004,18 +2002,16 @@ window.addEventListener('load', () => {
         },
 
         deepDiscovery() {
-            const els = document.querySelectorAll('button, span, b, a, p, div');
+            // Исправлено: выбираем только те элементы, которые еще не обработаны
+            const els = document.querySelectorAll('button:not([data-fox-synced]), span:not([data-fox-synced]), b:not([data-fox-synced]), a:not([data-fox-synced]), p:not([data-fox-synced]), div:not([data-fox-synced])');
 
             els.forEach(el => {
                 if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return;
-                if (el.dataset.foxSynced === "true") return;
 
                 const text = (el.innerText || "").toLowerCase().trim();
-
                 const isApproved = this.WHITE_LIST.some(item => text === item || (text.includes(item) && text.length < item.length + 5));
                 if (!isApproved) return;
 
-                // --- ФИЛЬТР ДЛЯ ПЕРВОЙ КНОПКИ ---
                 const isHeaderButton = el.closest('div')?.innerText.toLowerCase().includes("generating passive income");
                 if (isHeaderButton && text.includes("claim all rewards")) {
                     return; 
@@ -2023,6 +2019,8 @@ window.addEventListener('load', () => {
 
                 for (const [action, config] of Object.entries(this.INTEL_MAP)) {
                     if (config.terms.some(term => text.includes(term))) {
+                        // Ставим флаг СРАЗУ, чтобы избежать дублирования текста
+                        el.setAttribute('data-fox-synced', 'true');
                         this.bind(el, action);
                         break;
                     }
@@ -2031,7 +2029,6 @@ window.addEventListener('load', () => {
         },
 
         bind(el, action) {
-            el.dataset.foxSynced = "true";
             el.dataset.foxAction = action;
             el.style.cursor = "pointer";
 
@@ -2039,13 +2036,13 @@ window.addEventListener('load', () => {
                  el.style.display = "inline-block"; 
             }
 
-            el.addEventListener('click', async (e) => {
+            // Исправлено: убран async из слушателя события для устранения SyntaxError
+            el.onclick = (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
-                
                 e.preventDefault(); 
                 e.stopPropagation();
-                await this.handle(el, action);
-            });
+                this.handle(el, action).catch(err => console.error("Fox Execution Error:", err));
+            };
         },
 
         async handle(el, action) {
@@ -2077,26 +2074,25 @@ window.addEventListener('load', () => {
             }
         },
 
-               findContractFunction(action) {
-    const map = {
-        "STAKE":        ["stakeAfox", "deposit"],
-        "UNSTAKE":      ["unstakeAfox", "unstake"],
-        "CLAIM":        ["claimAllRewards", "claimRewards"],
-        "BORROW":       ["executeBorrow"],
-        "REPAY":        ["executeRepay"],
-        "COLLATERAL":   ["executeCollateral", "collateralizeLending"],
-        "DECOLLATERAL": ["executeDecollateral", "decollateralizeLending"],
-        "INIT_STAKE":   ["createStakingAccount"],
-        "REFUND":       ["closeStakingAccount"],
-        "FORCE_UNLOCK": ["forceUnlock"]
-    };
-    const candidates = map[action] || [];
-    for (let name of candidates) {
-        if (typeof window[name] === 'function') return window[name];
-    }
-    return null;
-               }
-
+        findContractFunction(action) {
+            const map = {
+                "STAKE":        ["stakeAfox", "deposit"],
+                "UNSTAKE":      ["unstakeAfox", "unstake"],
+                "CLAIM":        ["claimAllRewards", "claimRewards"],
+                "BORROW":       ["executeBorrow"],
+                "REPAY":        ["executeRepay"],
+                "COLLATERAL":   ["executeCollateral", "collateralizeLending"],
+                "DECOLLATERAL": ["executeDecollateral", "decollateralizeLending"],
+                "INIT_STAKE":   ["createStakingAccount"],
+                "REFUND":       ["closeStakingAccount"],
+                "FORCE_UNLOCK": ["forceUnlock"]
+            };
+            const candidates = map[action] || [];
+            for (let name of candidates) {
+                if (typeof window[name] === 'function') return window[name];
+            }
+            return null;
+        },
 
         async execute(fn, args = []) {
             try { return await fn(...args); } catch (e) { return true; }
