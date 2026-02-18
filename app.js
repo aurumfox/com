@@ -8,7 +8,7 @@ function formatBigInt(value, decimals) {
 
 
 // ============================================================
-// ГЛОБАЛЬНЫЙ МОСТ: РЕШАЕМ ПРОБЛЕМУ CSP И SYNTAXERROR
+// ГЛОБАЛЬНЫЙ МОСТ: CSP И SYNTAXERROR
 // ============================================================
 (function() {
     console.log("🛠️ Запуск экстренного восстановления систем...");
@@ -91,7 +91,7 @@ const AFOX_OFFICIAL_KEYS = {
 };
 
 // ============================================================
-// 2. ИСПРАВЛЕННЫЙ STAKING_IDL (С ЗАКРЫТЫМИ СКОБКАМИ)
+// 2. STAKING_IDL 
 // ============================================================
 
 const STAKING_IDL = {
@@ -308,7 +308,7 @@ const STAKING_IDL = {
 
 
 // ==========================================
-// БЛОК 3: ИНИЦИАЛИЗАЦИЯ (ПРЕВРАЩАЕМ ТЕКСТ В КЛЮЧИ)
+// БЛОК 3: ИНИЦИАЛИЗАЦИЯ 
 // ==========================================
 function setupAddresses() {
     if (!window.solanaWeb3) return false;
@@ -346,8 +346,7 @@ let appState = { connection: null, provider: null, walletPublicKey: null, userBa
 
 
 /**
- * УЛЬТРА-АВТОНОМНЫЙ РАСЧЕТ PDA
- * Самый важный узел для связи фронтенда с контрактом Rust.
+ * РАСЧЕТ PDA
  */
 async function getUserStakingPDA(owner, poolStatePubkey, poolIndex = 0, programId) {
     try {
@@ -388,7 +387,6 @@ async function getUserStakingPDA(owner, poolStatePubkey, poolIndex = 0, programI
 
 /**
  * 1. УЛЬТРА-ПАРСЕР ЧИСЕЛ (BigInt)
- * Гарантирует точность до последнего знака для u64/u128 в Rust.
  */
 window.parseAmountToBigInt = function(amountStr, decimals = 9) {
     try {
@@ -417,7 +415,6 @@ window.parseAmountToBigInt = function(amountStr, decimals = 9) {
 
 /**
  * 2. СТАБИЛЬНОЕ ПОДКЛЮЧЕНИЕ (Robust Connection)
- * Пытается подключиться к твоему RPC с проверкой "живучести".
  */
 window.getRobustConnection = async function() {
     // Список твоих RPC (основной и запасной)
@@ -441,9 +438,6 @@ window.getRobustConnection = async function() {
     }
     throw new Error("All RPC endpoints are down. Check your internet.");
 };
-
-
-
 
 
 async function getRobustConnection() {
@@ -507,8 +501,7 @@ async function getRobustConnection() {
 
 
 /**
- * УМНЫЙ ОБРАБОТЧИК СМЕНЫ КОШЕЛЬКА
- * Гарантирует, что данные одного юзера никогда не смешаются с данными другого.
+ * ОБРАБОТЧИК СМЕНЫ КОШЕЛЬКА
  */
 window.handlePublicKeyChange = async function(newPublicKey) {
     try {
@@ -560,7 +553,6 @@ window.handlePublicKeyChange = async function(newPublicKey) {
 
 /**
  * 4. УЛЬТРА-СИНХРОНИЗАЦИЯ БАЛАНСОВ (SOL + AFOX + ST_AFOX)
- * Работает через параллельные потоки для мгновенного отклика.
  */
 window.fetchUserBalances = async function() {
     const pubkey = window.appState?.walletPublicKey;
@@ -820,21 +812,6 @@ window.getAnchorProgram = function(programId, idl) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 window.createStakingAccount = async function(poolIndex = 0) {
     try {
         // 1. Автономная проверка окружения
@@ -890,11 +867,6 @@ window.createStakingAccount = async function(poolIndex = 0) {
         }
     }
 };
-
-
-
-
-
 
 
 
@@ -960,8 +932,6 @@ window.claimAllRewards = async function(poolIndices = [0]) {
         }
     }
 };
-
-
 
 
 
@@ -1663,21 +1633,8 @@ async function getProgram() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 /**
- * 👑 AURUM FOX: V31.1 - TOTAL SYNC (AUTO-REFRESH & ANTI-FREEZE)
- * Solana Elite Bridge + Smart Session Correction.
+ * 👑 AURUM FOX
  */
 
 const AurumFoxEngine = {
@@ -1905,19 +1862,8 @@ window.addEventListener('load', () => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 // ============================================================
-// 👑 AURUM FOX: OMNI-BRAIN v20.5 - ULTIMATE MAXIMA (FIXED)
+// 👑 AURUM FOX: OMNI-BRAIN 
 // ============================================================
 
 (function() {
