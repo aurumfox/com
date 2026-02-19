@@ -376,16 +376,45 @@
 </div>
 
 
-                <div style="margin-bottom: 20px;">
-                    <label style="color: #666; font-size: 0.8em; margin-bottom: 8px; display: block;">Select Duration (APR increases with time)</label>
-                    <select id="pool-selector" style="width: 100%; background: #040814; color: #fff; border: 1px solid #1a2a44; padding: 15px; border-radius: 12px; outline: none; appearance: none; cursor: pointer;">
-                        <option value="0">🌱 Tier 1: 7 Days (5% APR)</option>
-                        <option value="1">🌿 Tier 2: 30 Days (12% APR)</option>
-                        <option value="2">🌳 Tier 3: 90 Days (20% APR)</option>
-                        <option value="3">💎 Tier 4: 180 Days (30% APR)</option>
-                        <option value="4">👑 Tier 5: 360 Days (45% APR)</option>
-                    </select>
-                </div>
+
+
+
+
+
+
+
+
+
+<div style="margin-bottom: 20px;">
+    <label style="color: #8899ac; font-size: 0.85em; margin-bottom: 10px; display: block; font-weight: 600; letter-spacing: 0.5px;">
+        SELECT STAKING RANK (Higher Multiplier = More Rewards)
+    </label>
+    
+    <select id="pool-selector" style="width: 100%; background: #050a1a; color: #fff; border: 1.5px solid #1a2a44; padding: 18px; border-radius: 14px; outline: none; appearance: none; cursor: pointer; font-size: 1em; transition: border-color 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <option value="0">🌱 Starter Rank: 14 Days (x1.0 Multiplier)</option>
+        <option value="1">🌿 Holder Rank: 180 Days (x1.8 Multiplier)</option>
+        <option value="2">🌳 Investor Rank: 2 Years (x3.2 Multiplier)</option>
+        <option value="3">💎 Partner Rank: 4 Years (x4.8 Multiplier)</option>
+        <option value="4">👑 Legend Rank: 8 Years (x6.5 Multiplier)</option>
+    </select>
+
+    <div style="margin-top: 12px; padding: 10px; border-radius: 8px; background: rgba(255, 68, 68, 0.1); border: 1px dashed rgba(255, 68, 68, 0.3);">
+        <span style="color: #ff4444; font-size: 0.75em; display: block; text-align: center; font-weight: 500;">
+            ⚠️ Early Exit Penalty: 20% of staked amount
+        </span>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+      
 
               <div style="position: relative; margin-bottom: 25px;">
     <input type="number" id="stake-amount" placeholder="0.00" 
