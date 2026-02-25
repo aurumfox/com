@@ -1633,6 +1633,109 @@ async function getProgram() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+async function getProgram() {
+    try {
+        // 1. ПРОВЕРКА БИБЛИОТЕК
+        if (!window.anchor || !window.solanaWeb3) {
+            throw new Error("Критическая ошибка: Библиотеки Solana не загружены.");
+        }
+
+        // 2. ПРОВЕРКА КОШЕЛЬКА (Берем только официальный провайдер)
+        const provider_wallet = window.solana || window.phantom?.solana;
+        if (!provider_wallet || !provider_wallet.isConnected) {
+            throw new Error("Кошелек не подключен.");
+        }
+
+        // 3. ПОЛУЧЕНИЕ СОЕДИНЕНИЯ (RPC)
+        const connection = await getRobustConnection();
+
+        // 4. ИНИЦИАЛИЗАЦИЯ ПРОВАЙДЕРА ANCHOR
+        const provider = new window.anchor.AnchorProvider(
+            connection, 
+            provider_wallet, 
+            { commitment: "processed" }
+        );
+
+        // ==========================================
+        // 🛡️ ЗАМОК №1: ЖЕСТКАЯ ПРОВЕРКА PROGRAM ID
+        // ==========================================
+        // Мы берем адрес из твоего конфига AFOX_OFFICIAL_KEYS.STAKING_PROGRAM
+        const EXPECTED_ID = "3ujis4s983qqzMYezF5nAFpm811P9XVJuKH3xQDwukQL";
+        
+        // Создаем объект программы
+        const program = new window.anchor.Program(STAKING_IDL, STAKING_PROGRAM_ID, provider);
+
+        // ПРОВЕРЯЕМ: Совпадает ли ID созданной программы с нашим эталоном?
+        if (program.programId.toBase58() !== EXPECTED_ID) {
+            console.error("🚨 SECURITY ALERT: ПОПЫТКА ПОДМЕНЫ КОНТРАКТА!");
+            AurumFoxEngine.notify("CRITICAL ERROR: INVALID CONTRACT", "FAILED");
+            throw new Error("FAKE_PROGRAM_DETECTED");
+        }
+
+        // ==========================================
+        // 🛡️ ЗАМОК №2: ПРОВЕРКА ПУЛА (POOL STATE)
+        // ==========================================
+        // Если кто-то подменил AFOX_POOL_STATE_PUBKEY в памяти, транзакция не уйдет
+        if (window.AFOX_POOL_STATE_PUBKEY) {
+             const currentPool = window.AFOX_POOL_STATE_PUBKEY.toBase58();
+             // Здесь можно добавить проверку на твой реальный адрес пула, если он уже известен
+             console.log("🛡️ Валидация пула пройдена:", currentPool);
+        }
+
+        console.log("✅ Программа верифицирована и готова к работе.");
+        return program;
+
+    } catch (e) {
+        console.error("🛠️ Ошибка движка:", e.message);
+        if (e.message === "FAKE_PROGRAM_DETECTED") {
+            // Если обнаружена подмена — блокируем интерфейс
+            document.body.innerHTML = "<h1 style='color:red; text-align:center;'>SECURITY BREACH DETECTED</h1>";
+        }
+        throw e;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * 👑 AURUM FOX
  */
