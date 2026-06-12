@@ -1,959 +1,228 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <script>
-    // Этот блок исправляет ошибку "require is not defined"
-    window.global = window;
-    window.process = { env: {} };
-    window.exports = {};
-    window.require = function(name) { return window[name]; };
-</script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurum Fox: DAO, Staking & Lending on Solana</title>
+    <title>Cryporocrum Million Staking Dashboard - Full Fidelity & Responsive</title>
+    <!-- Подключаем Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Подключаем шрифт Inter для профессионального вида -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Базовые стили для темной темы и шрифта */
+        body { 
+            background-color: #0b1120; 
+            color: #e2e8f0; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            padding: 0;
+        }
 
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';">
+        /* Эффект "стеклянной панели" (Glassmorphism) */
+        .glass-panel { 
+            background: rgba(18, 25, 40, 0.7); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            backdrop-filter: blur(12px); 
+            border-radius: 16px; 
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Общие стили для кнопок */
+        .action-btn { 
+            transition: all 0.2s ease; 
+            cursor: pointer; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        /* Эффект при наведении на обычную кнопку */
+        .action-btn:hover { 
+            border-color: rgba(255, 255, 255, 0.3); 
+            background: rgba(255, 255, 255, 0.05); 
+        }
+
+        /* Основная кнопка с градиентом */
+        .primary-btn { 
+            background: linear-gradient(90deg, #3b82f6, #2563eb); 
+            border: none; 
+        }
+        .primary-btn:hover { 
+            background: linear-gradient(90deg, #2563eb, #1d4ed8); 
+        }
+
+        /* Стиль для карточек тарифов (Tiers) */
+        .tier-card { 
+            border-radius: 12px; 
+            padding: 16px; 
+            background: rgba(255, 255, 255, 0.02); 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            height: 100%; /* Чтобы все карточки были одной высоты */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- ЗАГОЛОВОК И СТАТИСТИКА -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
+            <h1 class="text-3xl font-bold tracking-tight">Cryporocrum Million Staking</h1>
+            <div class="text-left sm:text-right w-full sm:w-auto">
+                <p class="text-gray-400 text-sm">Total Staked: <span class="text-white font-bold">5,000.00 TOKEN</span></p>
+                <p class="text-gray-400 text-sm">Accumulated Rewards: <span class="text-emerald-400 font-bold">125.75 TOKEN</span></p>
+            </div>
+        </div>
+
+        <!-- ОСНОВНАЯ СЕТКА (2 колонки на ПК, 1 на телефоне) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- ЛЕВАЯ ЧАСТЬ: POOL PERFORMANCE -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="glass-panel p-6">
+                    <!-- Заголовок блока -->
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-medium uppercase tracking-wider">Pool Performance</h2>
+                        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs">Info</span>
+                    </div>
+
+                    <!-- Сетка тарифов (Tiers) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        
+                        <!-- 14 Days Tier -->
+                        <div class="tier-card border-l-4 border-blue-500">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-lg">14 Days</span>
+                                    <span class="text-blue-400 font-mono text-sm px-2 py-0.5 bg-blue-950/30 rounded">0.5x</span>
+                                </div>
+                                <div class="text-4xl font-bold mb-1">45.90 <span class="text-sm font-normal text-gray-400">APY</span></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Base tier to deter immediate flips.</p>
+                        </div>
+                        
+                        <!-- 30 Days Tier -->
+                        <div class="tier-card border-l-4 border-teal-500">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-lg">30 Days</span>
+                                    <span class="text-teal-400 font-mono text-sm px-2 py-0.5 bg-teal-950/30 rounded">1.0x</span>
+                                </div>
+                                <div class="text-4xl font-bold mb-1">11.1% <span class="text-sm font-normal text-gray-400">APY</span></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Standard baseline.</p>
+                        </div>
+                        
+                        <!-- 90 Days Tier -->
+                        <div class="tier-card border-l-4 border-yellow-500">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-lg">90 Days</span>
+                                    <span class="text-yellow-400 font-mono text-sm px-2 py-0.5 bg-yellow-950/30 rounded">2.0x</span>
+                                </div>
+                                <div class="text-4xl font-bold mb-1">6.8% <span class="text-sm font-normal text-gray-400">APY</span></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Elevated rewards for mid-term commitment.</p>
+                        </div>
+                        
+                        <!-- 180 Days Tier -->
+                        <div class="tier-card border-l-4 border-orange-500">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-lg">180 Days</span>
+                                    <span class="text-orange-400 font-mono text-sm px-2 py-0.5 bg-orange-950/30 rounded">3.5x</span>
+                                </div>
+                                <div class="text-4xl font-bold mb-1">High-Yield</div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">High-yield tier for serious holders.</p>
+                        </div>
+                        
+                        <!-- 365 Days Tier -->
+                        <div class="tier-card border-l-4 border-purple-500">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-lg">365 Days</span>
+                                    <span class="text-purple-400 font-mono text-sm px-2 py-0.5 bg-purple-950/30 rounded">6.0x</span>
+                                </div>
+                                <div class="text-4xl font-bold mb-1">Max Premium</div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Maximum premium for long-term.</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ДОПОЛНИТЕЛЬНАЯ СТАТИСТИКА (Project Fee & Governance) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-panel p-6">
+                        <p class="text-gray-400 text-sm">Project Fee on Rewards:</p>
+                        <p class="text-2xl font-bold mb-2">5%</p>
+                        <!-- Прогресс-бар -->
+                        <div class="w-full bg-white/10 rounded-full h-1.5">
+                            <div class="bg-blue-500 h-1.5 w-[5%] rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6">
+                        <p class="text-gray-400 text-sm">Governance Lock Period:</p>
+                        <p class="text-2xl font-bold mb-2">5 Days</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПРАВАЯ ЧАСТЬ: AVAILABLE ACTIONS -->
+            <div class="glass-panel p-6 h-fit space-y-6">
+                <h2 class="text-xl font-medium uppercase tracking-wider">Available Actions</h2>
+                
+                <!-- Блок баланса кошелька -->
+                <div class="bg-black/20 p-4 rounded-xl border border-white/5">
+                    <p class="text-xs text-gray-400 mb-1">Your Wallet</p>
+                    <div class="flex flex-col sm:flex-row justify-between text-2xl font-bold gap-1 sm:gap-0">
+                        <span>5,000.00</span>
+                        <span class="text-yellow-500 flex items-center gap-1.5">
+                            <!-- Иконка сундука -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                            125.75
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Главная кнопка -->
+                <button onclick="initStake()" class="w-full py-4 rounded-xl font-bold primary-btn text-lg tracking-wide">INITIALIZE USER STAKE</button>
+                
+                <!-- Сетка кнопок (2х2 на ПК) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button onclick="deposit()" class="action-btn py-3 rounded-lg text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        DEPOSIT
+                    </button>
+                    <button onclick="claim()" class="action-btn py-3 rounded-lg text-sm bg-yellow-500/10 border-yellow-500/30 text-yellow-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        CLAIM REWARDS
+                    </button>
+                    <button onclick="enableCol()" class="action-btn py-3 rounded-lg text-xs font-medium opacity-80">ENABLE COLLATERAL</button>
+                    <button onclick="disableCol()" class="action-btn py-3 rounded-lg text-xs font-medium opacity-80">DISABLE COLLATERAL</button>
+                </div>
+
+                <!-- Кнопки действий -->
+                <button onclick="unstake()" class="w-full py-3 action-btn rounded-lg text-sm">UNSTAKE (Withdraw from Staking)</button>
+                <button onclick="closeAcc()" class="w-full py-3 action-btn rounded-lg text-sm text-red-500 border-red-900/50 hover:bg-red-950/20">CLOSE STAKING ACCOUNT</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        window.global = window;
-        window.process = { env: {} };
-        window.exports = {};
-        // Обманка для buffer.js, чтобы не было ошибки "require is not defined"
-        window.require = function(name) { return window[name]; };
+        // Функции-заглушки для интеграции с блокчейном (ethers.js, solana/web3.js и т.д.)
+        function initStake() { console.log("Клик: INITIALIZE USER STAKE"); }
+        function deposit() { console.log("Клик: DEPOSIT"); }
+        function claim() { console.log("Клик: CLAIM ALL REWARDS"); }
+        function enableCol() { console.log("Клик: ENABLE COLLATERAL"); }
+        function disableCol() { console.log("Клик: DISABLE COLLATERAL"); }
+        function unstake() { console.log("Клик: UNSTAKE"); }
+        function closeAcc() { console.log("Клик: CLOSE STAKING ACCOUNT"); }
     </script>
-
-    <script src="js/buffer.js"></script>
-    <script src="js/solana.js"></script>
-    <script src="js/anchor.js"></script>
-
-    <script src="app.js"></script>
-
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="./assets/favicon.png" type="image/png">
-</head>
-<body>
-
-
-    <header class="header">
-    <div class="container">
-        <div class="logo">
-            </div>
-
-        <nav class="nav">
-            <ul class="main-nav">
-                </ul>
-        </nav>
-
-     <div class="wallet-controls">
-    <div id="wallet-header-area" class="wallet-control">
-        <button id="connectWalletBtn" class="web3-button connect-fox-btn">
-            🦊 Connect Wallet
-        </button>
-    </div>
-</div>
-
-
-
-</header>
-
-    <main>
-        <section id="aurum-fox-home" class="hero-section aurum-fox-section">
-            <div class="container">
-                <div class="hero-content">
-                    <h1>Aurum Fox: Your Golden Luck on Solana!</h1>
-                    <p class="tagline intro-text">Combining the cunning of the fox, the prosperity of gold, and the speed of Solana.</p>
-                    <div class="hero-buttons call-to-action">
-                        <a href="#how-to-buy" class="btn btn-primary primary-btn">Get AFOX</a>
-                        <a href="#aurum-community" class="btn btn-secondary secondary-btn">Join the Community</a>
-                    </div>
-                </div>
-                <div class="hero-image">
-                    <img src="./assets/foxcoin-hero.png" alt="Aurum Fox golden coin with fox image and 'Aurum Fox' text">
-                </div>
-            </div>
-        </section>
-
-        <section id="about-afox" class="section aurum-fox-section-alt">
-            <div class="container">
-                <h2 class="aurum-heading">About Our AURUM FOX (AFOX) Meme Token</h2>
-                <p>Welcome to the world of <strong>AURUM FOX!</strong> We are a new, fully decentralized meme token, created by the community and for the community. Our goal is to create a fun, dynamic, and truly community-driven meme token on the Solana blockchain.</p>
-                <p><strong>AURUM FOX</strong> is a meme token presented as a golden coin with a cute cartoon fox image and the inscription "AURUM FOX". Its name combines the Latin "Aurum" (gold), symbolizing value, and "Fox" – a popular image for creating viral brands in the meme token space.</p>
-                <p>We believe in transparency and fairness. All permissions for <strong>minting</strong> (creating new tokens) and <strong>freezing</strong> (locking existing tokens) have been **irreversibly revoked**. This ensures a fixed total supply and the inability to lock your assets. No one, not even the creators, can issue new tokens or interfere with your holdings. AURUM FOX (AFOX) is a 100% community-governed meme token.</p>
-            </div>
-        </section>
-
-        <section id="tokenomics" class="section aurum-fox-section">
-            <div class="container">
-                <h2 class="aurum-heading">Aurum Fox Tokenomics</h2>
-                <div class="tokenomics-grid tokenomics-details">
-                    <div class="tokenomics-item">
-                        <h3>Total Supply</h3>
-                        <p class="highlight">10,000,000 AFOX</p>
-                        <p>A limited and fixed supply ensures the scarcity of Aurum Fox (AFOX).</p>
-                        <p class="highlight-text-small"><strong>Minting rights revoked</strong></p>
-                        <p class="highlight-text-small"><strong>Freezing rights revoked</strong></p>
-                        <p>This demonstrates our commitment to decentralization and security for all holders.</p>
-                    </div>
-                    <div class="tokenomics-item">
-                        <h3>Vesting Schedule</h3>
-                        <p>To ensure long-term stability and prevent market manipulation, a portion of the supply will be released according to the following vesting schedule:</p>
-                        <div class="table-responsive">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Vesting Period</th>
-                                        <th>Release Percentage</th>
-                                        <th>AFOX Unlocked</th>
-                                        <th>Start Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Period 1</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 23, 2027, 12:00 PM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Period 2</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 24, 2029, 12:00 PM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Period 3</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 25, 2031, 12:00 PM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Period 4</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 26, 2033, 12:00 PM</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Period 5</td>
-                                        <td>20%</td>
-                                        <td>1,800,000 AFOX</td>
-                                        <td>June 27, 2035, 12:00 PM</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="contract-address">
-                    <p><strong>AFOX Contract Address:</strong> <span id="contractAddress" class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span> </p>
-                </div>
-                <p class="tokenomics-note">Our tokenomics are designed for long-term sustainability and community growth.</p>
-            </div>
-        </section>
-
-        <section id="how-to-buy" class="section aurum-fox-section-alt">
-            <div class="container">
-                <h2 class="aurum-heading">How to Acquire Aurum Fox (AFOX)</h2>
-                <p>There are several ways to become part of our community and get AURUM FOX (AFOX):</p>
-                <ol class="buy-steps how-to-list">
-                    <li>
-                        <h3>Step 1: Participate in Airdrops</h3>
-                        <p>Follow our official channels to stay informed about upcoming airdrop announcements. Participate in community events for a chance to get free tokens!</p>
-                    </li>
-                    <li>
-                        <h3>Step 2: Get a Solana Wallet</h3>
-                        <p>You'll need a wallet that supports the Solana network, such as <a href="https://phantom.app/" target="_blank" rel="noopener noreferrer">Phantom</a>, <a href="https://solflare.com/" target="_blank" rel="noopener noreferrer">Solflare</a>. Install it as a browser extension or mobile application.</p>
-                    </li>
-                    <li>
-                        <h3>Step 3: Fund Your Wallet with SOL</h3>
-                        <p>Buy SOL (Solana) on any major centralized exchange (Binance, Coinbase, Bybit, etc.) and send it to the address of your chosen Solana wallet.</p>
-                    </li> 
-                    <li>
-    <h3>Step 4: Go to a DEX and Swap SOL for AFOX</h3>
-    <p>Use a Solana Decentralized Exchange (DEX) such as <a href="https://raydium.io/swap/" target="_blank" rel="noopener noreferrer">Raydium</a> or <a href="https://www.orca.so/swap" target="_blank" rel="noopener noreferrer">Orca</a> to swap SOL for AFOX.</p>
-    <p>On the swap page, paste the AFOX contract address (<span class="highlight-text">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</span>) into the field for the token you want to receive. Confirm the transaction in your wallet.</p>
-    <p>Or use aggregators for more accurate coin information:</p>
-    <ul>
-        <li><a href="https://www.geckoterminal.com/solana/pools/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer">GeckoTerminal</a></li>
-        <li><a href="https://www.dextools.io/app/solana/pair-explorer/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer">DEXTools</a></li>
-        <li><a href="https://birdeye.so/solana/token/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer">Birdeye</a></li>
-        <li><a href="https://gmgn.ai/sol/token/solscan_GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd?filter=All" target="_blank" rel="noopener noreferrer">GMGN.AI</a></li>
-         <li><a href="https://dexscreener.com/solana/GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd" target="_blank" rel="noopener noreferrer">Dexscreener</a></li>
-        <li><a href="https://photon-sol.tinyastro.io/en/lp/FxkhmwaB144YDemgrfX4K5W2Jotz8YXaFpkMD4Pa9JKz" target="_blank" rel="noopener noreferrer">Photon Solana LP</a></li>
-    </ul>
-</li>
-                </ol>
-                <p class="tip">Make sure you have enough SOL to cover network fees.</p>
-                <p class="tip"><i>Liquidity pool link will be available soon!</i></p>
-
-
-               
-            </div>
-        </section>
-
-        <section id="aurum-roadmap" class="section aurum-fox-section">
-            <div class="container">
-                <h2 class="aurum-heading">Aurum Fox Roadmap</h2>
-                <div class="roadmap-grid">
-                    <div class="roadmap-item">
-                        <h3>Phase 1: Launch and Awareness (Completed)</h3>
-                        <ul>
-                            <li>Development and deployment of the AFOX token on Solana.</li>
-                            <li>Creation and launch of the liquidity pool.</li>
-                            <li>Launch of official social channels (Twitter, Telegram, Discord).</li>
-                            <li>First wave of memes and viral content.</li>
-                            <li><strong>Minting rights revoked.</strong></li>
-                            <li><strong>Freezing rights revoked.</strong></li>
-                        </ul>
-                    </div>
-                    <div class="roadmap-item">
-                        <h3>Phase 2: Community Growth and Visibility</h3>
-                        <ul>
-                            <li>Launch of the official Aurum Fox website (current stage).</li>
-                            <li>Application for listing on CoinGecko and CoinMarketCap.</li>
-                            <li>Expansion of marketing campaigns and influencer collaborations.</li>
-                            <li>Hosting meme contests and airdrops for active participants.</li>
-                        </ul>
-                    </div>
-                    <div class="roadmap-item">
-    <h3>Phase 3: DeFi & Governance Integration</h3>
-    <ul>
-        <li><strong>Staking Launch:</strong> Earn rewards by holding AFOX in our secure pools.</li>
-        <li><strong>DAO platform:</strong> Full community governance over the ecosystem treasury.</li>
-        <li><strong>Lending Protocol:</strong> Decentralized lending and borrowing using AFOX as collateral.</li>
-        <li><strong>Liquidity Expansion:</strong> Strategic listings on major Solana DEXs (Raydium, Orca).</li>
-        <li><strong>Partnerships:</strong> Collaboration with other Solana DeFi protocols.</li>
-    </ul>
-</div>
-
-</div>
-                <p class="roadmap-disclaimer"><i>Note: The Aurum Fox roadmap is dynamic and may be adjusted based on market conditions and community feedback.</i></p>
-            </div>
-        </section>
-
-
-</header>
-
-    
-
-<div class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; padding: 20px;">
-
-    <div class="feature-card-royal" style="position: relative; background: linear-gradient(145deg, #0a1229, #040814); border: 1px solid rgba(255, 215, 0, 0.2); padding: 40px 30px; border-radius: 24px; text-align: center; transition: 0.4s; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, transparent, #FFD700, transparent);"></div>
-
-        <div style="font-size: 3.5em; margin-bottom: 20px; filter: drop-shadow(0 0 15px rgba(255,215,0,0.3));">💰</div>
-
-        <h3 style="color: #fff; font-size: 1.8em; font-weight: 800; margin-bottom: 15px; letter-spacing: 1px;">Staking <span style="color: #FFD700;">Rewards</span></h3>
-
-        <p style="color: #888; line-height: 1.6; margin-bottom: 30px; font-size: 0.95em;">
-            Collect your profits in one click. Your tokens work for you, generating passive income 24/7.
-        </p>
-
-        <a href="#rewards-section" class="royal-btn" style="display: inline-block; width: 100%; background: linear-gradient(90deg, #FFD700, #b8860b); color: #000; font-weight: 900; text-decoration: none; padding: 15px; border-radius: 14px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 20px rgba(184, 134, 11, 0.3); transition: 0.3s;">
-            Claim All Rewards
-        </a>
-    </div>
-
-    <div class="feature-card-royal" style="position: relative; background: linear-gradient(145deg, #0a1229, #040814); border: 1px solid rgba(255, 215, 0, 0.2); padding: 40px 30px; border-radius: 24px; text-align: center; transition: 0.4s; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, transparent, #FFD700, transparent);"></div>
-        <div style="font-size: 3.5em; margin-bottom: 20px; filter: drop-shadow(0 0 15px rgba(255,215,0,0.3));">👑</div>
-        <h3 style="color: #fff; font-size: 1.8em; font-weight: 800; margin-bottom: 15px; letter-spacing: 1px;">Royal <span style="color: #FFD700;">Staking</span></h3>
-        <p style="color: #888; line-height: 1.6; margin-bottom: 30px; font-size: 0.95em;">Put your gold to work. Earn royal dividends within a highly secured vault.</p>
-        <a href="#staking-section" class="royal-btn" style="display: inline-block; width: 100%; background: linear-gradient(90deg, #FFD700, #b8860b); color: #000; font-weight: 900; text-decoration: none; padding: 15px; border-radius: 14px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 20px rgba(184, 134, 11, 0.3); transition: 0.3s;">
-            Start Earning
-        </a>
-    </div>
-
-    <div class="feature-card-royal" style="position: relative; background: linear-gradient(145deg, #0a1229, #040814); border: 1px solid rgba(255, 215, 0, 0.2); padding: 40px 30px; border-radius: 24px; text-align: center; transition: 0.4s; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, transparent, #FFD700, transparent);"></div>
-        <div style="font-size: 3.5em; margin-bottom: 20px; filter: drop-shadow(0 0 15px rgba(255,215,0,0.3));">🏦</div>
-        <h3 style="color: #fff; font-size: 1.8em; font-weight: 800; margin-bottom: 15px; letter-spacing: 1px;">Alpha <span style="color: #FFD700;">Lending</span></h3>
-        <p style="color: #888; line-height: 1.6; margin-bottom: 30px; font-size: 0.95em;">Instant liquidity backed by your assets. Unlock limitless capital opportunities.</p>
-        <a href="#lending-section" class="royal-btn" style="display: inline-block; width: 100%; background: linear-gradient(90deg, #FFD700, #b8860b); color: #000; font-weight: 900; text-decoration: none; padding: 15px; border-radius: 14px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 20px rgba(184, 134, 11, 0.3); transition: 0.3s;">
-            Access Capital
-        </a>
-    </div>
-
-</div>
-
-<style>
-    .feature-card-royal:hover {
-        transform: translateY(-15px);
-        border-color: rgba(255, 215, 0, 0.8);
-        box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 20px rgba(255,215,0,0.1);
-    }
-    .royal-btn:hover {
-        transform: scale(1.05);
-        filter: brightness(1.1);
-        box-shadow: 0 15px 30px rgba(184, 134, 11, 0.5);
-    }
-    .feature-card-royal::after {
-        content: '';
-        position: absolute;
-        bottom: -50px;
-        right: -50px;
-        width: 150px;
-        height: 150px;
-        background: rgba(255, 215, 0, 0.03);
-        border-radius: 50%;
-        z-index: 0;
-    }
-</style>
-
-
-
-<section id="staking-section" class="web3-staking-luxe" style="background: radial-gradient(circle at bottom left, #060b1a, #040814); padding: 80px 0; font-family: 'Inter', sans-serif;">
-    <div class="container" style="max-width: 1000px; margin: 0 auto; padding: 0 20px;">
-
-        <div style="text-align: center; margin-bottom: 50px;">
-            <h2 style="color: #fff; font-size: 2.5em; font-weight: 800; margin-bottom: 10px;">
-                <span style="color: #FFD700;">AFOX</span> Staking Vault
-            </h2>
-            <div style="display: inline-flex; gap: 20px; color: #00ff7f; font-size: 0.85em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                <span>🛡️ Smart Contract Audited</span>
-                <span>🔒 Liquidity Locked</span>
-            </div>
-        </div>
-
-        <div style="background: rgba(255, 165, 0, 0.1); border: 1px solid #FFA500; border-radius: 15px; padding: 20px; margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
-            <span style="font-size: 2em;">⚠️</span>
-            <div>
-                <h4 style="color: #FFA500; margin: 0 0 5px 0; text-transform: uppercase; font-size: 0.9em; letter-spacing: 1px;">Security Warning</h4>
-                <p style="color: #ddd; margin: 0; font-size: 0.85em; line-height: 1.4;">
-                    Please ensure you are connected to the official AFOX dApp. Never share your private keys or seed phrases. Staking involves smart contract risks.
-                </p>
-            </div>
-        </div>
-
-        <div class="staking-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px;">
-
-            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 25px; border-radius: 20px; backdrop-filter: blur(10px);">
-                <span style="color: #888; font-size: 0.8em; display: block; margin-bottom: 5px;">Your Balance</span>
-                <span id="user-afox-balance" style="color: #fff; font-size: 1.6em; font-weight: 700;">0.00 <small style="font-size: 0.6em; color: #FFD700;">AFOX</small></span>
-            </div>
-
-            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 25px; border-radius: 20px; backdrop-filter: blur(10px);">
-                <span style="color: #888; font-size: 0.8em; display: block; margin-bottom: 5px;">Total Staked</span>
-                <span id="user-staked-amount" style="color: #fff; font-size: 1.6em; font-weight: 700;">0.00 <small style="font-size: 0.6em; color: #FFD700;">AFOX</small></span>
-            </div>
-
-            <div class="stat-card" style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(255,215,0,0.05);">
-                <span style="color: #FFD700; font-size: 0.8em; display: block; margin-bottom: 5px;">Earned Rewards</span>
-                <span id="user-rewards-amount" style="color: #FFD700; font-size: 1.6em; font-weight: 800; text-shadow: 0 0 15px rgba(255,215,0,0.3);">+0.00</span>
-                <button id="claim-all-rewards-btn" style="flex: 1; background: linear-gradient(180deg, #ffc107 0%, #8b6508 100%); color: #fff; border: 1px solid #ffb800; padding: 16px; border-radius: 14px; font-weight: 800; font-size: 0.95em; cursor: pointer; transition: 0.4s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 6px 20px rgba(184, 134, 11, 0.3), inset 0 1px 1px rgba(255,255,255,0.2); text-shadow: 1px 1px 2px rgba(0,0,0,0.6);">Collect All Profit</button>
-            </div>
-        </div>
-<div style="background: #060b1a; border: 1px solid rgba(255,255,255,0.05); border-radius: 30px; overflow: hidden; display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); box-shadow: 0 30px 60px rgba(0,0,0,0.4);">
-
-    <div style="padding: 45px; border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);">
-        <h3 style="color: #fff; margin-bottom: 25px; font-size: 1.6em; font-weight: 700;">Deposit Tokens</h3>
-
-       
-
-                <div id="init-zone" style="background: rgba(0, 77, 38, 0.2); border: 1px dashed #00a852; padding: 20px; border-radius: 16px; margin-bottom: 25px; text-align: center;">
-    <p style="color: #00ff7f; font-size: 0.85em; margin-bottom: 15px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">
-        Step 1: Initialize Account
-    </p>
-    
-    <button id="initialize-user-stake-btn" style="
-        width: 100%; 
-        background: linear-gradient(180deg, #00a852 0%, #006b35 100%); 
-        color: #fff; 
-        border: 1px solid #004d26; 
-        padding: 16px; 
-        border-radius: 14px; 
-        cursor: pointer; 
-        font-weight: 800; 
-        font-size: 1em; 
-        text-transform: uppercase; 
-        transition: 0.3s; 
-        box-shadow: 0 6px 20px rgba(0, 107, 53, 0.4); 
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    ">
-         Create Staking Account
-    </button>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-   <div style="margin-bottom: 20px;">
-                    <label style="color: #666; font-size: 0.8em; margin-bottom: 8px; display: block;">SELECT STAKING RANK (Higher Multiplier = More Rewards)</label>
-                    <select id="pool-selector" style="width: 100%; background: #040814; color: #fff; border: 1px solid #1a2a44; padding: 15px; border-radius: 12px; outline: none; appearance: none; cursor: pointer;">
-                          <option value="0">🌱 Starter Rank: 14 Days (x1.0 Multiplier)</option>
-        <option value="1">🌿 Holder Rank: 180 Days (x1.8 Multiplier)</option>
-        <option value="2">🌳 Investor Rank: 2 Years (x3.2 Multiplier)</option>
-        <option value="3">💎 Partner Rank: 4 Years (x4.8 Multiplier)</option>
-        <option value="4">👑 Legend Rank: 8 Years (x6.5 Multiplier)</option>
-    </select>
-   </div>
-    
-
-
-
-
-
-
-
-
-
-
-
-      
-
-              <div style="position: relative; margin-bottom: 25px;">
-    <input type="number" id="stake-amount" placeholder="0.00" 
-        style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; 
-               padding: 18px 80px 18px 18px; border-radius: 12px; font-size: 1.1em; 
-               outline: none; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
-    
-    <button id="max-stake-btn" style="
-        position: absolute; 
-        right: 12px; 
-        top: 50%; 
-        transform: translateY(-50%); 
-        background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); 
-        border: 1px solid #8b6508; 
-        color: #fff; 
-        padding: 6px 14px; 
-        border-radius: 8px; 
-        cursor: pointer; 
-        font-size: 0.75em; 
-        font-weight: 900; 
-        text-transform: uppercase; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.4); 
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.5); 
-        transition: 0.3s;
-        z-index: 10;">
-        MAX
-    </button>
-</div>
-
-
-           <button id="deposit-btn" style="width: 100%; background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); color: #fff; border: 1px solid #8b6508; padding: 18px; border-radius: 12px; font-size: 1.1em; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-transform: uppercase; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-    Stake AFOX
-</button>
-
-              Stake AFOX
-                </button>
-            </div>
-
-            <div style="flex: 1; min-width: 300px; padding: 40px; background: rgba(0,0,0,0.2);">
-                <h3 style="color: #fff; margin-bottom: 25px; font-size: 1.4em;">Manage Assets</h3>
-
-                <div class="management-info" style="margin-bottom: 30px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
-                        <span style="color: #666;">Locked until:</span>
-                        <span id="unlock-date" style="color: #fff; font-family: monospace;">--.--.----</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
-                        <span style="color: #666;">Early Exit Penalty:</span>
-                        <span style="color: #ff4d4d; font-weight: bold;">20.0%</span>
-                    </div>
-                </div>
-
-                <div style="background: linear-gradient(145deg, rgba(40, 0, 0, 0.4) 0%, rgba(20, 0, 0, 0.6) 100%); border: 1px solid rgba(255, 77, 77, 0.3); padding: 25px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-    
-    <label style="color: #ffcccc; font-size: 0.9em; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin-bottom: 25px; line-height: 1.4;">
-        <input type="checkbox" id="early-exit-checkbox" style="width: 18px; height: 18px; accent-color: #ff4d4d; cursor: pointer; margin-top: 2px;">
-        <span style="text-shadow: 0 0 10px rgba(255, 77, 77, 0.2);">
-            I understand that early unstaking will <b style="color: #ff4d4d;">burn 20%</b> of my deposit and I will lose all rewards.
-        </span>
-    </label>
-
-    <button id="unstake-btn" style="
-        width: 100%; 
-        background: linear-gradient(180deg, #ff4d4d 0%, #8b0000 100%); 
-        color: #fff; 
-        border: 1px solid #4a0000; 
-        padding: 16px; 
-        border-radius: 14px; 
-        font-weight: 800; 
-        font-size: 1.05em;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        cursor: pointer; 
-        transition: 0.4s;
-        box-shadow: 0 6px 20px rgba(255, 77, 77, 0.25);
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
-    ">
-        ⚠️ Unstake AFOX
-    </button>
-</div>
-
-
-                <button id="close-staking-account-btn" style="width: 100%; background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); color: #fff; border: 1px solid #8b6508; padding: 18px; border-radius: 12px; font-size: 1.1em; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-transform: uppercase; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-  
-                    Close Account & Refund SOL
-                </button>
-
-                <p style="text-align: center; color: #444; font-size: 0.75em; margin-top: 20px;">
-                    Transaction ID: <span id="last-tx-id">None</span>
-                </p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<style>
-    #deposit-btn:hover {
-        transform: translateY(-2px);
-        background: #ffae00;
-    }
-    #initialize-user-stake-btn:hover {
-        background: rgba(0, 255, 127, 0.1);
-    }
-    #claim-all-rewards-btn:hover {
-        transform: scale(1.02);
-    }
-    #unstake-btn:hover {
-        background: rgba(255, 77, 77, 0.1);
-    }
-    #close-staking-account-btn:hover {
-        border-color: #fff;
-        color: #fff;
-    }
-    input:focus {
-        border-color: #FFD700 !important;
-        outline: none;
-    }
-</style>
-
-
-<section id="rewards-section" class="web3-rewards-luxury" style="background: radial-gradient(circle at top right, #0a1025, #040814); padding: 80px 0; font-family: 'Inter', sans-serif; overflow: hidden; position: relative;">
-
-    <div style="position: absolute; top: 10%; left: -5%; width: 300px; height: 300px; background: rgba(0, 255, 127, 0.03); filter: blur(100px); border-radius: 50%;"></div>
-    <div style="position: absolute; bottom: 10%; right: -5%; width: 400px; height: 400px; background: rgba(255, 215, 0, 0.02); filter: blur(120px); border-radius: 50%;"></div>
-
-    <div class="container" style="max-width: 1100px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 2;">
-
-        <div style="text-align: center; margin-bottom: 50px;">
-            <h2 style="color: #fff; font-size: 2.8em; font-weight: 800; letter-spacing: -1px; margin-bottom: 15px; text-shadow: 0 0 20px rgba(0,255,127,0.2);">
-                Staking <span style="color: #00ff7f;">Rewards</span>
-            </h2>
-            <div style="display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); padding: 8px 20px; border-radius: 50px; border: 1px solid rgba(0, 255, 127, 0.2);">
-                <span style="width: 8px; height: 8px; background: #00ff7f; border-radius: 50%; display: inline-block; margin-right: 10px; box-shadow: 0 0 10px #00ff7f;"></span>
-                <span style="color: #eee; font-size: 0.9em; font-weight: 500;">Yield Farming Active</span>
-            </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
-
-            <div class="reward-card-glass" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 24px; backdrop-filter: blur(15px); transition: 0.4s ease;">
-                <p style="color: #888; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Total Unclaimed Profit</p>
-                <h3 id="totalRewards" style="color: #fff; font-size: 2em; margin: 0;">4,520 <span style="color: #00ff7f; font-size: 0.6em;">AFOX</span></h3>
-                <div style="margin-top: 15px; height: 4px; background: rgba(0,255,127,0.1); border-radius: 2px;">
-                    <div style="width: 75%; height: 100%; background: linear-gradient(90deg, #00ff7f, #00b359); border-radius: 2px;"></div>
-                </div>
-            </div>
-
-            <div class="reward-card-glass" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 24px; backdrop-filter: blur(15px);">
-                <p style="color: #888; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Average APY</p>
-                <h3 style="color: #fff; font-size: 2em; margin: 0;">124.5% <span style="color: #FFD700; font-size: 0.5em;">Compounding</span></h3>
-                <p style="color: #555; font-size: 0.8em; margin-top: 10px;">Next distribution in: 04h 12m</p>
-            </div>
-        </div>
-
-        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 32px; padding: 40px; box-shadow: 0 40px 100px rgba(0,0,0,0.5);">
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; flex-wrap: wrap; gap: 20px;">
-                <div>
-                    <h3 style="color: #fff; margin: 0; font-size: 1.5em;">Your Staking Pools</h3>
-                    <p style="color: #666; font-size: 0.9em;">Manage your active deposits and claim profits</p>
-                </div>
-              <button onclick="claimAllRewards()" class="claim-btn-luxe" style="
-    background: linear-gradient(180deg, #00a852 0%, #006b35 100%); 
-    color: #fff; 
-    border: 1px solid #004d26; 
-    padding: 18px 40px; 
-    border-radius: 16px; 
-    font-weight: 800; 
-    font-size: 1.1em; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 12px; 
-    transition: 0.4s; 
-    box-shadow: 0 8px 25px rgba(0, 168, 82, 0.3); 
-    text-transform: uppercase; 
-    letter-spacing: 1px; 
-    width: fit-content;
-    margin: 0 auto;
-">
-    <span style="font-size: 1.3em;">💰</span> Claim All Rewards
-</button>
-
-            </div>
-
-            <div class="pool-list-smart" style="display: flex; flex-direction: column; gap: 20px;">
-
-                <div class="pool-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 25px; transition: 0.3s;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <span style="color: #00ff7f; font-family: monospace; font-size: 0.9em;">POOL ID: #001 (7 Days)</span>
-                        <span style="background: rgba(255, 215, 0, 0.1); color: #FFD700; padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: bold;">ACCUMULATING</span>
-                    </div>
-                    <h4 style="color: #fff; font-size: 1.3em; margin: 0 0 10px 0;">Short-term Liquidity Pool</h4>
-                    <p style="color: #aaa; font-size: 0.95em; line-height: 1.6; margin-bottom: 25px;">
-                        Rewards generated from transaction fees and ecosystem incentives.
-                    </p>
-
-                    <div style="margin-bottom: 25px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: #eee; font-size: 0.85em; font-weight: 600;">Pending: 1,200 AFOX</span>
-                            <span style="color: #666; font-size: 0.85em;">Staked: 50,000 AFOX</span>
-                        </div>
-                        <div style="height: 12px; background: #111; border-radius: 6px; overflow: hidden; display: flex; border: 1px solid rgba(255,255,255,0.05);">
-                            <div style="width: 45%; background: linear-gradient(90deg, #00ff7f, #00e672); box-shadow: 0 0 15px rgba(0,255,127,0.3);"></div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 15px;">
-                        <button style="flex: 2; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; font-weight: bold; cursor: not-allowed; opacity: 0.5;">
-                            Individual Claim (Use 'Claim All')
-                        </button>
-                    </div>
-                </div>
-
-                <div class="pool-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 25px; transition: 0.3s;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <span style="color: #00ff7f; font-family: monospace; font-size: 0.9em;">POOL ID: #002 (90 Days)</span>
-                        <span style="background: rgba(255, 215, 0, 0.1); color: #FFD700; padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: bold;">HIGH YIELD</span>
-                    </div>
-                    <h4 style="color: #fff; font-size: 1.3em; margin: 0 0 10px 0;">Long-term Loyalty Vault</h4>
-                    <p style="color: #aaa; font-size: 0.95em; line-height: 1.6; margin-bottom: 25px;">
-                        Maximum multiplier for long-term holders. Rewards are boosted by 2x.
-                    </p>
-
-                    <div style="margin-bottom: 25px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: #eee; font-size: 0.85em; font-weight: 600;">Pending: 3,320 AFOX</span>
-                            <span style="color: #666; font-size: 0.85em;">Staked: 100,000 AFOX</span>
-                        </div>
-                        <div style="height: 12px; background: #111; border-radius: 6px; overflow: hidden; display: flex; border: 1px solid rgba(255,255,255,0.05);">
-                            <div style="width: 90%; background: linear-gradient(90deg, #00ff7f, #00e672); box-shadow: 0 0 15px rgba(0,255,127,0.3);"></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <p style="margin-top: 25px; color: #888; font-size: 0.8em; text-align: center;">
-                <span style="color: #00ff7f;">●</span> <strong>Claim Notice:</strong> Rewards are sent directly to your connected wallet. Transaction gas fees apply on each claim.
-            </p>
-        </div>
-
-        <div style="margin-top: 30px; display: flex; justify-content: center; gap: 40px; opacity: 0.6;">
-            <div style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.8em;">
-                <span>⚡</span> Zero Fee Claiming
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.8em;">
-                <span>💎</span> Auto-Compounding Available
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.8em;">
-                <span>🔒</span> Audited Smart Contracts
-            </div>
-        </div>
-    </div>
-</section>
-
-<style>
-    .reward-card-glass:hover {
-        background: rgba(255, 255, 255, 0.06) !important;
-        transform: translateY(-5px);
-        border-color: rgba(0, 255, 127, 0.3) !important;
-    }
-    .claim-btn-luxe:hover {
-        transform: scale(1.05);
-        box-shadow: 0 15px 30px rgba(0, 255, 127, 0.25);
-        background: #00ff8c !important;
-    }
-    .pool-item:hover {
-        border-color: rgba(0, 255, 127, 0.2) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-    }
-</style>
-
-
-
-<section id="lending-section" class="web3-lending-terminal" style="background: radial-gradient(circle at center, #0a1025, #040814); padding: 80px 0; font-family: 'Inter', sans-serif;">
-    <div class="container" style="max-width: 1100px; margin: 0 auto; padding: 0 20px;">
-
-        <div style="text-align: center; margin-bottom: 50px;">
-            <h2 style="color: #fff; font-size: 2.8em; font-weight: 800; margin-bottom: 10px;">
-                Institutional <span style="color: #FFD700;">Liquidity</span>
-            </h2>
-            <p style="color: #888; font-size: 1.1em;">Supply AFOX as collateral and borrow SOL instantly</p>
-        </div>
-
-        <div class="risk-dashboard" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 30px; margin-bottom: 40px; backdrop-filter: blur(10px);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
-                <div>
-                    <span style="color: #666; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;">Safety Monitor</span>
-                    <h3 style="color: #fff; margin: 5px 0 0 0; font-size: 1.8em;">Health Factor: <span id="health-factor-value" style="color: #00ff7f;">Excellent</span></h3>
-                </div>
-                <div style="text-align: right;">
-                    <span style="color: #ff4d4d; font-size: 0.8em; font-weight: bold; display: block;">Liquidation Threshold: <span id="liq-threshold">1.10</span></span>
-                </div>
-            </div>
-
-            <div style="position: relative; height: 12px; background: #111; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden;">
-                <div id="health-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff4d4d 0%, #ffd700 50%, #00ff7f 100%); transition: 0.5s ease;"></div>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; margin-top: 10px; color: #444; font-size: 0.75em; font-weight: bold;">
-                <span>DANGER</span>
-                <span>STABLE</span>
-                <span>SECURE</span>
-            </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px;">
-
-            <div class="lending-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 215, 0, 0.1); border-radius: 28px; padding: 35px; transition: 0.3s;">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
-                    <div style="background: rgba(255,215,0,0.1); padding: 12px; border-radius: 12px; font-size: 1.5em;">🦊</div>
-                    <h3 style="color: #fff; margin: 0; font-size: 1.5em;">Staked Collateral</h3>
-                </div>
-
-                <div style="margin-bottom: 25px;">
-                    <label style="color: #888; font-size: 0.85em; display: block; margin-bottom: 10px;">Amount to Lock/Unlock</label>
-               
-                  
-               
-
-<div style="position: relative; margin-bottom: 20px;">
-    <input type="number" placeholder="0.00" style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; padding: 18px 70px 18px 18px; border-radius: 15px; font-size: 1.1em; outline: none; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
-    
-    <button id="max-collateral-btn" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); border: 1px solid #8b6508; color: #fff; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.75em; font-weight: 900; text-transform: uppercase; box-shadow: 0 2px 5px rgba(0,0,0,0.4); text-shadow: 1px 1px 1px rgba(0,0,0,0.5); transition: 0.3s; z-index: 10;">
-        MAX
-    </button>
-</div>
-
-
-<div style="display: flex; gap: 15px;">
-    <button id="collateralize-btn" style="flex: 1; background: linear-gradient(180deg, #ffc107 0%, #8b6508 100%); color: #fff; border: 1px solid #ffb800; padding: 16px; border-radius: 14px; font-weight: 800; font-size: 0.95em; cursor: pointer; transition: 0.4s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 6px 20px rgba(184, 134, 11, 0.3), inset 0 1px 1px rgba(255,255,255,0.2); text-shadow: 1px 1px 2px rgba(0,0,0,0.6);">
-        Collateralize
-    </button>
-
-    <button id="decollateralize-btn" style="flex: 1; background: rgba(184, 134, 11, 0.1); color: #ffb800; border: 2px solid #8b6508; padding: 16px; border-radius: 14px; font-weight: 800; font-size: 0.95em; cursor: pointer; transition: 0.4s; text-transform: uppercase; letter-spacing: 0.5px; backdrop-filter: blur(5px);">
-        Decollateralize
-    </button>
-</div>
-
-
- <p style="color: #555; font-size: 0.8em; margin-top: 20px; text-align: center;">
-                    Utilize your stake as borrowing power
-                </p>
-            </div>
-
-
-
-               <p style="color: #555; font-size: 0.8em; margin-top: 20px; text-align: center;">
-                    Utilize your stake as borrowing power
-                </p>
-            </div>
-
-                  
-
-
-              
-            <div class="lending-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 255, 255, 0.1); border-radius: 28px; padding: 35px;">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
-                    <div style="background: rgba(0,255,255,0.1); padding: 12px; border-radius: 12px; font-size: 1.5em;">💧</div>
-                    <h3 style="color: #fff; margin: 0; font-size: 1.5em;">Borrow SOL</h3>
-                </div>
-
-                <div style="margin-bottom: 25px;">
-                    <label style="color: #888; font-size: 0.85em; display: block; margin-bottom: 10px;">Borrow Amount</label>
-                    <input type="number" id="borrow-amount-input" placeholder="Enter SOL" style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; padding: 16px; border-radius: 14px; font-size: 1.1em; outline: none; margin-bottom: 15px;">
-
-                    <button id="borrow-btn" style="width: 100%; background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); color: #fff; border: 1px solid #8b6508; padding: 18px; border-radius: 12px; font-size: 1.1em; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-transform: uppercase; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                        Execute Borrowing
-             
-                    </button>
-
-                  <h4 style="color: #888; font-size: 0.9em; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">Repay Debt</h4>
-
-<div style="position: relative; margin-bottom: 15px;">
-    <input type="number" id="repay-amount-input" placeholder="SOL Amount" 
-        style="width: 100%; background: #040814; border: 1px solid #1a2a44; color: #fff; 
-               padding: 16px; border-radius: 14px; font-size: 1em; outline: none; 
-               box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
-</div>
-
-<button id="repay-btn" style="
-    width: 100%; 
-    background: linear-gradient(180deg, #ffb800 0%, #b8860b 100%); 
-    color: #fff; 
-    border: 1px solid #8b6508; 
-    padding: 16px; 
-    border-radius: 14px; 
-    font-weight: 800; 
-    font-size: 1em;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer; 
-    transition: 0.4s;
-    box-shadow: 0 6px 20px rgba(184, 134, 11, 0.3);
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
-">
-    🤝 Repay & Close Loan
-</button>
-
-                </div>
-              
-              
-            </div>
-
-        </div>
-
-        <div style="margin-top: 50px; background: rgba(255, 77, 77, 0.05); border: 1px dashed rgba(255, 77, 77, 0.3); padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 20px;">
-            <div style="font-size: 2em;">⚠️</div>
-            <div style="color: #ccc; font-size: 0.9em; line-height: 1.5;">
-                <strong style="color: #ff4d4d;">Critical Warning:</strong> This lending protocol is non-custodial and operates via smart contracts. If the market value of your collateral (AFOX) drops significantly, liquidation will occur automatically. <strong>Always monitor your Health Factor and keep it above 1.5 to avoid loss of funds.</strong>
-            </div>
-        </div>
-    </div>
-</section>
-
-<style>
-    .lending-card:hover {
-        background: rgba(255, 255, 255, 0.05) !important;
-        transform: translateY(-5px);
-        border-color: rgba(255, 215, 0, 0.3) !important;
-    }
-    #borrow-btn:hover {
-        background: #00f2ff !important;
-        box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
-    }
-    #collateralize-btn:hover {
-        background: #ffae00 !important;
-        box-shadow: 0 10px 20px rgba(255, 215, 0, 0.2);
-    }
-    #decollateralize-btn:hover {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-color: #fff !important;
-    }
-</style>
-
-
-
-
- 
-   <style>
-    /* 1. КОНТЕЙНЕР: Оставляем как есть */
-    .container {
-        max-width: 1200px !important; 
-        width: 95% !important;
-        margin: 0 auto !important;
-        padding-left: 20px !important;
-        padding-right: 20px !important;
-        box-sizing: border-box;
-    }
-
-    /* 2. СТЕЙКИНГ: Теперь адаптивный ряд */
-    #staking-section .container > div:last-child {
-        display: flex !important;
-        /* ИЗМЕНЕНО: row для ряда, wrap чтобы не ломалось на мелких экранах */
-        flex-direction: row !important; 
-        flex-wrap: wrap !important;
-        justify-content: center !important; 
-        align-items: stretch !important;    
-        gap: 30px !important;
-    }
-
-    /* Карточки стейкинга */
-    #staking-section .container > div:last-child > div {
-        /* ИЗМЕНЕНО: flex: 1 позволяет им делиться поровну в ряду */
-        flex: 1 !important; 
-        min-width: 350px !important; /* Чтобы не сжимались слишком сильно */
-        max-width: 550px !important; /* Чтобы не были слишком широкими */
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        border-radius: 30px !important;
-        margin-bottom: 0 !important;
-    }
-
-    /* 3. СЕТКИ (Статистика, фичи): По 3 в ряд */
-    @media (min-width: 1025px) {
-        .staking-stats-grid, .features-grid {
-            display: grid !important; /* Добавил display для надежности */
-            grid-template-columns: repeat(3, 1fr) !important; 
-            gap: 20px !important;
-        }
-
-        #lending-section .container > div:nth-child(3) {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        h2.aurum-heading, #staking-section h2, #rewards-section h2, #lending-section h2 {
-            font-size: 2.8em !important; 
-        }
-    }
-
-    /* Для телефона: принудительно в колонку */
-    @media (max-width: 1024px) {
-        .staking-stats-grid, .features-grid, #lending-section .container > div:nth-child(3) {
-            grid-template-columns: 1fr !important;
-        }
-        
-        #staking-section .container > div:last-child {
-            flex-direction: column !important;
-        }
-        
-        #staking-section .container > div:last-child > div {
-            max-width: 100% !important;
-        }
-    }
-</style>
-
-
-
-        </main> <footer class="footer" style="background: #040814; padding: 60px 0 30px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); font-family: 'Inter', sans-serif;">
-        <div class="container" style="max-width: 1000px; margin: 0 auto; padding: 0 20px; text-align: center;">
-
-            <div style="margin-bottom: 30px;">
-                <span style="font-size: 2em; filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));">🦊</span>
-                <h3 style="color: #fff; margin: 10px 0 5px 0; letter-spacing: 2px; text-transform: uppercase; font-size: 1.2em;">Aurum Fox</h3>
-                <div style="width: 40px; height: 2px; background: #FFD700; margin: 0 auto;"></div>
-            </div>
-
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 40px;">
-                <p style="color: #666; font-size: 0.75em; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;">Official Contract Address</p>
-                <code id="footerContractAddress" style="color: #FFD700; font-family: monospace; font-size: 0.95em; word-break: break-all;">GLkewtq8s2Yr24o5LT5mzzEeccKuSsy8H5RCHaE9uRAd</code>
-            </div>
-
-            <div class="disclaimer-area" style="max-width: 800px; margin: 0 auto; padding: 25px; background: rgba(0, 0, 0, 0.2); border-radius: 16px; border: 1px solid rgba(255, 77, 77, 0.1);">
-                <p style="font-size: 0.85em; color: #888; line-height: 1.6; margin: 0;">
-                    <span style="color: #ff4d4d; font-weight: bold; text-transform: uppercase; margin-right: 5px;">Disclaimer:</span>
-                    AFOX is a decentralized community-driven token. Digital assets involve significant risk. 
-                    The information provided on this portal does not constitute financial advice. 
-                    The Aurum Fox ecosystem operates on-chain; ensure you understand the risks of DeFi before interacting. 
-                    Your capital is at risk.
-                </p>
-            </div>
-
-            <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.03); color: #444; font-size: 0.8em;">
-                <p style="margin-bottom: 10px;">&copy; 2026 Aurum Fox Unified Portal. All rights reserved.</p>
-                <p>Created with <span style="color: #ff4d4d;">❤️</span> for the Web3 community.</p>
-            </div>
-
-        </div>
-    </footer>
-
-    <div id="notification-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
-
-    <script type="module" src="app.js"></script> 
 </body>
-    </html>
+</html>
