@@ -3,70 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cryporocrum Million Staking Dashboard</title>
+    <title>Cryporocrum Million Staking Dashboard - LIVE INTERFACE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-7xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold tracking-tight">Cryporocrum Million Staking</h1>
-            <div class="text-right">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h1 class="text-3xl font-bold tracking-tight mb-4 md:mb-0">Cryporocrum Million Staking</h1>
+            <div class="flex flex-col items-start md:items-end">
                 <p class="text-gray-400 text-sm">Total Staked: <span class="text-white font-bold">5,000.00 TOKEN</span></p>
                 <p class="text-gray-400 text-sm">Accumulated Rewards: <span class="text-emerald-400 font-bold">125.75 TOKEN</span></p>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
             <div class="lg:col-span-2 space-y-6">
                 <div class="glass-panel p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-lg font-semibold uppercase tracking-wider">POOL PERFORMANCE</h2>
-                        <span class="text-xs border border-white/10 px-3 py-1 rounded-full">Info</span>
+                        <span class="text-xs border border-white/10 px-3 py-1 rounded-full cursor-pointer">Info</span>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        <div class="glass-panel p-4 border-l-4 border-blue-500">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-medium text-sm">14 Days</span>
-                                <span class="text-xs bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded">0.5x</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="tierSelector">
+                        
+                        <label>
+                            <input type="radio" name="staking_tier" value="14" class="tier-input">
+                            <div class="glass-panel p-4 tier-card tier-blue border-l-4 border-blue-500 rounded-xl flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-center text-xs mb-2">
+                                        <span>14 Days</span>
+                                        <span class="text-blue-400">0.5x</span>
+                                    </div>
+                                    <div class="text-2xl font-bold">45.90 <span class="text-sm font-normal text-gray-400">APY</span></div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-2">Base tier to deter immediate flips.</p>
                             </div>
-                            <div class="text-2xl font-bold">45.90 <span class="text-sm font-normal text-gray-400">APY</span></div>
-                            <p class="text-[10px] text-gray-500 mt-2">Base tier to deter immediate flips.</p>
-                        </div>
-                        <div class="glass-panel p-4 border-l-4 border-teal-500">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-medium text-sm">30 Days</span>
-                                <span class="text-xs bg-teal-900/30 text-teal-400 px-2 py-0.5 rounded">1.0x</span>
+                        </label>
+                        
+                        <label>
+                            <input type="radio" name="staking_tier" value="30" class="tier-input">
+                            <div class="glass-panel p-4 tier-card tier-teal border-l-4 border-teal-500 rounded-xl flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-center text-xs mb-2">
+                                        <span>30 Days</span>
+                                        <span class="text-teal-400">1.0x</span>
+                                    </div>
+                                    <div class="text-2xl font-bold">11.1% <span class="text-sm font-normal text-gray-400">APY</span></div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-2">Standard baseline.</p>
                             </div>
-                            <div class="text-2xl font-bold">11.1% <span class="text-sm font-normal text-gray-400">APY</span></div>
-                            <p class="text-[10px] text-gray-500 mt-2">Standard baseline.</p>
-                        </div>
-                        <div class="glass-panel p-4 border-l-4 border-yellow-500">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-medium text-sm">90 Days</span>
-                                <span class="text-xs bg-yellow-900/30 text-yellow-400 px-2 py-0.5 rounded">2.0x</span>
+                        </label>
+                        
+                        <label>
+                            <input type="radio" name="staking_tier" value="90" class="tier-input">
+                            <div class="glass-panel p-4 tier-card tier-yellow border-l-4 border-yellow-500 rounded-xl flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-center text-xs mb-2">
+                                        <span>90 Days</span>
+                                        <span class="text-yellow-500">2.0x</span>
+                                    </div>
+                                    <div class="text-2xl font-bold">6.8% <span class="text-sm font-normal text-gray-400">APY</span></div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-2">Elevated rewards for mid-term commitment.</p>
                             </div>
-                            <div class="text-2xl font-bold">6.8% <span class="text-sm font-normal text-gray-400">APY</span></div>
-                            <p class="text-[10px] text-gray-500 mt-2">Elevated rewards for mid-term commitment.</p>
-                        </div>
-                        <div class="glass-panel p-4 border-l-4 border-orange-500">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-medium text-sm">180 Days</span>
-                                <span class="text-xs bg-orange-900/30 text-orange-400 px-2 py-0.5 rounded">3.5x</span>
+                        </label>
+                        
+                        <label>
+                            <input type="radio" name="staking_tier" value="180" class="tier-input">
+                            <div class="glass-panel p-4 tier-card tier-orange border-l-4 border-orange-500 rounded-xl flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-center text-xs mb-2">
+                                        <span>180 Days</span>
+                                        <span class="text-orange-400">3.5x</span>
+                                    </div>
+                                    <div class="text-2xl font-bold">High-Yield</div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-2">High-yield tier for serious holders.</p>
                             </div>
-                            <div class="text-xl font-bold">High-Yield</div>
-                            <p class="text-[10px] text-gray-500 mt-2">High-yield tier for serious holders.</p>
-                        </div>
-                        <div class="glass-panel p-4 border-l-4 border-purple-500">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-medium text-sm">365 Days</span>
-                                <span class="text-xs bg-purple-900/30 text-purple-400 px-2 py-0.5 rounded">6.0x</span>
+                        </label>
+                        
+                        <label>
+                            <input type="radio" name="staking_tier" value="365" class="tier-input">
+                            <div class="glass-panel p-4 tier-card tier-purple border-l-4 border-purple-500 rounded-xl flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-center text-xs mb-2">
+                                        <span>365 Days</span>
+                                        <span class="text-purple-400">6.0x</span>
+                                    </div>
+                                    <div class="text-2xl font-bold">Max Premium</div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-2">Maximum premium for long-term.</p>
                             </div>
-                            <div class="text-xl font-bold">Max Premium</div>
-                            <p class="text-[10px] text-gray-500 mt-2">Maximum premium for long-term.</p>
-                        </div>
+                        </label>
                     </div>
                 </div>
 
@@ -74,10 +105,10 @@
                     <div class="glass-panel p-6">
                         <p class="text-gray-400 text-sm mb-2">Project Fee on Rewards:</p>
                         <p class="text-xl font-bold mb-2">5%</p>
-                        <div class="w-full bg-black/40 h-1.5 rounded-full"><div class="bg-blue-500 h-1.5 rounded-full w-[5%]"></div></div>
+                        <div class="w-full progress-bg h-1.5 rounded-full"><div class="progress-fill bg-blue-500 h-1.5 rounded-full w-[5%]"></div></div>
                         <p class="text-gray-400 text-sm mt-4 mb-2">Early Exit:</p>
                         <p class="text-xl font-bold mb-2">19%</p>
-                        <div class="w-full bg-black/40 h-1.5 rounded-full"><div class="bg-purple-500 h-1.5 rounded-full w-[19%]"></div></div>
+                        <div class="w-full progress-bg h-1.5 rounded-full"><div class="progress-fill bg-purple-500 h-1.5 rounded-full w-[19%]"></div></div>
                     </div>
                     <div class="glass-panel p-6">
                         <p class="text-gray-400 text-sm">Governance Lock Period (govLock):</p>
@@ -99,11 +130,11 @@
                     </div>
                 </div>
 
-                <button class="w-full py-4 rounded-xl font-bold btn-initialize text-white">INITIALIZE USER STAKE</button>
+                <button id="initializeBtn" class="w-full py-4 rounded-xl font-bold btn-initialize text-white">INITIALIZE USER STAKE</button>
                 
                 <div class="grid grid-cols-2 gap-3">
                     <button class="py-3 rounded-lg font-medium btn-action text-sm">DEPOSIT</button>
-                    <button class="py-3 rounded-lg font-medium btn-action text-yellow-500 border-yellow-800/50">CLAIM ALL REWARDS</button>
+                    <button class="py-3 rounded-lg font-medium btn-action btn-claim text-yellow-500 border-yellow-800/50">CLAIM ALL REWARDS</button>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -112,9 +143,25 @@
                 </div>
 
                 <button class="w-full py-3 rounded-lg font-medium btn-action text-sm">UNSTAKE (Withdraw from Staking)</button>
-                <button class="w-full py-3 rounded-lg font-medium btn-action text-red-400 border-red-900/50 hover:bg-red-900/20">CLOSE STAKING ACCOUNT</button>
+                <button class="w-full py-3 rounded-lg font-medium btn-action btn-danger text-red-400 border-red-900/50 hover:bg-red-900/20">CLOSE STAKING ACCOUNT</button>
             </div>
         </div>
     </div>
+
+    <script>
+        // Получаем все радио-кнопки тиров
+        const tierInputs = document.querySelectorAll('.tier-input');
+        const initializeBtn = document.getElementById('initializeBtn');
+
+        // Обработчик выбора тира
+        tierInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                // Если выбран какой-то тир, активируем/подсвечиваем кнопку INITIALIZE
+                initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days Selected)`;
+                initializeBtn.classList.remove('btn-initialize-inactive'); // Если бы такая была
+                console.log(`Выбран тир: ${e.target.value} дней`);
+            });
+        });
+    </script>
 </body>
 </html>
