@@ -3,226 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cryporocrum Million Staking Dashboard - Full Fidelity & Responsive</title>
-    <!-- Подключаем Tailwind CSS -->
+    <title>Cryporocrum Million Staking Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключаем шрифт Inter для профессионального вида -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Базовые стили для темной темы и шрифта */
         body { 
             background-color: #0b1120; 
             color: #e2e8f0; 
             font-family: 'Inter', sans-serif; 
-            margin: 0;
-            padding: 0;
+            margin: 0; 
+            padding: 0; 
         }
-
-        /* Эффект "стеклянной панели" (Glassmorphism) */
         .glass-panel { 
-            background: rgba(18, 25, 40, 0.7); 
+            background: rgba(18, 25, 40, 0.8); 
             border: 1px solid rgba(255, 255, 255, 0.08); 
-            backdrop-filter: blur(12px); 
-            border-radius: 16px; 
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(15px); 
+            border-radius: 20px; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
-
-        /* Общие стили для кнопок */
-        .action-btn { 
-            transition: all 0.2s ease; 
-            cursor: pointer; 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 600;
+        .action-button { 
+            transition: all 0.3s ease; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            position: relative;
         }
-
-        /* Эффект при наведении на обычную кнопку */
-        .action-btn:hover { 
-            border-color: rgba(255, 255, 255, 0.3); 
-            background: rgba(255, 255, 255, 0.05); 
+        .action-button:hover { 
+            background: rgba(255, 255, 255, 0.08); 
+            border-color: rgba(255, 255, 255, 0.2); 
         }
-
-        /* Основная кнопка с градиентом */
-        .primary-btn { 
-            background: linear-gradient(90deg, #3b82f6, #2563eb); 
-            border: none; 
+        .action-button:active { 
+            transform: scale(0.98); 
         }
-        .primary-btn:hover { 
-            background: linear-gradient(90deg, #2563eb, #1d4ed8); 
+        .primary-gradient { 
+            background: linear-gradient(90deg, #1e3a8a, #1d4ed8); 
+            border: 1px solid #3b82f6; 
         }
-
-        /* Стиль для карточек тарифов (Tiers) */
-        .tier-card { 
-            border-radius: 12px; 
-            padding: 16px; 
-            background: rgba(255, 255, 255, 0.02); 
-            border: 1px solid rgba(255, 255, 255, 0.05); 
-            height: 100%; /* Чтобы все карточки были одной высоты */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
+        .text-glow { text-shadow: 0 0 10px rgba(255,255,255,0.2); }
     </style>
 </head>
 <body class="p-4 md:p-10">
 
     <div class="max-w-7xl mx-auto">
-        <!-- ЗАГОЛОВОК И СТАТИСТИКА -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
-            <h1 class="text-3xl font-bold tracking-tight">Cryporocrum Million Staking</h1>
-            <div class="text-left sm:text-right w-full sm:w-auto">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <h1 class="text-3xl font-bold tracking-tight mb-4 md:mb-0">Cryporocrum Million Staking</h1>
+            <div class="flex flex-col items-start md:items-end">
                 <p class="text-gray-400 text-sm">Total Staked: <span class="text-white font-bold">5,000.00 TOKEN</span></p>
                 <p class="text-gray-400 text-sm">Accumulated Rewards: <span class="text-emerald-400 font-bold">125.75 TOKEN</span></p>
             </div>
         </div>
 
-        <!-- ОСНОВНАЯ СЕТКА (2 колонки на ПК, 1 на телефоне) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- ЛЕВАЯ ЧАСТЬ: POOL PERFORMANCE -->
             <div class="lg:col-span-2 space-y-6">
-                <div class="glass-panel p-6">
-                    <!-- Заголовок блока -->
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-medium uppercase tracking-wider">Pool Performance</h2>
-                        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs">Info</span>
+                <div class="glass-panel p-8">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-xl font-semibold uppercase tracking-wider">Pool Performance</h2>
+                        <span class="text-xs text-gray-400 border border-white/10 px-3 py-1 rounded-full cursor-pointer hover:bg-white/5">Info</span>
                     </div>
 
-                    <!-- Сетка тарифов (Tiers) -->
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        
-                        <!-- 14 Days Tier -->
-                        <div class="tier-card border-l-4 border-blue-500">
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-bold text-lg">14 Days</span>
-                                    <span class="text-blue-400 font-mono text-sm px-2 py-0.5 bg-blue-950/30 rounded">0.5x</span>
-                                </div>
-                                <div class="text-4xl font-bold mb-1">45.90 <span class="text-sm font-normal text-gray-400">APY</span></div>
+                        <div class="glass-panel p-5 border-l-4 border-blue-500">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-sm font-medium">14 Days</p>
+                                <span class="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">0.5x</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">Base tier to deter immediate flips.</p>
+                            <p class="text-3xl font-bold mb-2">45.90 <span class="text-sm font-normal text-gray-400">APY</span></p>
+                            <p class="text-xs text-gray-500">Base tier to deter immediate flips.</p>
                         </div>
-                        
-                        <!-- 30 Days Tier -->
-                        <div class="tier-card border-l-4 border-teal-500">
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-bold text-lg">30 Days</span>
-                                    <span class="text-teal-400 font-mono text-sm px-2 py-0.5 bg-teal-950/30 rounded">1.0x</span>
-                                </div>
-                                <div class="text-4xl font-bold mb-1">11.1% <span class="text-sm font-normal text-gray-400">APY</span></div>
+                        <div class="glass-panel p-5 border-l-4 border-teal-500">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-sm font-medium">30 Days</p>
+                                <span class="text-xs bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded">1.0x</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">Standard baseline.</p>
+                            <p class="text-3xl font-bold mb-2">11.1% <span class="text-sm font-normal text-gray-400">APY</span></p>
+                            <p class="text-xs text-gray-500">Standard baseline.</p>
                         </div>
-                        
-                        <!-- 90 Days Tier -->
-                        <div class="tier-card border-l-4 border-yellow-500">
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-bold text-lg">90 Days</span>
-                                    <span class="text-yellow-400 font-mono text-sm px-2 py-0.5 bg-yellow-950/30 rounded">2.0x</span>
-                                </div>
-                                <div class="text-4xl font-bold mb-1">6.8% <span class="text-sm font-normal text-gray-400">APY</span></div>
+                        <div class="glass-panel p-5 border-l-4 border-yellow-500">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-sm font-medium">90 Days</p>
+                                <span class="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded">2.0x</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">Elevated rewards for mid-term commitment.</p>
+                            <p class="text-3xl font-bold mb-2">6.8% <span class="text-sm font-normal text-gray-400">APY</span></p>
+                            <p class="text-xs text-gray-500">Elevated rewards for mid-term commitment.</p>
                         </div>
-                        
-                        <!-- 180 Days Tier -->
-                        <div class="tier-card border-l-4 border-orange-500">
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-bold text-lg">180 Days</span>
-                                    <span class="text-orange-400 font-mono text-sm px-2 py-0.5 bg-orange-950/30 rounded">3.5x</span>
-                                </div>
-                                <div class="text-4xl font-bold mb-1">High-Yield</div>
+                        <div class="glass-panel p-5 border-l-4 border-orange-500">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-sm font-medium">180 Days</p>
+                                <span class="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded">3.5x</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">High-yield tier for serious holders.</p>
+                            <p class="text-2xl font-bold mb-2">High-Yield</p>
+                            <p class="text-xs text-gray-500">High-yield tier for serious holders.</p>
                         </div>
-                        
-                        <!-- 365 Days Tier -->
-                        <div class="tier-card border-l-4 border-purple-500">
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-bold text-lg">365 Days</span>
-                                    <span class="text-purple-400 font-mono text-sm px-2 py-0.5 bg-purple-950/30 rounded">6.0x</span>
-                                </div>
-                                <div class="text-4xl font-bold mb-1">Max Premium</div>
+                        <div class="glass-panel p-5 border-l-4 border-purple-500">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-sm font-medium">365 Days</p>
+                                <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded">6.0x</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">Maximum premium for long-term.</p>
+                            <p class="text-2xl font-bold mb-2">Max Premium</p>
+                            <p class="text-xs text-gray-500">Maximum premium for long-term.</p>
                         </div>
-
                     </div>
                 </div>
 
-                <!-- ДОПОЛНИТЕЛЬНАЯ СТАТИСТИКА (Project Fee & Governance) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="glass-panel p-6">
-                        <p class="text-gray-400 text-sm">Project Fee on Rewards:</p>
-                        <p class="text-2xl font-bold mb-2">5%</p>
-                        <!-- Прогресс-бар -->
-                        <div class="w-full bg-white/10 rounded-full h-1.5">
-                            <div class="bg-blue-500 h-1.5 w-[5%] rounded-full"></div>
-                        </div>
+                        <p class="text-gray-400 text-sm mb-2">Project Fee on Rewards:</p>
+                        <p class="text-xl font-bold mb-3">5%</p>
+                        <div class="w-full bg-black/40 h-2 rounded-full"><div class="bg-blue-500 h-2 rounded-full w-[5%]"></div></div>
+                        <p class="text-gray-400 text-sm mt-4 mb-2">Early Exit:</p>
+                        <p class="text-xl font-bold mb-3">19%</p>
+                        <div class="w-full bg-black/40 h-2 rounded-full"><div class="bg-purple-500 h-2 rounded-full w-[19%]"></div></div>
                     </div>
                     <div class="glass-panel p-6">
-                        <p class="text-gray-400 text-sm">Governance Lock Period:</p>
-                        <p class="text-2xl font-bold mb-2">5 Days</p>
+                        <p class="text-gray-400 text-sm">Governance Lock Period (govLock):</p>
+                        <p class="text-2xl font-bold mb-6">5 Days</p>
+                        <p class="text-gray-400 text-sm">Lending Grace Period (lendingGrace):</p>
+                        <p class="text-2xl font-bold">1 Hour</p>
                     </div>
                 </div>
             </div>
 
-            <!-- ПРАВАЯ ЧАСТЬ: AVAILABLE ACTIONS -->
-            <div class="glass-panel p-6 h-fit space-y-6">
-                <h2 class="text-xl font-medium uppercase tracking-wider">Available Actions</h2>
+            <div class="glass-panel p-6 flex flex-col gap-4">
+                <h2 class="text-xl font-semibold mb-2">AVAILABLE ACTIONS</h2>
                 
-                <!-- Блок баланса кошелька -->
-                <div class="bg-black/20 p-4 rounded-xl border border-white/5">
-                    <p class="text-xs text-gray-400 mb-1">Your Wallet</p>
-                    <div class="flex flex-col sm:flex-row justify-between text-2xl font-bold gap-1 sm:gap-0">
-                        <span>5,000.00</span>
-                        <span class="text-yellow-500 flex items-center gap-1.5">
-                            <!-- Иконка сундука -->
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
-                            125.75
-                        </span>
+                <div class="bg-black/30 p-5 rounded-2xl border border-white/5">
+                    <p class="text-gray-400 text-xs mb-1">Your Wallet</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold text-blue-400">5,000.00</span>
+                        <span class="text-2xl font-bold text-yellow-500">125.75</span>
                     </div>
                 </div>
 
-                <!-- Главная кнопка -->
-                <button onclick="initStake()" class="w-full py-4 rounded-xl font-bold primary-btn text-lg tracking-wide">INITIALIZE USER STAKE</button>
+                <button onclick="handleAction('INITIALIZE')" class="w-full py-4 rounded-xl font-bold primary-gradient action-button">INITIALIZE USER STAKE</button>
                 
-                <!-- Сетка кнопок (2х2 на ПК) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <button onclick="deposit()" class="action-btn py-3 rounded-lg text-sm flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        DEPOSIT
-                    </button>
-                    <button onclick="claim()" class="action-btn py-3 rounded-lg text-sm bg-yellow-500/10 border-yellow-500/30 text-yellow-500">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        CLAIM REWARDS
-                    </button>
-                    <button onclick="enableCol()" class="action-btn py-3 rounded-lg text-xs font-medium opacity-80">ENABLE COLLATERAL</button>
-                    <button onclick="disableCol()" class="action-btn py-3 rounded-lg text-xs font-medium opacity-80">DISABLE COLLATERAL</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="handleAction('DEPOSIT')" class="py-3 rounded-xl font-medium action-button">DEPOSIT</button>
+                    <button onclick="handleAction('CLAIM')" class="py-3 rounded-xl font-medium action-button text-yellow-500 border-yellow-700/50 hover:bg-yellow-900/20">CLAIM ALL REWARDS</button>
                 </div>
 
-                <!-- Кнопки действий -->
-                <button onclick="unstake()" class="w-full py-3 action-btn rounded-lg text-sm">UNSTAKE (Withdraw from Staking)</button>
-                <button onclick="closeAcc()" class="w-full py-3 action-btn rounded-lg text-sm text-red-500 border-red-900/50 hover:bg-red-950/20">CLOSE STAKING ACCOUNT</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="handleAction('ENABLE')" class="py-3 rounded-xl font-medium action-button text-xs">ENABLE COLLATERAL</button>
+                    <button onclick="handleAction('DISABLE')" class="py-3 rounded-xl font-medium action-button text-xs">DISABLE COLLATERAL</button>
+                </div>
+
+                <button onclick="handleAction('UNSTAKE')" class="w-full py-4 rounded-xl font-medium action-button">UNSTAKE (Withdraw from Staking)</button>
+                <button onclick="handleAction('CLOSE')" class="w-full py-4 rounded-xl font-medium action-button text-red-400 border-red-900/50 hover:bg-red-900/20">CLOSE STAKING ACCOUNT</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Функции-заглушки для интеграции с блокчейном (ethers.js, solana/web3.js и т.д.)
-        function initStake() { console.log("Клик: INITIALIZE USER STAKE"); }
-        function deposit() { console.log("Клик: DEPOSIT"); }
-        function claim() { console.log("Клик: CLAIM ALL REWARDS"); }
-        function enableCol() { console.log("Клик: ENABLE COLLATERAL"); }
-        function disableCol() { console.log("Клик: DISABLE COLLATERAL"); }
-        function unstake() { console.log("Клик: UNSTAKE"); }
-        function closeAcc() { console.log("Клик: CLOSE STAKING ACCOUNT"); }
+        function handleAction(actionType) {
+            console.log("Действие пользователя: " + actionType);
+            // Здесь будет логика для вызова методов смарт-контракта
+            alert("Инициировано действие: " + actionType);
+        }
     </script>
 </body>
 </html>
