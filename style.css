@@ -1,7 +1,6 @@
-/* Подключение шрифта */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* Общие стили страницы */
+/* Базовые стили страницы */
 body { 
     background-color: #050a14; 
     background-image: radial-gradient(circle at 50% 50%, #0f172a 0%, #050a14 100%);
@@ -20,16 +19,70 @@ body {
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
 
-/* Базовый стиль кнопок */
-.btn-action {
-    transition: all 0.3s ease;
+/* --- ИНТЕРАКТИВНЫЕ ТИРЫ (POOL PERFORMANCE) --- */
+/* Убираем стандартные стили радио-кнопки */
+.tier-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* Базовый стиль карточки тира */
+.tier-card {
     cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+/* Эффект наведения на тир */
+.tier-card:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+/* Стили для ВЫБРАННОГО тира (общие) */
+.tier-input:checked + .tier-card {
+    background: rgba(15, 23, 42, 0.6);
+    box-shadow: 0 0 20px rgba(66, 153, 225, 0.1);
+}
+
+/* Стили для выбранного тира (цветные обводки и свечение) */
+.tier-input:checked + .tier-card.tier-blue { border-color: #60a5fa; box-shadow: 0 0 15px rgba(96, 165, 250, 0.2); }
+.tier-input:checked + .tier-card.tier-teal { border-color: #2dd4bf; box-shadow: 0 0 15px rgba(45, 212, 191, 0.2); }
+.tier-input:checked + .tier-card.tier-yellow { border-color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.2); }
+.tier-input:checked + .tier-card.tier-orange { border-color: #fb923c; box-shadow: 0 0 15px rgba(251, 146, 60, 0.2); }
+.tier-input:checked + .tier-card.tier-purple { border-color: #c084fc; box-shadow: 0 0 15px rgba(192, 132, 252, 0.2); }
+
+
+/* --- АНИМАЦИЯ НАЖАТИЯ КНОПОК --- */
+/* Базовый стиль для всех интерактивных кнопок */
+.btn-action, .btn-initialize, .btn-danger {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+}
+
+/* Эффект механического нажатия (продавливания) при клике */
+.btn-action:active, .btn-initialize:active, .btn-danger:active {
+    transform: scale(0.97) translateY(2px);
+    box-shadow: inset 0 3px 5px rgba(0,0,0,0.3);
+}
+
+
+/* --- СТИЛИ КНОПОК --- */
+/* Базовый стиль обычных кнопок действий */
+.btn-action {
     border: 1px solid rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.03);
     color: #e2e8f0;
 }
 
-/* Эффект наведения */
+/* Эффект наведения на обычную кнопку */
 .btn-action:hover {
     border-color: rgba(96, 165, 250, 0.5);
     background: rgba(30, 58, 138, 0.2);
@@ -55,19 +108,6 @@ body {
     background: rgba(153, 27, 27, 0.2);
 }
 
-/* Стили для элементов внутри карточек */
-.border-l-4 {
-    border-left-width: 4px;
-}
-
 /* Стилизация полос прогресса (Project Fee / Early Exit) */
-.progress-bg {
-    background: rgba(0, 0, 0, 0.4);
-    height: 6px;
-    border-radius: 999px;
-}
-
-.progress-fill {
-    height: 6px;
-    border-radius: 999px;
-}
+.progress-bg { background: rgba(0, 0, 0, 0.4); height: 6px; border-radius: 999px; }
+.progress-fill { height: 6px; border-radius: 999px; }
