@@ -615,54 +615,63 @@
 
 
     <script>
-        function switchView(viewId) {
-            const views = [
-                'mainStakingView', 
-                'collateralView', 
-                'depositView', 
-                'claimView', 
-                'disableCollateralView', 
-                'unstakeView', 
-                'closeAccountView'
-            ];
-            
-            views.forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            
-            document.getElementById(viewId).classList.remove('hidden');
+    // 1. Универсальная функция для переключения
+    function switchView(viewId) {
+        const views = [
+            'mainStakingView', 
+            'collateralView', 
+            'depositView', 
+            'claimView', 
+            'unstakeView', 
+            'closeAccountView'
+        ];
+        
+        // Скрываем всё
+        views.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        
+        // Показываем нужное
+        const target = document.getElementById(viewId);
+        if (target) {
+            target.classList.remove('hidden');
+        } else {
+            console.error("Элемент с ID " + viewId + " не найден!");
         }
+    }
 
-        const trigger = document.getElementById('dropdownTrigger');
-        const list = document.getElementById('dropdownList');
-        const icon = document.getElementById('dropdownIcon');
-        const selectedText = document.getElementById('selectedTierText');
-        const initializeBtn = document.getElementById('initializeBtn');
-        const tierInputs = document.querySelectorAll('.tier-input');
+    // Дропдаун логика
+    const trigger = document.getElementById('dropdownTrigger');
+    const list = document.getElementById('dropdownList');
+    const icon = document.getElementById('dropdownIcon');
+    const selectedText = document.getElementById('selectedTierText');
+    const initializeBtn = document.getElementById('initializeBtn');
+    const tierInputs = document.querySelectorAll('.tier-input');
 
-        trigger.addEventListener('click', (e) => {
-            list.classList.toggle('open');
-            icon.classList.toggle('rotated');
-            e.stopPropagation();
+    trigger.addEventListener('click', (e) => {
+        list.classList.toggle('open');
+        icon.classList.toggle('rotated');
+        e.stopPropagation();
+    });
+
+    tierInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            selectedText.innerText = `Selected: ${e.target.value} Days`;
+            selectedText.classList.add('text-white', 'font-bold');
+            initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
+            list.classList.remove('open');
+            icon.classList.remove('rotated');
         });
+    });
 
-        tierInputs.forEach(input => {
-            input.addEventListener('change', (e) => {
-                selectedText.innerText = `Selected: ${e.target.value} Days`;
-                selectedText.classList.add('text-white', 'font-bold');
-                initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-                initializeBtn.classList.remove('btn-initialize-inactive');
-                list.classList.remove('open');
-                icon.classList.remove('rotated');
-            });
-        });
+    document.addEventListener('click', (e) => {
+        if (!list.contains(e.target) && !trigger.contains(e.target)) {
+            list.classList.remove('open');
+            icon.classList.remove('rotated');
+        }
+    });
+</script>
 
-        document.addEventListener('click', (e) => {
-            if (!list.contains(e.target) && !trigger.contains(e.target)) {
-                list.classList.remove('open');
-                icon.classList.remove('rotated');
-            }
-        });
-    </script>
 </body>
 </html>
