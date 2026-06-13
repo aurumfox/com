@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cryporocrum Million Staking Dashboard - LIVE INTERFACE</title>
-    <!-- Подключаем Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключаем внешний файл стилей style.css -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="p-4 md:p-8">
 
-    <div class="max-w-7xl mx-auto">
-        <!-- Заголовок и баланс (сохранено без изменений) -->
+    <div id="mainStakingView" class="max-w-7xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <h1 class="text-3xl font-bold tracking-tight mb-4 md:mb-0">Cryporocrum Million Staking</h1>
             <div class="flex flex-col items-start md:items-end">
@@ -23,7 +20,6 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- ЛЕВАЯ КОЛОНКА: КОМПАКТНЫЙ POOL PERFORMANCE -->
             <div class="lg:col-span-2 space-y-6">
                 <div class="glass-panel p-6">
                     <div class="flex justify-between items-center mb-6">
@@ -31,20 +27,15 @@
                         <span class="text-xs border border-white/10 px-3 py-1 rounded-full cursor-pointer">Info</span>
                     </div>
 
-                    <!-- НОВЫЙ КОМПАКТНЫЙ ВЫПАДАЮЩИЙ СПИСОК (Compact Dropdown) -->
                     <div class="dropdown-container">
                         
-                        <!-- Кнопка открытия/закрытия (Триггер) с маленькой стрелкой -->
                         <div id="dropdownTrigger" class="dropdown-trigger btn-action">
                             <span id="selectedTierText">Choose Staking Tier...</span>
-                            <!-- МАЛЕНЬКАЯ, ПРОФЕССИОНАЛЬНАЯ СТРЕЛКА (SVG) -->
                             <svg id="dropdownIcon" class="dropdown-icon" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
                         </div>
                         
-                        <!-- Выпадающий список со всеми 5 тирами -->
                         <div id="dropdownList" class="dropdown-list">
                             
-                            <!-- 14 Days -->
                             <label>
                                 <input type="radio" name="staking_tier" value="14" class="tier-input">
                                 <div class="p-4 tier-card tier-blue border-l-4 border-blue-500 flex flex-col justify-between">
@@ -59,7 +50,6 @@
                                 </div>
                             </label>
                             
-                            <!-- 30 Days -->
                             <label>
                                 <input type="radio" name="staking_tier" value="30" class="tier-input">
                                 <div class="p-4 tier-card tier-teal border-l-4 border-teal-500 flex flex-col justify-between">
@@ -74,7 +64,6 @@
                                 </div>
                             </label>
                             
-                            <!-- 90 Days -->
                             <label>
                                 <input type="radio" name="staking_tier" value="90" class="tier-input">
                                 <div class="p-4 tier-card tier-yellow border-l-4 border-yellow-500 flex flex-col justify-between">
@@ -89,7 +78,6 @@
                                 </div>
                             </label>
                             
-                            <!-- 180 Days -->
                             <label>
                                 <input type="radio" name="staking_tier" value="180" class="tier-input">
                                 <div class="p-4 tier-card tier-orange border-l-4 border-orange-500 flex flex-col justify-between">
@@ -104,7 +92,6 @@
                                 </div>
                             </label>
                             
-                            <!-- 365 Days -->
                             <label>
                                 <input type="radio" name="staking_tier" value="365" class="tier-input">
                                 <div class="p-4 tier-card tier-purple border-l-4 border-purple-500 flex flex-col justify-between">
@@ -122,7 +109,6 @@
                     </div>
                 </div>
 
-                <!-- Блоки статистики (Fee, Locks) - сохранено без изменений -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="glass-panel p-6">
                         <p class="text-gray-400 text-sm mb-2">Project Fee on Rewards:</p>
@@ -141,7 +127,6 @@
                 </div>
             </div>
 
-            <!-- ПРАВАЯ КОЛОНКА: AVAILABLE ACTIONS (сохранено без изменений) -->
             <div class="glass-panel p-6 flex flex-col gap-4 h-fit">
                 <h2 class="text-lg font-semibold uppercase">AVAILABLE ACTIONS</h2>
                 
@@ -161,7 +146,7 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <button class="py-3 rounded-lg font-medium btn-action text-xs">ENABLE COLLATERAL</button>
+                    <button onclick="toggleView()" class="py-3 rounded-lg font-medium btn-action text-xs">ENABLE COLLATERAL</button>
                     <button class="py-3 rounded-lg font-medium btn-action text-xs">DISABLE COLLATERAL</button>
                 </div>
 
@@ -171,8 +156,44 @@
         </div>
     </div>
 
-    <!-- JS Логика для интерактивного выпадающего списка -->
+    <div id="collateralView" class="hidden max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Lending Collateral: Active Loan Parameters</h1>
+            <button onclick="toggleView()" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-panel p-6">
+                    <p class="text-gray-400 text-sm">Health Factor (HF)</p>
+                    <div class="text-4xl font-bold text-emerald-400 mt-2">1.45</div>
+                    <div class="w-full bg-black/40 h-2 mt-4 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 w-[60%] h-full"></div>
+                    </div>
+                </div>
+                <div class="glass-panel p-6">
+                    <p class="text-gray-400 text-sm">Unlock Grace Period</p>
+                    <div class="text-2xl font-bold mt-2">57 Hours Remaining</div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6">
+                <h2 class="text-lg font-semibold uppercase">AVAILABLE ACTIONS</h2>
+                <div class="mt-4 p-4 bg-black/30 rounded-xl border border-white/5">
+                    <p class="text-gray-400 text-[10px]">Your Wallet</p>
+                    <div class="text-2xl font-bold text-blue-400">5,000.00</div>
+                </div>
+                <button class="w-full mt-4 py-4 rounded-xl btn-initialize font-bold">CLAIM ALL REWARDS</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function toggleView() {
+            document.getElementById('mainStakingView').classList.toggle('hidden');
+            document.getElementById('collateralView').classList.toggle('hidden');
+        }
+
         const trigger = document.getElementById('dropdownTrigger');
         const list = document.getElementById('dropdownList');
         const icon = document.getElementById('dropdownIcon');
@@ -180,31 +201,23 @@
         const initializeBtn = document.getElementById('initializeBtn');
         const tierInputs = document.querySelectorAll('.tier-input');
 
-        // Открытие/Закрытие списка при клике на триггер
         trigger.addEventListener('click', (e) => {
             list.classList.toggle('open');
             icon.classList.toggle('rotated');
-            e.stopPropagation(); // Предотвращаем срабатывание клика по документу
+            e.stopPropagation();
         });
 
-        // Обработка выбора тира внутри списка
         tierInputs.forEach(input => {
             input.addEventListener('change', (e) => {
-                // Если выбран какой-то тир, обновляем текст в триггере
                 selectedText.innerText = `Selected: ${e.target.value} Days`;
-                selectedText.classList.add('text-white', 'font-bold'); // Улучшаем видимость текста
-                
-                // Активируем кнопку INITIALIZE
+                selectedText.classList.add('text-white', 'font-bold');
                 initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-                initializeBtn.classList.remove('btn-initialize-inactive'); // Если бы она была
-                
-                //Закрываем список после выбора
+                initializeBtn.classList.remove('btn-initialize-inactive');
                 list.classList.remove('open');
                 icon.classList.remove('rotated');
             });
         });
 
-        // Закрытие списка при клике вне его области
         document.addEventListener('click', (e) => {
             if (!list.contains(e.target) && !trigger.contains(e.target)) {
                 list.classList.remove('open');
