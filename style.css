@@ -206,3 +206,16 @@ body {
 /* Стилизация полос прогресса (Project Fee / Early Exit) */
 .progress-bg { background: rgba(0, 0, 0, 0.4); height: 6px; border-radius: 999px; }
 .progress-fill { height: 6px; border-radius: 999px; }
+
+
+
+
+
+
+
+
+.glass-panel svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
