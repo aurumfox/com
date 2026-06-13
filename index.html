@@ -609,8 +609,6 @@
 </div>
 
 
-    <script>
-    // 1. Универсальная функция для переключения
     function switchView(viewId) {
         const views = [
             'mainStakingView', 
@@ -619,16 +617,15 @@
             'depositView', 
             'claimView', 
             'unstakeView', 
-            'closeAccountView'
+            'closeAccountView',
+            'disableCollateralView' // Добавь этот ID, если он у тебя есть в HTML
         ];
         
-        // Скрываем всё
         views.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('hidden');
         });
         
-        // Показываем нужное
         const target = document.getElementById(viewId);
         if (target) {
             target.classList.remove('hidden');
@@ -636,6 +633,7 @@
             console.error("Элемент с ID " + viewId + " не найден!");
         }
     }
+
 
     // Дропдаун логика
     const trigger = document.getElementById('dropdownTrigger');
