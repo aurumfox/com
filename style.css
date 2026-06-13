@@ -219,11 +219,4 @@ body {
 
 
 
-/* Фикс для графиков, чтобы они не теряли размеры при переключении */
-.glass-panel svg {
-    display: block;
-    width: 100%;
-    height: auto;
-    overflow: visible;
-}
 
