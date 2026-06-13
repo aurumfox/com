@@ -39,6 +39,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative; /* Для позиционирования маленькой стрелки */
 }
 
 /* Эффект наведения на триггер */
@@ -47,17 +48,24 @@ body {
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
-/* Стили для иконки стрелочки */
+/* --- МАЛЕНЬКАЯ, ПРОФЕССИОНАЛЬНАЯ СТРЕЛКА --- */
 .dropdown-icon {
-    transition: transform 0.3s ease;
-    width: 16px;
-    height: 16px;
-    opacity: 0.7;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 14px; /* Маленький размер */
+    height: 14px; /* Маленький размер */
+    opacity: 0.6;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5; /* Тонкая линия */
+    position: absolute;
+    right: 16px; /* Сбоку */
+    top: 50%;
+    transform: translateY(-50%) rotate(0deg); /* По центру по вертикали */
 }
 
 /* Поворот стрелки при открытии списка */
 .dropdown-icon.rotated {
-    transform: rotate(180deg);
+    transform: translateY(-50%) rotate(180deg);
 }
 
 
@@ -117,6 +125,7 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     position: relative;
     overflow: hidden;
+    padding-right: 40px; /* Чтобы текст не накладывался на иконки, если они будут */
 }
 
 /* Убираем нижнюю границу у последнего элемента */
