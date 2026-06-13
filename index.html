@@ -156,50 +156,119 @@
         </div>
     </div>
 
-         <div id="collateralView" class="hidden max-w-7xl mx-auto">
+
+    
+             <!-- ОКНО LENDING COLLATERAL (Скрыто по умолчанию) -->
+    <div id="collateralView" class="hidden max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-bold">Lending Collateral: Active Loan Parameters</h1>
             <button onclick="toggleView()" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- ЛЕВАЯ КОЛОНКА С ИНДИКАТОРАМИ (ОБНОВЛЕННАЯ) -->
             <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="glass-panel p-6">
+                
+                <!-- 1. Health Factor (Профессиональный круговой индикатор) -->
+                <div class="glass-panel p-6 relative overflow-hidden flex flex-col justify-between">
                     <p class="text-gray-400 text-sm">Health Factor (HF)</p>
-                    <div class="text-4xl font-bold text-emerald-400 mt-2">1.45</div>
-                    <div class="w-full bg-black/40 h-2 mt-4 rounded-full overflow-hidden">
-                        <div class="bg-emerald-500 w-[60%] h-full"></div>
+                    <!-- Простая SVG дуга для симуляции кругового индикатора -->
+                    <svg class="w-40 h-40 mt-4 mx-auto" viewBox="0 0 36 36">
+                        <path class="text-white/5" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="100, 100"/>
+                        <path class="text-emerald-400" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="75, 100" stroke-linecap="round"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pt-10">
+                        <div class="text-4xl font-bold text-emerald-400">1.45</div>
+                        <div class="text-xs text-gray-500 mt-1">Status: Safe</div>
                     </div>
                 </div>
-                <div class="glass-panel p-6">
+
+                <!-- 2. ПРОФЕССИОНАЛЬНЫЙ ИНДИКАТОР ВРЕМЕНИ (Как на картинке) -->
+                <div class="glass-panel p-6 flex flex-col justify-between relative">
+                    <div class="flex justify-between items-center">
+                        <p class="text-gray-400 text-sm">Unlock Grace Period</p>
+                        <span class="text-xs text-yellow-400 font-medium">Pending</span>
+                    </div>
+                    
+                    <!-- Сегментированный индикатор времени -->
+                    <div class="flex items-center gap-1.5 mt-5">
+                        <!-- Фиолетовые сегменты (прошлое) -->
+                        <div class="w-full h-8 bg-purple-500/20 rounded-md border border-purple-500/40"></div>
+                        <div class="w-full h-8 bg-purple-500/20 rounded-md border border-purple-500/40"></div>
+                        <div class="w-full h-8 bg-purple-500/20 rounded-md border border-purple-500/40"></div>
+                        <div class="w-full h-8 bg-purple-500/20 rounded-md border border-purple-500/40"></div>
+                        <div class="w-full h-8 bg-purple-500/20 rounded-md border border-purple-500/40"></div>
+                        <!-- Текущий сегмент (активный) -->
+                        <div class="w-full h-8 bg-purple-500 rounded-md relative shadow-lg shadow-purple-500/30">
+                            <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 w-3 h-3 bg-purple-500 rotate-45"></div>
+                        </div>
+                        <!-- Сине-зеленые сегменты (будущее) -->
+                        <div class="w-full h-8 bg-teal-500/20 rounded-md border border-teal-500/40"></div>
+                        <div class="w-full h-8 bg-teal-500/20 rounded-md border border-teal-500/40"></div>
+                        <div class="w-full h-8 bg-teal-500/20 rounded-md border border-teal-500/40"></div>
+                        <!-- Желтые сегменты (опасность/близко) -->
+                        <div class="w-full h-8 bg-yellow-500/20 rounded-md border border-yellow-500/40"></div>
+                        <div class="w-full h-8 bg-yellow-500/20 rounded-md border border-yellow-500/40"></div>
+                        <div class="w-full h-8 bg-yellow-500/20 rounded-md border border-yellow-500/40"></div>
+                    </div>
+                    
+                    <div class="flex justify-between items-end mt-4">
+                        <div class="text-xs text-gray-500">Grace Period Progress</div>
+                        <div class="text-3xl font-bold text-white">57 Hours <span class="text-sm font-normal text-gray-400">Remaining</span></div>
+                    </div>
+                </div>
+
+                <!-- 3. Collateral Usage (Стилизованный график) -->
+                <div class="glass-panel p-6 flex flex-col justification-between">
                     <p class="text-gray-400 text-sm">Collateral Usage</p>
                     <div class="text-4xl font-bold text-blue-400 mt-2">32.4%</div>
-                    <div class="w-full bg-black/40 h-2 mt-4 rounded-full overflow-hidden">
-                        <div class="bg-blue-500 w-[32%] h-full"></div>
+                    <!-- Простой SVG график -->
+                    <svg class="w-full h-16 mt-4 text-blue-500" viewBox="0 0 100 20" preserveAspectRatio="none">
+                        <path d="M0 15 Q 10 10, 20 12 T 40 8 T 60 10 T 80 5 T 100 7 V 20 H 0 Z" fill="currentColor" fill-opacity="0.1"/>
+                        <path d="M0 15 Q 10 10, 20 12 T 40 8 T 60 10 T 80 5 T 100 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+
+                <!-- 4. Collateral Composition (Стилизованная круговая диаграмма) -->
+                <div class="glass-panel p-6 flex items-center gap-5">
+                    <!-- Простая SVG круговая диаграмма -->
+                    <svg class="w-24 h-24 text-gray-700" viewBox="0 0 36 36">
+                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100"/>
+                        <path class="text-blue-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="70, 100" stroke-linecap="round"/>
+                        <path class="text-teal-400" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="40, 100" stroke-linecap="round"/>
+                        <path class="text-purple-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="20, 100" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                        <p class="text-gray-400 text-sm">Composition</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+                            <span class="text-sm">Main Stake (70%)</span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="w-3 h-3 bg-teal-400 rounded-full"></span>
+                            <span class="text-sm">Yield (20%)</span>
+                        </div>
                     </div>
-                </div>
-                <div class="glass-panel p-6">
-                    <p class="text-gray-400 text-sm">Lending Capacity</p>
-                    <div class="text-2xl font-bold mt-2">1,250.00 <span class="text-sm text-gray-500">TOKEN</span></div>
-                </div>
-                <div class="glass-panel p-6">
-                    <p class="text-gray-400 text-sm">Unlock Grace Period</p>
-                    <div class="text-2xl font-bold mt-2">57 Hours Remaining</div>
                 </div>
             </div>
 
-            <div class="glass-panel p-6">
-                <h2 class="text-lg font-semibold uppercase">AVAILABLE ACTIONS</h2>
-                <div class="mt-4 p-4 bg-black/30 rounded-xl border border-white/5">
-                    <p class="text-gray-400 text-[10px]">Your Wallet</p>
-                    <div class="text-2xl font-bold text-blue-400">5,000.00</div>
+            <!-- ПРАВАЯ КОЛОНКА С ДЕЙСТВИЯМИ (Без изменений) -->
+            <div class="glass-panel p-6 flex flex-col justification-between">
+                <div>
+                    <h2 class="text-lg font-semibold uppercase">AVAILABLE ACTIONS</h2>
+                    <div class="mt-5 p-4 bg-black/30 rounded-xl border border-white/5">
+                        <p class="text-gray-400 text-[10px]">Your Wallet</p>
+                        <div class="text-2xl font-bold text-blue-400 mt-1">5,000.00 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
+                    </div>
+                    <button class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-blue-500/20">CLAIM ALL REWARDS</button>
                 </div>
-                <button class="w-full mt-4 py-4 rounded-xl btn-initialize font-bold">CLAIM ALL REWARDS</button>
-                <button class="w-full mt-3 py-4 rounded-xl btn-action font-bold">ADJUST COLLATERAL</button>
+                <button class="w-full mt-3 py-4 rounded-xl btn-action font-bold text-gray-300">ADJUST COLLATERAL</button>
             </div>
         </div>
     </div>
 
+
+    
 
     <script>
         function toggleView() {
