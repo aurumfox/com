@@ -321,11 +321,19 @@
 
     
 
-    <script>
-        function toggleView() {
-            document.getElementById('mainStakingView').classList.toggle('hidden');
-            document.getElementById('collateralView').classList.toggle('hidden');
+      <script>
+        function toggleView(viewId) {
+            document.getElementById('mainStakingView').classList.add('hidden');
+            document.getElementById('collateralView').classList.add('hidden');
             document.getElementById('unstakeView').classList.add('hidden');
+
+            if (viewId === 'collateralView') {
+                document.getElementById('collateralView').classList.remove('hidden');
+            } else if (viewId === 'unstakeView') {
+                document.getElementById('unstakeView').classList.remove('hidden');
+            } else {
+                document.getElementById('mainStakingView').classList.remove('hidden');
+            }
         }
 
         const trigger = document.getElementById('dropdownTrigger');
@@ -344,13 +352,12 @@
         tierInputs.forEach(input => {
             input.addEventListener('change', (e) => {
                 selectedText.innerText = `Selected: ${e.target.value} Days`;
-                selectedText.classList.add('text-white', 'font-bold');
                 initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
                 initializeBtn.classList.remove('btn-initialize-inactive');
                 list.classList.remove('open');
-                icon.classList.remove('rotated');
             });
         });
+    
 
         document.addEventListener('click', (e) => {
             if (!list.contains(e.target) && !trigger.contains(e.target)) {
