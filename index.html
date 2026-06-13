@@ -270,12 +270,83 @@
         </div>
     </div>
 
-    <div id="claimView" class="hidden max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold">Claim Rewards</h1>
-            <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back</button>
+  <div id="claimView" class="hidden max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Claim Rewards: Security Audit</h1>
+        <button onclick="showView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <div class="glass-panel p-6 relative overflow-hidden flex flex-col justify-between">
+                <p class="text-gray-400 text-sm">Reward Safety Factor</p>
+                <svg class="w-40 h-40 mt-4 mx-auto" viewBox="0 0 36 36">
+                    <path class="text-white/5" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="100, 100"/>
+                    <path class="text-emerald-400" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="92, 100" stroke-linecap="round"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center pt-10">
+                    <div class="text-4xl font-bold text-emerald-400">0.92</div>
+                    <div class="text-xs text-gray-500 mt-1">Status: Validated</div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 flex flex-col justify-between relative">
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-400 text-sm">Protocol Sync Status</p>
+                    <span class="text-xs text-emerald-400 font-medium">Ready</span>
+                </div>
+                
+                <div class="flex items-center gap-1.5 mt-5">
+                    <div class="w-full h-8 bg-emerald-500/20 rounded-md border border-emerald-500/40"></div>
+                    <div class="w-full h-8 bg-emerald-500/20 rounded-md border border-emerald-500/40"></div>
+                    <div class="w-full h-8 bg-emerald-500 rounded-md relative shadow-lg shadow-emerald-500/30"></div>
+                </div>
+                
+                <div class="flex justify-between items-end mt-4">
+                    <div class="text-xs text-gray-500">Epoch Progress</div>
+                    <div class="text-3xl font-bold text-white">Synced <span class="text-sm font-normal text-gray-400">Slot 452</span></div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 flex flex-col justification-between">
+                <p class="text-gray-400 text-sm">Total Reward Yield</p>
+                <div class="text-4xl font-bold text-yellow-500 mt-2">125.75</div>
+                <svg class="w-full h-16 mt-4 text-yellow-500" viewBox="0 0 100 20" preserveAspectRatio="none">
+                    <path d="M0 15 Q 10 10, 20 12 T 40 8 T 60 10 T 80 5 T 100 7 V 20 H 0 Z" fill="currentColor" fill-opacity="0.1"/>
+                    <path d="M0 15 Q 10 10, 20 12 T 40 8 T 60 10 T 80 5 T 100 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+
+            <div class="glass-panel p-6 flex items-center gap-5">
+                <svg class="w-24 h-24 text-gray-700" viewBox="0 0 36 36">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100"/>
+                    <path class="text-yellow-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="85, 100" stroke-linecap="round"/>
+                </svg>
+                <div>
+                    <p class="text-gray-400 text-sm">Reward Split</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                        <span class="text-sm">User Share (95%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 flex flex-col justification-between">
+            <div>
+                <h2 class="text-lg font-semibold uppercase">CONFIRM CLAIM</h2>
+                <div class="mt-5 p-4 bg-black/30 rounded-xl border border-white/5">
+                    <p class="text-gray-400 text-[10px]">Net Rewards to Claim</p>
+                    <div class="text-2xl font-bold text-emerald-400 mt-1">119.46 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
+                </div>
+                <button class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-emerald-500/20">EXECUTE CLAIM</button>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-4 text-center">Fee: 5% Project Treasury Deducted</p>
         </div>
     </div>
+</div>
+
 
     <div id="disableCollateralView" class="hidden max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-8">
