@@ -156,7 +156,7 @@
         </div>
     </div>
 
-    <div id="collateralView" class="hidden max-w-7xl mx-auto">
+         <div id="collateralView" class="hidden max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-bold">Lending Collateral: Active Loan Parameters</h1>
             <button onclick="toggleView()" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -172,6 +172,17 @@
                     </div>
                 </div>
                 <div class="glass-panel p-6">
+                    <p class="text-gray-400 text-sm">Collateral Usage</p>
+                    <div class="text-4xl font-bold text-blue-400 mt-2">32.4%</div>
+                    <div class="w-full bg-black/40 h-2 mt-4 rounded-full overflow-hidden">
+                        <div class="bg-blue-500 w-[32%] h-full"></div>
+                    </div>
+                </div>
+                <div class="glass-panel p-6">
+                    <p class="text-gray-400 text-sm">Lending Capacity</p>
+                    <div class="text-2xl font-bold mt-2">1,250.00 <span class="text-sm text-gray-500">TOKEN</span></div>
+                </div>
+                <div class="glass-panel p-6">
                     <p class="text-gray-400 text-sm">Unlock Grace Period</p>
                     <div class="text-2xl font-bold mt-2">57 Hours Remaining</div>
                 </div>
@@ -184,9 +195,11 @@
                     <div class="text-2xl font-bold text-blue-400">5,000.00</div>
                 </div>
                 <button class="w-full mt-4 py-4 rounded-xl btn-initialize font-bold">CLAIM ALL REWARDS</button>
+                <button class="w-full mt-3 py-4 rounded-xl btn-action font-bold">ADJUST COLLATERAL</button>
             </div>
         </div>
     </div>
+
 
     <script>
         function toggleView() {
