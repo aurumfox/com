@@ -317,15 +317,7 @@
 
                 
                 
-<script>
-// Функция переключения между экранами
-function toggleView(viewId) {
-    document.getElementById('mainStakingView').classList.add('hidden');
-    document.getElementById('collateralView').classList.add('hidden');
-    document.getElementById('unstakeView').classList.add('hidden');
-    
-    document.getElementById(viewId).classList.remove('hidden');
-}
+
 
     
 
@@ -333,6 +325,7 @@ function toggleView(viewId) {
         function toggleView() {
             document.getElementById('mainStakingView').classList.toggle('hidden');
             document.getElementById('collateralView').classList.toggle('hidden');
+            document.getElementById('unstakeView').classList.add('hidden');
         }
 
         const trigger = document.getElementById('dropdownTrigger');
