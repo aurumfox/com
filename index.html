@@ -264,11 +264,67 @@
 
     
     <div id="depositView" class="hidden max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold">Deposit Assets</h1>
-            <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back</button>
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Deposit: Staking Synchronization Audit</h1>
+        <button onclick="showView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="glass-panel p-6 border border-blue-500/30 bg-blue-900/10 flex items-start gap-4">
+                <div class="p-3 bg-blue-500/20 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-blue-400 font-bold uppercase tracking-wider">Tier Weight Correction</h3>
+                    <p class="text-sm text-blue-100/70">
+                        Your deposit is being applied with a <b>Tier Multiplier</b> derived from pool index <b>[pool_index]</b>. 
+                        Weighted stake has been synchronized with the global pool state.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-panel p-6 relative overflow-hidden flex flex-col justify-between">
+                    <p class="text-gray-400 text-sm">Weighted Stake Growth</p>
+                    <svg class="w-40 h-40 mt-4 mx-auto" viewBox="0 0 36 36">
+                        <path class="text-white/5" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="100, 100"/>
+                        <path class="text-indigo-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="75, 100" stroke-linecap="round"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pt-10">
+                        <div class="text-4xl font-bold text-indigo-500">+75%</div>
+                        <div class="text-xs text-gray-500 mt-1">Weight Added</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 flex flex-col justify-between relative">
+                    <div class="flex justify-between items-center">
+                        <p class="text-gray-400 text-sm">MEV Protection Layer</p>
+                        <span class="text-xs text-emerald-400 font-medium">Verified</span>
+                    </div>
+                    <div class="mt-8">
+                        <div class="text-3xl font-bold text-white">Slot Lock-In</div>
+                        <div class="text-sm text-gray-400 mt-1">Flash Loan protection is active for this slot.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg font-semibold uppercase">CONFIRM DEPOSIT</h2>
+                <div class="mt-5 p-4 bg-black/30 rounded-xl border border-white/5">
+                    <p class="text-gray-400 text-[10px]">Net Deposit Amount</p>
+                    <div class="text-2xl font-bold text-indigo-400 mt-1">2,500.00 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
+                </div>
+                <button class="w-full mt-5 py-4 rounded-xl bg-indigo-500/20 border border-indigo-500/50 hover:bg-indigo-500/30 font-bold text-white transition-all">CONFIRM DEPOSIT</button>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-4 text-center">Your deposit will be locked according to pool index rules. Audit in progress.</p>
         </div>
     </div>
+</div>
+
 
   <div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
@@ -399,6 +455,105 @@
 
 
     
+<!-- ОКНО UNSTAKE (С профессиональной аналитикой выхода) -->
+<div id="unstakeView" class="hidden max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Unstake Position: Settlement Audit</h1>
+        <button onclick="showView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- ЛЕВАЯ КОЛОНКА С АНАЛИТИКОЙ -->
+        <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Добавленный блок предупреждения (не удаляет ничего из твоего) -->
+            <div class="md:col-span-2 glass-panel p-6 border-orange-500/30 bg-orange-900/10 flex items-start gap-4">
+                <div class="p-3 bg-orange-500/20 rounded-lg">
+                    <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-orange-400 font-bold">Early Exit Penalty Applied</h3>
+                    <p class="text-sm text-orange-200/70">You are withdrawing funds before the lock-up period expires. The early exit fee will be <b>19% (475.00 TOKEN)</b>.</p>
+                </div>
+            </div>
+            
+            <!-- 1. Penalty Impact (Индикатор тяжести штрафа) -->
+            <div class="glass-panel p-6 relative overflow-hidden flex flex-col justify-between">
+                <p class="text-gray-400 text-sm">Early Exit Penalty</p>
+                <svg class="w-40 h-40 mt-4 mx-auto" viewBox="0 0 36 36">
+                    <path class="text-white/5" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="100, 100"/>
+                    <path class="text-orange-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="19, 100" stroke-linecap="round"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center pt-10">
+                    <div class="text-4xl font-bold text-orange-500">19%</div>
+                    <div class="text-xs text-gray-500 mt-1">Status: Applied</div>
+                </div>
+            </div>
+
+            <!-- 2. Settlement Timeline (Индикатор готовности слотов) -->
+            <div class="glass-panel p-6 flex flex-col justify-between relative">
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-400 text-sm">MEV Protection Layer</p>
+                    <span class="text-xs text-emerald-400 font-medium">Locked</span>
+                </div>
+                
+                <div class="flex items-center gap-1.5 mt-5">
+                    <div class="w-full h-8 bg-purple-500 rounded-md"></div>
+                    <div class="w-full h-8 bg-purple-500 rounded-md"></div>
+                    <div class="w-full h-8 bg-emerald-500/20 rounded-md border border-emerald-500/40"></div>
+                </div>
+                
+                <div class="flex justify-between items-end mt-4">
+                    <div class="text-xs text-gray-500">Slot Safety Check</div>
+                    <div class="text-3xl font-bold text-white">Active <span class="text-sm font-normal text-gray-400">Validated</span></div>
+                </div>
+            </div>
+
+            <!-- 3. Net Output Flow (Индикатор потока средств) -->
+            <div class="glass-panel p-6 flex flex-col justification-between">
+                <p class="text-gray-400 text-sm">Estimated Net Payout</p>
+                <div class="text-4xl font-bold text-blue-400 mt-2">2,025.00</div>
+                <svg class="w-full h-16 mt-4 text-blue-500" viewBox="0 0 100 20" preserveAspectRatio="none">
+                    <path d="M0 15 Q 10 10, 20 12 T 40 8 T 60 10 T 80 5 T 100 7 V 20 H 0 Z" fill="currentColor" fill-opacity="0.1"/>
+                    <path d="M0 15 Q 10 10, 20 12 T 40 8 T 60 10 T 80 5 T 100 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+
+            <!-- 4. Treasury Distribution (Структура распределения штрафа) -->
+            <div class="glass-panel p-6 flex items-center gap-5">
+                <svg class="w-24 h-24 text-gray-700" viewBox="0 0 36 36">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100"/>
+                    <path class="text-orange-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="60, 100" stroke-linecap="round"/>
+                    <path class="text-red-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="30, 100" stroke-linecap="round"/>
+                </svg>
+                <div>
+                    <p class="text-gray-400 text-sm">Penalty Split</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="w-3 h-3 bg-orange-500 rounded-full"></span>
+                        <span class="text-sm">Admin (60%)</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                        <span class="text-sm">DAO Treasury (40%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ КОЛОНКА С ДЕЙСТВИЯМИ -->
+        <div class="glass-panel p-6 flex flex-col justification-between">
+            <div>
+                <h2 class="text-lg font-semibold uppercase">CONFIRM UNSTAKE</h2>
+                <div class="mt-5 p-4 bg-black/30 rounded-xl border border-white/5">
+                    <p class="text-gray-400 text-[10px]">Total Deduction (Fee + Penalty)</p>
+                    <div class="text-2xl font-bold text-red-400 mt-1">475.00 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
+                </div>
+                <button class="w-full mt-5 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-4 text-center">Warning: This action is irreversible. Your account may be closed if balance drops to zero.</p>
+        </div>
+    </div>
+</div>
 
 
 
@@ -407,13 +562,57 @@
               
 
    
+<div id="closeAccountView" class="hidden max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Close Account: Deactivation Audit</h1>
+        <button onclick="showView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+    </div>
 
-    <div id="closeAccountView" class="hidden max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold">Close Staking Account</h1>
-            <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back</button>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="glass-panel p-6 border border-red-500/30 bg-red-900/10 flex items-start gap-4">
+                <div class="p-3 bg-red-500/20 rounded-lg">
+                    <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-red-400 font-bold uppercase tracking-wider">Security Invariants Check</h3>
+                    <p class="text-sm text-red-100/70">
+                        System is auditing your account state. Verified: <b>0 Staked Amount</b>, <b>0 Collateral Lock</b>, <b>Minimal Reward Dust</b>. 
+                        Account is eligible for permanent deactivation.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-panel p-6 flex flex-col justify-between">
+                    <p class="text-gray-400 text-sm">Reward Dust Threshold</p>
+                    <div class="text-3xl font-bold text-white mt-6">< 100 <span class="text-sm text-gray-500">TOKEN</span></div>
+                    <div class="mt-2 text-xs text-emerald-400">Status: Within Limits</div>
+                </div>
+
+                <div class="glass-panel p-6 flex flex-col justify-between">
+                    <p class="text-gray-400 text-sm">Account Integrity Audit</p>
+                    <div class="text-3xl font-bold text-white mt-6">Initialized</div>
+                    <div class="mt-2 text-xs text-blue-400">Ready for deallocation</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg font-semibold uppercase">CONFIRM DEACTIVATION</h2>
+                <div class="mt-5 p-4 bg-black/30 rounded-xl border border-white/5">
+                    <p class="text-gray-400 text-[10px]">Rent Recovery Expected</p>
+                    <div class="text-2xl font-bold text-emerald-400 mt-1">0.02 <span class="text-sm font-normal text-gray-500">SOL</span></div>
+                </div>
+                <button class="w-full mt-5 py-4 rounded-xl bg-red-600/20 border border-red-600/50 hover:bg-red-600/30 font-bold text-white transition-all">CLOSE ACCOUNT PERMANENTLY</button>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-4 text-center">Caution: This process clears the account index and returns rent. Irreversible.</p>
         </div>
     </div>
+</div>
+
 
     <script>
         function switchView(viewId) {
