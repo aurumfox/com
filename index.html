@@ -307,6 +307,30 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             
+            <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass-panel p-4 flex items-center gap-3">
+                    <div id="slotIndicator" class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase">Slot Status</p>
+                        <p class="text-xs font-bold text-white">Safe for Withdrawal</p>
+                    </div>
+                </div>
+                <div class="glass-panel p-4 flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase">Blacklist</p>
+                        <p class="text-xs font-bold text-white">Cleared</p>
+                    </div>
+                </div>
+                <div class="glass-panel p-4 flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase">Pool State</p>
+                        <p class="text-xs font-bold text-white">Unlocked</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="md:col-span-2 glass-panel p-6 border border-emerald-500/30 bg-emerald-900/10 flex items-center gap-4">
                 <div class="p-3 bg-emerald-500/20 rounded-lg">
                     <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6-4h12m-6-4h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
@@ -338,11 +362,18 @@
         <div class="glass-panel p-6 flex flex-col justify-between">
             <div>
                 <h2 class="text-lg font-semibold uppercase">EXECUTE RELEASE</h2>
+                
                 <div class="mt-6 p-4 bg-black/30 rounded-xl border border-white/5">
-                    <p class="text-gray-400 text-[10px]">Unlockable Amount</p>
-                    <div class="text-2xl font-bold text-emerald-400 mt-1">1,250.00 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
+                    <p class="text-gray-400 text-[10px]">Unlockable Amount (Available: 1,250.00)</p>
+                    <input type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-emerald-400 mt-1 outline-none border-none">
                 </div>
-                <button class="w-full mt-6 py-4 rounded-xl bg-blue-500 hover:bg-blue-600 font-bold text-white transition-all shadow-lg shadow-blue-500/20">CONFIRM DECOLLATERALIZE</button>
+
+                <div id="safetyWarning" class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl hidden">
+                    <p class="text-yellow-500 text-[10px] font-bold uppercase">⚠️ Security Notice</p>
+                    <p class="text-gray-400 text-[10px] mt-1">Ensure your transaction is executed in a new block to satisfy anti-MEV requirements.</p>
+                </div>
+
+                <button class="w-full mt-6 py-4 rounded-xl bg-blue-500 hover:bg-blue-600 font-bold text-white transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98]">CONFIRM DECOLLATERALIZE</button>
             </div>
         </div>
     </div>
