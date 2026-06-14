@@ -596,8 +596,8 @@
 
 
 
-    
- <div id="unstakeView" class="hidden max-w-7xl mx-auto">
+
+    <div id="unstakeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Unstake Position: Settlement Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -606,13 +606,13 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            <div class="md:col-span-2 glass-panel p-6 border-orange-500/30 bg-orange-900/10 flex items-start gap-4">
+            <div id="lockupWarning" class="md:col-span-2 glass-panel p-6 border-orange-500/30 bg-orange-900/10 flex items-start gap-4">
                 <div class="p-3 bg-orange-500/20 rounded-lg">
                     <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                 </div>
                 <div>
                     <h3 class="text-orange-400 font-bold">Early Exit Penalty Applied</h3>
-                    <p class="text-sm text-orange-200/70">You are withdrawing funds before the lock-up period expires. The early exit fee will be <b>19% (475.00 TOKEN)</b>.</p>
+                    <p class="text-sm text-orange-200/70">Time remaining until penalty-free: <span id="lockupTimer" class="font-bold text-white">02:14:05</span>. Penalty: <b>19% (475.00 TOKEN)</b>.</p>
                 </div>
             </div>
             
@@ -631,7 +631,7 @@
             <div class="glass-panel p-6 flex flex-col justify-between relative">
                 <div class="flex justify-between items-center">
                     <p class="text-gray-400 text-sm">MEV Protection Layer</p>
-                    <span class="text-xs text-emerald-400 font-medium">Locked</span>
+                    <span id="mevStatus" class="text-xs text-emerald-400 font-medium">Locked</span>
                 </div>
                 
                 <div class="flex items-center gap-1.5 mt-5">
@@ -693,20 +693,26 @@
                     </div>
                 </div>
 
-                <div class="mt-6 p-4 bg-black/30 rounded-xl border border-white/5">
-                    <p class="text-gray-400 text-[10px]">Total Deduction (Fee + Penalty)</p>
-                    <div class="text-2xl font-bold text-red-400 mt-1">475.00 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
+                <div class="mt-6 space-y-2 p-4 bg-black/40 rounded-xl border border-white/10">
+                    <div class="flex justify-between text-[10px] text-gray-400"><span>Admin Fee Share:</span><span class="text-white">285.00 TOKEN</span></div>
+                    <div class="flex justify-between text-[10px] text-gray-400"><span>DAO Seized:</span><span class="text-white">190.00 TOKEN</span></div>
+                    <div class="mt-2 pt-2 border-t border-white/10 flex justify-between">
+                        <span class="text-[10px] text-gray-400">Total Deduction:</span>
+                        <span class="text-lg font-bold text-red-400">475.00 TOKEN</span>
+                    </div>
                 </div>
                 
-                <button class="w-full mt-6 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white transition-all shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
+                <button id="unstakeBtn" class="w-full mt-6 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white transition-all shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
             </div>
+            
+            <div id="liquidityAlert" class="hidden mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-center">
+                <p class="text-[10px] text-red-400 uppercase font-bold">Liquidity Warning: Vault reserves low</p>
+            </div>
+
             <p class="text-[10px] text-gray-500 mt-4 text-center">Warning: This action is irreversible. Your account may be closed if balance drops to zero.</p>
         </div>
     </div>
 </div>
-
-
-
 
     
                 
