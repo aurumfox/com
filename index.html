@@ -382,17 +382,30 @@
 
 
     
-    
     <div id="depositView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Deposit: Staking Synchronization Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
-
-          </div>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
             
+            <div id="poolParameters" class="grid grid-cols-3 gap-4">
+                <div class="glass-panel p-4">
+                    <p class="text-[10px] text-gray-400 uppercase">Min Initial Stake</p>
+                    <p id="minStakeValue" class="text-sm font-bold text-white mt-1">100.00 TOKEN</p>
+                </div>
+                <div class="glass-panel p-4">
+                    <p class="text-[10px] text-gray-400 uppercase">Lockup Duration</p>
+                    <p id="lockupDuration" class="text-sm font-bold text-white mt-1">30 Days</p>
+                </div>
+                <div class="glass-panel p-4">
+                    <p class="text-[10px] text-gray-400 uppercase">Tier Multiplier</p>
+                    <p id="tierMultiplier" class="text-sm font-bold text-emerald-400 mt-1">1.25x</p>
+                </div>
+            </div>
+
             <div class="glass-panel p-6 border border-blue-500/30 bg-blue-900/10 flex items-start gap-4">
                 <div class="p-3 bg-blue-500/20 rounded-lg">
                     <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
@@ -435,17 +448,22 @@
         <div class="glass-panel p-6 flex flex-col justify-between">
             <div>
                 <h2 class="text-lg font-semibold uppercase">CONFIRM DEPOSIT</h2>
+                
                 <div class="mt-5 p-4 bg-black/30 rounded-xl border border-white/5">
                     <p class="text-gray-400 text-[10px]">Net Deposit Amount</p>
-                    <div class="text-2xl font-bold text-indigo-400 mt-1">2,500.00 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
+                    <input type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-indigo-400 mt-1 outline-none border-none">
                 </div>
+
+                <div id="depositStatus" class="mt-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+                    <p class="text-[10px] text-indigo-300">Ready for synchronization with pool index: <span id="currentPoolIndex">0</span></p>
+                </div>
+
                 <button class="w-full mt-5 py-4 rounded-xl bg-indigo-500/20 border border-indigo-500/50 hover:bg-indigo-500/30 font-bold text-white transition-all">CONFIRM DEPOSIT</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Your deposit will be locked according to pool index rules. Audit in progress.</p>
         </div>
     </div>
 </div>
-
 
   <div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
