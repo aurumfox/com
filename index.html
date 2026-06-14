@@ -155,8 +155,9 @@
     <div id="collateralView" class="hidden max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-bold">Lending Collateral: Active Loan Parameters</h1>
-            <button onclick="toggleView()" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
-        </div>
+            <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+
+             </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- ЛЕВАЯ КОЛОНКА С ИНДИКАТОРАМИ (ОБНОВЛЕННАЯ) -->
@@ -269,8 +270,9 @@
 <div id="decollateralizeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Decollateralize: Collateral Release Audit</h1>
-        <button onclick="switchView('collateralView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Lending</button>
-    </div>
+        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+
+         </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -322,8 +324,9 @@
     <div id="depositView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Deposit: Staking Synchronization Audit</h1>
-        <button onclick="showView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
-    </div>
+        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+
+          </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
@@ -385,8 +388,9 @@
   <div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Claim Rewards: Security Audit</h1>
-        <button onclick="showView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
-    </div>
+        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+
+          </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -471,8 +475,9 @@
 <div id="unstakeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Unstake Position: Settlement Audit</h1>
-        <button onclick="showView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
-    </div>
+        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+
+        </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- ЛЕВАЯ КОЛОНКА С АНАЛИТИКОЙ -->
@@ -577,8 +582,9 @@
 <div id="closeAccountView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Close Account: Deactivation Audit</h1>
-        <button onclick="showView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
-    </div>
+        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+
+          </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
@@ -626,8 +632,8 @@
 </div>
 
 
-    <script>
-    // 1. Универсальная функция для переключения
+   <script>
+    // Универсальная функция для переключения всех видов
     function switchView(viewId) {
         const views = [
             'mainStakingView', 
@@ -639,13 +645,13 @@
             'closeAccountView'
         ];
         
-        // Скрываем всё
+        // Скрываем все окна
         views.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('hidden');
         });
         
-        // Показываем нужное
+        // Показываем целевое окно
         const target = document.getElementById(viewId);
         if (target) {
             target.classList.remove('hidden');
