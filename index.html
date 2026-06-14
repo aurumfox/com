@@ -471,19 +471,15 @@
 
 
     
-<!-- ОКНО UNSTAKE (С профессиональной аналитикой выхода) -->
-<div id="unstakeView" class="hidden max-w-7xl mx-auto">
+ <div id="unstakeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Unstake Position: Settlement Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
-
-        </div>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- ЛЕВАЯ КОЛОНКА С АНАЛИТИКОЙ -->
         <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            <!-- Добавленный блок предупреждения (не удаляет ничего из твоего) -->
             <div class="md:col-span-2 glass-panel p-6 border-orange-500/30 bg-orange-900/10 flex items-start gap-4">
                 <div class="p-3 bg-orange-500/20 rounded-lg">
                     <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -494,7 +490,6 @@
                 </div>
             </div>
             
-            <!-- 1. Penalty Impact (Индикатор тяжести штрафа) -->
             <div class="glass-panel p-6 relative overflow-hidden flex flex-col justify-between">
                 <p class="text-gray-400 text-sm">Early Exit Penalty</p>
                 <svg class="w-40 h-40 mt-4 mx-auto" viewBox="0 0 36 36">
@@ -507,7 +502,6 @@
                 </div>
             </div>
 
-            <!-- 2. Settlement Timeline (Индикатор готовности слотов) -->
             <div class="glass-panel p-6 flex flex-col justify-between relative">
                 <div class="flex justify-between items-center">
                     <p class="text-gray-400 text-sm">MEV Protection Layer</p>
@@ -526,7 +520,6 @@
                 </div>
             </div>
 
-            <!-- 3. Net Output Flow (Индикатор потока средств) -->
             <div class="glass-panel p-6 flex flex-col justification-between">
                 <p class="text-gray-400 text-sm">Estimated Net Payout</p>
                 <div class="text-4xl font-bold text-blue-400 mt-2">2,025.00</div>
@@ -536,7 +529,6 @@
                 </svg>
             </div>
 
-            <!-- 4. Treasury Distribution (Структура распределения штрафа) -->
             <div class="glass-panel p-6 flex items-center gap-5">
                 <svg class="w-24 h-24 text-gray-700" viewBox="0 0 36 36">
                     <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="100, 100"/>
@@ -549,7 +541,7 @@
                         <span class="w-3 h-3 bg-orange-500 rounded-full"></span>
                         <span class="text-sm">Admin (60%)</span>
                     </div>
-                    <div class="flex items-center gap-2 mt-1">
+                    <div class="flex items-center gap-1 mt-1">
                         <span class="w-3 h-3 bg-red-500 rounded-full"></span>
                         <span class="text-sm">DAO Treasury (40%)</span>
                     </div>
@@ -557,20 +549,36 @@
             </div>
         </div>
 
-        <!-- ПРАВАЯ КОЛОНКА С ДЕЙСТВИЯМИ -->
-        <div class="glass-panel p-6 flex flex-col justification-between">
+        <div class="glass-panel p-6 flex flex-col justify-between">
             <div>
                 <h2 class="text-lg font-semibold uppercase">CONFIRM UNSTAKE</h2>
-                <div class="mt-5 p-4 bg-black/30 rounded-xl border border-white/5">
+                
+                <div class="mt-5 space-y-4">
+                    <div class="p-4 bg-black/30 rounded-xl border border-white/5">
+                        <p class="text-gray-400 text-[10px] uppercase">Withdrawal Amount (TOKEN)</p>
+                        <input type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-white mt-1 outline-none">
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">25%</button>
+                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">50%</button>
+                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">75%</button>
+                        <button class="py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-xs font-bold text-blue-400 transition-all">MAX</button>
+                    </div>
+                </div>
+
+                <div class="mt-6 p-4 bg-black/30 rounded-xl border border-white/5">
                     <p class="text-gray-400 text-[10px]">Total Deduction (Fee + Penalty)</p>
                     <div class="text-2xl font-bold text-red-400 mt-1">475.00 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
                 </div>
-                <button class="w-full mt-5 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
+                
+                <button class="w-full mt-6 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white transition-all shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Warning: This action is irreversible. Your account may be closed if balance drops to zero.</p>
         </div>
     </div>
 </div>
+
 
 
 
