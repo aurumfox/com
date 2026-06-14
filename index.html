@@ -640,17 +640,17 @@
 
 
    <script>
-    // Универсальная функция для переключения всех видов
-    function switchView(viewId) {
-        const views = [
-            'mainStakingView', 
-            'collateralView', 
-            'decollateralizeView',
-            'depositView', 
-            'claimView', 
-            'unstakeView', 
-            'closeAccountView'
-        ];
+   function switchView(viewId) {
+    const views = [
+        'mainStakingView', 
+        'collateralView', 
+        'decollateralizeView', // <-- ОЧЕНЬ ВАЖНО: чтобы было то же самое слово!
+        'depositView', 
+        'claimView', 
+        'unstakeView', 
+        'closeAccountView'
+    ];
+    
         
         // Скрываем все окна
         views.forEach(id => {
