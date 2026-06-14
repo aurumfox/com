@@ -131,7 +131,10 @@
                     </div>
                 </div>
 
-                <button id="initializeBtn" class="w-full py-4 rounded-xl font-bold btn-initialize text-white btn-initialize-inactive">INITIALIZE USER STAKE</button>
+
+                 <div class="grid grid-cols-2 gap-3">
+               <button onclick="switchView('initStakeView')" class="py-3 rounded-lg font-medium btn-action text-sm">INITIALIZE USER STAKE</button>
+               </div>
                 
                 <div class="grid grid-cols-2 gap-3">
                     <button onclick="switchView('depositView')" class="py-3 rounded-lg font-medium btn-action text-sm">DEPOSIT</button>
@@ -151,7 +154,73 @@
 
 
     
+    <div id="initStakeView" class="hidden max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Initialize Staking: Security Audit</h1>
+        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             
+            <div class="md:col-span-2 glass-panel p-6 border-emerald-500/30 bg-emerald-900/5 flex items-start gap-4">
+                <div class="p-3 bg-emerald-500/20 rounded-lg">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-emerald-400 font-bold">Secure Account Initialization</h3>
+                    <p class="text-sm text-emerald-200/70">Your staking account will be cryptographically bound to <b>Pool Index <span id="selectedPool">0</span></b>. Lock-up period and rewards sync will be active immediately.</p>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 flex flex-col justify-between">
+                <p class="text-gray-400 text-sm">Lock-up Period</p>
+                <div class="text-3xl font-bold text-white mt-2" id="lockupDisplay">30 Days</div>
+                <div class="w-full h-2 bg-white/5 rounded-full mt-4 overflow-hidden">
+                    <div class="h-full bg-indigo-500" style="width: 100%"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">Active from initialization</p>
+            </div>
+
+            <div class="glass-panel p-6 flex flex-col justify-between">
+                <p class="text-gray-400 text-sm">Account Integrity</p>
+                <div class="flex items-center gap-3 mt-4">
+                    <div class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-bold text-white">System Verified</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">Owner ID: <span class="font-mono text-[10px]">0x...8aF9</span></p>
+            </div>
+
+            <div class="md:col-span-2 glass-panel p-6 flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Global Reward Multiplier Sync</p>
+                    <p class="text-xs text-gray-500 mt-1">Initial sync with reward_per_share_global</p>
+                </div>
+                <div class="text-2xl font-bold text-emerald-400">1.00x</div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg font-semibold uppercase">INITIALIZE STAKE</h2>
+                
+                <div class="mt-6 p-4 bg-black/30 rounded-xl border border-white/5">
+                    <p class="text-gray-400 text-[10px]">Contract Method</p>
+                    <div class="text-sm font-mono text-indigo-400 mt-1">initialize_user_stake()</div>
+                </div>
+
+                <div class="mt-4 p-4 bg-black/30 rounded-xl border border-white/5">
+                    <p class="text-gray-400 text-[10px]">Required Signer</p>
+                    <div class="text-sm text-white mt-1">Wallet Owner</div>
+                </div>
+
+                <button class="w-full mt-8 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 font-bold text-white transition-all shadow-lg shadow-emerald-500/10">CONFIRM INITIALIZATION</button>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-4 text-center">By initializing, you confirm the binding of this account to the protocol pool state.</p>
+        </div>
+    </div>
+</div>
+        
 
 
  
@@ -775,6 +844,7 @@
    <script>
    function switchView(viewId) {
     const views = [
+        'initStakeView',
         'mainStakingView', 
         'collateralView', 
         'decollateralizeView', // <-- ОЧЕНЬ ВАЖНО: чтобы было то же самое слово!
