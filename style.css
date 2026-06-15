@@ -291,22 +291,7 @@ body {
 
 
  
-/* Логотип в хедере */
-.header .logo {
-    width: 48px;
-    height: 48px;
-    background-image: url(<link rel="icon" href="./assets/favicon.png" type="image/png">
-</head>
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    border-radius: 12px;
-    transition: transform 0.3s ease;
-}
 
-.header .logo:hover {
-    transform: scale(1.05);
-}
 
 /* Стилизация хедеров и кнопок Wallet */
 .wallet-control .connect-btn {
