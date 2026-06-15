@@ -220,109 +220,48 @@ body {
 
 
 
-/* ==========================================================================
-   🦊 ФИНАЛЬНОЕ ПЕРЕОПРЕДЕЛЕНИЕ СТИЛЕЙ КНОПКИ CONNECT WALLET 🦊
-   (Гарантированно перебивает старые стили)
-   ========================================================================== */
 
-/* Контейнер, если он используется в меню */
-.header .wallet-controls,
-.nav .wallet-controls {
+  /* Стиль для кнопки Connect Wallet */
+.web3-button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+}
+
+.web3-button:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Стиль для блока с логотипом (Assets) */
+.logo-container {
     display: flex;
     align-items: center;
-    /* Убедитесь, что кнопка стоит в нужном месте */
+    gap: 12px;
 }
 
-/* 1. СТИЛЬ: CONNECT WALLET (НЕ ПОДКЛЮЧЕН) */
-/* Используем повышенный приоритет селекторов для гарантированного применения */
-.header .web3-button.connect-fox-btn,
-.nav .web3-button.connect-fox-btn,
-.web3-button.connect-fox-btn {
-    /* Увеличиваем приоритет: !important */
-    display: inline-flex !important;
-    align-items: center !important;
-    padding: 14px 30px !important; 
-    border-radius: 30px !important; 
-    font-weight: 700 !important;
-    font-size: 1.1em !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1px !important;
-    cursor: pointer !important;
-    
-    /* Золотой стиль с темным фоном */
-    background: linear-gradient(145deg, var(--color-bg-card) 0%, var(--color-bg-dark) 100%) !important; 
-    color: var(--primary-color) !important; 
-    border: 2px solid var(--primary-color) !important; 
-    
-    /* Свечение */
-    box-shadow: 
-        0 0 5px var(--primary-color), 
-        0 8px 15px rgba(0, 0, 0, 0.6) !important; 
-    
-    transition: all 0.3s ease-in-out !important;
+.logo-container img {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.header .web3-button.connect-fox-btn:hover,
-.nav .web3-button.connect-fox-btn:hover,
-.web3-button.connect-fox-btn:hover {
-    background: linear-gradient(145deg, var(--color-bg-dark) 0%, var(--color-bg-card) 100%) !important; 
-    color: var(--text-color-white) !important; 
-    transform: translateY(-4px) scale(1.01) !important; 
-    
-    box-shadow: 
-        0 0 15px var(--primary-color), 
-        0 12px 25px rgba(0, 0, 0, 0.8) !important; 
-    
-    border-color: var(--link-hover-color) !important; 
+/* Контейнер хедера для красивого выравнивания */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 2rem;
 }
-
-/* 2. СТИЛЬ: КОШЕЛЕК ПОДКЛЮЧЕН (CONNECTED) */
-.header .web3-button.connected,
-.nav .web3-button.connected,
-.web3-button.connected {
-    /* Переопределяем стили кнопки, чтобы она выглядела как аккуратный блок */
-    display: inline-flex !important;
-    align-items: center !important;
-    padding: 10px 20px !important; 
-    border-radius: 30px !important; 
-    font-size: 1em !important;
-    font-weight: 600 !important;
-    text-transform: none !important;
-    
-    background: var(--color-bg-input) !important; 
-    color: var(--color-wallet-address) !important; 
-    border: 2px solid var(--success-color) !important; 
-    
-    /* Зеленое свечение */
-    box-shadow: 0 0 15px rgba(40, 167, 69, 0.8) !important; 
-    transition: all 0.3s ease-in-out !important;
-    transform: none !important; /* Сброс трансформации, если она была унаследована */
-}
-
-.header .web3-button.connected:hover,
-.nav .web3-button.connected:hover,
-.web3-button.connected:hover {
-    background-color: var(--color-bg-card) !important; 
-    box-shadow: 0 0 25px rgba(40, 167, 69, 1) !important;
-    transform: translateY(-2px) !important;
-}
-
-.web3-button .connected-icon {
-    margin-right: 8px !important;
-    font-size: 1.2em !important;
-}
-
-/* Стиль иконки внутри кнопки */
-.web3-button .fox-icon {
-    fill: var(--primary-color) !important; 
-    width: 28px !important;
-    height: 28px !important;
-    margin-right: 10px !important;
-    transition: transform 0.3s ease, fill 0.3s ease !important;
-}
-
-.web3-button.connect-fox-btn:hover .fox-icon {
-    fill: var(--text-color-white) !important; 
-    transform: rotate(10deg) scale(1.1) !important;
-}
-
