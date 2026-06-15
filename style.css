@@ -360,3 +360,52 @@ body {
         0 15px 40px -10px rgba(59, 130, 246, 0.3), 
         inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Контейнер для нашего "Куба" */
+.cube-container {
+    perspective: 1000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Сам логотип с анимацией */
+.animated-cube {
+    width: 80px;
+    height: 80px;
+    background-image: url('./assets/9280.png'); /* Ваш файл куба */
+    background-size: contain;
+    background-repeat: no-repeat;
+    animation: rotateCube 6s linear infinite; /* Плавное бесконечное вращение */
+}
+
+/* Настройка ключевых кадров для вращения */
+@keyframes rotateCube {
+    from { transform: rotateY(0deg); }
+    to { transform: rotateY(360deg); }
+}
