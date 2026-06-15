@@ -240,28 +240,3 @@ body {
     transform: translateY(-1px);
 }
 
-/* Стиль для блока с логотипом (Assets) */
-.logo-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.logo-container img {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    object-fit: cover;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Контейнер хедера для красивого выравнивания */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.2);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 2rem;
-}
