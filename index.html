@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurum Fox: DAO, Staking & Lending on Solana</title>
+    <title>QUBIT (QBT): DAO, Staking & Lending</title>
 
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';">
 
@@ -24,28 +24,31 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/foxcoin-hero.png" type="image/png">
 
-
     <script src="app.js" defer></script>
 </head>
 
-<body class="p-4 md:p-8">
-    <header class="header">
-        <div class="container">
-            <div class="logo"></div>
-            <nav class="nav">
-                <ul class="main-nav"></ul>
-            </nav>
-            <div class="wallet-controls">
-                <div id="wallet-header-area" class="wallet-control">
-                    <button id="connectWalletBtn" class="web3-button connect-btn">
-                         Connect Wallet
-                    </button>
+<body class="p-4 md:p-8 bg-slate-950"> <!-- Добавил bg-slate-950 для темного премиального фона -->
+
+    <!-- ВАШ НОВЫЙ БЛОК НАЧИНАЕТСЯ ЗДЕСЬ -->
+    <header class="header p-6 flex justify-between items-center">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="logo"></div>
+                <div class="flex flex-col">
+                    <h1 class="text-xl font-bold text-white tracking-tight">QUBIT</h1>
+                    <span class="text-[10px] text-blue-400 uppercase tracking-widest font-semibold">DAO & STAKING</span>
                 </div>
+            </div>
+            
+            <div class="wallet-controls">
+                <button id="connectWalletBtn" class="px-6 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold transition-all shadow-lg shadow-blue-900/20">
+                    Connect Wallet
+                </button>
             </div>
         </div>
     </header>
-    </body>
-</html>
+    
+
 
 
       
