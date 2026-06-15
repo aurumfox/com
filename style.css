@@ -20,6 +20,28 @@ body {
 }
 
 
+
+
+
+
+
+
+.actions-panel {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 24px;
+    margin: 20px;
+}
+
+
+
+
+
+
+
+
 /* --- КОМПАКТНЫЙ ВЫПАДАЮЩИЙ СПИСОК (COMPACT DROPDOWN) --- */
 
 /* Контейнер выпадающего списка */
@@ -154,6 +176,37 @@ body {
 .tier-input:checked + .tier-card.tier-purple { border-left: 3px solid #c084fc; box-shadow: inset 0 0 15px rgba(192, 132, 252, 0.1); }
 
 
+
+
+
+
+
+/* Контейнер для всех кнопок */
+.actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Две колонки */
+    gap: 12px; /* Равномерные отступы между кнопками */
+    padding: 16px;
+}
+
+/* Кнопки, занимающие всю ширину (как UNSTAKE) */
+.full-width {
+    grid-column: span 2;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* --- АНИМАЦИЯ НАЖАТИЯ КНОПОК --- */
 /* Базовый стиль для всех интерактивных кнопок */
 .btn-action, .btn-initialize, .btn-danger {
@@ -176,6 +229,30 @@ body {
     background: rgba(255, 255, 255, 0.03);
     color: #e2e8f0;
 }
+
+
+
+
+
+
+.btn-action {
+    padding: 16px 20px;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    /* Убираем плоский фон, делаем чуть заметный градиент */
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.5));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+
+
+
+
+
+
 
 /* Эффект наведения на обычную кнопку */
 .btn-action:hover {
