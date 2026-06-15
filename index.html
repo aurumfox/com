@@ -161,6 +161,8 @@
     
 
 
+
+              
     <div id="initStakeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Initialize Staking: Security Audit</h1>
@@ -183,23 +185,23 @@
             <div class="md:col-span-2 glass-panel p-6">
                 <p class="text-gray-400 text-sm mb-4 uppercase tracking-widest">Select Commitment Tier:</p>
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="tierSelector">
-                    <button data-tier="14" data-label="14 Days" class="tier-btn p-3 border border-blue-500 bg-blue-500/10 rounded-lg text-center transition-all active-tier">
+                    <button data-tier="14" data-index="0" data-label="14 Days" class="tier-btn p-3 border border-blue-500 bg-blue-500/10 rounded-lg text-center transition-all active-tier">
                         <span class="block font-bold text-white">14D</span>
                         <span class="text-[10px] text-blue-400">0.5x APY</span>
                     </button>
-                    <button data-tier="30" data-label="30 Days" class="tier-btn p-3 border border-white/10 bg-black/20 rounded-lg text-center hover:border-teal-500 transition-all">
+                    <button data-tier="30" data-index="1" data-label="30 Days" class="tier-btn p-3 border border-white/10 bg-black/20 rounded-lg text-center hover:border-teal-500 transition-all">
                         <span class="block font-bold text-white">30D</span>
                         <span class="text-[10px] text-teal-400">1.0x APY</span>
                     </button>
-                    <button data-tier="90" data-label="90 Days" class="tier-btn p-3 border border-white/10 bg-black/20 rounded-lg text-center hover:border-yellow-500 transition-all">
+                    <button data-tier="90" data-index="2" data-label="90 Days" class="tier-btn p-3 border border-white/10 bg-black/20 rounded-lg text-center hover:border-yellow-500 transition-all">
                         <span class="block font-bold text-white">90D</span>
                         <span class="text-[10px] text-yellow-500">2.0x APY</span>
                     </button>
-                    <button data-tier="180" data-label="180 Days" class="tier-btn p-3 border border-white/10 bg-black/20 rounded-lg text-center hover:border-orange-500 transition-all">
+                    <button data-tier="180" data-index="3" data-label="180 Days" class="tier-btn p-3 border border-white/10 bg-black/20 rounded-lg text-center hover:border-orange-500 transition-all">
                         <span class="block font-bold text-white">180D</span>
                         <span class="text-[10px] text-orange-400">3.5x APY</span>
                     </button>
-                    <button data-tier="365" data-label="365 Days" class="tier-btn p-3 border border-white/10 bg-black/20 rounded-lg text-center hover:border-purple-500 transition-all">
+                    <button data-tier="365" data-index="4" data-label="365 Days" class="tier-btn p-3 border border-white/10 bg-black/20 rounded-lg text-center hover:border-purple-500 transition-all">
                         <span class="block font-bold text-white">365D</span>
                         <span class="text-[10px] text-purple-400">6.0x APY</span>
                     </button>
@@ -259,6 +261,7 @@
         </div>
     </div>
 </div>
+
 
 
         
