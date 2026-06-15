@@ -3,14 +3,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <script>
-    // Этот блок исправляет ошибку "require is not defined"
-    window.global = window;
-    window.process = { env: {} };
-    window.exports = {};
-    window.require = function(name) { return window[name]; };
-</script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aurum Fox: DAO, Staking & Lending on Solana</title>
@@ -21,40 +13,38 @@
         window.global = window;
         window.process = { env: {} };
         window.exports = {};
-        // Обманка для buffer.js, чтобы не было ошибки "require is not defined"
         window.require = function(name) { return window[name]; };
     </script>
 
     <script src="js/buffer.js"></script>
     <script src="js/solana.js"></script>
     <script src="js/anchor.js"></script>
-
-    <script src="app.js"></script>
- <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/favicon.png" type="image/png">
+
+    <script src="app.js" defer></script>
 </head>
-  <body class="p-4 md:p-8">
-<body>
 
-
+<body class="p-4 md:p-8">
     <header class="header">
-    <div class="container">
-        <div class="logo">
+        <div class="container">
+            <div class="logo"></div>
+            <nav class="nav">
+                <ul class="main-nav"></ul>
+            </nav>
+            <div class="wallet-controls">
+                <div id="wallet-header-area" class="wallet-control">
+                    <button id="connectWalletBtn" class="web3-button connect-btn">
+                         Connect Wallet
+                    </button>
+                </div>
             </div>
-
-        <nav class="nav">
-            <ul class="main-nav">
-                </ul>
-        </nav>
-
-     <div class="wallet-controls">
-    <div id="wallet-header-area" class="wallet-control">
-        <button id="connectWalletBtn" class="web3-button connect-btn">
-             Connect Wallet
-        </button>
-    </div>
-     </div>
+        </div>
+    </header>
+    </body>
+</html>
 
 
       
