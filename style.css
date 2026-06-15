@@ -295,7 +295,7 @@ body {
 .header .logo {
     width: 48px;
     height: 48px;
-    background-image: url('./assets/logo.png'); /* Укажи верный путь к твоему файлу */
+    background-image: url('./assets/foxcoin-hero.png'); /* Укажи верный путь к твоему файлу */
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
