@@ -329,29 +329,34 @@ body {
 
 
 
-/* Контейнер логотипа с премиальной проработкой */
+/* Премиальный блок логотипа */
 .header .logo {
-    width: 54px;
-    height: 54px;
+    width: 56px;
+    height: 56px;
     background-image: url('./assets/foxcoin-hero.png');
-    background-size: 65%; /* Логотип внутри рамки стал свободнее */
+    background-size: 60%;
     background-repeat: no-repeat;
     background-position: center;
     
-    /* Стекло: темная подложка с блюром */
-    background-color: rgba(10, 15, 25, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 18px;
+    /* "Дорогой" фон: глубокий градиент */
+    background-color: #0b0e14;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
     
-    /* Глубина: тень, создающая эффект "приподнятости" */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.03);
-    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* Сверхглубина: тень, имитирующая литой металл */
+    box-shadow: 
+        0 10px 30px -10px rgba(0, 0, 0, 0.6), 
+        inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
-/* При наведении: эффект "активного состояния" */
+/* Эффект при наведении: "пробуждение" элемента */
 .header .logo:hover {
-    transform: translateY(-4px) scale(1.05);
-    border-color: rgba(59, 130, 246, 0.5); 
-    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.25), inset 0 0 15px rgba(59, 130, 246, 0.1);
-    background-color: rgba(30, 41, 59, 0.8);
+    transform: translateY(-4px);
+    /* Добавляем тонкий неоновый контур */
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    box-shadow: 
+        0 15px 40px -10px rgba(59, 130, 246, 0.3), 
+        inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
