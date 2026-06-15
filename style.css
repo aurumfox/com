@@ -10,6 +10,45 @@ body {
     margin: 0;
 }
 
+
+
+
+
+
+
+/* Улучшенные кнопки действий */
+.btn-action {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    backdrop-filter: blur(10px);
+    padding: 16px 20px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-action:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(96, 165, 250, 0.4);
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Эффект нажатия */
+.btn-action:active {
+    transform: scale(0.98);
+    background: rgba(99, 102, 241, 0.15);
+}
+
+
+
+
+
+
+
+
 /* Стилизация панелей (Glassmorphism) */
 .glass-panel { 
     background: rgba(15, 23, 42, 0.4);
@@ -225,3 +264,35 @@ body {
 
 
  
+/* Логотип в хедере */
+.header .logo {
+    width: 48px;
+    height: 48px;
+    background-image: url('./assets/logo.png'); /* Укажи верный путь к твоему файлу */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+}
+
+.header .logo:hover {
+    transform: scale(1.05);
+}
+
+/* Стилизация хедеров и кнопок Wallet */
+.wallet-control .connect-btn {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.wallet-control .connect-btn:hover {
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    transform: translateY(-2px);
+}
