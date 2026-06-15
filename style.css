@@ -48,48 +48,31 @@ body {
 
 
 
-/* Базовый класс для всех премиальных кнопок */
 .btn-premium {
     position: relative;
-    background: rgba(10, 15, 25, 0.8);
+    /* Создаем базовый "дорогой" темный градиент */
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    color: #e2e8f0;
     font-weight: 600;
-    letter-spacing: 0.05em;
-    padding: 16px 24px;
-    border-radius: 20px; /* Более мягкий, дорогой радиус */
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    padding: 16px 20px;
+    border-radius: 16px;
+    transition: all 0.3s ease;
     cursor: pointer;
-    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* Эффект "богатого" свечения при наведении */
+/* Эффект свечения для каждой кнопки при наведении */
 .btn-premium:hover {
-    transform: translateY(-4px);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Акцентный градиент для кнопок */
-.btn-gold {
-    background: linear-gradient(145deg, #2a2210, #1a150a);
-    border: 1px solid #d4af37;
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
-}
-
-.btn-danger {
-    background: linear-gradient(145deg, #2a1010, #1a0a0a);
-    border: 1px solid #ef4444;
-    color: #ff6b6b;
-}
-
-/* Добавляем "блик" при нажатии */
-.btn-premium:active {
-    transform: translateY(2px);
-    filter: brightness(1.2);
-}
-
+/* Специальные цветовые "классические" акценты */
+.btn-blue { border-color: rgba(59, 130, 246, 0.3); background: linear-gradient(180deg, #1e3a8a 0%, #1e293b 100%); }
+.btn-gold { border-color: rgba(234, 179, 8, 0.3); background: linear-gradient(180deg, #713f12 0%, #1e1b4b 100%); color: #fcd34d; }
+.btn-danger { border-color: rgba(185, 28, 28, 0.3); background: linear-gradient(180deg, #7f1d1d 0%, #1e1b4b 100%); color: #fca5a5; }
 
 
 
