@@ -420,7 +420,11 @@
 
 
     
-    <div id="depositView" class="hidden max-w-7xl mx-auto">
+
+
+
+
+<div id="depositView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Deposit: Staking Synchronization Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -489,7 +493,14 @@
                 
                 <div class="mt-5 p-4 bg-black/30 rounded-xl border border-white/5">
                     <p class="text-gray-400 text-[10px]">Net Deposit Amount</p>
-                    <input type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-indigo-400 mt-1 outline-none border-none">
+                    <input id="depositInput" type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-indigo-400 mt-1 outline-none border-none">
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="setDepositAmount(0.25)" class="flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">25%</button>
+                        <button onclick="setDepositAmount(0.50)" class="flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">50%</button>
+                        <button onclick="setDepositAmount(0.75)" class="flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">75%</button>
+                        <button onclick="setDepositAmount(1.00)" class="flex-1 py-1 text-[10px] bg-indigo-500/20 hover:bg-indigo-500/40 rounded border border-indigo-500/50 text-white transition-all">MAX</button>
+                    </div>
                 </div>
 
                 <div id="depositStatus" class="mt-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
@@ -503,6 +514,15 @@
     </div>
 </div>
 
+<script>
+    // Добавь эту функцию в свой app.js для работы кнопок
+    function setDepositAmount(percent) {
+        // Здесь замени 1000 на реальный баланс пользователя с кошелька
+        const userBalance = 1000; 
+        const amount = userBalance * percent;
+        document.getElementById('depositInput').value = amount.toFixed(2);
+    }
+</script>
 
 
 
