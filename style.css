@@ -221,22 +221,4 @@ body {
 
 
 
-  /* Стиль для кнопки Connect Wallet */
-.web3-button {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    font-weight: 600;
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-}
-
-.web3-button:hover {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: rgba(99, 102, 241, 0.5);
-    transform: translateY(-1px);
-}
-
+ 
