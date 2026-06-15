@@ -309,3 +309,51 @@ body {
     box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
     transform: translateY(-2px);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Премиальный стиль логотипа */
+.header .logo {
+    width: 52px;
+    height: 52px;
+    background-image: url('./assets/foxcoin-hero.png');
+    background-size: 85%; /* Немного меньше, чтобы логотип не "прилипал" к краям */
+    background-repeat: no-repeat;
+    background-position: center;
+    
+    /* Добавляем дороговизну: полупрозрачная подложка + градиентная рамка */
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    
+    /* Эффект парения */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.05);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Эффект при наведении — логотип "просыпается" */
+.header .logo:hover {
+    transform: translateY(-2px) scale(1.05);
+    border-color: rgba(96, 165, 250, 0.6); /* Синее неоновое свечение */
+    box-shadow: 0 8px 25px rgba(96, 165, 250, 0.3);
+    background-color: rgba(96, 165, 250, 0.1);
+}
+
