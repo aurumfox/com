@@ -266,7 +266,7 @@ if (confirmButton) {
 
 
 
-            // --- ФУНКЦИЯ УВЕДОМЛЕНИЙ ---
+        // --- ФУНКЦИЯ УВЕДОМЛЕНИЙ ---
 function showNotification(text, color = 'emerald') {
     const toast = document.createElement('div');
     toast.className = `fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
@@ -296,40 +296,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- ПРОФЕССИОНАЛЬНЫЙ СКАНЕР ---
+    // --- МАКСИМАЛЬНО РАСШИРЕННЫЙ СКАНЕР ---
     const scanForWallets = () => {
         const found = [];
-        const candidates = [
+        
+        // Список всех возможных путей инъекции кошельков в объект window
+        const providers = [
             { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
-            { name: 'Solflare', check: () => window.solflare },
+            { name: 'Solflare', check: () => window.solflare?.isSolflare ? window.solflare : window.solflare },
             { name: 'Backpack', check: () => window.backpack },
-            { name: 'Glow', check: () => window.glowSolana }
+            { name: 'Glow', check: () => window.glowSolana },
+            { name: 'Coinbase', check: () => window.coinbaseSolana }
         ];
 
-        candidates.forEach(c => {
-            const provider = c.check();
-            if (provider) found.push({ name: c.name, provider });
+        providers.forEach(p => {
+            try {
+                const provider = p.check();
+                if (provider) {
+                    // Защита от дублей
+                    if (!found.find(w => w.name === p.name)) {
+                        found.push({ name: p.name, provider });
+                    }
+                }
+            } catch (e) { console.error(`Error detecting ${p.name}:`, e); }
         });
         return found;
     };
 
-    // --- УЛУЧШЕННЫЙ ОЖИДАТЕЛЬ (POLLING + EVENT LISTENER) ---
+    // --- УМНЫЙ ОЖИДАТЕЛЬ (POLLING + EVENT LISTENER) ---
     const getAvailableWallets = () => {
         return new Promise((resolve) => {
-            // Сначала проверяем сразу
             const found = scanForWallets();
             if (found.length > 0) return resolve(found);
 
-            // Если не нашли, запускаем цикл ожидания
             let attempts = 0;
+            // Увеличили частоту и количество попыток для полной надежности
             const interval = setInterval(() => {
                 attempts++;
                 const foundAgain = scanForWallets();
-                if (foundAgain.length > 0 || attempts >= 50) {
+                if (foundAgain.length > 0 || attempts >= 60) {
                     clearInterval(interval);
                     resolve(foundAgain);
                 }
-            }, 200);
+            }, 150);
         });
     };
 
@@ -346,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         availableWallets = await getAvailableWallets();
         
         if (availableWallets.length === 0) {
-            showNotification("No wallets found. Refresh page or install Phantom.", "red");
+            showNotification("No wallets found. Unlock your wallet or use HTTPS.", "red");
             return;
         }
 
@@ -368,23 +377,28 @@ document.addEventListener('DOMContentLoaded', () => {
     async function connectWallet(wallet) {
         try {
             currentProvider = wallet.provider;
+            
+            // Пытаемся подключиться
             const resp = await currentProvider.connect();
-            updateUI(resp.publicKey.toString());
+            const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
+            
+            updateUI(publicKey);
             showNotification(`${wallet.name} Connected!`);
+            
             currentProvider.on('disconnect', () => {
                 currentProvider = null;
                 updateUI(null);
                 showNotification("Disconnected by wallet", "red");
             });
         } catch (err) {
-            console.error(err);
+            console.error("Connection Error:", err);
             showNotification("Connection Failed: " + (err.message || 'Rejected'), "red");
         }
     }
 
-    // Инициализация при полной загрузке страницы
+    // Инициализация при полной загрузке + принудительный таймаут
     window.addEventListener('load', async () => {
-        // Даем небольшую задержку для инициализации расширений
+        // Доп. задержка для ожидания всех JS-скриптов
         setTimeout(async () => {
             const savedWallet = localStorage.getItem('wallet_connected');
             if (savedWallet) {
@@ -393,12 +407,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (phantom) {
                     try {
                         const resp = await phantom.provider.connect({ onlyIfTrusted: true });
-                        updateUI(resp.publicKey.toString());
+                        const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
+                        updateUI(pubKey);
                         currentProvider = phantom.provider;
-                    } catch (e) { console.log("Auto-connect skipped"); }
+                    } catch (e) { console.log("Auto-connect trust-check failed."); }
                 }
             }
-        }, 1000);
+        }, 1500);
     });
 });
-
