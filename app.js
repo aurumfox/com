@@ -293,35 +293,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- ПРОФЕССИОНАЛЬНЫЙ СКАНЕР ---
-    // Мы используем асинхронный поиск, так как кошелек может появиться с задержкой 100-500мс
+    // --- УМНЫЙ СКАНЕР: ГЛУБОКИЙ ПОИСК ---
     const getAvailableWallets = async () => {
-        // Даем браузеру до 1 секунды, чтобы расширения "проснулись"
-        for (let i = 0; i < 10; i++) {
-            const wallets = [];
-            if (window.solana?.isPhantom) wallets.push({ name: 'Phantom', provider: window.solana });
-            if (window.solflare) wallets.push({ name: 'Solflare', provider: window.solflare });
-            if (window.backpack) wallets.push({ name: 'Backpack', provider: window.backpack });
-            
-            if (wallets.length > 0) return wallets;
-            await new Promise(r => setTimeout(r, 100)); // Ждем 100мс и пробуем снова
+        const foundWallets = [];
+        
+        // 1. Метод: Прямая проверка объектов в window
+        const checkWindow = () => {
+            const registry = [];
+            if (window.solana) registry.push({ name: 'Phantom', provider: window.solana });
+            if (window.solflare) registry.push({ name: 'Solflare', provider: window.solflare });
+            if (window.backpack) registry.push({ name: 'Backpack', provider: window.backpack });
+            if (window.glowSolana) registry.push({ name: 'Glow', provider: window.glowSolana });
+            return registry;
+        };
+
+        // 2. Метод: Ожидание (Retry logic)
+        for (let attempt = 0; attempt < 20; attempt++) {
+            const currentFound = checkWindow();
+            if (currentFound.length > 0) {
+                // Убираем дубликаты, если вдруг расширения подгрузились несколько раз
+                const unique = Array.from(new Set(currentFound.map(w => w.name)))
+                    .map(name => currentFound.find(w => w.name === name));
+                return unique;
+            }
+            // Увеличиваем интервал ожидания, чтобы не спамить
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
+
         return [];
     };
 
     btn.addEventListener('click', async () => {
+        // Если уже подключен — просто отключаем
         if (currentProvider) {
-            await currentProvider.disconnect();
+            try {
+                await currentProvider.disconnect();
+            } catch (err) {
+                console.error("Disconnect error:", err);
+            }
             currentProvider = null;
             updateUI(null);
+            showNotification("Wallet Disconnected", "red");
             return;
         }
 
-        // Вызываем сканер с ожиданием
+        // Если не подключен — ищем
+        showNotification("Searching for wallets...");
         const available = await getAvailableWallets();
         
         if (available.length === 0) {
-            showNotification("No wallets found! Please install Phantom/Solflare", "red");
+            console.error("No wallets detected in window object.");
+            showNotification("No wallets found! Please unlock your extension.", "red");
             return;
         }
 
@@ -331,9 +353,12 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML = '';
             available.forEach(w => {
                 const item = document.createElement('button');
-                item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all";
+                item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
                 item.innerText = w.name;
-                item.onclick = () => { connectWallet(w); modal.classList.add('hidden'); };
+                item.onclick = () => { 
+                    connectWallet(w); 
+                    modal.classList.add('hidden'); 
+                };
                 list.appendChild(item);
             });
             modal.classList.remove('hidden');
@@ -343,17 +368,29 @@ document.addEventListener('DOMContentLoaded', () => {
     async function connectWallet(wallet) {
         try {
             currentProvider = wallet.provider;
+            
+            // Проверка на корректность провайдера
+            if (!currentProvider.connect) {
+                throw new Error("Provider structure invalid");
+            }
+
             const resp = await currentProvider.connect();
-            updateUI(resp.publicKey.toString());
+            const pubKey = resp.publicKey.toString();
+            
+            updateUI(pubKey);
             showNotification(`${wallet.name} Connected!`);
             
+            // Слушаем событие принудительного отключения из расширения
             currentProvider.on('disconnect', () => {
                 currentProvider = null;
                 updateUI(null);
+                showNotification("Disconnected by wallet", "red");
             });
+            
         } catch (err) {
-            console.error(err);
-            showNotification("Connection Failed: " + (err.message || "User Rejected"), "red");
+            console.error("Connection detailed error:", err);
+            currentProvider = null;
+            showNotification("Connection Failed: " + (err.name === 'WalletConnectionError' ? 'Rejected' : 'Unknown'), "red");
         }
     }
 });
