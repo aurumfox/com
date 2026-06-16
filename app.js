@@ -266,7 +266,7 @@ if (confirmButton) {
 
 
 
-// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ---
+ // --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ---
 function showNotification(text, color = 'emerald') {
     const existingNotifications = Array.from(document.querySelectorAll('.toast-notification'));
     if (existingNotifications.some(n => n.innerText === text)) return;
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', async () => {
         if (currentProvider) {
             try { 
-                isManualDisconnect = true; // Указываем, что отключаемся сами
+                isManualDisconnect = true; 
                 await currentProvider.disconnect(); 
                 currentProvider = null;
                 updateUI(null);
@@ -392,7 +392,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             currentProvider.removeAllListeners?.('disconnect');
             currentProvider.on('disconnect', () => {
-                // Если отключение произошло НЕ вручную (например, из расширения), показываем уведомление
+                // Если мы отключились сами кнопкой, мы уже показали уведомление выше.
+                // Поэтому тут показываем сообщение только если кошелек отвалился САМ (из расширения).
                 if (!isManualDisconnect) {
                     currentProvider = null;
                     updateUI(null);
