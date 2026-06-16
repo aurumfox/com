@@ -525,6 +525,81 @@ if (unstakeButton) {
 
 
 
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: CLOSE STAKING ACCOUNT
+ * Полная синхронизация с контрактом для деаллокации (Rent Recovery)
+ */
+window.closeStakingAccount = async function() {
+    try {
+        // 1. Получаем активный индекс (как в Init/Unstake)
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+
+        if (!window.solana?.isConnected) {
+            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        }
+
+        AurumFoxEngine.notify("DEACTIVATING ACCOUNT...", "WAIT");
+
+        const program = await QubitProgramManager.getProgram();
+        const userPubKey = program.provider.wallet.publicKey;
+
+        // 2. Расчет PDA для закрываемого аккаунта
+        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPubKey.toBuffer(),
+                Uint8Array.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        // 3. Вызов метода закрытия
+        const tx = await program.methods
+            .closeStakingAccount(poolIndex)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPda,
+                owner: userPubKey,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        console.log("🗑️ Account Closed Signature:", tx);
+        AurumFoxEngine.notify("ACCOUNT CLOSED!", "SUCCESS");
+
+    } catch (e) {
+        console.error("❌ Close Error:", e);
+        
+        // Обработка специфических ошибок безопасности контракта
+        if (e.message.includes("0x1772")) { // Пример кода ошибки "StillExists"
+            AurumFoxEngine.notify("STAKE STILL EXISTS", "FAILED");
+        } else if (e.message.includes("0x1773")) { // Пример кода "DustRemaining"
+            AurumFoxEngine.notify("REWARD DUST EXISTS", "FAILED");
+        } else {
+            AurumFoxEngine.notify("CLOSE FAILED", "FAILED");
+        }
+    }
+};
+
+// --- ПРИВЯЗКА КНОПКИ UI ---
+// Ищем кнопку по тексту или классу внутри closeAccountView
+const closeButton = document.querySelector('#closeAccountView button.bg-red-600\\/20');
+if (closeButton) {
+    closeButton.addEventListener('click', () => {
+        window.closeStakingAccount();
+    });
+}
+
+
+
+
+
+
+
+
+
 
 
 
