@@ -268,7 +268,6 @@ if (confirmButton) {
 
 // --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ---
 function showNotification(text, color = 'emerald') {
-    // Проверяем, есть ли уже уведомление с таким же текстом в DOM, чтобы избежать дублей
     const existingNotifications = Array.from(document.querySelectorAll('.toast-notification'));
     if (existingNotifications.some(n => n.innerText === text)) return;
 
@@ -300,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- УНИВЕРСАЛЬНЫЙ СКАНЕР + DEEP LINKING ---
     const scanForWallets = () => {
         const found = [];
         const providers = [
@@ -314,21 +312,17 @@ document.addEventListener('DOMContentLoaded', () => {
         providers.forEach(p => {
             try {
                 const provider = p.check();
-                if (provider) {
-                    if (!found.find(w => w.name === p.name)) {
-                        found.push({ name: p.name, provider });
-                    }
+                if (provider && !found.find(w => w.name === p.name)) {
+                    found.push({ name: p.name, provider });
                 }
             } catch (e) { console.error(`Error detecting ${p.name}:`, e); }
         });
         return found;
     };
 
-    // --- ЛОГИКА DEEP LINKING (ДЛЯ МОБИЛОК И ПРИЛОЖЕНИЙ) ---
     const triggerDeepLink = () => {
         const url = window.location.href;
         const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
-        
         showNotification("Opening Wallet App...", "emerald");
         window.location.href = phantomDeepLink;
     };
@@ -342,28 +336,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const interval = setInterval(() => {
                 attempts++;
                 const foundAgain = scanForWallets();
-                if (foundAgain.length > 0 || attempts >= 60) {
+                if (foundAgain.length > 0 || attempts >= 40) {
                     clearInterval(interval);
                     resolve(foundAgain);
                 }
-            }, 150);
+            }, 200);
         });
     };
 
     btn.addEventListener('click', async () => {
         if (currentProvider) {
-            try { await currentProvider.disconnect(); } catch (err) { console.error(err); }
-            currentProvider = null;
-            updateUI(null);
-            showNotification("Wallet Disconnected", "red");
+            try { 
+                await currentProvider.disconnect(); 
+                currentProvider = null;
+                updateUI(null);
+                showNotification("Wallet Disconnected", "red");
+            } catch (err) { console.error(err); }
             return;
         }
 
-        showNotification("Searching for wallets...");
         availableWallets = await getAvailableWallets();
         
         if (availableWallets.length === 0) {
-            showNotification("Wallet not found, redirecting to app...", "red");
             triggerDeepLink();
             return;
         }
@@ -390,6 +384,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
             updateUI(publicKey);
             showNotification(`${wallet.name} Connected!`);
+            
+            // Отписываемся от старого события перед подпиской на новое
+            currentProvider.removeAllListeners?.('disconnect');
             currentProvider.on('disconnect', () => {
                 currentProvider = null;
                 updateUI(null);
@@ -397,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (err) {
             console.error("Connection Error:", err);
-            showNotification("Connection Failed: " + (err.message || 'Rejected'), "red");
+            showNotification("Connection Failed", "red");
         }
     }
 
@@ -405,20 +402,19 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(async () => {
             const savedWallet = localStorage.getItem('wallet_connected');
             if (savedWallet) {
-                availableWallets = await getAvailableWallets();
-                const phantom = availableWallets.find(w => w.name === 'Phantom');
+                const wallets = await getAvailableWallets();
+                const phantom = wallets.find(w => w.name === 'Phantom');
                 if (phantom) {
                     try {
                         const resp = await phantom.provider.connect({ onlyIfTrusted: true });
                         const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
                         updateUI(pubKey);
                         currentProvider = phantom.provider;
-                    } catch (e) { console.log("Auto-connect trust-check failed."); }
+                    } catch (e) { console.log("Auto-connect trust-check skipped."); }
                 }
             }
-        }, 1500);
+        }, 1000);
     });
 });
 
-
-        
+            
