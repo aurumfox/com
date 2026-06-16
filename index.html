@@ -47,7 +47,14 @@
     </div>
    
      
-
+ <div id="walletModal" class="fixed inset-0 bg-black/80 hidden z-[9999] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-sm">
+        <h2 class="text-white text-lg font-bold mb-4 text-center">Select Wallet</h2>
+        <div id="walletList" class="space-y-2"></div>
+        <button onclick="document.getElementById('walletModal').classList.add('hidden')" class="w-full mt-4 text-gray-500 hover:text-white">Cancel</button>
+    </div>
+ </div>
+   </header>
 
     <main class="container mx-auto flex flex-col items-center justify-center py-10">
         <div class="cube-container">
