@@ -174,3 +174,25 @@ window.createStakingAccount = async function() {
 
 
 
+document.querySelectorAll('.tier-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Убираем активность со всех
+        document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10'));
+        // Добавляем текущей
+        this.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
+        
+        // Обновляем текст в карточке
+        const label = this.getAttribute('data-label');
+        document.getElementById('lockupDisplay').innerText = label;
+        document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${this.getAttribute('data-index')})`;
+        
+        // Обновляем прогресс-бар (пример логики)
+        const percent = (parseInt(this.getAttribute('data-index')) + 1) * 20;
+        document.getElementById('lockupProgressBar').style.width = `${percent}%`;
+    });
+});
+
+// Привязка кнопки подтверждения
+document.querySelector('.bg-emerald-500\\/20').addEventListener('click', () => {
+    window.createStakingAccount();
+});
