@@ -454,6 +454,36 @@
     </div>
 </div>
 
+<div id="decollateralizeView" class="hidden max-w-7xl mx-auto">
+    </div>
+
+<script>
+    function switchView(viewId) {
+        // 1. Проверяем, есть ли этот viewId в списке
+        const views = [
+            'initStakeView', 'mainStakingView', 'collateralView', 
+            'decollateralizeView', 'depositView', 'claimView', 
+            'unstakeView', 'closeAccountView'
+        ];
+        
+        console.log("Пытаюсь открыть:", viewId); // <--- ЭТО ПОМОЖЕТ ТЕБЕ ПОНЯТЬ ОШИБКУ
+        
+        // 2. Скрываем все
+        views.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        
+        // 3. Пытаемся показать
+        const target = document.getElementById(viewId);
+        if (target) {
+            target.classList.remove('hidden');
+            console.log("Блок найден и показан!");
+        } else {
+            console.error("ОШИБКА: Элемент с ID '" + viewId + "' НЕ НАЙДЕН в DOM!");
+        }
+    }
+</script>
 
 
 
