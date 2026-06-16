@@ -662,43 +662,8 @@ async function handleUnstakeAfox() {
 
 
 
-/**
- * ФУНКЦИЯ: ЗАБРАТЬ НАГРАДЫ (CLAIM)
- */
 
-// 1. ЭТА ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ МЕНЮ (Привяжите её к кнопке в главном меню)
-function openClaimMenu() {
-    // Скрываем основной стейкинг и показываем наш красивый блок с выбором тиров
-    document.getElementById('mainStakingView').classList.add('hidden');
-    document.getElementById('claimView').classList.remove('hidden');
-}
 
-// 2. ЭТА ФУНКЦИЯ ДЛЯ САМОЙ ТРАНЗАКЦИИ (Привяжите её к кнопке "EXECUTE CLAIM" внутри меню)
-async function executeClaimRewards() {
-    const btn = uiElements.executeClaimBtn; // Убедитесь, что это кнопка "EXECUTE CLAIM"
-    await smartAction(btn, "Claiming", "Rewards Received!", "💎", async () => {
-        const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-        const userPDA = await getUserStakingPDA(appState.walletPublicKey);
-        
-        const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        ).then(res => res[0]);
-
-        return await program.methods.claimRewards()
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userPDA,
-                owner: appState.walletPublicKey,
-                vault: AFOX_POOL_VAULT_PUBKEY,
-                adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                userRewardsAta: userAta,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-            }).rpc();
-    });
-}
 
 
 /**
