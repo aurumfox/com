@@ -812,42 +812,43 @@ window.getAnchorProgram = function(programId, idl) {
 
 
 
-window.createStakingAccount = async function(poolIndex = 0) {
+window.createStakingAccount = async function() {
     try {
-        // 1. Автономная проверка окружения
+        // 1. Получаем текущий выбранный индекс из UI
+        // Ищем кнопку с классом 'active-tier' и забираем её data-index
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        
         if (!window.solana?.isConnected) {
             return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
         }
 
-        const program = await getProgram(); // Использует твой существующий хелпер
+        const program = await getProgram();
         const userPubKey = program.provider.wallet.publicKey;
 
-        // 2. Умный расчет PDA (Автоматически подхватывает контекст)
-        // Сиды: [b"user_stake", pool_state, owner, pool_index]
+        // 2. Расчет PDA (используем poolIndex, полученный выше)
         const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
             [
                 Buffer.from("user_stake"),
                 AFOX_POOL_STATE_PUBKEY.toBuffer(),
                 userPubKey.toBuffer(),
-                Buffer.from([poolIndex])
+                Uint8Array.from([poolIndex]) // Важно: используем Uint8Array для индекса
             ],
             program.programId
         );
 
         AurumFoxEngine.notify("PREPARING STORAGE...", "WAIT");
 
-        // 3. Вызов метода с автоматическим маппингом аккаунтов
-        // Мы берем системные переменные напрямую из глобального объекта solanaWeb3
+        // 3. Вызов метода
         const tx = await program.methods
             .initializeUserStake(poolIndex)
             .accounts({
                 poolState: AFOX_POOL_STATE_PUBKEY,
                 userStaking: userStakingPda,
                 owner: userPubKey,
-                rewardMint: AFOX_TOKEN_MINT_ADDRESS,
                 systemProgram: window.solanaWeb3.SystemProgram.programId,
                 clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY, // Добавил на всякий случай для новых аккаунтов
+                rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
             })
             .rpc();
 
@@ -856,17 +857,16 @@ window.createStakingAccount = async function(poolIndex = 0) {
 
     } catch (e) {
         console.error("🛠️ Init Error:", e);
-
-        // Умный перехват ошибок
+        // Обработка ошибок остается прежней
         if (e.message.includes("0x1770") || e.message.includes("already in use")) {
             AurumFoxEngine.notify("ALREADY INITIALIZED", "SUCCESS");
-        } else if (e.message.includes("User rejected")) {
-            AurumFoxEngine.notify("CANCELLED BY USER", "FAILED");
         } else {
             AurumFoxEngine.notify("INIT FAILED", "FAILED");
         }
     }
 };
+
+
 
 
 
