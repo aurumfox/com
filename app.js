@@ -155,7 +155,7 @@ document.querySelectorAll('.tier-btn').forEach(btn => {
         // Добавляем текущей
         this.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
         
-        // Обновляем текст в карточке
+        // Обновляем текст в карточке2
         const label = this.getAttribute('data-label');
         const lockupDisplay = document.getElementById('lockupDisplay');
         const poolIndexDisplay = document.getElementById('poolIndexDisplay');
@@ -266,7 +266,7 @@ if (confirmButton) {
 
 
 
- // --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ---
+// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ---
 function showNotification(text, color = 'emerald') {
     const existingNotifications = Array.from(document.querySelectorAll('.toast-notification'));
     if (existingNotifications.some(n => n.innerText === text)) return;
@@ -360,7 +360,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // --- ДОБАВЛЕНО: Индикация загрузки ---
+        const originalText = btn.innerText;
+        btn.innerText = "Loading...";
+        btn.disabled = true; // Блокируем кнопку, чтобы не нажимали повторно
+        // -------------------------------------
+
         availableWallets = await getAvailableWallets();
+        
+        // --- ДОБАВЛЕНО: Сброс состояния загрузки ---
+        btn.innerText = originalText;
+        btn.disabled = false;
+        // --------------------------------------------
         
         if (availableWallets.length === 0) {
             triggerDeepLink();
@@ -424,6 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     });
 });
+
 
 
 
