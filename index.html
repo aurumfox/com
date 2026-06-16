@@ -551,7 +551,7 @@
 
 
 
-              <div id="claimView" class="hidden max-w-7xl mx-auto">
+            <div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Claim Rewards: Security Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -663,6 +663,12 @@
 </style>
 
 <script>
+    function switchView(viewId) {
+        document.getElementById('claimView').classList.add('hidden');
+        document.getElementById('mainStakingView').classList.add('hidden');
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
     function toggleTier(id) {
         const btn = document.querySelectorAll('.tier-btn')[id];
         btn.classList.toggle('active');
@@ -680,6 +686,7 @@
         });
     }
 </script>
+
 
 
 
