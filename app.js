@@ -88,7 +88,60 @@ window.createStakingAccount = async function() {
             program.programId
         );
 
+        window.createStakingAccount = async function() {
+    try {
+        // 1. Получаем текущий выбранный индекс из UI
+        // Ищем кнопку с классом 'active-tier' и забираем её data-index
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        
+        if (!window.solana?.isConnected) {
+            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        }
+
+        const program = await getProgram();
+        const userPubKey = program.provider.wallet.publicKey;
+
+        // 2. Расчет PDA (используем poolIndex, полученный выше)
+        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPubKey.toBuffer(),
+                Uint8Array.from([poolIndex]) // Важно: используем Uint8Array для индекса
+            ],
+            program.programId
+        );
+
         AurumFoxEngine.notify("PREPARING STORAGE...", "WAIT");
+
+        // 3. Вызов метода
+        const tx = await program.methods
+            .initializeUserStake(poolIndex)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPda,
+                owner: userPubKey,
+                systemProgram: window.solanaWeb3.SystemProgram.programId,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
+            })
+            .rpc();
+
+        console.log("🚀 Initialization Signature:", tx);
+        AurumFoxEngine.notify("ACCOUNT DEPLOYED!", "SUCCESS");
+
+    } catch (e) {
+        console.error("🛠️ Init Error:", e);
+        // Обработка ошибок остается прежней
+        if (e.message.includes("0x1770") || e.message.includes("already in use")) {
+            AurumFoxEngine.notify("ALREADY INITIALIZED", "SUCCESS");
+        } else {
+            AurumFoxEngine.notify("INIT FAILED", "FAILED");
+        }
+    }
+};
+    QUBIT Engine.notify("PREPARING STORAGE...", "WAIT");
 
         // 3. Вызов метода
         const tx = await program.methods
