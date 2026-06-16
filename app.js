@@ -266,7 +266,7 @@ if (confirmButton) {
 
 
 
-// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ ---
+            // --- ФУНКЦИЯ УВЕДОМЛЕНИЙ ---
 function showNotification(text, color = 'emerald') {
     const toast = document.createElement('div');
     toast.className = `fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
@@ -296,10 +296,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- УЛЬТРА-СКАНЕР: ЛОВЕЦ ИНЪЕКЦИЙ ---
+    // --- ПРОФЕССИОНАЛЬНЫЙ СКАНЕР ---
     const scanForWallets = () => {
         const found = [];
-        // Проверяем все возможные пути доступа
         const candidates = [
             { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
             { name: 'Solflare', check: () => window.solflare },
@@ -314,32 +313,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return found;
     };
 
-    // --- АВТОНОМНЫЙ НАБЛЮДАТЕЛЬ ---
-    const waitForWallet = (timeout = 10000) => {
+    // --- УЛУЧШЕННЫЙ ОЖИДАТЕЛЬ (POLLING + EVENT LISTENER) ---
+    const getAvailableWallets = () => {
         return new Promise((resolve) => {
-            const start = Date.now();
+            // Сначала проверяем сразу
+            const found = scanForWallets();
+            if (found.length > 0) return resolve(found);
+
+            // Если не нашли, запускаем цикл ожидания
+            let attempts = 0;
             const interval = setInterval(() => {
-                const found = scanForWallets();
-                if (found.length > 0 || (Date.now() - start) > timeout) {
+                attempts++;
+                const foundAgain = scanForWallets();
+                if (foundAgain.length > 0 || attempts >= 50) {
                     clearInterval(interval);
-                    resolve(found);
+                    resolve(foundAgain);
                 }
-            }, 100);
+            }, 200);
         });
     };
-
-    // --- СЛУШАТЕЛЬ ПОЯВЛЕНИЯ ПРОВАЙДЕРОВ ---
-    // Используем Proxy, чтобы перехватить момент добавления в window, если расширение медленное
-    const handler = {
-        set(target, prop, value) {
-            target[prop] = value;
-            if (['solana', 'solflare', 'backpack', 'glowSolana'].includes(prop)) {
-                availableWallets = scanForWallets();
-            }
-            return true;
-        }
-    };
-    window = new Proxy(window, handler);
 
     btn.addEventListener('click', async () => {
         if (currentProvider) {
@@ -351,10 +343,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         showNotification("Searching for wallets...");
-        availableWallets = await waitForWallet();
+        availableWallets = await getAvailableWallets();
         
         if (availableWallets.length === 0) {
-            showNotification("No wallets detected! Refresh page or install Phantom.", "red");
+            showNotification("No wallets found. Refresh page or install Phantom.", "red");
             return;
         }
 
@@ -390,19 +382,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Инициализация
+    // Инициализация при полной загрузке страницы
     window.addEventListener('load', async () => {
-        availableWallets = scanForWallets();
-        const savedWallet = localStorage.getItem('wallet_connected');
-        if (savedWallet && availableWallets.length > 0) {
-            try {
+        // Даем небольшую задержку для инициализации расширений
+        setTimeout(async () => {
+            const savedWallet = localStorage.getItem('wallet_connected');
+            if (savedWallet) {
+                availableWallets = await getAvailableWallets();
                 const phantom = availableWallets.find(w => w.name === 'Phantom');
                 if (phantom) {
-                    const resp = await phantom.provider.connect({ onlyIfTrusted: true });
-                    updateUI(resp.publicKey.toString());
-                    currentProvider = phantom.provider;
+                    try {
+                        const resp = await phantom.provider.connect({ onlyIfTrusted: true });
+                        updateUI(resp.publicKey.toString());
+                        currentProvider = phantom.provider;
+                    } catch (e) { console.log("Auto-connect skipped"); }
                 }
-            } catch (e) { console.log("Auto-connect skipped"); }
-        }
+            }
+        }, 1000);
     });
 });
+
