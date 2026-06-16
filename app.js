@@ -287,36 +287,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
             btn.innerText = `Connected: ${short}`;
             btn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
+            // Сохраняем состояние в кэш
+            localStorage.setItem('wallet_connected', publicKey);
         } else {
             btn.innerText = "Connect Wallet";
             btn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
+            localStorage.removeItem('wallet_connected');
         }
     };
 
-    // --- УМНЫЙ СКАНЕР: ГЛУБОКИЙ ПОИСК ---
+    // --- УМНЫЙ СКАНЕР: ГЛУБОКИЙ ПОИСК С КЭШЕМ И ТЕНЕВЫМИ ПУТЯМИ ---
     const getAvailableWallets = async () => {
         const foundWallets = [];
         
-        // 1. Метод: Прямая проверка объектов в window
+        // Метод: Прямая проверка объектов в window (включая теневые пути)
         const checkWindow = () => {
             const registry = [];
-            if (window.solana) registry.push({ name: 'Phantom', provider: window.solana });
-            if (window.solflare) registry.push({ name: 'Solflare', provider: window.solflare });
-            if (window.backpack) registry.push({ name: 'Backpack', provider: window.backpack });
-            if (window.glowSolana) registry.push({ name: 'Glow', provider: window.glowSolana });
+            // Проверяем стандартные и теневые пути
+            const phantom = window.solana || window.phantom?.solana;
+            const solflare = window.solflare;
+            const backpack = window.backpack;
+            const glow = window.glowSolana;
+
+            if (phantom?.isPhantom) registry.push({ name: 'Phantom', provider: phantom });
+            if (solflare) registry.push({ name: 'Solflare', provider: solflare });
+            if (backpack) registry.push({ name: 'Backpack', provider: backpack });
+            if (glow) registry.push({ name: 'Glow', provider: glow });
             return registry;
         };
 
-        // 2. Метод: Ожидание (Retry logic)
-        for (let attempt = 0; attempt < 20; attempt++) {
+        // Логика Retry: ждем расширения до 10 секунд (50 попыток по 200мс)
+        for (let attempt = 0; attempt < 50; attempt++) {
             const currentFound = checkWindow();
             if (currentFound.length > 0) {
-                // Убираем дубликаты, если вдруг расширения подгрузились несколько раз
                 const unique = Array.from(new Set(currentFound.map(w => w.name)))
                     .map(name => currentFound.find(w => w.name === name));
                 return unique;
             }
-            // Увеличиваем интервал ожидания, чтобы не спамить
             await new Promise(resolve => setTimeout(resolve, 200));
         }
 
@@ -393,4 +400,24 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification("Connection Failed: " + (err.name === 'WalletConnectionError' ? 'Rejected' : 'Unknown'), "red");
         }
     }
+
+    // Авто-проверка при загрузке: если был подключен ранее — пытаемся восстановить
+    window.addEventListener('load', async () => {
+        const savedWallet = localStorage.getItem('wallet_connected');
+        if (savedWallet) {
+            console.log("Found cached wallet, attempting auto-sync...");
+            const available = await getAvailableWallets();
+            const phantom = available.find(w => w.name === 'Phantom');
+            if (phantom) {
+                try {
+                    // Пытаемся подключиться молча, если есть кэш
+                    const resp = await phantom.provider.connect({ onlyIfTrusted: true });
+                    updateUI(resp.publicKey.toString());
+                    currentProvider = phantom.provider;
+                } catch (e) {
+                    console.log("Auto-sync failed, user action required.");
+                }
+            }
+        }
+    });
 });
