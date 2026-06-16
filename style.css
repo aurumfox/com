@@ -422,17 +422,23 @@ body {
     }
 }
 
-/* Компьютеры и ноутбуки (от 1024px и выше) */
+/* Компьютеры и ноутбуки (от 1024px и выше) - КУБ СТАНОВИТСЯ БОЛЬШЕ */
 @media (min-width: 1024px) {
     .animated-cube {
-        width: 320px;
-        height: 320px;
+        width: 450px;  /* Увеличил с 320px до 450px для более богатого вида */
+        height: 450px;
     }
 }
 
-/* Анимация вращения */
+/* Обновленная анимация для усиления эффекта "масштабности" */
 @keyframes rotateCube {
     0% { transform: rotateY(0deg) scale(1); }
-    50% { transform: rotateY(180deg) scale(1.05); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3)); }
+    50% { 
+        /* Куб будет чуть больше увеличиваться в пике вращения */
+        transform: rotateY(180deg) scale(1.1); 
+        filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.5)); 
+    }
     100% { transform: rotateY(360deg) scale(1); }
 }
+
+
