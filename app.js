@@ -245,60 +245,67 @@ if (confirmButton) {
 
 
 
-// Функция для красивых уведомлений (Toast)
-function showNotification(message, type = 'success') {
+// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (Toast) ---
+function showNotification(text, color = 'emerald') {
     const toast = document.createElement('div');
-    toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl transition-all z-50 ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`;
-    toast.innerText = message;
+    toast.className = `fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border transition-all animate-fade-in
+        ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
+    toast.innerText = text;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
 
+// --- ОСНОВНАЯ ЛОГИКА ---
 document.addEventListener('DOMContentLoaded', () => {
-    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    const btn = document.getElementById('connectWalletBtn');
+    if (!btn) return console.error("Кнопка не найдена!");
 
     // Функция обновления кнопки
-    const updateBtnState = (address = null) => {
-        if (address) {
-            const shortAddress = address.slice(0, 4) + '...' + address.slice(-4);
-            connectWalletBtn.innerText = `Connected: ${shortAddress}`;
-            connectWalletBtn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
-            connectWalletBtn.classList.replace('border-blue-500/20', 'border-emerald-500/50');
-            connectWalletBtn.classList.replace('text-blue-400', 'text-emerald-400');
+    const updateUI = (publicKey = null) => {
+        if (publicKey) {
+            const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+            btn.innerText = `Connected: ${short}`;
+            btn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
+            btn.classList.replace('text-blue-400', 'text-emerald-400');
         } else {
-            connectWalletBtn.innerText = "Connect Wallet";
-            connectWalletBtn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
-            connectWalletBtn.classList.replace('border-emerald-500/50', 'border-blue-500/20');
-            connectWalletBtn.classList.replace('text-emerald-400', 'text-blue-400');
+            btn.innerText = "Connect Wallet";
+            btn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
+            btn.classList.replace('text-emerald-400', 'text-blue-400');
         }
     };
 
-    // Слушатель клика
-    connectWalletBtn.addEventListener('click', async () => {
+    // Обработка клика
+    btn.addEventListener('click', async () => {
         if (!window.solana) {
-            showNotification("Phantom wallet not found!", "error");
+            alert("Phantom/Solflare not found!");
             return;
         }
 
-        if (window.solana.isConnected) {
-            // ЛОГИКА DISCONNECT
-            await window.solana.disconnect();
-            updateBtnState(null);
-            showNotification("Wallet disconnected", "error");
-        } else {
-            // ЛОГИКА CONNECT
-            try {
+        try {
+            if (window.solana.isConnected) {
+                // DISCONNECT
+                await window.solana.disconnect();
+                showNotification("Wallet Disconnected", "red");
+            } else {
+                // CONNECT
                 const resp = await window.solana.connect();
-                updateBtnState(resp.publicKey.toString());
-                showNotification("Wallet connected successfully!");
-            } catch (err) {
-                console.error(err);
-                showNotification("Connection cancelled", "error");
+                updateUI(resp.publicKey.toString());
+                showNotification("Wallet Connected Successfully");
             }
+        } catch (err) {
+            console.error("Connection error:", err);
+            showNotification("Connection Failed", "red");
         }
     });
 
-    // Проверка статуса при загрузке страницы
-    window.solana.on('connect', () => updateBtnState(window.solana.publicKey.toString()));
-    window.solana.on('disconnect', () => updateBtnState(null));
+    // Слушатели событий самого кошелька
+    if (window.solana) {
+        window.solana.on('connect', () => {
+            updateUI(window.solana.publicKey.toString());
+        });
+        
+        window.solana.on('disconnect', () => {
+            updateUI(null);
+        });
+    }
 });
