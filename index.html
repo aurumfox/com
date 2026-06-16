@@ -40,10 +40,14 @@
             </div>
         </div>
         
-        <div class="wallet-controls">
-            <button id="connectWalletBtn" class="px-6 py-2.5 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 font-bold text-sm hover:bg-blue-600 hover:text-white transition-all">
-    Connect Wallet
-</button>
+      <div id="walletModal" class="fixed inset-0 bg-black/80 hidden z-[9999] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-sm">
+        <h2 class="text-white text-lg font-bold mb-4 text-center">Select Wallet</h2>
+        <div id="walletList" class="space-y-2"></div>
+        <button onclick="document.getElementById('walletModal').classList.add('hidden')" class="w-full mt-4 text-gray-500 hover:text-white">Cancel</button>
+    </div>
+</div>
+
 
         </div>
     </div>
@@ -69,10 +73,7 @@
 
 
                 
-  <div class="wallet-controls">
-            <button id="connectWalletBtn" class="px-6 py-2.5 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 font-bold text-sm hover:bg-blue-600 hover:text-white transition-all">
-    Connect Wallet
-            </button>
+  
 
 <button onclick="switchView('initStakeView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
     INITIALIZE USER STAKE
