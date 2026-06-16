@@ -285,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentProvider = null;
     let availableWallets = [];
+    let isManualDisconnect = false; // Флаг для предотвращения дублей при дисконнекте
 
     const updateUI = (publicKey = null) => {
         if (publicKey) {
@@ -347,11 +348,15 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', async () => {
         if (currentProvider) {
             try { 
+                isManualDisconnect = true; // Указываем, что отключаемся сами
                 await currentProvider.disconnect(); 
                 currentProvider = null;
                 updateUI(null);
-                
+                showNotification("Wallet Disconnected", "red");
             } catch (err) { console.error(err); }
+            finally {
+                isManualDisconnect = false;
+            }
             return;
         }
 
@@ -385,12 +390,14 @@ document.addEventListener('DOMContentLoaded', () => {
             updateUI(publicKey);
             showNotification(`${wallet.name} Connected!`);
             
-            // Отписываемся от старого события перед подпиской на новое
             currentProvider.removeAllListeners?.('disconnect');
             currentProvider.on('disconnect', () => {
-                currentProvider = null;
-                updateUI(null);
-                showNotification("Disconnected by wallet", "red");
+                // Если отключение произошло НЕ вручную (например, из расширения), показываем уведомление
+                if (!isManualDisconnect) {
+                    currentProvider = null;
+                    updateUI(null);
+                    showNotification("Disconnected by wallet", "red");
+                }
             });
         } catch (err) {
             console.error("Connection Error:", err);
@@ -416,5 +423,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     });
 });
+
+
+
+
+
+
 
             
