@@ -40,25 +40,28 @@
             </div>
         </div>
 
-             <div class="wallet-controls">
-            <button id="connectWalletBtn" class="px-6 py-2.5 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 font-bold text-sm hover:bg-blue-600 hover:text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.2)]">
-                Connect Wallet
+             <header>
+    <!-- Основной контейнер элементов управления -->
+    <div class="wallet-controls">
+        <button id="connectWalletBtn" class="px-6 py-2.5 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 font-bold text-sm hover:bg-blue-600 hover:text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+            Connect Wallet
+        </button>
+    </div>
+
+    <!-- Модальное окно (вынесено за пределы кнопок, так как оно фиксированное) -->
+    <div id="walletModal" class="fixed inset-0 bg-black/80 hidden z-[9999] flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-sm">
+            <h2 class="text-white text-lg font-bold mb-4 text-center">Select Wallet</h2>
+            
+            <div id="walletList" class="space-y-2"></div>
+            
+            <button onclick="document.getElementById('walletModal').classList.add('hidden')" class="w-full mt-4 text-gray-500 hover:text-white">
+                Cancel
             </button>
         </div>
     </div>
-   
-      <div id="walletModal" class="fixed inset-0 bg-black/80 hidden z-[9999] flex items-center justify-center backdrop-blur-sm">
-    <div class="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-sm">
-        <h2 class="text-white text-lg font-bold mb-4 text-center">Select Wallet</h2>
-        <div id="walletList" class="space-y-2"></div>
-        <button onclick="document.getElementById('walletModal').classList.add('hidden')" class="w-full mt-4 text-gray-500 hover:text-white">Cancel</button>
-    </div>
-</div>
-
-
-        </div>
-    </div>
 </header>
+
 
     <main class="container mx-auto flex flex-col items-center justify-center py-10">
         <div class="cube-container">
@@ -915,19 +918,20 @@
 </div>
 
 
-   <script>
-   function switchView(viewId) {
-    const views = [
-        'initStakeView',
-        'mainStakingView', 
-        'collateralView', 
-        'decollateralizeView', // <-- ОЧЕНЬ ВАЖНО: чтобы было то же самое слово!
-        'depositView', 
-        'claimView', 
-        'unstakeView', 
-        'closeAccountView'
-    ];
+</script>
     
+
+    function switchView(viewId) {
+        const views = [
+            'initStakeView',
+            'mainStakingView', 
+            'collateralView', 
+            'decollateralizeView',
+            'depositView', 
+            'claimView', 
+            'unstakeView', 
+            'closeAccountView'
+        ];
         
         // Скрываем все окна
         views.forEach(id => {
@@ -944,79 +948,64 @@
         }
     }
 
-    // Ждем полной загрузки DOM, чтобы все элементы точно существовали
-document.addEventListener('DOMContentLoaded', () => {
-    // Дропдаун логика
-    const trigger = document.getElementById('dropdownTrigger');
-    const list = document.getElementById('dropdownList');
-    const icon = document.getElementById('dropdownIcon');
-    const selectedText = document.getElementById('selectedText');
-    const initializeBtn = document.getElementById('initializeBtn');
-    const tierInputs = document.querySelectorAll('.tier-input');
+    // Ждем полной загрузки DOM
+    document.addEventListener('DOMContentLoaded', () => {
+        const trigger = document.getElementById('dropdownTrigger');
+        const list = document.getElementById('dropdownList');
+        const icon = document.getElementById('dropdownIcon');
+        const selectedText = document.getElementById('selectedText');
+        const initializeBtn = document.getElementById('initializeBtn');
+        const tierInputs = document.querySelectorAll('.tier-input');
 
-    // Проверяем, что элемент найден, прежде чем вешать событие
-    if (trigger) {
-        trigger.addEventListener('click', (e) => {
-            if (list) list.classList.toggle('open');
-            if (icon) icon.classList.toggle('rotated');
-            e.stopPropagation();
-        });
-    }
-
-    if (tierInputs) {
-        tierInputs.forEach(input => {
-            input.addEventListener('change', (e) => {
-                if (selectedText) {
-                    selectedText.innerText = `Selected: ${e.target.value} Days`;
-                    selectedText.classList.add('text-white', 'font-bold');
-                }
-                if (initializeBtn) {
-                    initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-                }
-                if (list) list.classList.remove('open');
-                if (icon) icon.classList.remove('rotated');
+        if (trigger) {
+            trigger.addEventListener('click', (e) => {
+                if (list) list.classList.toggle('open');
+                if (icon) icon.classList.toggle('rotated');
+                e.stopPropagation();
             });
-        });
-    }
-
-    document.addEventListener('click', (e) => {
-        if (list && trigger && !list.contains(e.target) && !trigger.contains(e.target)) {
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
         }
+
+        if (tierInputs) {
+            tierInputs.forEach(input => {
+                input.addEventListener('change', (e) => {
+                    if (selectedText) {
+                        selectedText.innerText = `Selected: ${e.target.value} Days`;
+                        selectedText.classList.add('text-white', 'font-bold');
+                    }
+                    if (initializeBtn) {
+                        initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
+                    }
+                    if (list) list.classList.remove('open');
+                    if (icon) icon.classList.remove('rotated');
+                });
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (list && trigger && !list.contains(e.target) && !trigger.contains(e.target)) {
+                list.classList.remove('open');
+                icon.classList.remove('rotated');
+            }
+        });
     });
-});
+</script>
 
-<script>
-
-
-
-
-
-
-
-    
-      <footer style="margin-top: 80px; padding: 40px 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.2));">
+<footer style="margin-top: 80px; padding: 40px 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.2));">
     <div style="max-width: 800px; margin: 0 auto; text-align: center;">
-        
         <div style="background: rgba(255, 255, 255, 0.02); padding: 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.05);">
             <p style="font-size: 0.9em; color: #94a3b8; line-height: 1.7; margin: 0;">
                 <span style="color: #60a5fa; font-weight: 600; display: block; margin-bottom: 8px;">Risk Disclosure</span>
                 QUBIT is a decentralized, community-driven project. 
                 Interaction with digital assets and DeFi protocols involves significant risks, 
                 including market volatility and technological complexities inherent to blockchain. 
-                Please make informed decisions—the information provided here is for 
-                educational purposes only and does not constitute financial advice.
             </p>
         </div>
 
         <div style="margin-top: 40px; color: #475569; font-size: 0.85em;">
             <p style="margin-bottom: 8px;">&copy; 2026 QUBIT. All rights reserved.</p>
-            <p>Built with passion for the future of Web3.</p>
         </div>
     </div>
 </footer>
 
 </body>
-    </html>
-
+</html>
