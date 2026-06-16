@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await currentProvider.disconnect(); 
                 currentProvider = null;
                 updateUI(null);
-                showNotification("Wallet Disconnected", "red");
+                
             } catch (err) { console.error(err); }
             return;
         }
