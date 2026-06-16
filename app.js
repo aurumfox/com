@@ -425,6 +425,113 @@ window.toggleAllTiers = function() {
 
 
 
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: UNSTAKE (ВЫВОД СРЕДСТВ)
+ * Синхронизированная версия с поддержкой Compute Budget и анти-MEV аудита
+ */
+window.performUnstake = async function() {
+    try {
+        // 1. Получаем активный пул и сумму из UI
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        const amountInput = document.querySelector('input[type="number"]');
+        const amount = amountInput ? new anchor.BN(amountInput.value) : new anchor.BN(0);
+
+        if (!window.solana?.isConnected) {
+            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        }
+
+        if (amount.isZero()) {
+            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
+        }
+
+        AurumFoxEngine.notify("INITIALIZING UNSTAKE...", "WAIT");
+
+        const program = await QubitProgramManager.getProgram();
+        const userPubKey = program.provider.wallet.publicKey;
+
+        // 2. Получаем данные пула
+        const poolData = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+
+        // 3. Вычисление PDA для стейкинга
+        const [userStakePda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPubKey.toBuffer(),
+                Uint8Array.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        // 4. Получаем ATA адреса
+        const userStAta = await spl.getAssociatedTokenAddress(poolData.stMint, userPubKey);
+        const userRewardsAta = await spl.getAssociatedTokenAddress(poolData.rewardMint, userPubKey);
+
+        // 5. Формирование транзакции с оптимизацией лимитов
+        const tx = await program.methods
+            .unstake(poolIndex, amount)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakePda,
+                owner: userPubKey,
+                vault: poolData.vault,
+                daoTreasuryVault: poolData.daoTreasuryVault,
+                adminFeeVault: poolData.adminFeeVault,
+                userRewardsAta: userRewardsAta,
+                userStAta: userStAta,
+                stMint: poolData.stMint,
+                rewardMint: poolData.rewardMint,
+                tokenProgram: spl.TOKEN_PROGRAM_ID,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .preInstructions([
+                window.solanaWeb3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                window.solanaWeb3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
+            ])
+            .rpc();
+
+        console.log("📉 Unstake Signature:", tx);
+        AurumFoxEngine.notify("UNSTAKE SUCCESS!", "SUCCESS");
+
+    } catch (e) {
+        console.error("🛠️ Unstake Error:", e);
+        // Обработка специфических ошибок контракта
+        if (e.message.includes("0x1770")) {
+            AurumFoxEngine.notify("INSUFFICIENT FUNDS", "FAILED");
+        } else if (e.message.includes("0x1771")) {
+            AurumFoxEngine.notify("LOCKED IN LENDING", "FAILED");
+        } else {
+            AurumFoxEngine.notify("UNSTAKE FAILED", "FAILED");
+        }
+    }
+};
+
+// --- ПРИВЯЗКА КНОПКИ UI ---
+const unstakeButton = document.getElementById('unstakeBtn');
+if (unstakeButton) {
+    unstakeButton.addEventListener('click', () => {
+        window.performUnstake();
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
