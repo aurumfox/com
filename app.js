@@ -435,6 +435,77 @@ window.toggleAllTiers = function() {
 
 
 
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE (УСТАНОВКА ЗАЛОГА)
+ * Синхронизировано с логикой лендинг-модуля контракта Qubit
+ */
+window.collateralizeLending = async function() {
+    try {
+        // 1. Получаем активный индекс пула и сумму для залога
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        
+        const amountInput = document.querySelector('input[type="number"]');
+        const amountValue = amountInput ? amountInput.value : "0";
+        const newLendingAmount = new anchor.BN(amountValue);
+
+        if (!window.solana?.isConnected) {
+            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        }
+
+        if (newLendingAmount.isZero()) {
+            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
+        }
+
+        AurumFoxEngine.notify("LOCKING COLLATERAL...", "WAIT");
+
+        const program = await QubitProgramManager.getProgram();
+        const userPubKey = program.provider.wallet.publicKey;
+
+        // 2. Расчет PDA стейкинга
+        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPubKey.toBuffer(),
+                Uint8Array.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        // 3. Вызов метода контракта
+        const tx = await program.methods
+            .collateralizeLending(newLendingAmount)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPda,
+                owner: userPubKey,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        console.log("🛡️ Collateralize Signature:", tx);
+        AurumFoxEngine.notify("COLLATERAL UPDATED!", "SUCCESS");
+
+    } catch (e) {
+        console.error("🛠️ Collateral Error:", e);
+        // Обработка ошибок (например, нехватка стейка для покрытия залога)
+        if (e.message.includes("0x1775")) {
+            AurumFoxEngine.notify("EXCEEDS AVAILABLE STAKE", "FAILED");
+        } else {
+            AurumFoxEngine.notify("COLLATERAL FAILED", "FAILED");
+        }
+    }
+};
+
+// --- ПРИВЯЗКА КНОПКИ UI ---
+// Привязываем событие к кнопке ADJUST COLLATERAL
+const adjustBtn = document.querySelector('.btn-action');
+if (adjustBtn) {
+    adjustBtn.addEventListener('click', () => {
+        window.collateralizeLending();
+    });
+}
 
 
 
