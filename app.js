@@ -266,6 +266,7 @@ if (confirmButton) {
 
 
 
+// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ ---
 function showNotification(text, color = 'emerald') {
     const toast = document.createElement('div');
     toast.className = `fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
@@ -292,14 +293,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Функция поиска всех доступных кошельков
-    const getAvailableWallets = () => {
-        const wallets = [];
-        // Проверяем все популярные объекты в window
-        if (window.solana) wallets.push({ name: 'Phantom', provider: window.solana });
-        if (window.solflare) wallets.push({ name: 'Solflare', provider: window.solflare });
-        if (window.backpack) wallets.push({ name: 'Backpack', provider: window.backpack });
-        return wallets;
+    // --- ПРОФЕССИОНАЛЬНЫЙ СКАНЕР ---
+    // Мы используем асинхронный поиск, так как кошелек может появиться с задержкой 100-500мс
+    const getAvailableWallets = async () => {
+        // Даем браузеру до 1 секунды, чтобы расширения "проснулись"
+        for (let i = 0; i < 10; i++) {
+            const wallets = [];
+            if (window.solana?.isPhantom) wallets.push({ name: 'Phantom', provider: window.solana });
+            if (window.solflare) wallets.push({ name: 'Solflare', provider: window.solflare });
+            if (window.backpack) wallets.push({ name: 'Backpack', provider: window.backpack });
+            
+            if (wallets.length > 0) return wallets;
+            await new Promise(r => setTimeout(r, 100)); // Ждем 100мс и пробуем снова
+        }
+        return [];
     };
 
     btn.addEventListener('click', async () => {
@@ -310,9 +317,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const available = getAvailableWallets();
+        // Вызываем сканер с ожиданием
+        const available = await getAvailableWallets();
+        
         if (available.length === 0) {
-            showNotification("No wallets found!", "red");
+            showNotification("No wallets found! Please install Phantom/Solflare", "red");
             return;
         }
 
@@ -344,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (err) {
             console.error(err);
-            showNotification("Connection Failed", "red");
+            showNotification("Connection Failed: " + (err.message || "User Rejected"), "red");
         }
     }
 });
