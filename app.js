@@ -266,7 +266,7 @@ if (confirmButton) {
 
 
 
-        // --- ФУНКЦИЯ УВЕДОМЛЕНИЙ ---
+// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ ---
 function showNotification(text, color = 'emerald') {
     const toast = document.createElement('div');
     toast.className = `fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
@@ -296,11 +296,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- МАКСИМАЛЬНО РАСШИРЕННЫЙ СКАНЕР ---
+    // --- УНИВЕРСАЛЬНЫЙ СКАНЕР + DEEP LINKING ---
     const scanForWallets = () => {
         const found = [];
-        
-        // Список всех возможных путей инъекции кошельков в объект window
         const providers = [
             { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
             { name: 'Solflare', check: () => window.solflare?.isSolflare ? window.solflare : window.solflare },
@@ -313,7 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const provider = p.check();
                 if (provider) {
-                    // Защита от дублей
                     if (!found.find(w => w.name === p.name)) {
                         found.push({ name: p.name, provider });
                     }
@@ -323,14 +320,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return found;
     };
 
-    // --- УМНЫЙ ОЖИДАТЕЛЬ (POLLING + EVENT LISTENER) ---
+    // --- ЛОГИКА DEEP LINKING (ДЛЯ МОБИЛОК И ПРИЛОЖЕНИЙ) ---
+    const triggerDeepLink = () => {
+        const url = window.location.href;
+        const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
+        
+        showNotification("Opening Wallet App...", "emerald");
+        window.location.href = phantomDeepLink;
+    };
+
     const getAvailableWallets = () => {
         return new Promise((resolve) => {
             const found = scanForWallets();
             if (found.length > 0) return resolve(found);
 
             let attempts = 0;
-            // Увеличили частоту и количество попыток для полной надежности
             const interval = setInterval(() => {
                 attempts++;
                 const foundAgain = scanForWallets();
@@ -355,7 +359,9 @@ document.addEventListener('DOMContentLoaded', () => {
         availableWallets = await getAvailableWallets();
         
         if (availableWallets.length === 0) {
-            showNotification("No wallets found. Unlock your wallet or use HTTPS.", "red");
+            // Если не нашли, активируем фишку с Deep Linking
+            showNotification("Wallet not found, redirecting to app...", "red");
+            triggerDeepLink();
             return;
         }
 
@@ -377,14 +383,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function connectWallet(wallet) {
         try {
             currentProvider = wallet.provider;
-            
-            // Пытаемся подключиться
             const resp = await currentProvider.connect();
             const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-            
             updateUI(publicKey);
             showNotification(`${wallet.name} Connected!`);
-            
             currentProvider.on('disconnect', () => {
                 currentProvider = null;
                 updateUI(null);
@@ -396,9 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Инициализация при полной загрузке + принудительный таймаут
     window.addEventListener('load', async () => {
-        // Доп. задержка для ожидания всех JS-скриптов
         setTimeout(async () => {
             const savedWallet = localStorage.getItem('wallet_connected');
             if (savedWallet) {
@@ -416,3 +416,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1500);
     });
 });
+
+        
