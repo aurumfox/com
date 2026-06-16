@@ -237,3 +237,68 @@ if (confirmButton) {
 
 
 
+
+
+
+
+
+
+
+
+// Функция для красивых уведомлений (Toast)
+function showNotification(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl transition-all z-50 ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+
+    // Функция обновления кнопки
+    const updateBtnState = (address = null) => {
+        if (address) {
+            const shortAddress = address.slice(0, 4) + '...' + address.slice(-4);
+            connectWalletBtn.innerText = `Connected: ${shortAddress}`;
+            connectWalletBtn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
+            connectWalletBtn.classList.replace('border-blue-500/20', 'border-emerald-500/50');
+            connectWalletBtn.classList.replace('text-blue-400', 'text-emerald-400');
+        } else {
+            connectWalletBtn.innerText = "Connect Wallet";
+            connectWalletBtn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
+            connectWalletBtn.classList.replace('border-emerald-500/50', 'border-blue-500/20');
+            connectWalletBtn.classList.replace('text-emerald-400', 'text-blue-400');
+        }
+    };
+
+    // Слушатель клика
+    connectWalletBtn.addEventListener('click', async () => {
+        if (!window.solana) {
+            showNotification("Phantom wallet not found!", "error");
+            return;
+        }
+
+        if (window.solana.isConnected) {
+            // ЛОГИКА DISCONNECT
+            await window.solana.disconnect();
+            updateBtnState(null);
+            showNotification("Wallet disconnected", "error");
+        } else {
+            // ЛОГИКА CONNECT
+            try {
+                const resp = await window.solana.connect();
+                updateBtnState(resp.publicKey.toString());
+                showNotification("Wallet connected successfully!");
+            } catch (err) {
+                console.error(err);
+                showNotification("Connection cancelled", "error");
+            }
+        }
+    });
+
+    // Проверка статуса при загрузке страницы
+    window.solana.on('connect', () => updateBtnState(window.solana.publicKey.toString()));
+    window.solana.on('disconnect', () => updateBtnState(null));
+});
