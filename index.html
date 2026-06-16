@@ -932,37 +932,48 @@
         }
     }
 
+    // Ждем полной загрузки DOM, чтобы все элементы точно существовали
+document.addEventListener('DOMContentLoaded', () => {
     // Дропдаун логика
     const trigger = document.getElementById('dropdownTrigger');
     const list = document.getElementById('dropdownList');
     const icon = document.getElementById('dropdownIcon');
-    const selectedText = document.getElementById('selectedTierText');
+    const selectedText = document.getElementById('selectedText');
     const initializeBtn = document.getElementById('initializeBtn');
     const tierInputs = document.querySelectorAll('.tier-input');
 
-    trigger.addEventListener('click', (e) => {
-        list.classList.toggle('open');
-        icon.classList.toggle('rotated');
-        e.stopPropagation();
-    });
-
-    tierInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            selectedText.innerText = `Selected: ${e.target.value} Days`;
-            selectedText.classList.add('text-white', 'font-bold');
-            initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
+    // Проверяем, что элемент найден, прежде чем вешать событие
+    if (trigger) {
+        trigger.addEventListener('click', (e) => {
+            if (list) list.classList.toggle('open');
+            if (icon) icon.classList.toggle('rotated');
+            e.stopPropagation();
         });
-    });
+    }
+
+    if (tierInputs) {
+        tierInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                if (selectedText) {
+                    selectedText.innerText = `Selected: ${e.target.value} Days`;
+                    selectedText.classList.add('text-white', 'font-bold');
+                }
+                if (initializeBtn) {
+                    initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
+                }
+                if (list) list.classList.remove('open');
+                if (icon) icon.classList.remove('rotated');
+            });
+        });
+    }
 
     document.addEventListener('click', (e) => {
-        if (!list.contains(e.target) && !trigger.contains(e.target)) {
+        if (list && trigger && !list.contains(e.target) && !trigger.contains(e.target)) {
             list.classList.remove('open');
             icon.classList.remove('rotated');
         }
     });
-</script>
+});
 
 
 
