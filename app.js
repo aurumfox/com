@@ -266,10 +266,14 @@ if (confirmButton) {
 
 
 
-// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ ---
+// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ---
 function showNotification(text, color = 'emerald') {
+    // Проверяем, есть ли уже уведомление с таким же текстом в DOM, чтобы избежать дублей
+    const existingNotifications = Array.from(document.querySelectorAll('.toast-notification'));
+    if (existingNotifications.some(n => n.innerText === text)) return;
+
     const toast = document.createElement('div');
-    toast.className = `fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
+    toast.className = `toast-notification fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
     toast.innerText = text;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
@@ -359,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
         availableWallets = await getAvailableWallets();
         
         if (availableWallets.length === 0) {
-            // Если не нашли, активируем фишку с Deep Linking
             showNotification("Wallet not found, redirecting to app...", "red");
             triggerDeepLink();
             return;
@@ -416,5 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1500);
     });
 });
+
 
         
