@@ -1,3 +1,4 @@
+// --- 1. УТИЛИТЫ ---
 function formatBigInt(value, decimals) {
     if (!value) return "0";
     let str = value.toString().padStart(decimals + 1, '0');
@@ -5,7 +6,6 @@ function formatBigInt(value, decimals) {
     let fracPart = str.slice(-decimals).replace(/0+$/, '');
     return fracPart ? (intPart + "." + fracPart) : intPart;
 }
-
 
 // ============================================================
 // ГЛОБАЛЬНЫЙ МОСТ: CSP И SYNTAXERROR
@@ -17,7 +17,6 @@ function formatBigInt(value, decimals) {
     window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
 
     // 2. Создаем «Виртуальный Anchor» прямо здесь
-    // Это обходит блокировку CSP, так как код уже внутри app.js
     const createVirtualAnchor = () => {
         return {
             AnchorProvider: function(conn, wallet, opts) {
@@ -58,6 +57,37 @@ function formatBigInt(value, decimals) {
     setTimeout(report, 500);
 })();
 
+// --- 2. КОНФИГУРАЦИЯ QUBIT ---
+const QUBIT_CONFIG = {
+    programId: "Auzd7mGQJSCSDJgopWrLtLqQPvgWBCXLQbQ8SNgDaYbb",
+    idlAccount: "F3LMDpRENLbFWaYB9GJAszKXkoc3PhZ9bwecxmHg2sP",
+    // Сюда вставьте ваш JSON IDL (если он короткий) 
+    // или укажите путь, если вы подгружаете его отдельно
+    idl: null 
+};
+
+// Менеджер программы
+const QubitProgramManager = {
+    program: null,
+
+    async getProgram() {
+        if (this.program) return this.program;
+
+        // Инициализация провайдера (через phantom/solflare)
+        const provider = new anchor.AnchorProvider(
+            new solanaWeb3.Connection("https://api.mainnet-beta.solana.com"), // или devnet
+            window.solana, 
+            { preflightCommitment: "confirmed" }
+        );
+
+        // Если IDL еще не загружен, можно попробовать взять его из сети 
+        // через idlAccount (наиболее профессиональный путь)
+        const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId, provider);
+        
+        this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
+        return this.program;
+    }
+};
 
 
 
