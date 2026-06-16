@@ -300,6 +300,124 @@ if (depositButton) {
 
 
 
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: CLAIM REWARDS
+ * Одиночный или пакетный сбор наград
+ */
+window.executeClaimRewards = async function() {
+    try {
+        if (!window.solana?.isConnected) {
+            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        }
+
+        const program = await QubitProgramManager.getProgram();
+        const userPubKey = program.provider.wallet.publicKey;
+        
+        // 1. Собираем активные индексы из UI
+        const activeButtons = document.querySelectorAll('.tier-btn.active');
+        const poolIndices = Array.from(activeButtons).map(btn => parseInt(btn.getAttribute('data-index')));
+
+        if (poolIndices.length === 0) {
+            return AurumFoxEngine.notify("SELECT POOLS", "FAILED");
+        }
+
+        AurumFoxEngine.notify("CLAIMING REWARDS...", "WAIT");
+
+        // 2. Получаем данные пула
+        const poolData = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+        
+        // 3. Получаем ATA пользователя для наград
+        const userRewardsAta = await spl.getAssociatedTokenAddress(poolData.rewardMint, userPubKey);
+
+        let tx;
+        if (poolIndices.length === 1) {
+            // ОДИНОЧНЫЙ КЛЕЙМ
+            const poolIndex = poolIndices[0];
+            const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+                [
+                    Buffer.from("user_stake"),
+                    AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                    userPubKey.toBuffer(),
+                    Uint8Array.from([poolIndex])
+                ],
+                program.programId
+            );
+
+            tx = await program.methods.claimRewards(poolIndex)
+                .accounts({
+                    poolState: AFOX_POOL_STATE_PUBKEY,
+                    userStaking: userStakingPda,
+                    owner: userPubKey,
+                    vault: poolData.vault,
+                    adminFeeVault: poolData.adminFeeVault,
+                    userRewardsAta: userRewardsAta,
+                    rewardMint: poolData.rewardMint,
+                    tokenProgram: spl.TOKEN_PROGRAM_ID,
+                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                }).rpc();
+        } else {
+            // ПАКЕТНЫЙ КЛЕЙМ (CLAIM ALL)
+            const remainingAccounts = poolIndices.map(index => {
+                const [pda] = window.solanaWeb3.PublicKey.findProgramAddressSync(
+                    [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), userPubKey.toBuffer(), Uint8Array.from([index])],
+                    program.programId
+                );
+                return { pubkey: pda, isWritable: true, isSigner: false };
+            });
+
+            tx = await program.methods.claimAllRewards(poolIndices)
+                .accounts({
+                    poolState: AFOX_POOL_STATE_PUBKEY,
+                    owner: userPubKey,
+                    userRewardsAta: userRewardsAta,
+                    vault: poolData.vault,
+                    adminFeeVault: poolData.adminFeeVault,
+                    rewardMint: poolData.rewardMint,
+                    tokenProgram: spl.TOKEN_PROGRAM_ID,
+                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                })
+                .remainingAccounts(remainingAccounts)
+                .rpc();
+        }
+
+        console.log("💎 Claim Signature:", tx);
+        AurumFoxEngine.notify("REWARDS RECEIVED!", "SUCCESS");
+
+    } catch (e) {
+        console.error("❌ Claim Error:", e);
+        AurumFoxEngine.notify("CLAIM FAILED", "FAILED");
+    }
+};
+
+// --- 4. ОБРАБОТЧИКИ UI ДЛЯ CLAIM VIEW ---
+// Toggle для одной кнопки (Tier)
+window.toggleTier = function(id) {
+    const buttons = document.querySelectorAll('.tier-btn');
+    if (buttons[id]) {
+        buttons[id].classList.toggle('active');
+    }
+};
+
+// Toggle для всех кнопок
+window.toggleAllTiers = function() {
+    const buttons = document.querySelectorAll('.tier-btn');
+    const allActive = Array.from(buttons).every(btn => btn.classList.contains('active'));
+    buttons.forEach(btn => {
+        allActive ? btn.classList.remove('active') : btn.classList.add('active');
+    });
+};
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
