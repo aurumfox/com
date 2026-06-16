@@ -281,13 +281,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const list = document.getElementById('walletList');
 
     let currentProvider = null;
+    let availableWallets = [];
 
     const updateUI = (publicKey = null) => {
         if (publicKey) {
             const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
             btn.innerText = `Connected: ${short}`;
             btn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
-            // Сохраняем состояние в кэш
             localStorage.setItem('wallet_connected', publicKey);
         } else {
             btn.innerText = "Connect Wallet";
@@ -296,76 +296,77 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- УМНЫЙ СКАНЕР: ГЛУБОКИЙ ПОИСК С КЭШЕМ И ТЕНЕВЫМИ ПУТЯМИ ---
-    const getAvailableWallets = async () => {
-        const foundWallets = [];
-        
-        // Метод: Прямая проверка объектов в window (включая теневые пути)
-        const checkWindow = () => {
-            const registry = [];
-            // Проверяем стандартные и теневые пути
-            const phantom = window.solana || window.phantom?.solana;
-            const solflare = window.solflare;
-            const backpack = window.backpack;
-            const glow = window.glowSolana;
+    // --- УЛЬТРА-СКАНЕР: ЛОВЕЦ ИНЪЕКЦИЙ ---
+    const scanForWallets = () => {
+        const found = [];
+        // Проверяем все возможные пути доступа
+        const candidates = [
+            { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
+            { name: 'Solflare', check: () => window.solflare },
+            { name: 'Backpack', check: () => window.backpack },
+            { name: 'Glow', check: () => window.glowSolana }
+        ];
 
-            if (phantom?.isPhantom) registry.push({ name: 'Phantom', provider: phantom });
-            if (solflare) registry.push({ name: 'Solflare', provider: solflare });
-            if (backpack) registry.push({ name: 'Backpack', provider: backpack });
-            if (glow) registry.push({ name: 'Glow', provider: glow });
-            return registry;
-        };
-
-        // Логика Retry: ждем расширения до 10 секунд (50 попыток по 200мс)
-        for (let attempt = 0; attempt < 50; attempt++) {
-            const currentFound = checkWindow();
-            if (currentFound.length > 0) {
-                const unique = Array.from(new Set(currentFound.map(w => w.name)))
-                    .map(name => currentFound.find(w => w.name === name));
-                return unique;
-            }
-            await new Promise(resolve => setTimeout(resolve, 200));
-        }
-
-        return [];
+        candidates.forEach(c => {
+            const provider = c.check();
+            if (provider) found.push({ name: c.name, provider });
+        });
+        return found;
     };
 
-    btn.addEventListener('click', async () => {
-        // Если уже подключен — просто отключаем
-        if (currentProvider) {
-            try {
-                await currentProvider.disconnect();
-            } catch (err) {
-                console.error("Disconnect error:", err);
+    // --- АВТОНОМНЫЙ НАБЛЮДАТЕЛЬ ---
+    const waitForWallet = (timeout = 10000) => {
+        return new Promise((resolve) => {
+            const start = Date.now();
+            const interval = setInterval(() => {
+                const found = scanForWallets();
+                if (found.length > 0 || (Date.now() - start) > timeout) {
+                    clearInterval(interval);
+                    resolve(found);
+                }
+            }, 100);
+        });
+    };
+
+    // --- СЛУШАТЕЛЬ ПОЯВЛЕНИЯ ПРОВАЙДЕРОВ ---
+    // Используем Proxy, чтобы перехватить момент добавления в window, если расширение медленное
+    const handler = {
+        set(target, prop, value) {
+            target[prop] = value;
+            if (['solana', 'solflare', 'backpack', 'glowSolana'].includes(prop)) {
+                availableWallets = scanForWallets();
             }
+            return true;
+        }
+    };
+    window = new Proxy(window, handler);
+
+    btn.addEventListener('click', async () => {
+        if (currentProvider) {
+            try { await currentProvider.disconnect(); } catch (err) { console.error(err); }
             currentProvider = null;
             updateUI(null);
             showNotification("Wallet Disconnected", "red");
             return;
         }
 
-        // Если не подключен — ищем
         showNotification("Searching for wallets...");
-        const available = await getAvailableWallets();
+        availableWallets = await waitForWallet();
         
-        if (available.length === 0) {
-            console.error("No wallets detected in window object.");
-            showNotification("No wallets found! Please unlock your extension.", "red");
+        if (availableWallets.length === 0) {
+            showNotification("No wallets detected! Refresh page or install Phantom.", "red");
             return;
         }
 
-        if (available.length === 1) {
-            connectWallet(available[0]);
+        if (availableWallets.length === 1) {
+            connectWallet(availableWallets[0]);
         } else {
             list.innerHTML = '';
-            available.forEach(w => {
+            availableWallets.forEach(w => {
                 const item = document.createElement('button');
                 item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
                 item.innerText = w.name;
-                item.onclick = () => { 
-                    connectWallet(w); 
-                    modal.classList.add('hidden'); 
-                };
+                item.onclick = () => { connectWallet(w); modal.classList.add('hidden'); };
                 list.appendChild(item);
             });
             modal.classList.remove('hidden');
@@ -375,49 +376,33 @@ document.addEventListener('DOMContentLoaded', () => {
     async function connectWallet(wallet) {
         try {
             currentProvider = wallet.provider;
-            
-            // Проверка на корректность провайдера
-            if (!currentProvider.connect) {
-                throw new Error("Provider structure invalid");
-            }
-
             const resp = await currentProvider.connect();
-            const pubKey = resp.publicKey.toString();
-            
-            updateUI(pubKey);
+            updateUI(resp.publicKey.toString());
             showNotification(`${wallet.name} Connected!`);
-            
-            // Слушаем событие принудительного отключения из расширения
             currentProvider.on('disconnect', () => {
                 currentProvider = null;
                 updateUI(null);
                 showNotification("Disconnected by wallet", "red");
             });
-            
         } catch (err) {
-            console.error("Connection detailed error:", err);
-            currentProvider = null;
-            showNotification("Connection Failed: " + (err.name === 'WalletConnectionError' ? 'Rejected' : 'Unknown'), "red");
+            console.error(err);
+            showNotification("Connection Failed: " + (err.message || 'Rejected'), "red");
         }
     }
 
-    // Авто-проверка при загрузке: если был подключен ранее — пытаемся восстановить
+    // Инициализация
     window.addEventListener('load', async () => {
+        availableWallets = scanForWallets();
         const savedWallet = localStorage.getItem('wallet_connected');
-        if (savedWallet) {
-            console.log("Found cached wallet, attempting auto-sync...");
-            const available = await getAvailableWallets();
-            const phantom = available.find(w => w.name === 'Phantom');
-            if (phantom) {
-                try {
-                    // Пытаемся подключиться молча, если есть кэш
+        if (savedWallet && availableWallets.length > 0) {
+            try {
+                const phantom = availableWallets.find(w => w.name === 'Phantom');
+                if (phantom) {
                     const resp = await phantom.provider.connect({ onlyIfTrusted: true });
                     updateUI(resp.publicKey.toString());
                     currentProvider = phantom.provider;
-                } catch (e) {
-                    console.log("Auto-sync failed, user action required.");
                 }
-            }
+            } catch (e) { console.log("Auto-connect skipped"); }
         }
     });
 });
