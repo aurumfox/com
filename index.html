@@ -550,7 +550,8 @@
     
 
 
-<div id="claimView" class="hidden max-w-7xl mx-auto">
+
+              <div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Claim Rewards: Security Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -560,7 +561,10 @@
         <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             
             <div class="md:col-span-2 glass-panel p-6">
-                <p class="text-gray-400 text-sm mb-4">Select Pools to Claim (Batch Processing)</p>
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-gray-400 text-sm">Select Pools to Claim (Batch Processing)</p>
+                    <button onclick="toggleAllTiers()" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold">SELECT ALL</button>
+                </div>
                 <div id="tierSelector" class="grid grid-cols-5 gap-3">
                     <button onclick="toggleTier(0)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 0</button>
                     <button onclick="toggleTier(1)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 1</button>
@@ -663,7 +667,20 @@
         const btn = document.querySelectorAll('.tier-btn')[id];
         btn.classList.toggle('active');
     }
+
+    function toggleAllTiers() {
+        const buttons = document.querySelectorAll('.tier-btn');
+        const allActive = Array.from(buttons).every(btn => btn.classList.contains('active'));
+        buttons.forEach(btn => {
+            if (allActive) {
+                btn.classList.remove('active');
+            } else {
+                btn.classList.add('active');
+            }
+        });
+    }
 </script>
+
 
 
     
