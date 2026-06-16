@@ -88,8 +88,9 @@ const QubitProgramManager = {
         return this.program;
     }
 };
-
-
+//
+const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
+//
 
 
 
