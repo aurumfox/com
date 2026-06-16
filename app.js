@@ -245,67 +245,106 @@ if (confirmButton) {
 
 
 
-// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (Toast) ---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function showNotification(text, color = 'emerald') {
     const toast = document.createElement('div');
-    toast.className = `fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border transition-all animate-fade-in
-        ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
+    toast.className = `fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
     toast.innerText = text;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
 
-// --- ОСНОВНАЯ ЛОГИКА ---
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('connectWalletBtn');
-    if (!btn) return console.error("Кнопка не найдена!");
+    const modal = document.getElementById('walletModal');
+    const list = document.getElementById('walletList');
 
-    // Функция обновления кнопки
+    let currentProvider = null;
+
     const updateUI = (publicKey = null) => {
         if (publicKey) {
             const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
             btn.innerText = `Connected: ${short}`;
             btn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
-            btn.classList.replace('text-blue-400', 'text-emerald-400');
         } else {
             btn.innerText = "Connect Wallet";
             btn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
-            btn.classList.replace('text-emerald-400', 'text-blue-400');
         }
     };
 
-    // Обработка клика
+    // Функция поиска всех доступных кошельков
+    const getAvailableWallets = () => {
+        const wallets = [];
+        // Проверяем все популярные объекты в window
+        if (window.solana) wallets.push({ name: 'Phantom', provider: window.solana });
+        if (window.solflare) wallets.push({ name: 'Solflare', provider: window.solflare });
+        if (window.backpack) wallets.push({ name: 'Backpack', provider: window.backpack });
+        return wallets;
+    };
+
     btn.addEventListener('click', async () => {
-        if (!window.solana) {
-            alert("Phantom/Solflare not found!");
+        if (currentProvider) {
+            await currentProvider.disconnect();
+            currentProvider = null;
+            updateUI(null);
             return;
         }
 
-        try {
-            if (window.solana.isConnected) {
-                // DISCONNECT
-                await window.solana.disconnect();
-                showNotification("Wallet Disconnected", "red");
-            } else {
-                // CONNECT
-                const resp = await window.solana.connect();
-                updateUI(resp.publicKey.toString());
-                showNotification("Wallet Connected Successfully");
-            }
-        } catch (err) {
-            console.error("Connection error:", err);
-            showNotification("Connection Failed", "red");
+        const available = getAvailableWallets();
+        if (available.length === 0) {
+            showNotification("No wallets found!", "red");
+            return;
+        }
+
+        if (available.length === 1) {
+            connectWallet(available[0]);
+        } else {
+            list.innerHTML = '';
+            available.forEach(w => {
+                const item = document.createElement('button');
+                item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all";
+                item.innerText = w.name;
+                item.onclick = () => { connectWallet(w); modal.classList.add('hidden'); };
+                list.appendChild(item);
+            });
+            modal.classList.remove('hidden');
         }
     });
 
-    // Слушатели событий самого кошелька
-    if (window.solana) {
-        window.solana.on('connect', () => {
-            updateUI(window.solana.publicKey.toString());
-        });
-        
-        window.solana.on('disconnect', () => {
-            updateUI(null);
-        });
+    async function connectWallet(wallet) {
+        try {
+            currentProvider = wallet.provider;
+            const resp = await currentProvider.connect();
+            updateUI(resp.publicKey.toString());
+            showNotification(`${wallet.name} Connected!`);
+            
+            currentProvider.on('disconnect', () => {
+                currentProvider = null;
+                updateUI(null);
+            });
+        } catch (err) {
+            console.error(err);
+            showNotification("Connection Failed", "red");
+        }
     }
 });
