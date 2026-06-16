@@ -384,32 +384,55 @@ body {
 
 
 
+
 /* Контейнер */
 .cube-container {
     perspective: 1000px;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 40px;
+    padding: 20px;
+    width: 100%;
+    overflow: hidden; /* Чтобы при повороте куб не вылезал за границы */
 }
 
-/* Связь с картинкой */
+/* Сам куб с адаптивными размерами */
 .animated-cube {
-    width: 200px; /* Размер куба */
-    height: 200px;
+    /* Начинаем с базового размера для мобильных */
+    width: 180px;
+    height: 180px;
     
-    /* ВОТ ЭТА СТРОКА ПОДКЛЮЧАЕТ КАРТИНКУ */
     background-image: url('./assets/foxcoin-hero.png'); 
-    
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
     
-    /* Анимация */
     animation: rotateCube 10s linear infinite;
+    transform-style: preserve-3d;
+    transition: all 0.3s ease; /* Плавный переход при смене размера экрана */
 }
 
+/* АДАПТИВНОСТЬ: */
+
+/* Планшеты (от 768px и выше) */
+@media (min-width: 768px) {
+    .animated-cube {
+        width: 250px;
+        height: 250px;
+    }
+}
+
+/* Компьютеры и ноутбуки (от 1024px и выше) */
+@media (min-width: 1024px) {
+    .animated-cube {
+        width: 320px;
+        height: 320px;
+    }
+}
+
+/* Анимация вращения */
 @keyframes rotateCube {
-    from { transform: rotateY(0deg); }
-    to { transform: rotateY(360deg); }
+    0% { transform: rotateY(0deg) scale(1); }
+    50% { transform: rotateY(180deg) scale(1.05); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3)); }
+    100% { transform: rotateY(360deg) scale(1); }
 }
