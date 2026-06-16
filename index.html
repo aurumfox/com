@@ -39,8 +39,8 @@
                 <span class="text-[9px] text-blue-400 font-bold uppercase tracking-[0.25em]">DAO & Staking & Lending</span>
             </div>
         </div>
-        
-       <div class="wallet-controls">
+
+             <div class="wallet-controls">
             <button id="connectWalletBtn" class="px-6 py-2.5 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 font-bold text-sm hover:bg-blue-600 hover:text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.2)]">
                 Connect Wallet
             </button>
@@ -53,8 +53,12 @@
         <div id="walletList" class="space-y-2"></div>
         <button onclick="document.getElementById('walletModal').classList.add('hidden')" class="w-full mt-4 text-gray-500 hover:text-white">Cancel</button>
     </div>
-      </div>
-       <header>
+</div>
+
+
+        
+    </div>
+</header>
 
     <main class="container mx-auto flex flex-col items-center justify-center py-10">
         <div class="cube-container">
@@ -76,7 +80,7 @@
 
 
                 
-
+  
 
 <button onclick="switchView('initStakeView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
     INITIALIZE USER STAKE
@@ -558,7 +562,9 @@
     
 
 
-<div id="claimView" class="hidden max-w-7xl mx-auto">
+
+           
+    <div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Claim Rewards: Security Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -568,7 +574,10 @@
         <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             
             <div class="md:col-span-2 glass-panel p-6">
-                <p class="text-gray-400 text-sm mb-4">Select Pools to Claim (Batch Processing)</p>
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-gray-400 text-sm">Select Pools to Claim (Batch Processing)</p>
+                    <button onclick="toggleAllTiers()" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold">SELECT ALL</button>
+                </div>
                 <div id="tierSelector" class="grid grid-cols-5 gap-3">
                     <button onclick="toggleTier(0)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 0</button>
                     <button onclick="toggleTier(1)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 1</button>
@@ -655,7 +664,7 @@
                     <p class="text-gray-400 text-[10px]">Net Rewards to Claim</p>
                     <div class="text-2xl font-bold text-emerald-400 mt-1">119.46 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
                 </div>
-                <button class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">EXECUTE CLAIM</button>
+                <button onclick="executeClaimRewards()" class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">EXECUTE CLAIM</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Fee: 5% Project Treasury Deducted</p>
         </div>
@@ -667,11 +676,62 @@
 </style>
 
 <script>
+    function openClaimView() {
+        document.getElementById('mainStakingView').classList.add('hidden');
+        document.getElementById('claimView').classList.remove('hidden');
+    }
+
+    async function executeClaimRewards() {
+        // Здесь ваша логика транзакции
+        const btn = document.querySelector('.btn-initialize');
+        await smartAction(btn, "Claiming", "Rewards Received!", "💎", async () => {
+            const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+            const userPDA = await getUserStakingPDA(appState.walletPublicKey);
+            const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
+                [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            ).then(res => res[0]);
+            return await program.methods.claimRewards()
+                .accounts({
+                    poolState: AFOX_POOL_STATE_PUBKEY,
+                    userStaking: userPDA,
+                    owner: appState.walletPublicKey,
+                    vault: AFOX_POOL_VAULT_PUBKEY,
+                    adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+                    userRewardsAta: userAta,
+                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+                }).rpc();
+        });
+    }
+
+    function switchView(viewId) {
+        document.getElementById('claimView').classList.add('hidden');
+        document.getElementById('mainStakingView').classList.add('hidden');
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
     function toggleTier(id) {
         const btn = document.querySelectorAll('.tier-btn')[id];
         btn.classList.toggle('active');
     }
+
+    function toggleAllTiers() {
+        const buttons = document.querySelectorAll('.tier-btn');
+        const allActive = Array.from(buttons).every(btn => btn.classList.contains('active'));
+        buttons.forEach(btn => {
+            if (allActive) {
+                btn.classList.remove('active');
+            } else {
+                btn.classList.add('active');
+            }
+        });
+    }
 </script>
+
+
+
 
 
     
@@ -884,37 +944,48 @@
         }
     }
 
+    // Ждем полной загрузки DOM, чтобы все элементы точно существовали
+document.addEventListener('DOMContentLoaded', () => {
     // Дропдаун логика
     const trigger = document.getElementById('dropdownTrigger');
     const list = document.getElementById('dropdownList');
     const icon = document.getElementById('dropdownIcon');
-    const selectedText = document.getElementById('selectedTierText');
+    const selectedText = document.getElementById('selectedText');
     const initializeBtn = document.getElementById('initializeBtn');
     const tierInputs = document.querySelectorAll('.tier-input');
 
-    trigger.addEventListener('click', (e) => {
-        list.classList.toggle('open');
-        icon.classList.toggle('rotated');
-        e.stopPropagation();
-    });
-
-    tierInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            selectedText.innerText = `Selected: ${e.target.value} Days`;
-            selectedText.classList.add('text-white', 'font-bold');
-            initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
+    // Проверяем, что элемент найден, прежде чем вешать событие
+    if (trigger) {
+        trigger.addEventListener('click', (e) => {
+            if (list) list.classList.toggle('open');
+            if (icon) icon.classList.toggle('rotated');
+            e.stopPropagation();
         });
-    });
+    }
+
+    if (tierInputs) {
+        tierInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                if (selectedText) {
+                    selectedText.innerText = `Selected: ${e.target.value} Days`;
+                    selectedText.classList.add('text-white', 'font-bold');
+                }
+                if (initializeBtn) {
+                    initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
+                }
+                if (list) list.classList.remove('open');
+                if (icon) icon.classList.remove('rotated');
+            });
+        });
+    }
 
     document.addEventListener('click', (e) => {
-        if (!list.contains(e.target) && !trigger.contains(e.target)) {
+        if (list && trigger && !list.contains(e.target) && !trigger.contains(e.target)) {
             list.classList.remove('open');
             icon.classList.remove('rotated');
         }
     });
-</script>
+});
 
 
 
@@ -948,3 +1019,4 @@
 
 </body>
     </html>
+
