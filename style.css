@@ -384,7 +384,6 @@ body {
 
 
 
-
 /* Контейнер */
 .cube-container {
     perspective: 1000px;
@@ -392,25 +391,25 @@ body {
     justify-content: center;
     align-items: center;
     padding: 40px;
-    margin-top: 20px;
 }
 
-/* Сам логотип */
+/* Связь с картинкой */
 .animated-cube {
-    width: 120px; /* Сделал покрупнее для начала */
-    height: 120px;
-    background-image: url('./assets/9280.png');
+    width: 200px; /* Размер куба */
+    height: 200px;
+    
+    /* ВОТ ЭТА СТРОКА ПОДКЛЮЧАЕТ КАРТИНКУ */
+    background-image: url('./assets/foxcoin-hero.png'); 
+    
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    /* Анимация: вращение + дыхание */
-    animation: rotateCube 8s linear infinite;
-    transform-style: preserve-3d;
+    
+    /* Анимация */
+    animation: rotateCube 10s linear infinite;
 }
 
-/* Единая анимация */
 @keyframes rotateCube {
-    0% { transform: rotateY(0deg) scale(1); }
-    50% { transform: rotateY(180deg) scale(1.15); filter: brightness(1.5) drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); }
-    100% { transform: rotateY(360deg) scale(1); }
+    from { transform: rotateY(0deg); }
+    to { transform: rotateY(360deg); }
 }
