@@ -551,7 +551,8 @@
 
 
 
-            <div id="claimView" class="hidden max-w-7xl mx-auto">
+           
+    <div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Claim Rewards: Security Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -651,7 +652,7 @@
                     <p class="text-gray-400 text-[10px]">Net Rewards to Claim</p>
                     <div class="text-2xl font-bold text-emerald-400 mt-1">119.46 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
                 </div>
-                <button class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">EXECUTE CLAIM</button>
+                <button onclick="executeClaimRewards()" class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">EXECUTE CLAIM</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Fee: 5% Project Treasury Deducted</p>
         </div>
@@ -663,6 +664,36 @@
 </style>
 
 <script>
+    function openClaimView() {
+        document.getElementById('mainStakingView').classList.add('hidden');
+        document.getElementById('claimView').classList.remove('hidden');
+    }
+
+    async function executeClaimRewards() {
+        // Здесь ваша логика транзакции
+        const btn = document.querySelector('.btn-initialize');
+        await smartAction(btn, "Claiming", "Rewards Received!", "💎", async () => {
+            const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
+            const userPDA = await getUserStakingPDA(appState.walletPublicKey);
+            const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
+                [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            ).then(res => res[0]);
+            return await program.methods.claimRewards()
+                .accounts({
+                    poolState: AFOX_POOL_STATE_PUBKEY,
+                    userStaking: userPDA,
+                    owner: appState.walletPublicKey,
+                    vault: AFOX_POOL_VAULT_PUBKEY,
+                    adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
+                    userRewardsAta: userAta,
+                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
+                }).rpc();
+        });
+    }
+
     function switchView(viewId) {
         document.getElementById('claimView').classList.add('hidden');
         document.getElementById('mainStakingView').classList.add('hidden');
@@ -686,6 +717,7 @@
         });
     }
 </script>
+
 
 
 
