@@ -425,6 +425,140 @@ window.toggleAllTiers = function() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE (СНЯТИЕ ЗАЛОГА)
+ * Синхронизированный вызов контракта Qubit
+ */
+window.performDecollateralize = async function() {
+    try {
+        // 1. Получаем индекс пула (из активной кнопки) и сумму из input
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        
+        const amountInput = document.querySelector('input[type="number"]');
+        const amountValue = amountInput ? amountInput.value : "0";
+        
+        // Преобразуем сумму в BN (учитывая, что в контракте скорее всего u64)
+        const amount = new anchor.BN(amountValue);
+
+        if (!window.solana?.isConnected) {
+            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        }
+
+        if (amount.isZero()) {
+            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
+        }
+
+        AurumFoxEngine.notify("RELEASING COLLATERAL...", "WAIT");
+
+        const program = await QubitProgramManager.getProgram();
+        const userPubKey = program.provider.wallet.publicKey;
+
+        // 2. Расчет PDA стейкинга
+        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("user_stake"),
+                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                userPubKey.toBuffer(),
+                Uint8Array.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        // 3. Вызов метода контракта
+        const tx = await program.methods
+            .decollateralizeLending(amount)
+            .accounts({
+                poolState: AFOX_POOL_STATE_PUBKEY,
+                userStaking: userStakingPda,
+                owner: userPubKey,
+                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .rpc();
+
+        console.log("🔓 Decollateralize Signature:", tx);
+        AurumFoxEngine.notify("COLLATERAL RELEASED!", "SUCCESS");
+
+    } catch (e) {
+        console.error("🛠️ Decollateralize Error:", e);
+        
+        // Обработка специфических ошибок контракта
+        if (e.message.includes("0x1774")) {
+            AurumFoxEngine.notify("LENDING LOCK ACTIVE", "FAILED");
+        } else {
+            AurumFoxEngine.notify("RELEASE FAILED", "FAILED");
+        }
+    }
+};
+
+// --- ПРИВЯЗКА КНОПКИ UI ---
+// Привязываем событие к кнопке CONFIRM DECOLLATERALIZE
+const decollateralizeBtn = document.querySelector('#decollateralizeView button.bg-emerald-500\\/20');
+if (decollateralizeBtn) {
+    decollateralizeBtn.addEventListener('click', () => {
+        window.performDecollateralize();
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: UNSTAKE (ВЫВОД СРЕДСТВ)
  * Синхронизированная версия с поддержкой Compute Budget и анти-MEV аудита
