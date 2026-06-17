@@ -1002,6 +1002,29 @@ function switchView(viewId) {
 }
 
 
+function switchView(viewId, pushState = true) {
+    // Скрываем всё
+    document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(viewId).classList.remove('hidden');
+
+    // Если нужно сохранить историю переходов
+    if (pushState) {
+        window.history.pushState({ view: viewId }, "", `#${viewId}`);
+    }
+}
+
+// Слушатель для кнопки "Назад" в браузере
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.view) {
+        switchView(event.state.view, false);
+    } else {
+        switchView('mainStakingView', false);
+    }
+});
+
+
+
+
 // --- ЛОГИКА СВЯЗКИ КНОПКИ С БЛОКЧЕЙНОМ ---
 
 document.addEventListener('DOMContentLoaded', () => {
