@@ -189,6 +189,44 @@ if (confirmButton) {
 
 
 
+// --- 1. ГЛОБАЛЬНЫЙ МЕНЕДЖЕР UI ---
+const UI_MANAGER = {
+    viewIds: [
+        'initStakeView', 'mainStakingView', 'collateralView', 
+        'decollateralizeView', 'depositView', 'claimView', 
+        'unstakeView', 'closeAccountView'
+    ],
+    
+    switchView(targetId) {
+        console.log("🔄 Переключение на:", targetId);
+        this.viewIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (id === targetId) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            }
+        });
+    },
+
+    init() {
+        // Назначаем обработчики для всех кнопок с классом nav-trigger
+        document.querySelectorAll('.nav-trigger').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const target = e.currentTarget.getAttribute('data-target');
+                if (target) this.switchView(target);
+            });
+        });
+    }
+};
+
+// --- 2. ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ---
+document.addEventListener('DOMContentLoaded', () => {
+    UI_MANAGER.init();
+    console.log("✅ UI Bridge готов!");
+});
+
+
+
 
 
 
@@ -1050,7 +1088,7 @@ if (confirmButton) {
 
  
 
-
+window.switchView = (id) => UI_MANAGER.switchView(id);
 
 
 
