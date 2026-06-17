@@ -1052,50 +1052,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
                             <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Список всех существующих ID блоков
-        const viewIds = [
-            'initStakeView', 
-            'mainStakingView', 
-            'collateralView', 
-            'decollateralizeView', 
-            'depositView', 
-            'claimView', 
-            'unstakeView', 
-            'closeAccountView'
-        ];
-
-        // Функция переключения
-        const switchView = (targetId) => {
-            viewIds.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    if (id === targetId) {
-                        element.classList.remove('hidden'); // Показываем
-                    } else {
-                        element.classList.add('hidden');    // Скрываем остальные
-                    }
+    // --- ГЛОБАЛЬНЫЙ МЕНЕДЖЕР UI ---
+const UI_MANAGER = {
+    // Список всех ID, которые должны переключаться
+    viewIds: [
+        'initStakeView', 
+        'mainStakingView', 
+        'collateralView', 
+        'decollateralizeView', 
+        'depositView', 
+        'claimView', 
+        'unstakeView', 
+        'closeAccountView'
+    ],
+    
+    // Функция переключения
+    switchView: function(targetId) {
+        console.log("🔄 Переключение на:", targetId);
+        this.viewIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (id === targetId) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
                 }
-            });
-        };
-
-        // Назначаем события для всех кнопок с классом nav-trigger
-        document.querySelectorAll('.nav-trigger').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const target = e.currentTarget.getAttribute('data-target');
-                if (target) {
-                    switchView(target);
-                }
-            });
+            } else {
+                console.warn(`⚠️ Элемент с ID ${id} не найден в DOM.`);
+            }
         });
-    });
-</script>
+    },
 
+    // Инициализация событий
+    init: function() {
+        // Слушаем клики по всему документу (делегирование)
+        document.addEventListener('click', (e) => {
+            const trigger = e.target.closest('.nav-trigger');
+            if (trigger) {
+                const target = trigger.getAttribute('data-target');
+                if (target) {
+                    this.switchView(target);
+                }
+            }
+        });
+        console.log("✅ UI_MANAGER успешно инициализирован");
+    }
+};
 
- 
-
+// Привязываем к объекту window для доступа из кнопок (onclick)
+window.UI_MANAGER = UI_MANAGER;
 window.switchView = (id) => UI_MANAGER.switchView(id);
 
+// Запуск при полной загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    UI_MANAGER.init();
+});
 
 
 
