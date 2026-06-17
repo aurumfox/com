@@ -104,61 +104,6 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-// --- APP.JS ---
-const App = {
-    // 1. Инициализация всех систем
-    async init() {
-        console.log("🚀 Запуск ядра...");
-        this.bindEvents();
-        // Здесь можно дождаться загрузки провайдера кошелька
-    },
-
-    // 2. Единая точка обработки кликов (Делегирование)
-    bindEvents() {
-        document.addEventListener('click', (e) => {
-            // Переключение вьюх
-            const navBtn = e.target.closest('.nav-trigger');
-            if (navBtn) {
-                const target = navBtn.getAttribute('data-target');
-                UI_MANAGER.switchView(target);
-                return;
-            }
-
-            // Обработка действий (например, инициализация стейка)
-            if (e.target.id === 'confirmInitBtn') {
-                this.handleInitializeStake();
-            }
-        });
-    },
-
-    // 3. Логика транзакций отдельно
-    async handleInitializeStake() {
-        try {
-            const btn = document.getElementById('confirmInitBtn');
-            btn.innerText = "PROCESSING...";
-            btn.disabled = true;
-
-            // Логика вызова Anchor
-            await QubitProgramManager.initializeStake();
-            
-            showNotification("Success!", "emerald");
-        } catch (e) {
-            console.error(e);
-            showNotification("Transaction Failed", "red");
-        } finally {
-            btn.innerText = "CONFIRM INITIALIZATION";
-            btn.disabled = false;
-        }
-    }
-};
-
-// Запуск
-document.addEventListener('DOMContentLoaded', () => App.init());
-
-
-
-
-
 
 
 
@@ -976,63 +921,7 @@ document.addEventListener('DOMContentLoaded', () => App.init());
 
 
 
-                            <script>
-    // --- ГЛОБАЛЬНЫЙ МЕНЕДЖЕР UI ---
-const UI_MANAGER = {
-    // Список всех ID, которые должны переключаться
-    viewIds: [
-        'initStakeView', 
-        'mainStakingView', 
-        'collateralView', 
-        'decollateralizeView', 
-        'depositView', 
-        'claimView', 
-        'unstakeView', 
-        'closeAccountView'
-    ],
-    
-    // Функция переключения
-    switchView: function(targetId) {
-        console.log("🔄 Переключение на:", targetId);
-        this.viewIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                if (id === targetId) {
-                    el.classList.remove('hidden');
-                } else {
-                    el.classList.add('hidden');
-                }
-            } else {
-                console.warn(`⚠️ Элемент с ID ${id} не найден в DOM.`);
-            }
-        });
-    },
-
-    // Инициализация событий
-    init: function() {
-        // Слушаем клики по всему документу (делегирование)
-        document.addEventListener('click', (e) => {
-            const trigger = e.target.closest('.nav-trigger');
-            if (trigger) {
-                const target = trigger.getAttribute('data-target');
-                if (target) {
-                    this.switchView(target);
-                }
-            }
-        });
-        console.log("✅ UI_MANAGER успешно инициализирован");
-    }
-};
-
-// Привязываем к объекту window для доступа из кнопок (onclick)
-window.UI_MANAGER = UI_MANAGER;
-window.switchView = (id) => UI_MANAGER.switchView(id);
-
-// Запуск при полной загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    UI_MANAGER.init();
-});
-
+                         
 
 
 
