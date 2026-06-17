@@ -738,26 +738,37 @@ if (unstakeButton) {
 
 
 
+
+
+
+
+
+
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: CLOSE STAKING ACCOUNT
- * Полная синхронизация с контрактом для деаллокации (Rent Recovery)
+ * Полная синхронизация с контрактом для деаллокации (Rent Recovery) через RPC-узел
  */
 window.closeStakingAccount = async function() {
     try {
+        console.log("🗑️ [RPC Call] Инициация закрытия стейкинг-аккаунта...");
+
         // 1. Получаем активный индекс (как в Init/Unstake)
         const activeBtn = document.querySelector('.tier-btn.active-tier');
         const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
 
         if (!window.solana?.isConnected) {
+            console.error("❌ Wallet not connected");
             return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
         }
 
         AurumFoxEngine.notify("DEACTIVATING ACCOUNT...", "WAIT");
 
+        // Инициализация программы через RPC-провайдер
         const program = await QubitProgramManager.getProgram();
         const userPubKey = program.provider.wallet.publicKey;
 
         // 2. Расчет PDA для закрываемого аккаунта
+        // Строгое соблюдение структуры семян для корректного поиска на RPC
         const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
             [
                 Buffer.from("user_stake"),
@@ -767,8 +778,9 @@ window.closeStakingAccount = async function() {
             ],
             program.programId
         );
+        console.log(`📍 PDA для RPC вызова: ${userStakingPda.toBase58()}`);
 
-        // 3. Вызов метода закрытия
+        // 3. Вызов метода закрытия через RPC
         const tx = await program.methods
             .closeStakingAccount(poolIndex)
             .accounts({
@@ -777,13 +789,13 @@ window.closeStakingAccount = async function() {
                 owner: userPubKey,
                 clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
             })
-            .rpc();
+            .rpc(); // Исполнение транзакции через RPC-узел
 
-        console.log("🗑️ Account Closed Signature:", tx);
+        console.log("🗑️ Account Closed Signature (RPC Confirmed):", tx);
         AurumFoxEngine.notify("ACCOUNT CLOSED!", "SUCCESS");
 
     } catch (e) {
-        console.error("❌ Close Error:", e);
+        console.error("❌ RPC Close Error:", e);
         
         // Обработка специфических ошибок безопасности контракта
         if (e.message.includes("0x1772")) { // Пример кода ошибки "StillExists"
@@ -804,13 +816,6 @@ if (closeButton) {
         window.closeStakingAccount();
     });
 }
-
-
-
-
-
-
-
 
 
 
