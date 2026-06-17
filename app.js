@@ -982,6 +982,26 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
+
+
+
+function switchView(viewId) {
+    // 1. Скрываем абсолютно все блоки с классом view-section
+    document.querySelectorAll('.view-section').forEach(section => {
+        section.classList.add('hidden');
+    });
+
+    // 2. Показываем только тот, который нужен
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.remove('hidden');
+        console.log(`Переключено на: ${viewId}`);
+    } else {
+        console.error(`Блок с id ${viewId} не найден!`);
+    }
+}
+
+
 // --- ЛОГИКА СВЯЗКИ КНОПКИ С БЛОКЧЕЙНОМ ---
 
 document.addEventListener('DOMContentLoaded', () => {
