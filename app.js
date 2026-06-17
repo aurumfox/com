@@ -1063,37 +1063,8 @@ if (confirmButton) {
 
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Централизованный список всех вьюх
-    const views = [
-        'initStakeView', 'mainStakingView', 'collateralView', 
-        'decollateralizeView', 'depositView', 'claimView', 
-        'unstakeView', 'closeAccountView'
-    ];
 
-    // 2. Функция-мост для переключения
-    window.switchView = (viewId) => {
-        views.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
-        });
-        
-        const target = document.getElementById(viewId);
-        if (target) {
-            target.classList.remove('hidden');
-        }
-    };
-
-    // 3. Автоматическое делегирование (чтобы не писать onclick в каждой кнопке)
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.nav-trigger');
-        if (btn) {
-            const target = btn.getAttribute('data-target');
-            if (target) switchView(target);
-        }
-    });
-});
-
+            
 
 
 
