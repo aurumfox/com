@@ -104,48 +104,56 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-// --- ГЛОБАЛЬНЫЙ МЕНЕДЖЕР UI ---
-const UI_MANAGER = {
-    viewIds: [
-        'initStakeView', 'mainStakingView', 'collateralView', 
-        'decollateralizeView', 'depositView', 'claimView', 
-        'unstakeView', 'closeAccountView'
-    ],
-    
-    switchView(targetId) {
-        console.log("🔄 Переключение на:", targetId);
-        this.viewIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                if (id === targetId) el.classList.remove('hidden');
-                else el.classList.add('hidden');
+// --- APP.JS ---
+const App = {
+    // 1. Инициализация всех систем
+    async init() {
+        console.log("🚀 Запуск ядра...");
+        this.bindEvents();
+        // Здесь можно дождаться загрузки провайдера кошелька
+    },
+
+    // 2. Единая точка обработки кликов (Делегирование)
+    bindEvents() {
+        document.addEventListener('click', (e) => {
+            // Переключение вьюх
+            const navBtn = e.target.closest('.nav-trigger');
+            if (navBtn) {
+                const target = navBtn.getAttribute('data-target');
+                UI_MANAGER.switchView(target);
+                return;
+            }
+
+            // Обработка действий (например, инициализация стейка)
+            if (e.target.id === 'confirmInitBtn') {
+                this.handleInitializeStake();
             }
         });
     },
 
-    init() {
-        // Делегирование событий: слушаем весь документ, чтобы кнопки работали 
-        // даже если они добавлены динамически
-        document.addEventListener('click', (e) => {
-            const trigger = e.target.closest('.nav-trigger');
-            if (trigger) {
-                const target = trigger.getAttribute('data-target');
-                if (target) this.switchView(target);
-            }
-        });
-        console.log("✅ UI Bridge инициализирован");
+    // 3. Логика транзакций отдельно
+    async handleInitializeStake() {
+        try {
+            const btn = document.getElementById('confirmInitBtn');
+            btn.innerText = "PROCESSING...";
+            btn.disabled = true;
+
+            // Логика вызова Anchor
+            await QubitProgramManager.initializeStake();
+            
+            showNotification("Success!", "emerald");
+        } catch (e) {
+            console.error(e);
+            showNotification("Transaction Failed", "red");
+        } finally {
+            btn.innerText = "CONFIRM INITIALIZATION";
+            btn.disabled = false;
+        }
     }
 };
 
-// Привязываем к глобальному объекту window
-window.UI_MANAGER = UI_MANAGER;
-window.switchView = (id) => UI_MANAGER.switchView(id);
-
-// Инициализация при полной загрузке DOM
-document.addEventListener('DOMContentLoaded', () => {
-    UI_MANAGER.init();
-});
-
+// Запуск
+document.addEventListener('DOMContentLoaded', () => App.init());
 
 
 
