@@ -104,95 +104,112 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-window.createStakingAccount = async function() {
+
+    /**
+ * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE (ИНИЦИАЛИЗАЦИЯ)
+ * 100% синхронизация с SDK: PDA, SystemProgram, Compute Budget
+ */
+window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
     try {
-        // 1. Получаем текущий выбранный индекс из UI
-        // Ищем кнопку с классом 'active-tier' и забираем её data-index
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        console.log("====================================================================================================");
+        console.log(`🛠 [START]: ИНИЦИАЛИЗАЦИЯ СТЕЙКИНГ-АККАУНТА (POOL INDEX: ${poolIndex})...`);
         
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
+
+        if (poolIndex < 0 || poolIndex > 4) {
+            throw new Error("⛔️ ОШИБКА: Неверный индекс пула (0-4).");
         }
 
-        const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
-
-        // 2. Расчет PDA (используем poolIndex, полученный выше)
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // 1. ДЕРИВАЦИЯ PDA (строго по семенам из Rust)
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex]) // Важно: используем Uint8Array для индекса
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
             ],
             program.programId
         );
 
-        AurumFoxEngine.notify("PREPARING STORAGE...", "WAIT");
+        // 2. СБОРКА ТРАНЗАКЦИИ
+        const transaction = new anchor.web3.Transaction();
+        
+        // Лимиты для инициализации (создание аккаунта требует чуть больше CU)
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
-        // 3. Вызов метода
-        const tx = await program.methods
+        // 3. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
+        const initInstruction = await program.methods
             .initializeUserStake(poolIndex)
             .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPda,
-                owner: userPubKey,
-                systemProgram: window.solanaWeb3.SystemProgram.programId,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                systemProgram: anchor.web3.SystemProgram.programId,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             })
-            .rpc();
+            .instruction();
 
-        console.log("🚀 Initialization Signature:", tx);
-        AurumFoxEngine.notify("ACCOUNT DEPLOYED!", "SUCCESS");
+        transaction.add(initInstruction);
+
+        // 4. ПОДПИСЬ И ОТПРАВКА
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('confirmed');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: "confirmed"
+        });
+
+        console.log("⏳ Ожидание подтверждения инициализации...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "confirmed");
+
+        console.log("✅ [SUCCESS]: Стейкинг-аккаунт успешно инициализирован. TX:", txId);
+        return txId;
 
     } catch (e) {
-        console.error("🛠️ Init Error:", e);
-        // Обработка ошибок
-        if (e.message.includes("0x1770") || e.message.includes("already in use")) {
-            AurumFoxEngine.notify("ALREADY INITIALIZED", "SUCCESS");
-        } else {
-            AurumFoxEngine.notify("INIT FAILED", "FAILED");
-        }
+        console.error("❌ Initialize Error:", e.message);
+        throw e;
     }
 };
+/**
+ * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
+ * Вызывается напрямую из атрибута onclick="handleConfirmInitialize()" в твоем HTML
+ */
+async function handleConfirmInitialize() {
+    // 1. Получаем актуальный индекс из кнопки, у которой есть класс active-tier
+    const activeBtn = document.querySelector('.tier-btn.active-tier');
+    if (!activeBtn) {
+        alert("Ошибка: Пожалуйста, выберите тир (срок стейкинга)!");
+        return;
+    }
+    
+    const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
+    
+    // 2. Получаем адрес пула (убедись, что POOL_STATE_PUBKEY определен у тебя глобально)
+    // Если его нет в глобальной области, замени POOL_STATE_PUBKEY на конкретный PublicKey(...)
+    const poolPubKey = typeof POOL_STATE_PUBKEY !== 'undefined' ? POOL_STATE_PUBKEY : null;
 
-// --- 4. ОБРАБОТЧИКИ UI ---
-document.querySelectorAll('.tier-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        // Убираем активность со всех
-        document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10'));
-        // Добавляем текущей
-        this.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-        
-        // Обновляем текст в карточке2
-        const label = this.getAttribute('data-label');
-        const lockupDisplay = document.getElementById('lockupDisplay');
-        const poolIndexDisplay = document.getElementById('poolIndexDisplay');
-        const lockupProgressBar = document.getElementById('lockupProgressBar');
+    if (!poolPubKey) {
+        console.error("Ошибка: POOL_STATE_PUBKEY не определен!");
+        alert("Ошибка конфигурации пула.");
+        return;
+    }
 
-        if (lockupDisplay) lockupDisplay.innerText = label;
-        if (poolIndexDisplay) poolIndexDisplay.innerText = `Tier ${label} (Index ${this.getAttribute('data-index')})`;
-        
-        // Обновляем прогресс-бар
-        if (lockupProgressBar) {
-            const percent = (parseInt(this.getAttribute('data-index')) + 1) * 20;
-            lockupProgressBar.style.width = `${percent}%`;
-        }
-    });
-});
-
-// Привязка кнопки подтверждения инициализации (используем селектор для защиты)
-const confirmButton = document.querySelector('.bg-emerald-500\\/20');
-if (confirmButton) {
-    confirmButton.addEventListener('click', () => {
-        window.createStakingAccount();
-    });
-}
-
-
-
+    // 3. Вызываем основной метод и обрабатываем результат
+    try {
+        console.log("🚀 Запуск процесса инициализации из UI...");
+        await window.performInitializeUserStake(poolPubKey, poolIndex);
+        alert("Инициализация успешно завершена!");
+    } catch (e) {
+        console.error("Ошибка в бридже:", e);
+        alert("Инициализация не удалась: " + e.message);
+    }
+}    
 
 
 
