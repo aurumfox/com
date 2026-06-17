@@ -81,15 +81,11 @@
                 
   
 
+<main id="mainStakingView" class="view-section">
+    </main>
+
 <div id="initStakeView" class="view-section hidden max-w-7xl mx-auto">
     </div>
-
-    
-<div id="mainStakingView" class="view-section">
-    <button onclick="switchView('initStakeView')" class="...">
-        INITIALIZE USER STAKE
-    </button>
-</div>
 
 
 
@@ -875,69 +871,8 @@
 </div>
 
 
-    <script>
-   function switchView(viewId) {
-    const views = [
-        'initStakeView',
-        'mainStakingView', 
-        'collateralView', 
-        'decollateralizeView', // <-- ОЧЕНЬ ВАЖНО: чтобы было то же самое слово!
-        'depositView', 
-        'claimView', 
-        'unstakeView', 
-        'closeAccountView'
-    ];
-    
-        
-        // Скрываем все окна
-        views.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
-        });
-        
-        // Показываем целевое окно
-        const target = document.getElementById(viewId);
-        if (target) {
-            target.classList.remove('hidden');
-        } else {
-            console.error("Элемент с ID " + viewId + " не найден!");
-        }
-    }
-
-    // Дропдаун логика
-    const trigger = document.getElementById('dropdownTrigger');
-    const list = document.getElementById('dropdownList');
-    const icon = document.getElementById('dropdownIcon');
-    const selectedText = document.getElementById('selectedTierText');
-    const initializeBtn = document.getElementById('initializeBtn');
-    const tierInputs = document.querySelectorAll('.tier-input');
-
-    trigger.addEventListener('click', (e) => {
-        list.classList.toggle('open');
-        icon.classList.toggle('rotated');
-        e.stopPropagation();
-    });
-
-    tierInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            selectedText.innerText = `Selected: ${e.target.value} Days`;
-            selectedText.classList.add('text-white', 'font-bold');
-            initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
-        });
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!list.contains(e.target) && !trigger.contains(e.target)) {
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
-        }
-    });
-</script>
-
-
-
+  
+  
 
 
 
