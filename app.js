@@ -180,36 +180,37 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
  * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
  * Вызывается напрямую из атрибута onclick="handleConfirmInitialize()" в твоем HTML
  */
+// 1. Функция навигации (чтобы кнопка в меню "заходила" на экран)
+function switchView(viewId) {
+    // Скрываем все блоки, если они имеют общий класс, например 'view-block'
+    document.querySelectorAll('.view-block').forEach(el => el.classList.add('hidden'));
+    
+    // Показываем нужный блок
+    const view = document.getElementById(viewId);
+    if (view) {
+        view.classList.remove('hidden');
+    } else {
+        console.error("Блок с ID " + viewId + " не найден!");
+    }
+}
+
+// 2. Функция подтверждения (которую мы писали ранее для транзакции)
 async function handleConfirmInitialize() {
-    // 1. Получаем актуальный индекс из кнопки, у которой есть класс active-tier
     const activeBtn = document.querySelector('.tier-btn.active-tier');
     if (!activeBtn) {
-        alert("Ошибка: Пожалуйста, выберите тир (срок стейкинга)!");
+        alert("Выберите тир!");
         return;
     }
-    
     const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
     
-    // 2. Получаем адрес пула (убедись, что POOL_STATE_PUBKEY определен у тебя глобально)
-    // Если его нет в глобальной области, замени POOL_STATE_PUBKEY на конкретный PublicKey(...)
-    const poolPubKey = typeof POOL_STATE_PUBKEY !== 'undefined' ? POOL_STATE_PUBKEY : null;
-
-    if (!poolPubKey) {
-        console.error("Ошибка: POOL_STATE_PUBKEY не определен!");
-        alert("Ошибка конфигурации пула.");
-        return;
-    }
-
-    // 3. Вызываем основной метод и обрабатываем результат
+    // Вызываем твой проверенный метод из SDK
     try {
-        console.log("🚀 Запуск процесса инициализации из UI...");
-        await window.performInitializeUserStake(poolPubKey, poolIndex);
-        alert("Инициализация успешно завершена!");
+        await window.performInitializeUserStake(POOL_STATE_PUBKEY, poolIndex);
     } catch (e) {
-        console.error("Ошибка в бридже:", e);
-        alert("Инициализация не удалась: " + e.message);
+        console.error("Ошибка:", e);
     }
-}    
+}
+
 
 
 
