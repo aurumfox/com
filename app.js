@@ -1045,25 +1045,7 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("Интерфейс инициализирован, привязываю кнопки...");
 
-    // Привязываем кнопку депозита
-    const depositBtn = document.querySelector('#depositView .bg-indigo-500\\/20');
-    if (depositBtn) {
-        depositBtn.addEventListener('click', () => {
-            const amount = document.getElementById('depositInput').value;
-            window.performDeposit(amount);
-        });
-    }
-
-    // Привязываем кнопку анстейка
-    const unstakeBtn = document.getElementById('unstakeBtn');
-    if (unstakeBtn) {
-        unstakeBtn.addEventListener('click', () => {
-            window.performUnstake();
-        });
-    }
     
 
 
