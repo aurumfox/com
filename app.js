@@ -1,3 +1,18 @@
+// Вставь это в самое начало app.js
+document.body.addEventListener('click', (e) => {
+    const btn = e.target.closest('.nav-trigger');
+    if (!btn) return;
+    
+    const targetId = btn.getAttribute('data-target');
+    const targetView = document.getElementById(targetId);
+    
+    if (targetView) {
+        // Прячем все остальные
+        document.querySelectorAll('[id$="View"]').forEach(v => v.classList.add('hidden'));
+        // Показываем нужный
+        targetView.classList.remove('hidden');
+    }
+});
 
 // --
 // --- 1. УТИЛИТЫ ---
