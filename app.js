@@ -189,7 +189,7 @@ if (confirmButton) {
 
 
 
-// --- 1. ГЛОБАЛЬНЫЙ МЕНЕДЖЕР UI ---
+// --- ГЛОБАЛЬНЫЙ МЕНЕДЖЕР UI ---
 const UI_MANAGER = {
     viewIds: [
         'initStakeView', 'mainStakingView', 'collateralView', 
@@ -209,20 +209,26 @@ const UI_MANAGER = {
     },
 
     init() {
-        // Назначаем обработчики для всех кнопок с классом nav-trigger
-        document.querySelectorAll('.nav-trigger').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const target = e.currentTarget.getAttribute('data-target');
+        // Делегирование событий: слушаем весь документ, чтобы кнопки работали 
+        // даже если они добавлены динамически
+        document.addEventListener('click', (e) => {
+            const trigger = e.target.closest('.nav-trigger');
+            if (trigger) {
+                const target = trigger.getAttribute('data-target');
                 if (target) this.switchView(target);
-            });
+            }
         });
+        console.log("✅ UI Bridge инициализирован");
     }
 };
 
-// --- 2. ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ---
+// Привязываем к глобальному объекту window
+window.UI_MANAGER = UI_MANAGER;
+window.switchView = (id) => UI_MANAGER.switchView(id);
+
+// Инициализация при полной загрузке DOM
 document.addEventListener('DOMContentLoaded', () => {
     UI_MANAGER.init();
-    console.log("✅ UI Bridge готов!");
 });
 
 
