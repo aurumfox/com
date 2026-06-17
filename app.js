@@ -1000,67 +1000,55 @@ if (confirmButton) {
 </div>
 
 
-    <script>
-   function switchView(viewId) {
-    const views = [
-        'initStakeView',
-        'mainStakingView', 
-        'collateralView', 
-        'decollateralizeView', // <-- ОЧЕНЬ ВАЖНО: чтобы было то же самое слово!
-        'depositView', 
-        'claimView', 
-        'unstakeView', 
-        'closeAccountView'
-    ];
-    
-        
-        // Скрываем все окна
-        views.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
+
+
+
+
+
+
+
+                            <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Список всех существующих ID блоков
+        const viewIds = [
+            'initStakeView', 
+            'mainStakingView', 
+            'collateralView', 
+            'decollateralizeView', 
+            'depositView', 
+            'claimView', 
+            'unstakeView', 
+            'closeAccountView'
+        ];
+
+        // Функция переключения
+        const switchView = (targetId) => {
+            viewIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (id === targetId) {
+                        element.classList.remove('hidden'); // Показываем
+                    } else {
+                        element.classList.add('hidden');    // Скрываем остальные
+                    }
+                }
+            });
+        };
+
+        // Назначаем события для всех кнопок с классом nav-trigger
+        document.querySelectorAll('.nav-trigger').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const target = e.currentTarget.getAttribute('data-target');
+                if (target) {
+                    switchView(target);
+                }
+            });
         });
-        
-        // Показываем целевое окно
-        const target = document.getElementById(viewId);
-        if (target) {
-            target.classList.remove('hidden');
-        } else {
-            console.error("Элемент с ID " + viewId + " не найден!");
-        }
-    }
-
-    // Дропдаун логика
-    const trigger = document.getElementById('dropdownTrigger');
-    const list = document.getElementById('dropdownList');
-    const icon = document.getElementById('dropdownIcon');
-    const selectedText = document.getElementById('selectedTierText');
-    const initializeBtn = document.getElementById('initializeBtn');
-    const tierInputs = document.querySelectorAll('.tier-input');
-
-    trigger.addEventListener('click', (e) => {
-        list.classList.toggle('open');
-        icon.classList.toggle('rotated');
-        e.stopPropagation();
-    });
-
-    tierInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            selectedText.innerText = `Selected: ${e.target.value} Days`;
-            selectedText.classList.add('text-white', 'font-bold');
-            initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
-        });
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!list.contains(e.target) && !trigger.contains(e.target)) {
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
-        }
     });
 </script>
 
+
+ 
 
 
 
