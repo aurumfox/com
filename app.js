@@ -94,6 +94,16 @@ const QubitProgramManager = {
 // --- 3. ГЛОБАЛЬНЫЕ КОНСТАНТЫ И ЛОГИКА ---
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
 
+
+
+
+
+
+
+
+
+
+
 window.createStakingAccount = async function() {
     try {
         // 1. Получаем текущий выбранный индекс из UI
@@ -422,33 +432,38 @@ window.toggleAllTiers = function() {
 
 
 /**
- * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE (УСТАНОВКА ЗАЛОГА)
- * Синхронизировано с логикой лендинг-модуля контракта Qubit
+ * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE LENDING
+ * Синхронизировано с HTML-интерфейсом #collateralView
+ * Работает через RPC-узел, определенный в QubitProgramManager
  */
 window.collateralizeLending = async function() {
     try {
-        // 1. Получаем активный индекс пула и сумму для залога
+        console.log("🛠️ [RPC Call] Инициация вызова через RPC узел...");
+
+        // 1. Получаем индекс из главного стейкинг-вью (привязка к состоянию пула)
         const activeBtn = document.querySelector('.tier-btn.active-tier');
         const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
         
-        const amountInput = document.querySelector('input[type="number"]');
+        // 2. Получаем сумму из input
+        const amountInput = document.querySelector('#collateralView input[type="number"]');
         const amountValue = amountInput ? amountInput.value : "0";
         const newLendingAmount = new anchor.BN(amountValue);
 
+        // Проверки безопасности перед отправкой запроса на RPC
         if (!window.solana?.isConnected) {
             return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
         }
-
         if (newLendingAmount.isZero()) {
             return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
         }
 
         AurumFoxEngine.notify("LOCKING COLLATERAL...", "WAIT");
 
+        // Инициализация программы через RPC-провайдер
         const program = await QubitProgramManager.getProgram();
         const userPubKey = program.provider.wallet.publicKey;
 
-        // 2. Расчет PDA стейкинга
+        // 3. Вычисление PDA (согласно логике Rust-контракта)
         const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
             [
                 Buffer.from("user_stake"),
@@ -458,8 +473,9 @@ window.collateralizeLending = async function() {
             ],
             program.programId
         );
+        console.log("📍 PDA для RPC вызова:", userStakingPda.toBase58());
 
-        // 3. Вызов метода контракта
+        // 4. Формирование и RPC-запрос
         const tx = await program.methods
             .collateralizeLending(newLendingAmount)
             .accounts({
@@ -468,30 +484,36 @@ window.collateralizeLending = async function() {
                 owner: userPubKey,
                 clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
             })
-            .rpc();
+            .rpc(); // Здесь происходит вызов через RPC-провайдер
 
-        console.log("🛡️ Collateralize Signature:", tx);
         AurumFoxEngine.notify("COLLATERAL UPDATED!", "SUCCESS");
+        console.log("✅ Tx Signature (RPC Confirmed):", tx);
 
     } catch (e) {
-        console.error("🛠️ Collateral Error:", e);
-        // Обработка ошибок (например, нехватка стейка для покрытия залога)
-        if (e.message.includes("0x1775")) {
-            AurumFoxEngine.notify("EXCEEDS AVAILABLE STAKE", "FAILED");
-        } else {
-            AurumFoxEngine.notify("COLLATERAL FAILED", "FAILED");
-        }
+        console.error("❌ RPC Transaction Error:", e);
+        AurumFoxEngine.notify("TRANSACTION FAILED", "FAILED");
     }
 };
 
-// --- ПРИВЯЗКА КНОПКИ UI ---
-// Привязываем событие к кнопке ADJUST COLLATERAL
-const adjustBtn = document.querySelector('.btn-action');
-if (adjustBtn) {
-    adjustBtn.addEventListener('click', () => {
-        window.collateralizeLending();
+// --- СИНХРОНИЗАЦИЯ UI КНОПОК ---
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Кнопка вызова транзакции
+    const adjustBtn = document.querySelector('.btn-action');
+    if (adjustBtn) adjustBtn.addEventListener('click', window.collateralizeLending);
+
+    // 2. Логика процентов (25%, 50%, 75%, MAX)
+    // Лимиты и баланс берутся для вычисления суммы перед RPC-запросом
+    const MAX_WALLET_BALANCE = 5000; 
+    const input = document.querySelector('#collateralView input[type="number"]');
+    
+    document.querySelectorAll('.grid-cols-4 button').forEach((btn, index) => {
+        btn.addEventListener('click', () => {
+            const multipliers = [0.25, 0.5, 0.75, 1.0];
+            input.value = (MAX_WALLET_BALANCE * multipliers[index]).toFixed(2);
+        });
     });
-}
+});
+
 
 
 
