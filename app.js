@@ -981,6 +981,75 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 </div>
 
 
+
+// --- ЛОГИКА СВЯЗКИ КНОПКИ С БЛОКЧЕЙНОМ ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    const confirmBtn = document.getElementById('confirmInitBtn');
+    
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+            try {
+                // 1. Проверка наличия кошелька
+                if (!window.solana || !window.solana.isConnected) {
+                    alert("Пожалуйста, подключите кошелек!");
+                    return;
+                }
+
+                // 2. Получаем экземпляр программы
+                const program = await QubitProgramManager.getProgram();
+                
+                // 3. Получаем выбранный Tier (через активный класс)
+                const activeTierBtn = document.querySelector('.tier-btn.active-tier');
+                const tier = parseInt(activeTierBtn.dataset.tier);
+                
+                console.log("🚀 Инициализация стейка для тира:", tier);
+
+                // 4. Отправка транзакции
+                // ВНИМАНИЕ: Убедитесь, что параметры в .accounts соответствуют вашему IDL
+                const tx = await program.methods
+                    .initializeUserStake(tier) 
+                    .accounts({
+                        user: window.solana.publicKey,
+                        // systemProgram: solanaWeb3.SystemProgram.programId,
+                        // Здесь должны быть ключи аккаунтов из вашего IDL (например, stakeAccount)
+                    })
+                    .rpc();
+
+                console.log("✅ Транзакция успешно отправлена:", tx);
+                alert("Стейкинг инициализирован! Tx: " + tx);
+
+            } catch (err) {
+                console.error("❌ Ошибка при вызове программы:", err);
+                alert("Ошибка: " + (err.message || "Неизвестная ошибка"));
+            }
+        });
+    }
+
+    // Логика переключения визуальных тиров (чтобы кнопка понимала выбор)
+    document.querySelectorAll('.tier-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active-tier', 'border-blue-500'));
+            this.classList.add('active-tier', 'border-blue-500');
+            
+            // Обновление дисплея
+            document.getElementById('lockupDisplay').innerText = this.dataset.label;
+            document.getElementById('poolIndexDisplay').innerText = `Tier ${this.dataset.label} (Index ${this.dataset.index})`;
+        });
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
     <script>
    function switchView(viewId) {
     const views = [
