@@ -98,6 +98,52 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
         
 
 
+const StakingController = {
+    tiers: [
+        { days: 14, apy: "0.5x", index: 0, colorClass: 'active-tier-blue', barColor: 'bg-blue-500' },
+        { days: 30, apy: "1.0x", index: 1, colorClass: 'active-tier-teal', barColor: 'bg-teal-500' },
+        { days: 90, apy: "2.0x", index: 2, colorClass: 'active-tier-yellow', barColor: 'bg-yellow-500' },
+        { days: 180, apy: "3.5x", index: 3, colorClass: 'active-tier-orange', barColor: 'bg-orange-500' },
+        { days: 365, apy: "6.0x", index: 4, colorClass: 'active-tier-purple', barColor: 'bg-purple-500' }
+    ],
+
+    init() {
+        document.querySelectorAll('.tier-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.selectTier(parseInt(btn.dataset.index)));
+        });
+        document.getElementById('confirmStakeBtn').addEventListener('click', () => this.handleConfirm());
+    },
+
+    selectTier(index) {
+        const tier = this.tiers[index];
+        const bar = document.getElementById('lockupProgressBar');
+
+        // 1. Сбрасываем стили у всех кнопок
+        document.querySelectorAll('.tier-btn').forEach((btn, i) => {
+            btn.classList.remove('active-tier-blue', 'active-tier-teal', 'active-tier-yellow', 'active-tier-orange', 'active-tier-purple', 'border-blue-500');
+            btn.classList.add('border-white/10'); // Базовый бордер
+        });
+
+        // 2. Применяем стиль выбранной кнопки
+        const selectedBtn = document.querySelector(`[data-index="${index}"]`);
+        selectedBtn.classList.add(tier.colorClass);
+
+        // 3. Обновляем текстовые индикаторы
+        document.getElementById('lockupDisplay').innerText = `${tier.days} Days`;
+        document.getElementById('poolIndexDisplay').innerText = `Tier ${tier.days} Days (Index ${tier.index})`;
+        
+        // 4. Обновляем прогресс-бар и его ЦВЕТ
+        bar.style.width = `${(tier.days / 365) * 100}%`;
+        bar.className = `h-full transition-all duration-500 ${tier.barColor}`;
+    },
+
+    async handleConfirm() {
+        // Логика транзакции...
+        console.log("Подтверждение...");
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => StakingController.init());
 
 
 
