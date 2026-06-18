@@ -650,31 +650,37 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
         throw e;
     }
 };
-async function handleDecollateralize() {
-    // 1. Получаем значение из инпута
-    const amountVal = document.getElementById('decollateralizeAmountInput').value;
-    if (!amountVal || amountVal <= 0) {
-        alert("Введите корректную сумму!");
-        return;
-    }
+<script>
+    /**
+     * Функция для автоматического расчета и установки суммы залога.
+     * percent: число от 0.0 до 1.0 (например, 0.25 для 25%)
+     */
+    function setAmount(percent) {
+        // 1. Получаем текстовое значение из элемента (с защитой от пустоты)
+        const maxElement = document.getElementById('maxAvailableAmount');
+        const maxText = maxElement ? maxElement.innerText.replace(/,/g, '') : "0";
+        const max = parseFloat(maxText);
 
-    // 2. Преобразуем в BN (Anchor требует BN для работы с контрактом)
-    const amountBN = new anchor.BN(amountVal); 
+        // 2. Получаем инпут
+        const input = document.getElementById('decollateralizeAmountInput');
 
-    // 3. Вызываем твой глобальный метод
-    // ПРИМЕЧАНИЕ: POOL_STATE_PUBKEY и poolIndex должны быть доступны в твоем контексте
-    try {
-        await window.performDecollateralizeLending(
-            POOL_STATE_PUBKEY, 
-            0, // Здесь укажи индекс пула, если он у тебя динамический
-            amountBN
-        );
-        alert("Залог успешно снят!");
-    } catch (e) {
-        console.error("Ошибка при снятии залога:", e);
-        alert("Ошибка: " + e.message);
+        // 3. Проверка на валидность данных
+        if (isNaN(max) || max <= 0) {
+            console.warn("Максимально доступная сумма не определена или равна 0");
+            input.value = "0.00";
+            return;
+        }
+
+        // 4. Расчет и форматирование (оставляем 2 знака после запятой)
+        const result = (max * percent).toFixed(2);
+
+        // 5. Установка значения в инпут
+        input.value = result;
+
+        console.log("Установлена сумма:", result, "для процента:", percent * 100 + "%");
     }
-}
+</script>
+
 
 
 
