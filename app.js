@@ -306,7 +306,7 @@ window.performCollateralizeLending = async function(
 
 
 
-<script>
+
 // Бридж-функция (добавь в свой JS-файл)
 async function handleCollateralize() {
     const amount = new anchor.BN(document.getElementById('collateralAmountInput').value); // Учти конвертацию в lamports если нужно
@@ -328,6 +328,105 @@ async function handleCollateralize() {
 
 
 
+
+
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE LENDING (СНЯТИЕ ЗАЛОГА)
+ * 100% синхронизация с SDK: PDA деривация, Accounts, Compute Budget
+ */
+window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amountBN) {
+    try {
+        console.log("====================================================================================================");
+        console.log("🔓 [START]: ИНИЦИАЦИЯ СНЯТИЯ ЗАЛОГА (DECOLLATERALIZE LENDING)...");
+        
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
+
+        // 1. Деривация PDA (строго по seeds: "user_stake", pool, owner, index)
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("user_stake"),
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        // 2. Сборка транзакции
+        const transaction = new anchor.web3.Transaction();
+        
+        // Установка лимитов вычислений
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
+
+        // 3. Формирование инструкции
+        const decollateralizeInstruction = await program.methods
+            .decollateralizeLending(amountBN)
+            .accounts({
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .instruction();
+
+        transaction.add(decollateralizeInstruction);
+
+        // 4. Подпись и отправка RAW-пакета
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Decollateralize)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✅ [SUCCESS]: Залог успешно снят. TX:", txId);
+        return txId;
+
+    } catch (e) {
+        console.error("❌ Decollateralize Error:", e.message);
+        throw e;
+    }
+};
+
+
+
+    /**
+     * Функция для автоматического расчета и установки суммы залога.
+     * percent: число от 0.0 до 1.0 (например, 0.25 для 25%)
+     */
+    function setAmount(percent) {
+        // 1. Получаем текстовое значение из элемента (с защитой от пустоты)
+        const maxElement = document.getElementById('maxAvailableAmount');
+        const maxText = maxElement ? maxElement.innerText.replace(/,/g, '') : "0";
+        const max = parseFloat(maxText);
+
+        // 2. Получаем инпут
+        const input = document.getElementById('decollateralizeAmountInput');
+
+        // 3. Проверка на валидность данных
+        if (isNaN(max) || max <= 0) {
+            console.warn("Максимально доступная сумма не определена или равна 0");
+            input.value = "0.00";
+            return;
+        }
+
+        // 4. Расчет и форматирование (оставляем 2 знака после запятой)
+        const result = (max * percent).toFixed(2);
+
+        // 5. Установка значения в инпут
+        input.value = result;
+
+        console.log("Установлена сумма:", result, "для процента:", percent * 100 + "%");
+    }
 
 
 
@@ -584,102 +683,7 @@ window.toggleAllTiers = function() {
 
 
 
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE LENDING (СНЯТИЕ ЗАЛОГА)
- * 100% синхронизация с SDK: PDA деривация, Accounts, Compute Budget
- */
-window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amountBN) {
-    try {
-        console.log("====================================================================================================");
-        console.log("🔓 [START]: ИНИЦИАЦИЯ СНЯТИЯ ЗАЛОГА (DECOLLATERALIZE LENDING)...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
 
-        // 1. Деривация PDA (строго по seeds: "user_stake", pool, owner, index)
-        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPubKey.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Buffer.from([poolIndex])
-            ],
-            program.programId
-        );
-
-        // 2. Сборка транзакции
-        const transaction = new anchor.web3.Transaction();
-        
-        // Установка лимитов вычислений
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        // 3. Формирование инструкции
-        const decollateralizeInstruction = await program.methods
-            .decollateralizeLending(amountBN)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakePda,
-                owner: ownerPubkey,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .instruction();
-
-        transaction.add(decollateralizeInstruction);
-
-        // 4. Подпись и отправка RAW-пакета
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        console.log("⏳ Ожидание подтверждения (Decollateralize)...");
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        console.log("✅ [SUCCESS]: Залог успешно снят. TX:", txId);
-        return txId;
-
-    } catch (e) {
-        console.error("❌ Decollateralize Error:", e.message);
-        throw e;
-    }
-};
-<script>
-    /**
-     * Функция для автоматического расчета и установки суммы залога.
-     * percent: число от 0.0 до 1.0 (например, 0.25 для 25%)
-     */
-    function setAmount(percent) {
-        // 1. Получаем текстовое значение из элемента (с защитой от пустоты)
-        const maxElement = document.getElementById('maxAvailableAmount');
-        const maxText = maxElement ? maxElement.innerText.replace(/,/g, '') : "0";
-        const max = parseFloat(maxText);
-
-        // 2. Получаем инпут
-        const input = document.getElementById('decollateralizeAmountInput');
-
-        // 3. Проверка на валидность данных
-        if (isNaN(max) || max <= 0) {
-            console.warn("Максимально доступная сумма не определена или равна 0");
-            input.value = "0.00";
-            return;
-        }
-
-        // 4. Расчет и форматирование (оставляем 2 знака после запятой)
-        const result = (max * percent).toFixed(2);
-
-        // 5. Установка значения в инпут
-        input.value = result;
-
-        console.log("Установлена сумма:", result, "для процента:", percent * 100 + "%");
-    }
-</script>
 
 
 
