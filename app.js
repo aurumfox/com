@@ -219,6 +219,117 @@ async function handleConfirmInitialize() {
 
 
 
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE LENDING
+ * 100% синхронизация с SDK: PDA деривация, учет всех signer-аккаунтов, Compute Budget
+ */
+window.performCollateralizeLending = async function(
+    poolPubKey, 
+    poolIndex, 
+    newLendingAmount, 
+    minHealthFactor, 
+    guardianKeypair, 
+    lendingAuthorityKeypair, 
+    oracleFeeds
+) {
+    try {
+        console.log("====================================================================================================");
+        console.log("🛡️ [START]: ИНИЦИАЦИЯ УСТАНОВКИ ЗАЛОГА (COLLATERALIZE LENDING)...");
+        
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const ownerKeypair = provider.wallet.payer; // Используем payer провайдера как владельца
+        const ownerPubkey = ownerKeypair.publicKey;
+
+        // 1. Деривация PDA (по алгоритму SDK)
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("user_stake"),
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        // 2. Сборка транзакции
+        const transaction = new anchor.web3.Transaction();
+        
+        // Инъекция лимитов вычислений для работы с оракулом
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
+
+        // 3. Формирование инструкции
+        const collateralizeInstruction = await program.methods
+            .collateralizeLending(newLendingAmount, minHealthFactor)
+            .accounts({
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                guardian: guardianKeypair.publicKey,
+                lendingAuthority: lendingAuthorityKeypair.publicKey,
+                oracleFeeds: oracleFeeds,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+                systemProgram: anchor.web3.SystemProgram.programId,
+            })
+            .instruction();
+
+        transaction.add(collateralizeInstruction);
+
+        // 4. Подпись всеми необходимыми участниками (Owner, Guardian, LendingAuthority)
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        // Важно: подписываем всеми тремя ключами, как требует контракт
+        transaction.partialSign(ownerKeypair);
+        transaction.partialSign(guardianKeypair);
+        transaction.partialSign(lendingAuthorityKeypair);
+
+        // 5. Отправка RAW-пакета
+        const txId = await provider.connection.sendRawTransaction(transaction.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Collateralize)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✅ [SUCCESS]: Залог установлен успешно. TX:", txId);
+        return txId;
+
+    } catch (e) {
+        console.error("❌ Collateralize Error:", e.message);
+        throw e;
+    }
+};
+
+
+
+<script>
+// Бридж-функция (добавь в свой JS-файл)
+async function handleCollateralize() {
+    const amount = new anchor.BN(document.getElementById('collateralAmountInput').value); // Учти конвертацию в lamports если нужно
+    const minHF = 2000; // Пример (2.0x), логику кнопок можно вынести в переменную
+    
+    // ВАЖНО: guardianKeypair, lendingAuthorityKeypair и oracleFeeds должны быть 
+    // определены в твоем контексте приложения (например, из стейта кошелька или конфига)
+    await window.performCollateralizeLending(
+        POOL_STATE_PUBKEY, 
+        0, // poolIndex
+        amount, 
+        new anchor.BN(minHF),
+        window.GUARDIAN_KEYPAIR, 
+        window.LENDING_AUTH_KEYPAIR, 
+        ORACLE_FEEDS_ARRAY
+    );
+}
+
+
+
+
+
+
 
 
 
@@ -449,88 +560,9 @@ window.toggleAllTiers = function() {
 
 
 
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE LENDING
- * Синхронизировано с HTML-интерфейсом #collateralView
- * Работает через RPC-узел, определенный в QubitProgramManager
- */
-window.collateralizeLending = async function() {
-    try {
-        console.log("🛠️ [RPC Call] Инициация вызова через RPC узел...");
 
-        // 1. Получаем индекс из главного стейкинг-вью (привязка к состоянию пула)
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
-        
-        // 2. Получаем сумму из input
-        const amountInput = document.querySelector('#collateralView input[type="number"]');
-        const amountValue = amountInput ? amountInput.value : "0";
-        const newLendingAmount = new anchor.BN(amountValue);
+                
 
-        // Проверки безопасности перед отправкой запроса на RPC
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-        if (newLendingAmount.isZero()) {
-            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
-        }
-
-        AurumFoxEngine.notify("LOCKING COLLATERAL...", "WAIT");
-
-        // Инициализация программы через RPC-провайдер
-        const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
-
-        // 3. Вычисление PDA (согласно логике Rust-контракта)
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [
-                Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex])
-            ],
-            program.programId
-        );
-        console.log("📍 PDA для RPC вызова:", userStakingPda.toBase58());
-
-        // 4. Формирование и RPC-запрос
-        const tx = await program.methods
-            .collateralizeLending(newLendingAmount)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPda,
-                owner: userPubKey,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .rpc(); // Здесь происходит вызов через RPC-провайдер
-
-        AurumFoxEngine.notify("COLLATERAL UPDATED!", "SUCCESS");
-        console.log("✅ Tx Signature (RPC Confirmed):", tx);
-
-    } catch (e) {
-        console.error("❌ RPC Transaction Error:", e);
-        AurumFoxEngine.notify("TRANSACTION FAILED", "FAILED");
-    }
-};
-
-// --- СИНХРОНИЗАЦИЯ UI КНОПОК ---
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Кнопка вызова транзакции
-    const adjustBtn = document.querySelector('.btn-action');
-    if (adjustBtn) adjustBtn.addEventListener('click', window.collateralizeLending);
-
-    // 2. Логика процентов (25%, 50%, 75%, MAX)
-    // Лимиты и баланс берутся для вычисления суммы перед RPC-запросом
-    const MAX_WALLET_BALANCE = 5000; 
-    const input = document.querySelector('#collateralView input[type="number"]');
-    
-    document.querySelectorAll('.grid-cols-4 button').forEach((btn, index) => {
-        btn.addEventListener('click', () => {
-            const multipliers = [0.25, 0.5, 0.75, 1.0];
-            input.value = (MAX_WALLET_BALANCE * multipliers[index]).toFixed(2);
-        });
-    });
-});
 
 
 
