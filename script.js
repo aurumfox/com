@@ -835,6 +835,80 @@ if (closeButton) {
 
 
 
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- 1. ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВИДОВ ---
+    window.switchView = function(viewId) {
+        const views = [
+            'initStakeView', 'mainStakingView', 'collateralView', 
+            'decollateralizeView', 'depositView', 'claimView', 
+            'unstakeView', 'closeAccountView'
+        ];
+        views.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        const target = document.getElementById(viewId);
+        if (target) target.classList.remove('hidden');
+    };
+
+    // --- 2. ЛОГИКА ИНИЦИАЛИЗАЦИИ (DROPDOWN) ---
+    const trigger = document.getElementById('dropdownTrigger');
+    const list = document.getElementById('dropdownList');
+    const icon = document.getElementById('dropdownIcon');
+    if (trigger && list) {
+        trigger.addEventListener('click', (e) => {
+            list.classList.toggle('open');
+            icon.classList.toggle('rotated');
+            e.stopPropagation();
+        });
+    }
+
+    // --- 3. ОБЩИЙ ОБРАБОТЧИК КНОПОК (НАВИГАЦИЯ И ДЕЙСТВИЯ) ---
+    // Здесь мы собираем все твои ID из HTML
+    const buttonMap = {
+        'initStakeBtn': () => switchView('initStakeView'),
+        'depositBtn': () => switchView('depositView'),
+        'claimAllBtn': () => switchView('claimView'),
+        'enableCollateralBtn': () => switchView('collateralView'),
+        'disableCollateralBtn': () => switchView('decollateralizeView'),
+        'unstakeBtn': () => switchView('unstakeView'),
+        'closeAccountBtn': () => switchView('closeAccountView'),
+        
+        // Кнопки возврата
+        'backToStakingBtn': () => switchView('mainStakingView'),
+        'backToStakingFromCollateral': () => switchView('mainStakingView'),
+        'backToStakingFromDecollateralize': () => switchView('mainStakingView'),
+        'backToStakingFromDeposit': () => switchView('mainStakingView'),
+        'backToStakingFromClaim': () => switchView('mainStakingView'),
+        'backToStakingFromUnstake': () => switchView('mainStakingView'),
+        'backToStakingFromClose': () => switchView('mainStakingView'),
+
+        // Исполняемые функции (замени на свои названия функций)
+        'confirmInitBtn': () => console.log("Initializing..."),
+        'confirmDepositBtn': () => handleDeposit(),
+        'executeClaimBtn': () => executeClaimRewards(),
+        'executeUnstakeBtn': () => handleUnstake(),
+        'confirmDecollateralizeBtn': () => handleDecollateralize(),
+        'confirmCloseAccountBtn': () => handleCloseAccount()
+    };
+
+    // Автоматическая привязка всех кнопок из списка выше
+    Object.keys(buttonMap).forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', buttonMap[id]);
+    });
+
+    // --- 4. ОСТАЛЬНАЯ ЛОГИКА (ПРОЦЕНТЫ, ТИРЫ И Т.Д.) ---
+    // Сюда можно добавить обработку .pct-btn, .tier-btn и т.д.
+    document.querySelectorAll('.pct-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const pct = e.currentTarget.dataset.pct;
+            console.log("Setting %:", pct);
+            // setAmount(pct);
+        });
+    });
+});
 
 
 
