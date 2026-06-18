@@ -585,79 +585,97 @@ window.toggleAllTiers = function() {
 
 
 /**
- * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE (СНЯТИЕ ЗАЛОГА)
- * Синхронизированный вызов контракта Qubit
+ * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE LENDING (СНЯТИЕ ЗАЛОГА)
+ * 100% синхронизация с SDK: PDA деривация, Accounts, Compute Budget
  */
-window.performDecollateralize = async function() {
+window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amountBN) {
     try {
-        // 1. Получаем индекс пула (из активной кнопки) и сумму из input
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        console.log("====================================================================================================");
+        console.log("🔓 [START]: ИНИЦИАЦИЯ СНЯТИЯ ЗАЛОГА (DECOLLATERALIZE LENDING)...");
         
-        const amountInput = document.querySelector('input[type="number"]');
-        const amountValue = amountInput ? amountInput.value : "0";
-        
-        // Преобразуем сумму в BN (учитывая, что в контракте скорее всего u64)
-        const amount = new anchor.BN(amountValue);
-
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        if (amount.isZero()) {
-            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
-        }
-
-        AurumFoxEngine.notify("RELEASING COLLATERAL...", "WAIT");
-
         const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 2. Расчет PDA стейкинга
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // 1. Деривация PDA (строго по seeds: "user_stake", pool, owner, index)
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex])
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
             ],
             program.programId
         );
 
-        // 3. Вызов метода контракта
-        const tx = await program.methods
-            .decollateralizeLending(amount)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPda,
-                owner: userPubKey,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .rpc();
+        // 2. Сборка транзакции
+        const transaction = new anchor.web3.Transaction();
+        
+        // Установка лимитов вычислений
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
-        console.log("🔓 Decollateralize Signature:", tx);
-        AurumFoxEngine.notify("COLLATERAL RELEASED!", "SUCCESS");
+        // 3. Формирование инструкции
+        const decollateralizeInstruction = await program.methods
+            .decollateralizeLending(amountBN)
+            .accounts({
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .instruction();
+
+        transaction.add(decollateralizeInstruction);
+
+        // 4. Подпись и отправка RAW-пакета
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Decollateralize)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✅ [SUCCESS]: Залог успешно снят. TX:", txId);
+        return txId;
 
     } catch (e) {
-        console.error("🛠️ Decollateralize Error:", e);
-        
-        // Обработка специфических ошибок контракта
-        if (e.message.includes("0x1774")) {
-            AurumFoxEngine.notify("LENDING LOCK ACTIVE", "FAILED");
-        } else {
-            AurumFoxEngine.notify("RELEASE FAILED", "FAILED");
-        }
+        console.error("❌ Decollateralize Error:", e.message);
+        throw e;
     }
 };
+async function handleDecollateralize() {
+    // 1. Получаем значение из инпута
+    const amountVal = document.getElementById('decollateralizeAmountInput').value;
+    if (!amountVal || amountVal <= 0) {
+        alert("Введите корректную сумму!");
+        return;
+    }
 
-// --- ПРИВЯЗКА КНОПКИ UI ---
-// Привязываем событие к кнопке CONFIRM DECOLLATERALIZE
-const decollateralizeBtn = document.querySelector('#decollateralizeView button.bg-emerald-500\\/20');
-if (decollateralizeBtn) {
-    decollateralizeBtn.addEventListener('click', () => {
-        window.performDecollateralize();
-    });
+    // 2. Преобразуем в BN (Anchor требует BN для работы с контрактом)
+    const amountBN = new anchor.BN(amountVal); 
+
+    // 3. Вызываем твой глобальный метод
+    // ПРИМЕЧАНИЕ: POOL_STATE_PUBKEY и poolIndex должны быть доступны в твоем контексте
+    try {
+        await window.performDecollateralizeLending(
+            POOL_STATE_PUBKEY, 
+            0, // Здесь укажи индекс пула, если он у тебя динамический
+            amountBN
+        );
+        alert("Залог успешно снят!");
+    } catch (e) {
+        console.error("Ошибка при снятии залога:", e);
+        alert("Ошибка: " + e.message);
+    }
 }
+
 
 
 
