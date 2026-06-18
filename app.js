@@ -1275,5 +1275,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('walletModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const connectBtn = document.getElementById('connectWalletBtn');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+    }
+
+    if (connectBtn) {
+        connectBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+        });
+    }
+});
 
             
