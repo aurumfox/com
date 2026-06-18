@@ -74,19 +74,19 @@
     </div>
 </main>
 
-    
-
-
-     
-
-           
 
 
 
 
 
-                
-  
+
+
+
+
+
+
+
+
 
 <button 
     onclick="switchView('initStakeView')" 
@@ -140,14 +140,15 @@
 
 
 
-    
 
 
-              
-    <div id="initStakeView" class="hidden max-w-7xl mx-auto">
+
+
+
+<div id="initStakeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Initialize Staking: Security Audit</h1>
-        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl transition-all">← Back to Staking</button>
+        <button id="backToStakingBtn" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl transition-all">← Back to Staking</button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -193,7 +194,7 @@
                 <p class="text-gray-400 text-sm">Lock-up Period (Selected)</p>
                 <div class="text-3xl font-bold text-white mt-2" id="lockupDisplay">14 Days</div>
                 <div class="w-full h-2 bg-white/5 rounded-full mt-4 overflow-hidden">
-                    <div id="lockupProgressBar" class="h-full bg-blue-500 transition-all duration-500" style="width: 20%"></div>
+                    <div id="lockupProgressBar" class="h-full bg-blue-500 transition-all duration-500 w-[20%]"></div>
                 </div>
                 <div class="mt-3 text-[11px] text-emerald-400 font-mono">Funds locked until: <span id="lockupDate">--:--:----</span></div>
                 <p class="text-xs text-gray-500 mt-2">Active from block synchronization</p>
@@ -235,11 +236,10 @@
                     <p class="text-gray-400 text-[10px]">Wallet Signer</p>
                     <div class="text-sm text-white mt-1">Ready for Signature</div>
                 </div>
-<button class="w-full mt-8 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 font-bold text-white transition-all shadow-lg shadow-emerald-500/10 cursor-pointer">
-    CONFIRM INITIALIZATION
-</button>
-
-   </div>
+                <button id="confirmInitBtn" class="w-full mt-8 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 font-bold text-white transition-all shadow-lg shadow-emerald-500/10 cursor-pointer">
+                    CONFIRM INITIALIZATION
+                </button>
+            </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">By initializing, you confirm the binding of this account to the protocol pool state. This is a one-time operation.</p>
         </div>
     </div>
@@ -247,14 +247,14 @@
 
 
 
-        
 
 
- 
+
+
 <div id="collateralView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Lending Collateral: Active Loan Parameters</h1>
-        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+        <button id="backToStakingFromCollateral" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl transition-all">← Back to Staking</button>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -323,7 +323,7 @@
                 </div>
             </div>
 
-            <div class="glass-panel p-6 flex flex-col justification-between">
+            <div class="glass-panel p-6 flex flex-col justify-between">
                 <p class="text-gray-400 text-sm">Collateral Usage</p>
                 <div class="text-4xl font-bold text-blue-400 mt-2">32.4%</div>
                 <svg class="w-full h-16 mt-4 text-blue-500" viewBox="0 0 100 20" preserveAspectRatio="none">
@@ -366,17 +366,17 @@
                     <div class="p-4 bg-black/30 rounded-xl border border-white/5">
                         <p class="text-gray-400 text-[10px]">Min Health Factor Threshold</p>
                         <div class="flex gap-2 mt-2" id="hfThresholdSelector">
-                            <button onclick="selectHF(1.2)" class="hf-btn px-3 py-1 bg-white/10 rounded-lg text-xs hover:bg-white/20">1.2x</button>
-                            <button onclick="selectHF(1.5)" class="hf-btn px-3 py-1 bg-white/10 rounded-lg text-xs hover:bg-white/20">1.5x</button>
-                            <button onclick="selectHF(2.0)" class="hf-btn px-3 py-1 bg-blue-500/20 rounded-lg text-xs text-blue-400 border border-blue-500/50">2.0x</button>
+                            <button data-value="1.2" class="hf-btn px-3 py-1 bg-white/10 rounded-lg text-xs hover:bg-white/20">1.2x</button>
+                            <button data-value="1.5" class="hf-btn px-3 py-1 bg-white/10 rounded-lg text-xs hover:bg-white/20">1.5x</button>
+                            <button data-value="2.0" class="hf-btn px-3 py-1 bg-blue-500/20 rounded-lg text-xs text-blue-400 border border-blue-500/50">2.0x</button>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-4 gap-2">
-                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-xs font-bold text-white">25%</button>
-                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-xs font-bold text-white">50%</button>
-                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-xs font-bold text-white">75%</button>
-                        <button class="py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 active:scale-95 transition-all text-xs font-bold text-blue-400">MAX</button>
+                        <button class="pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-xs font-bold text-white" data-pct="25">25%</button>
+                        <button class="pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-xs font-bold text-white" data-pct="50">50%</button>
+                        <button class="pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-xs font-bold text-white" data-pct="75">75%</button>
+                        <button class="pct-btn py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 transition-all text-xs font-bold text-blue-400" data-pct="100">MAX</button>
                     </div>
                 </div>
 
@@ -384,10 +384,12 @@
                     <p class="text-gray-400 text-[10px]">Your Wallet</p>
                     <div class="text-2xl font-bold text-blue-400 mt-1">5,000.00 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
                 </div>
-                <button class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all">CLAIM ALL REWARDS</button>
+                <button id="claimRewardsBtn" class="w-full mt-8 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 font-bold text-white transition-all shadow-lg shadow-emerald-500/10 cursor-pointer">
+                    CLAIM ALL REWARDS
+                </button>
             </div>
             
-            <button onclick="handleCollateralize()" class="w-full mt-3 py-4 rounded-xl btn-action font-bold text-gray-300 active:scale-[0.98] transition-all hover:bg-white/5">ADJUST COLLATERAL</button>
+            <button id="adjustCollateralBtn" class="w-full mt-3 py-4 rounded-xl btn-action font-bold text-gray-300 transition-all hover:bg-white/5">ADJUST COLLATERAL</button>
         </div>
     </div>
 </div>
@@ -396,19 +398,13 @@
 
 
 
-    
 
-
-
-
-
-    
 
 
 <div id="decollateralizeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Decollateralize: Collateral Release Audit</h1>
-        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+        <button id="backToStakingFromDecollateralize" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl transition-all">← Back to Staking</button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -476,10 +472,10 @@
                 </div>
 
                 <div class="grid grid-cols-4 gap-2 mt-4">
-                    <button onclick="setAmount(0.25)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">25%</button>
-                    <button onclick="setAmount(0.50)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">50%</button>
-                    <button onclick="setAmount(0.75)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">75%</button>
-                    <button onclick="setAmount(1.00)" class="py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 active:scale-95 transition-all text-[10px] font-bold text-emerald-400">MAX</button>
+                    <button data-pct="0.25" class="pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">25%</button>
+                    <button data-pct="0.50" class="pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">50%</button>
+                    <button data-pct="0.75" class="pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">75%</button>
+                    <button data-pct="1.00" class="pct-btn py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 active:scale-95 transition-all text-[10px] font-bold text-emerald-400">MAX</button>
                 </div>
 
                 <div id="safetyWarning" class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl hidden">
@@ -487,7 +483,7 @@
                     <p class="text-gray-400 text-[10px] mt-1">Ensure your transaction is executed in a new block to satisfy anti-MEV requirements.</p>
                 </div>
 
-                <button onclick="handleDecollateralize()" class="w-full mt-8 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 font-bold text-white transition-all shadow-lg shadow-emerald-500/10 cursor-pointer">
+                <button id="confirmDecollateralizeBtn" class="w-full mt-8 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 font-bold text-white transition-all shadow-lg shadow-emerald-500/10 cursor-pointer">
                     CONFIRM DECOLLATERALIZE
                 </button>
             </div>
@@ -501,16 +497,10 @@
 
 
 
-    
-
-
-
-
- 
-                <div id="depositView" class="hidden max-w-7xl mx-auto">
+<div id="depositView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Deposit: Staking Synchronization Audit</h1>
-        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+        <button id="backToStakingFromDeposit" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl transition-all">← Back to Staking</button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -579,10 +569,10 @@
                     <input id="depositInput" type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-indigo-400 mt-1 outline-none border-none">
                     
                     <div class="flex gap-2 mt-3">
-                        <button onclick="setDepositAmount(0.25)" class="flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">25%</button>
-                        <button onclick="setDepositAmount(0.50)" class="flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">50%</button>
-                        <button onclick="setDepositAmount(0.75)" class="flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">75%</button>
-                        <button onclick="setDepositAmount(1.00)" class="flex-1 py-1 text-[10px] bg-indigo-500/20 hover:bg-indigo-500/40 rounded border border-indigo-500/50 text-white transition-all">MAX</button>
+                        <button data-pct="0.25" class="deposit-pct-btn flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">25%</button>
+                        <button data-pct="0.50" class="deposit-pct-btn flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">50%</button>
+                        <button data-pct="0.75" class="deposit-pct-btn flex-1 py-1 text-[10px] bg-white/5 hover:bg-white/10 rounded border border-white/5 text-white transition-all">75%</button>
+                        <button data-pct="1.00" class="deposit-pct-btn flex-1 py-1 text-[10px] bg-indigo-500/20 hover:bg-indigo-500/40 rounded border border-indigo-500/50 text-white transition-all">MAX</button>
                     </div>
                 </div>
 
@@ -590,7 +580,7 @@
                     <p class="text-[10px] text-indigo-300">Ready for synchronization with pool index: <span id="currentPoolIndex">0</span></p>
                 </div>
 
-                <button onclick="handleDeposit()" class="w-full mt-5 py-4 rounded-xl bg-indigo-500/20 border border-indigo-500/50 hover:bg-indigo-500/30 font-bold text-white transition-all">CONFIRM DEPOSIT</button>
+                <button id="confirmDepositBtn" class="w-full mt-5 py-4 rounded-xl bg-indigo-500/20 border border-indigo-500/50 hover:bg-indigo-500/30 font-bold text-white transition-all">CONFIRM DEPOSIT</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Your deposit will be locked according to pool index rules. Audit in progress.</p>
         </div>
@@ -602,19 +592,10 @@
 
 
 
-    
-          
-    
-
-
-
-           
-    
-
-           <div id="claimView" class="hidden max-w-7xl mx-auto">
+<div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Claim Rewards: Security Audit</h1>
-        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+        <button id="backToStakingFromClaim" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl transition-all">← Back to Staking</button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -623,14 +604,14 @@
             <div class="md:col-span-2 glass-panel p-6">
                 <div class="flex justify-between items-center mb-4">
                     <p class="text-gray-400 text-sm">Select Pools to Claim (Batch Processing)</p>
-                    <button onclick="toggleAllTiers()" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold">SELECT ALL</button>
+                    <button id="selectAllTiersBtn" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold">SELECT ALL</button>
                 </div>
                 <div id="tierSelector" class="grid grid-cols-5 gap-3">
-                    <button onclick="toggleTier(0)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="0">Tier 0</button>
-                    <button onclick="toggleTier(1)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="1">Tier 1</button>
-                    <button onclick="toggleTier(2)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="2">Tier 2</button>
-                    <button onclick="toggleTier(3)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="3">Tier 3</button>
-                    <button onclick="toggleTier(4)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="4">Tier 4</button>
+                    <button data-index="0" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 0</button>
+                    <button data-index="1" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 1</button>
+                    <button data-index="2" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 2</button>
+                    <button data-index="3" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 3</button>
+                    <button data-index="4" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 4</button>
                 </div>
             </div>
 
@@ -664,7 +645,7 @@
                 </div>
             </div>
 
-            <div class="glass-panel p-6 flex flex-col justification-between">
+            <div class="glass-panel p-6 flex flex-col justify-between">
                 <p class="text-gray-400 text-sm">Total Reward Yield</p>
                 <div class="text-4xl font-bold text-yellow-500 mt-2">125.75</div>
                 <svg class="w-full h-16 mt-4 text-yellow-500" viewBox="0 0 100 20" preserveAspectRatio="none">
@@ -688,17 +669,17 @@
             </div>
         </div>
 
-        <div class="glass-panel p-6 flex flex-col justification-between">
+        <div class="glass-panel p-6 flex flex-col justify-between">
             <div>
                 <h2 class="text-lg font-semibold uppercase">CONFIRM CLAIM</h2>
                 
                 <div class="mt-5">
                     <input id="claimAmountInput" type="number" placeholder="Enter amount to claim" class="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-indigo-500">
-                    <div class="grid grid-cols-4 gap-2 mt-3">
-                        <button class="bg-white/5 py-1 rounded text-[10px] hover:bg-indigo-500/20">25%</button>
-                        <button class="bg-white/5 py-1 rounded text-[10px] hover:bg-indigo-500/20">50%</button>
-                        <button class="bg-white/5 py-1 rounded text-[10px] hover:bg-indigo-500/20">75%</button>
-                        <button class="bg-indigo-500/20 py-1 rounded text-[10px] text-indigo-400">MAX</button>
+                    <div class="grid grid-cols-4 gap-2 mt-3" id="pctSelector">
+                        <button data-pct="0.25" class="pct-btn bg-white/5 py-1 rounded text-[10px] hover:bg-indigo-500/20">25%</button>
+                        <button data-pct="0.50" class="pct-btn bg-white/5 py-1 rounded text-[10px] hover:bg-indigo-500/20">50%</button>
+                        <button data-pct="0.75" class="pct-btn bg-white/5 py-1 rounded text-[10px] hover:bg-indigo-500/20">75%</button>
+                        <button data-pct="1.00" class="pct-btn bg-indigo-500/20 py-1 rounded text-[10px] text-indigo-400">MAX</button>
                     </div>
                 </div>
 
@@ -711,7 +692,7 @@
                     <p class="text-gray-400 text-[10px]">Net Rewards to Claim</p>
                     <div class="text-2xl font-bold text-emerald-400 mt-1">119.46 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
                 </div>
-                <button id="claimAllBtn" onclick="executeClaimRewards()" class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">EXECUTE CLAIM</button>
+                <button id="executeClaimBtn" class="w-full mt-5 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-600 font-bold text-white transition-all">EXECUTE CLAIM</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Fee: 5% Project Treasury Deducted</p>
         </div>
@@ -724,16 +705,12 @@
 
 
 
-    
 
 
-
-
-
-   <div id="unstakeView" class="hidden max-w-7xl mx-auto">
+<div id="unstakeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Unstake Position: Settlement Audit</h1>
-        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+        <button id="backToStakingFromUnstake" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl transition-all">← Back to Staking</button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -779,7 +756,7 @@
                 </div>
             </div>
 
-            <div class="glass-panel p-6 flex flex-col justification-between">
+            <div class="glass-panel p-6 flex flex-col justify-between">
                 <p class="text-gray-400 text-sm">Estimated Net Payout</p>
                 <div class="text-4xl font-bold text-blue-400 mt-2">2,025.00</div>
                 <svg class="w-full h-16 mt-4 text-blue-500" viewBox="0 0 100 20" preserveAspectRatio="none">
@@ -819,10 +796,10 @@
                     </div>
                     
                     <div class="grid grid-cols-4 gap-2">
-                        <button onclick="setUnstakeAmount(0.25)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">25%</button>
-                        <button onclick="setUnstakeAmount(0.50)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">50%</button>
-                        <button onclick="setUnstakeAmount(0.75)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">75%</button>
-                        <button onclick="setUnstakeAmount(1.00)" class="py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-xs font-bold text-blue-400 transition-all">MAX</button>
+                        <button data-pct="0.25" class="unstake-pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">25%</button>
+                        <button data-pct="0.50" class="unstake-pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">50%</button>
+                        <button data-pct="0.75" class="unstake-pct-btn py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">75%</button>
+                        <button data-pct="1.00" class="unstake-pct-btn py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-xs font-bold text-blue-400 transition-all">MAX</button>
                     </div>
                 </div>
 
@@ -835,7 +812,7 @@
                     </div>
                 </div>
                 
-                <button id="unstakeBtn" onclick="handleUnstake()" class="w-full mt-6 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white transition-all shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
+                <button id="executeUnstakeBtn" class="w-full mt-6 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white transition-all shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
             </div>
             
             <div id="liquidityAlert" class="hidden mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-center">
@@ -849,18 +826,13 @@
 
 
 
-    
-                
-              
-
-   
 
 
 
-    <div id="closeAccountView" class="hidden max-w-7xl mx-auto">
+<div id="closeAccountView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Close Account: Deactivation Audit</h1>
-        <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
+        <button id="backToStakingFromClose" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl transition-all">← Back to Staking</button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -901,7 +873,7 @@
                     <p class="text-gray-400 text-[10px]">Rent Recovery Expected</p>
                     <div class="text-2xl font-bold text-emerald-400 mt-1">0.02 <span class="text-sm font-normal text-gray-500">SOL</span></div>
                 </div>
-                <button onclick="handleCloseAccount()" class="w-full mt-5 py-4 rounded-xl bg-red-600/20 border border-red-600/50 hover:bg-red-600/30 font-bold text-white transition-all">CLOSE ACCOUNT PERMANENTLY</button>
+                <button id="confirmCloseAccountBtn" class="w-full mt-5 py-4 rounded-xl bg-red-600/20 border border-red-600/50 hover:bg-red-600/30 font-bold text-white transition-all">CLOSE ACCOUNT PERMANENTLY</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Caution: This process clears the account index and returns rent. Irreversible.</p>
         </div>
@@ -911,68 +883,6 @@
 
 
 
-    
-
-    <script>
-   function switchView(viewId) {
-    const views = [
-        'initStakeView',
-        'mainStakingView', 
-        'collateralView', 
-        'decollateralizeView', // <-- ОЧЕНЬ ВАЖНО: чтобы было то же самое слово!
-        'depositView', 
-        'claimView', 
-        'unstakeView', 
-        'closeAccountView'
-    ];
-    
-        
-        // Скрываем все окна
-        views.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
-        });
-        
-        // Показываем целевое окно
-        const target = document.getElementById(viewId);
-        if (target) {
-            target.classList.remove('hidden');
-        } else {
-            console.error("Элемент с ID " + viewId + " не найден!");
-        }
-    }
-
-    // Дропдаун логика
-    const trigger = document.getElementById('dropdownTrigger');
-    const list = document.getElementById('dropdownList');
-    const icon = document.getElementById('dropdownIcon');
-    const selectedText = document.getElementById('selectedTierText');
-    const initializeBtn = document.getElementById('initializeBtn');
-    const tierInputs = document.querySelectorAll('.tier-input');
-
-    trigger.addEventListener('click', (e) => {
-        list.classList.toggle('open');
-        icon.classList.toggle('rotated');
-        e.stopPropagation();
-    });
-
-    tierInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            selectedText.innerText = `Selected: ${e.target.value} Days`;
-            selectedText.classList.add('text-white', 'font-bold');
-            initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
-        });
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!list.contains(e.target) && !trigger.contains(e.target)) {
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
-        }
-    });
-</script>
 
 
 
@@ -981,6 +891,90 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
+
+
+
+
+  
 
     
       <footer style="margin-top: 80px; padding: 40px 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.2));">
