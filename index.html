@@ -449,8 +449,15 @@
                 <h2 class="text-lg font-semibold uppercase">EXECUTE RELEASE</h2>
                 
                 <div class="mt-6 p-4 bg-black/30 rounded-xl border border-white/5">
-                    <p class="text-gray-400 text-[10px]">Unlockable Amount (Available: 1,250.00)</p>
+                    <p class="text-gray-400 text-[10px]">Unlockable Amount (Available: <span id="maxAvailableAmount">1250.00</span>)</p>
                     <input id="decollateralizeAmountInput" type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-emerald-400 mt-1 outline-none border-none">
+                </div>
+
+                <div class="grid grid-cols-4 gap-2 mt-4">
+                    <button onclick="setAmount(0.25)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">25%</button>
+                    <button onclick="setAmount(0.50)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">50%</button>
+                    <button onclick="setAmount(0.75)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-[10px] font-bold text-white">75%</button>
+                    <button onclick="setAmount(1.00)" class="py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 active:scale-95 transition-all text-[10px] font-bold text-emerald-400">MAX</button>
                 </div>
 
                 <div id="safetyWarning" class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl hidden">
@@ -465,6 +472,9 @@
         </div>
     </div>
 </div>
+
+
+
 
 
 
