@@ -526,6 +526,33 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
     }
 };
 
+async function handleDeposit() {
+    const amountVal = document.getElementById('depositInput').value;
+    const poolIndex = parseInt(document.getElementById('currentPoolIndex').innerText);
+    
+    // ВАЖНО: убедись, что переменные POOL_PUBKEY, USER_SOURCE_ATA, USER_ST_ATA 
+    // у тебя уже определены в контексте или подтягиваются из провайдера
+    try {
+        const amountBN = new anchor.BN(amountVal);
+        await window.performDeposit(
+            POOL_PUBKEY, 
+            USER_SOURCE_ATA, 
+            USER_ST_ATA, 
+            poolIndex, 
+            amountBN
+        );
+        alert("Депозит успешен!");
+    } catch (e) {
+        console.error("Ошибка депозита:", e);
+    }
+}
+
+
+
+
+
+
+
 
 
 
@@ -540,111 +567,100 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
 
 
 /**
- * ГЛОБАЛЬНЫЙ МЕТОД: CLAIM REWARDS
- * Одиночный или пакетный сбор наград
+ * ГЛОБАЛЬНЫЙ МЕТОД: CLAIM ALL REWARDS
+ * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
  */
-window.executeClaimRewards = async function() {
+window.performClaimAllRewards = async function(poolPubKey, poolIndices, userRewardsAta) {
     try {
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
+        console.log("====================================================================================================");
+        console.log("🎁 [START]: ИНИЦИАЦИЯ CLAIM ALL REWARDS...");
+        
         const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
-        
-        // 1. Собираем активные индексы из UI
-        const activeButtons = document.querySelectorAll('.tier-btn.active');
-        const poolIndices = Array.from(activeButtons).map(btn => parseInt(btn.getAttribute('data-index')));
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        if (poolIndices.length === 0) {
-            return AurumFoxEngine.notify("SELECT POOLS", "FAILED");
+        if (!poolIndices || poolIndices.length === 0) {
+            throw new Error("⛔️ ОШИБКА: Массив poolIndices пуст.");
         }
 
-        AurumFoxEngine.notify("CLAIMING REWARDS...", "WAIT");
+        // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА (через fetchData для Zero-Copy)
+        const poolData = await program.account.poolState.fetchData(poolPubKey);
 
-        // 2. Получаем данные пула
-        const poolData = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
-        
-        // 3. Получаем ATA пользователя для наград
-        const userRewardsAta = await spl.getAssociatedTokenAddress(poolData.rewardMint, userPubKey);
-
-        let tx;
-        if (poolIndices.length === 1) {
-            // ОДИНОЧНЫЙ КЛЕЙМ
-            const poolIndex = poolIndices[0];
-            const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // 2. ФОРМИРОВАНИЕ REMAINING ACCOUNTS
+        // Генерируем PDA для каждого индекса динамически
+        const remainingAccounts = poolIndices.map(index => {
+            const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
                 [
                     Buffer.from("user_stake"),
-                    AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                    userPubKey.toBuffer(),
-                    Uint8Array.from([poolIndex])
+                    poolPubKey.toBuffer(),
+                    ownerPubkey.toBuffer(),
+                    Buffer.from([index])
                 ],
                 program.programId
             );
+            return {
+                pubkey: pda,
+                isWritable: true,
+                isSigner: false,
+            };
+        });
 
-            tx = await program.methods.claimRewards(poolIndex)
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    userStaking: userStakingPda,
-                    owner: userPubKey,
-                    vault: poolData.vault,
-                    adminFeeVault: poolData.adminFeeVault,
-                    userRewardsAta: userRewardsAta,
-                    rewardMint: poolData.rewardMint,
-                    tokenProgram: spl.TOKEN_PROGRAM_ID,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                }).rpc();
-        } else {
-            // ПАКЕТНЫЙ КЛЕЙМ (CLAIM ALL)
-            const remainingAccounts = poolIndices.map(index => {
-                const [pda] = window.solanaWeb3.PublicKey.findProgramAddressSync(
-                    [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), userPubKey.toBuffer(), Uint8Array.from([index])],
-                    program.programId
-                );
-                return { pubkey: pda, isWritable: true, isSigner: false };
-            });
+        console.log(`📊 Обработка пулов: [${poolIndices.join(", ")}] | Аккаунтов: ${remainingAccounts.length}`);
 
-            tx = await program.methods.claimAllRewards(poolIndices)
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    owner: userPubKey,
-                    userRewardsAta: userRewardsAta,
-                    vault: poolData.vault,
-                    adminFeeVault: poolData.adminFeeVault,
-                    rewardMint: poolData.rewardMint,
-                    tokenProgram: spl.TOKEN_PROGRAM_ID,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                })
-                .remainingAccounts(remainingAccounts)
-                .rpc();
-        }
+        // 3. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
+        const transaction = new anchor.web3.Transaction();
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1000000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
-        console.log("💎 Claim Signature:", tx);
-        AurumFoxEngine.notify("REWARDS RECEIVED!", "SUCCESS");
+        const claimInstruction = await program.methods
+            .claimAllRewards(poolIndices)
+            .accounts({
+                poolState: poolPubKey,
+                owner: ownerPubkey,
+                userRewardsAta: userRewardsAta,
+                vault: poolData.vault,
+                adminFeeVault: poolData.adminFeeVault,
+                rewardMint: poolData.rewardMint,
+                tokenProgram: spl.TOKEN_PROGRAM_ID,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .remainingAccounts(remainingAccounts)
+            .instruction();
+
+        transaction.add(claimInstruction);
+
+        // 4. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Claim All)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✨ Награды успешно заклеймлены! TX:", txId);
+        return txId;
 
     } catch (e) {
-        console.error("❌ Claim Error:", e);
-        AurumFoxEngine.notify("CLAIM FAILED", "FAILED");
+        console.error("❌ Claim All Error:", e.message);
+        throw e;
     }
 };
 
-// --- 4. ОБРАБОТЧИКИ UI ДЛЯ CLAIM VIEW ---
-// Toggle для одной кнопки (Tier)
-window.toggleTier = function(id) {
-    const buttons = document.querySelectorAll('.tier-btn');
-    if (buttons[id]) {
-        buttons[id].classList.toggle('active');
-    }
-};
-
-// Toggle для всех кнопок
-window.toggleAllTiers = function() {
-    const buttons = document.querySelectorAll('.tier-btn');
-    const allActive = Array.from(buttons).every(btn => btn.classList.contains('active'));
-    buttons.forEach(btn => {
-        allActive ? btn.classList.remove('active') : btn.classList.add('active');
+// --- ПРИВЯЗКА К UI ---
+// Пример: при клике на кнопку вызываем функцию
+const claimButton = document.getElementById('claimAllBtn');
+if (claimButton) {
+    claimButton.addEventListener('click', async () => {
+        // Здесь ты передаешь актуальные данные пула и ATA
+        await window.performClaimAllRewards(AFOX_POOL_STATE_PUBKEY, [0, 1, 2], userRewardsAta);
     });
-};
+}
 
 
 
