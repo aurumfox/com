@@ -90,9 +90,19 @@
 
 
 <div class="grid grid-cols-2 gap-3">
-    <button onclick="switchView('depositView')" class="py-3 rounded-xl font-bold btn-premium btn-blue text-sm text-white">DEPOSIT</button>
-    <button onclick="switchView('claimView')" class="py-3 rounded-xl font-bold btn-premium btn-gold text-sm">CLAIM ALL REWARDS</button>
+    <button 
+        onclick="switchView('depositView')" 
+        class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white transition-all hover:opacity-90">
+        DEPOSIT
+    </button>
+    
+    <button 
+        onclick="switchView('claimView')" 
+        class="w-full py-4 rounded-xl font-bold btn-premium btn-gold text-sm text-white transition-all hover:opacity-90">
+        CLAIM ALL REWARDS
+    </button>
 </div>
+
 
 <div class="grid grid-cols-2 gap-3">
     <button 
