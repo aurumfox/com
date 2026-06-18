@@ -832,12 +832,14 @@
               
 
    
-<div id="closeAccountView" class="hidden max-w-7xl mx-auto">
+
+
+
+    <div id="closeAccountView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Close Account: Deactivation Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
-
-          </div>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
@@ -877,13 +879,17 @@
                     <p class="text-gray-400 text-[10px]">Rent Recovery Expected</p>
                     <div class="text-2xl font-bold text-emerald-400 mt-1">0.02 <span class="text-sm font-normal text-gray-500">SOL</span></div>
                 </div>
-                <button class="w-full mt-5 py-4 rounded-xl bg-red-600/20 border border-red-600/50 hover:bg-red-600/30 font-bold text-white transition-all">CLOSE ACCOUNT PERMANENTLY</button>
+                <button onclick="handleCloseAccount()" class="w-full mt-5 py-4 rounded-xl bg-red-600/20 border border-red-600/50 hover:bg-red-600/30 font-bold text-white transition-all">CLOSE ACCOUNT PERMANENTLY</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Caution: This process clears the account index and returns rent. Irreversible.</p>
         </div>
     </div>
 </div>
 
+
+
+
+    
 
     <script>
    function switchView(viewId) {
