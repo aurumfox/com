@@ -796,56 +796,62 @@ async function executeClaimRewards() {
 
 
 
+
+
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: UNSTAKE (ВЫВОД СРЕДСТВ)
- * Синхронизированная версия с поддержкой Compute Budget и анти-MEV аудита
+ * 100% синхронизация с SDK: PDA, Аудит, Compute Budget, Симуляция, RAW транзакция, Пост-аудит
  */
-window.performUnstake = async function() {
+window.performUnstake = async function(poolPubKey, userStAta, userRewardsAta, poolIndex, amountBN) {
     try {
-        // 1. Получаем активный пул и сумму из UI
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
-        const amountInput = document.querySelector('input[type="number"]');
-        const amount = amountInput ? new anchor.BN(amountInput.value) : new anchor.BN(0);
-
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        if (amount.isZero()) {
-            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
-        }
-
-        AurumFoxEngine.notify("INITIALIZING UNSTAKE...", "WAIT");
-
+        console.log("====================================================================================================");
+        console.log("📉 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ВЫВОДА СРЕДСТВ (UNSTAKE)...");
+        
         const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 2. Получаем данные пула
-        const poolData = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+        // Входной контроль
+        if (poolIndex < 0 || poolIndex > 4) throw new Error("ErrorCode::InvalidPoolIndex");
+        if (amountBN.isZero() || amountBN.isNeg()) throw new Error("ErrorCode::ZeroAmount");
 
-        // 3. Вычисление PDA для стейкинга
-        const [userStakePda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // ШАГ 1: Деривация PDA и предварительный аудит
+        const [userStakePda, userStakeBump] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex])
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
             ],
             program.programId
         );
 
-        // 4. Получаем ATA адреса
-        const userStAta = await spl.getAssociatedTokenAddress(poolData.stMint, userPubKey);
-        const userRewardsAta = await spl.getAssociatedTokenAddress(poolData.rewardMint, userPubKey);
+        const [poolData, userState, currentSlot] = await Promise.all([
+            program.account.poolState.fetch(poolPubKey, "finalized"),
+            program.account.userStakingAccount.fetch(userStakePda, "finalized"),
+            provider.connection.getSlot("finalized")
+        ]);
 
-        // 5. Формирование транзакции с оптимизацией лимитов
-        const tx = await program.methods
-            .unstake(poolIndex, amount)
+        if (poolData.globalPause !== 0) throw new Error("ErrorCode::ReentrancyGuardTriggered");
+        if (new anchor.BN(currentSlot).lte(new anchor.BN(userState.lastDepositSlot))) throw new Error("ErrorCode::OperationInSameSlot");
+        if (userState.stakedAmount.lt(amountBN)) throw new Error("ErrorCode::InsufficientStake");
+        
+        const lending = userState.lending || new anchor.BN(0);
+        if (!lending.isZero() && userState.stakedAmount.sub(lending).lt(amountBN)) throw new Error("ErrorCode::CollateralLock");
+
+        const isFullUnstake = userState.stakedAmount.eq(amountBN);
+
+        // ШАГ 2: Сборка транзакции
+        const transaction = new anchor.web3.Transaction();
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
+
+        const unstakeInstruction = await program.methods
+            .unstake(poolIndex, amountBN)
             .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
+                poolState: poolPubKey,
                 userStaking: userStakePda,
-                owner: userPubKey,
+                owner: ownerPubkey,
                 vault: poolData.vault,
                 daoTreasuryVault: poolData.daoTreasuryVault,
                 adminFeeVault: poolData.adminFeeVault,
@@ -854,37 +860,81 @@ window.performUnstake = async function() {
                 stMint: poolData.stMint,
                 rewardMint: poolData.rewardMint,
                 tokenProgram: spl.TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             })
-            .preInstructions([
-                window.solanaWeb3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                window.solanaWeb3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
-            ])
-            .rpc();
+            .instruction();
 
-        console.log("📉 Unstake Signature:", tx);
-        AurumFoxEngine.notify("UNSTAKE SUCCESS!", "SUCCESS");
+        transaction.add(unstakeInstruction);
 
-    } catch (e) {
-        console.error("🛠️ Unstake Error:", e);
-        // Обработка специфических ошибок контракта
-        if (e.message.includes("0x1770")) {
-            AurumFoxEngine.notify("INSUFFICIENT FUNDS", "FAILED");
-        } else if (e.message.includes("0x1771")) {
-            AurumFoxEngine.notify("LOCKED IN LENDING", "FAILED");
-        } else {
-            AurumFoxEngine.notify("UNSTAKE FAILED", "FAILED");
+        // ШАГ 3: Симуляция и отправка
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Simulation failed: " + JSON.stringify(simulation.value.err));
         }
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        // ШАГ 4: Пост-аудит
+        for (let attempt = 1; attempt <= 5; attempt++) {
+            await new Promise(r => setTimeout(r, 4000));
+            try {
+                const stakeAfter = await program.account.userStakingAccount.fetch(userStakePda, "finalized");
+                if (!isFullUnstake && stakeAfter.stakedAmount.lt(userState.stakedAmount)) break;
+            } catch (e) {
+                if (isFullUnstake) break;
+            }
+        }
+
+        console.log("✅ [SUCCESS]: Транзакция подтверждена. ID:", txId);
+        return txId;
+    } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
+        console.error("❌ Unstake Error:", e.message);
+        throw e;
     }
 };
 
-// --- ПРИВЯЗКА КНОПКИ UI ---
-const unstakeButton = document.getElementById('unstakeBtn');
-if (unstakeButton) {
-    unstakeButton.addEventListener('click', () => {
-        window.performUnstake();
-    });
-}
+
+
+
+
+async function handleUnstake() {
+        const amount = document.getElementById('unstakeAmountInput').value;
+        if (!amount || amount <= 0) return;
+        
+        // Преобразуем в BN (предполагая 9 знаков после запятой для токена)
+        const amountBN = new anchor.BN(amount * 1e9); 
+        
+        await window.performUnstake(
+            CURRENT_POOL_PUBKEY, 
+            USER_ST_ATA, 
+            USER_REWARDS_ATA, 
+            CURRENT_POOL_INDEX, 
+            amountBN
+        );
+    }
+    
+    function setUnstakeAmount(percent) {
+        // Здесь берем макс. доступное значение из appState
+        const max = window.appState.stakedBalance || 0;
+        document.getElementById('unstakeAmountInput').value = (max * percent).toFixed(2);
+    }
+
 
 
 
@@ -903,77 +953,64 @@ if (unstakeButton) {
 
 
 /**
- * ГЛОБАЛЬНЫЙ МЕТОД: CLOSE STAKING ACCOUNT
- * Полная синхронизация с контрактом для деаллокации (Rent Recovery) через RPC-узел
+ * ГЛОБАЛЬНЫЙ МЕТОД: CLOSE STAKING ACCOUNT (ЗАКРЫТИЕ АККАУНТА)
+ * 100% синхронизация с SDK: PDA деривация, Accounts, Compute Budget
  */
-window.closeStakingAccount = async function() {
+window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, poolIndex) {
     try {
-        console.log("🗑️ [RPC Call] Инициация закрытия стейкинг-аккаунта...");
-
-        // 1. Получаем активный индекс (как в Init/Unstake)
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
-
-        if (!window.solana?.isConnected) {
-            console.error("❌ Wallet not connected");
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        AurumFoxEngine.notify("DEACTIVATING ACCOUNT...", "WAIT");
-
-        // Инициализация программы через RPC-провайдер
+        console.log("====================================================================================================");
+        console.log("🗑️ [START]: ИНИЦИАЦИЯ ЗАКРЫТИЯ СТЕЙКИНГ-АККАУНТА...");
+        
         const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 2. Расчет PDA для закрываемого аккаунта
-        // Строгое соблюдение структуры семян для корректного поиска на RPC
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [
-                Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex])
-            ],
-            program.programId
-        );
-        console.log(`📍 PDA для RPC вызова: ${userStakingPda.toBase58()}`);
+        // 1. Сборка транзакции
+        const transaction = new anchor.web3.Transaction();
+        
+        // Лимиты для безопасного закрытия аккаунта и возврата rent (LAMPORTS)
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
-        // 3. Вызов метода закрытия через RPC
-        const tx = await program.methods
+        // 2. Формирование инструкции
+        const closeInstruction = await program.methods
             .closeStakingAccount(poolIndex)
             .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
+                poolState: poolPubKey,
                 userStaking: userStakingPda,
-                owner: userPubKey,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                owner: ownerPubkey,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             })
-            .rpc(); // Исполнение транзакции через RPC-узел
+            .instruction();
 
-        console.log("🗑️ Account Closed Signature (RPC Confirmed):", tx);
-        AurumFoxEngine.notify("ACCOUNT CLOSED!", "SUCCESS");
+        transaction.add(closeInstruction);
+
+        // 3. Подпись и отправка RAW-пакета
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Close Account)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✅ [SUCCESS]: Аккаунт успешно закрыт, SOL возвращены. TX:", txId);
+        return txId;
 
     } catch (e) {
-        console.error("❌ RPC Close Error:", e);
-        
-        // Обработка специфических ошибок безопасности контракта
-        if (e.message.includes("0x1772")) { // Пример кода ошибки "StillExists"
-            AurumFoxEngine.notify("STAKE STILL EXISTS", "FAILED");
-        } else if (e.message.includes("0x1773")) { // Пример кода "DustRemaining"
-            AurumFoxEngine.notify("REWARD DUST EXISTS", "FAILED");
-        } else {
-            AurumFoxEngine.notify("CLOSE FAILED", "FAILED");
-        }
+        console.error("❌ Close Account Error:", e.message);
+        // Логирование типичных ошибок контракта
+        if (e.message.includes("StakeStillExists")) console.error("⚠️ Внимание: в аккаунте остались средства (StakeStillExists).");
+        if (e.message.includes("UnclaimedRewardsExist")) console.error("⚠️ Внимание: остались невостребованные награды.");
+        throw e;
     }
 };
 
-// --- ПРИВЯЗКА КНОПКИ UI ---
-// Ищем кнопку по тексту или классу внутри closeAccountView
-const closeButton = document.querySelector('#closeAccountView button.bg-red-600\\/20');
-if (closeButton) {
-    closeButton.addEventListener('click', () => {
-        window.closeStakingAccount();
-    });
-}
 
 
 
