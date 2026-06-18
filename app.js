@@ -1015,6 +1015,21 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
 
 
+    async function handleCloseAccount() {
+        // Эти переменные (POOL_PUBKEY, USER_STAKING_PDA, CURRENT_INDEX) 
+        // должны быть доступны в твоем контексте
+        try {
+            await window.performCloseStakingAccount(
+                POOL_PUBKEY, 
+                USER_STAKING_PDA, 
+                CURRENT_INDEX
+            );
+            alert("✅ Аккаунт успешно закрыт!");
+        } catch (e) {
+            console.error("Ошибка закрытия аккаунта:", e);
+        }
+    }
+
 
 
 
