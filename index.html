@@ -587,7 +587,9 @@
 
 
            
-    <div id="claimView" class="hidden max-w-7xl mx-auto">
+    
+
+           <div id="claimView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Claim Rewards: Security Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -602,11 +604,11 @@
                     <button onclick="toggleAllTiers()" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold">SELECT ALL</button>
                 </div>
                 <div id="tierSelector" class="grid grid-cols-5 gap-3">
-                    <button onclick="toggleTier(0)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 0</button>
-                    <button onclick="toggleTier(1)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 1</button>
-                    <button onclick="toggleTier(2)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 2</button>
-                    <button onclick="toggleTier(3)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 3</button>
-                    <button onclick="toggleTier(4)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all">Tier 4</button>
+                    <button onclick="toggleTier(0)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="0">Tier 0</button>
+                    <button onclick="toggleTier(1)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="1">Tier 1</button>
+                    <button onclick="toggleTier(2)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="2">Tier 2</button>
+                    <button onclick="toggleTier(3)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="3">Tier 3</button>
+                    <button onclick="toggleTier(4)" class="tier-btn p-3 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:border-indigo-500 transition-all" data-index="4">Tier 4</button>
                 </div>
             </div>
 
@@ -669,7 +671,7 @@
                 <h2 class="text-lg font-semibold uppercase">CONFIRM CLAIM</h2>
                 
                 <div class="mt-5">
-                    <input type="number" placeholder="Enter amount to claim" class="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-indigo-500">
+                    <input id="claimAmountInput" type="number" placeholder="Enter amount to claim" class="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white text-sm outline-none focus:border-indigo-500">
                     <div class="grid grid-cols-4 gap-2 mt-3">
                         <button class="bg-white/5 py-1 rounded text-[10px] hover:bg-indigo-500/20">25%</button>
                         <button class="bg-white/5 py-1 rounded text-[10px] hover:bg-indigo-500/20">50%</button>
@@ -687,71 +689,14 @@
                     <p class="text-gray-400 text-[10px]">Net Rewards to Claim</p>
                     <div class="text-2xl font-bold text-emerald-400 mt-1">119.46 <span class="text-sm font-normal text-gray-500">TOKEN</span></div>
                 </div>
-                <button onclick="executeClaimRewards()" class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">EXECUTE CLAIM</button>
+                <button id="claimAllBtn" onclick="executeClaimRewards()" class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">EXECUTE CLAIM</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Fee: 5% Project Treasury Deducted</p>
         </div>
     </div>
 </div>
 
-<style>
-    .tier-btn.active { background-color: rgba(99, 102, 241, 0.4); border-color: #6366f1; color: white; }
-</style>
 
-<script>
-    function openClaimView() {
-        document.getElementById('mainStakingView').classList.add('hidden');
-        document.getElementById('claimView').classList.remove('hidden');
-    }
-
-    async function executeClaimRewards() {
-        // Здесь ваша логика транзакции
-        const btn = document.querySelector('.btn-initialize');
-        await smartAction(btn, "Claiming", "Rewards Received!", "💎", async () => {
-            const program = getAnchorProgram(STAKING_PROGRAM_ID, STAKING_IDL);
-            const userPDA = await getUserStakingPDA(appState.walletPublicKey);
-            const userAta = await window.solanaWeb3.PublicKey.findProgramAddress(
-                [appState.walletPublicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), AFOX_TOKEN_MINT_ADDRESS.toBuffer()],
-                ASSOCIATED_TOKEN_PROGRAM_ID
-            ).then(res => res[0]);
-            return await program.methods.claimRewards()
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    userStaking: userPDA,
-                    owner: appState.walletPublicKey,
-                    vault: AFOX_POOL_VAULT_PUBKEY,
-                    adminFeeVault: AFOX_REWARDS_VAULT_PUBKEY,
-                    userRewardsAta: userAta,
-                    rewardMint: AFOX_TOKEN_MINT_ADDRESS,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY
-                }).rpc();
-        });
-    }
-
-    function switchView(viewId) {
-        document.getElementById('claimView').classList.add('hidden');
-        document.getElementById('mainStakingView').classList.add('hidden');
-        document.getElementById(viewId).classList.remove('hidden');
-    }
-
-    function toggleTier(id) {
-        const btn = document.querySelectorAll('.tier-btn')[id];
-        btn.classList.toggle('active');
-    }
-
-    function toggleAllTiers() {
-        const buttons = document.querySelectorAll('.tier-btn');
-        const allActive = Array.from(buttons).every(btn => btn.classList.contains('active'));
-        buttons.forEach(btn => {
-            if (allActive) {
-                btn.classList.remove('active');
-            } else {
-                btn.classList.add('active');
-            }
-        });
-    }
-</script>
 
 
 
