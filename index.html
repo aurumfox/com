@@ -450,7 +450,7 @@
                 
                 <div class="mt-6 p-4 bg-black/30 rounded-xl border border-white/5">
                     <p class="text-gray-400 text-[10px]">Unlockable Amount (Available: 1,250.00)</p>
-                    <input type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-emerald-400 mt-1 outline-none border-none">
+                    <input id="decollateralizeAmountInput" type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-emerald-400 mt-1 outline-none border-none">
                 </div>
 
                 <div id="safetyWarning" class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl hidden">
@@ -458,16 +458,14 @@
                     <p class="text-gray-400 text-[10px] mt-1">Ensure your transaction is executed in a new block to satisfy anti-MEV requirements.</p>
                 </div>
 
-               
-                <button class="w-full mt-8 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 font-bold text-white transition-all shadow-lg shadow-emerald-500/10 cursor-pointer">
-    CONFIRM DECOLLATERALIZE
-</button>
-
-
+                <button onclick="handleDecollateralize()" class="w-full mt-8 py-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 font-bold text-white transition-all shadow-lg shadow-emerald-500/10 cursor-pointer">
+                    CONFIRM DECOLLATERALIZE
+                </button>
             </div>
         </div>
     </div>
 </div>
+
 
 
 
