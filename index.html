@@ -708,7 +708,7 @@
 
 
 
-    <div id="unstakeView" class="hidden max-w-7xl mx-auto">
+   <div id="unstakeView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Unstake Position: Settlement Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -793,14 +793,14 @@
                 <div class="mt-5 space-y-4">
                     <div class="p-4 bg-black/30 rounded-xl border border-white/5">
                         <p class="text-gray-400 text-[10px] uppercase">Withdrawal Amount (TOKEN)</p>
-                        <input type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-white mt-1 outline-none">
+                        <input id="unstakeAmountInput" type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-white mt-1 outline-none">
                     </div>
                     
                     <div class="grid grid-cols-4 gap-2">
-                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">25%</button>
-                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">50%</button>
-                        <button class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">75%</button>
-                        <button class="py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-xs font-bold text-blue-400 transition-all">MAX</button>
+                        <button onclick="setUnstakeAmount(0.25)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">25%</button>
+                        <button onclick="setUnstakeAmount(0.50)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">50%</button>
+                        <button onclick="setUnstakeAmount(0.75)" class="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-all">75%</button>
+                        <button onclick="setUnstakeAmount(1.00)" class="py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-xs font-bold text-blue-400 transition-all">MAX</button>
                     </div>
                 </div>
 
@@ -813,7 +813,7 @@
                     </div>
                 </div>
                 
-                <button id="unstakeBtn" class="w-full mt-6 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white transition-all shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
+                <button id="unstakeBtn" onclick="handleUnstake()" class="w-full mt-6 py-4 rounded-xl bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 font-bold text-white transition-all shadow-lg shadow-red-500/10">CONFIRM & EXIT</button>
             </div>
             
             <div id="liquidityAlert" class="hidden mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-center">
@@ -824,6 +824,8 @@
         </div>
     </div>
 </div>
+
+
 
     
                 
