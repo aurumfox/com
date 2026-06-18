@@ -329,15 +329,15 @@
                 <div class="mt-5 space-y-4">
                     <div class="p-4 bg-black/30 rounded-xl border border-white/5">
                         <p class="text-gray-400 text-[10px]">Adjustment Amount (TOKEN)</p>
-                        <input type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-white mt-1 outline-none">
+                        <input id="collateralAmountInput" type="number" placeholder="0.00" class="w-full bg-transparent text-2xl font-bold text-white mt-1 outline-none">
                     </div>
                     
                     <div class="p-4 bg-black/30 rounded-xl border border-white/5">
                         <p class="text-gray-400 text-[10px]">Min Health Factor Threshold</p>
-                        <div class="flex gap-2 mt-2">
-                            <button class="px-3 py-1 bg-white/10 rounded-lg text-xs hover:bg-white/20">1.2x</button>
-                            <button class="px-3 py-1 bg-white/10 rounded-lg text-xs hover:bg-white/20">1.5x</button>
-                            <button class="px-3 py-1 bg-blue-500/20 rounded-lg text-xs text-blue-400 border border-blue-500/50">2.0x</button>
+                        <div class="flex gap-2 mt-2" id="hfThresholdSelector">
+                            <button onclick="selectHF(1.2)" class="hf-btn px-3 py-1 bg-white/10 rounded-lg text-xs hover:bg-white/20">1.2x</button>
+                            <button onclick="selectHF(1.5)" class="hf-btn px-3 py-1 bg-white/10 rounded-lg text-xs hover:bg-white/20">1.5x</button>
+                            <button onclick="selectHF(2.0)" class="hf-btn px-3 py-1 bg-blue-500/20 rounded-lg text-xs text-blue-400 border border-blue-500/50">2.0x</button>
                         </div>
                     </div>
 
@@ -356,11 +356,22 @@
                 <button class="w-full mt-5 py-4 rounded-xl btn-initialize font-bold text-white shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all">CLAIM ALL REWARDS</button>
             </div>
             
-            <button class="w-full mt-3 py-4 rounded-xl btn-action font-bold text-gray-300 active:scale-[0.98] transition-all hover:bg-white/5">ADJUST COLLATERAL</button>
+            <button onclick="handleCollateralize()" class="w-full mt-3 py-4 rounded-xl btn-action font-bold text-gray-300 active:scale-[0.98] transition-all hover:bg-white/5">ADJUST COLLATERAL</button>
         </div>
     </div>
 </div>
 
+
+
+
+
+    
+
+
+
+
+
+    
 
 
 <div id="decollateralizeView" class="hidden max-w-7xl mx-auto">
