@@ -666,6 +666,55 @@ if (claimButton) {
 
 
 
+   /**
+ * Улучшенная функция: автоматическое определение адресов и запуск клейма
+ */
+async function executeClaimRewards() {
+    const selectedTiers = [];
+    document.querySelectorAll('.tier-btn.active').forEach(btn => {
+        selectedTiers.push(parseInt(btn.getAttribute('data-index')));
+    });
+
+    if (selectedTiers.length === 0) {
+        console.warn("⚠️ Ни один пул не выбран.");
+        return;
+    }
+
+    try {
+        // 1. АВТОМАТИЗАЦИЯ: Получаем программу и провайдер
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const owner = provider.wallet.publicKey;
+
+        // 2. АВТОМАТИЗАЦИЯ: Определяем пул (например, из стейта приложения)
+        // Предполагаем, что у тебя есть активный пул в appState
+        const poolPubKey = window.appState.currentPoolPubKey; 
+
+        // 3. АВТОМАТИЗАЦИЯ: Находим ATA наград пользователя (на лету)
+        const rewardMint = window.appState.rewardMint; // Адрес токена наград
+        const userRewardsAta = await spl.getAssociatedTokenAddress(
+            rewardMint,
+            owner
+        );
+
+        console.log("🔍 Автоматическое определение адресов завершено...");
+
+        // 4. Вызов клейма с уже готовыми данными
+        await window.performClaimAllRewards(
+            poolPubKey, 
+            selectedTiers, 
+            userRewardsAta
+        );
+        
+        alert("✅ Награды успешно заклеймлены!");
+    } catch (e) {
+        console.error("❌ Ошибка авто-определения или клейма:", e);
+        alert("Ошибка: " + e.message);
+    }
+}
+
+
+
 
 
 
