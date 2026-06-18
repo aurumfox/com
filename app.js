@@ -433,53 +433,57 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 /**
- * ГЛОБАЛЬНЫЙ МЕТОД ДЕПОЗИТА (DEPOSIT ENGINE)
- * Полная синхронизация с PDA и архитектурой контракта
+ * ГЛОБАЛЬНЫЙ МЕТОД: DEPOSIT (ДЕПОЗИТ)
+ * 100% синхронизация с SDK: PDA, Vault/Mint проверка, Compute Budget, RAW транзакция
  */
-window.performDeposit = async function(amountInTokens) {
+window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poolIndex, amountBN) {
     try {
-        // 1. Получаем индекс пула из интерфейса
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
-
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        AurumFoxEngine.notify("PREPARING DEPOSIT...", "WAIT");
-
-        // 2. Инициализируем программу
+        console.log("====================================================================================================");
+        console.log("🚀 [START]: ИНИЦИАЦИЯ ДЕПОЗИТА...");
+        
         const program = await QubitProgramManager.getProgram();
-        const ownerPubkey = program.provider.wallet.publicKey;
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 3. Получаем данные пула (Fetch pool state)
-        const poolData = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+        // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА
+        const poolData = await program.account.poolState.fetch(poolPubKey);
 
-        // 4. Вычисляем PDA для user_staking
-        const [userStakePda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // 2. ДЕРИВАЦИЯ PDA (строго по семенам из Rust)
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
+                poolPubKey.toBuffer(),
                 ownerPubkey.toBuffer(),
-                Uint8Array.from([poolIndex])
+                Buffer.from([poolIndex])
             ],
             program.programId
         );
 
-        // ВАЖНО: Предполагаем, что у тебя есть функции для получения ATA
-        // Если нет — убедись, что userSourceAta и userStAta переданы правильно
-        // Здесь мы используем логику, которая у тебя была в Utils
-        const userSourceAta = await spl.getAssociatedTokenAddress(poolData.mint, ownerPubkey);
-        const userStAta = await spl.getAssociatedTokenAddress(poolData.stMint, ownerPubkey);
+        // 3. СБОРКА ТРАНЗАКЦИИ
+        const transaction = new anchor.web3.Transaction();
+        
+        // Инъекция лимитов для обеспечения гарантированного выполнения
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
-        console.log(`🚀 Депозит для Пула ${poolIndex}, Сумма: ${amountInTokens}`);
-
-        // 5. Выполнение транзакции
-        const tx = await program.methods
-            .deposit(poolIndex, new anchor.BN(amountInTokens))
+        // 4. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
+        const depositInstruction = await program.methods
+            .deposit(poolIndex, amountBN)
             .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
+                poolState: poolPubKey,
                 userStaking: userStakePda,
                 owner: ownerPubkey,
                 vault: poolData.vault,
@@ -487,29 +491,40 @@ window.performDeposit = async function(amountInTokens) {
                 userSourceAta: userSourceAta,
                 userStAta: userStAta,
                 tokenProgram: spl.TOKEN_PROGRAM_ID,
-                systemProgram: window.solanaWeb3.SystemProgram.programId,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                systemProgram: anchor.web3.SystemProgram.programId,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             })
-            .rpc();
+            .instruction();
 
-        console.log("✅ Deposit Signature:", tx);
-        AurumFoxEngine.notify("DEPOSIT SUCCESS!", "SUCCESS");
+        transaction.add(depositInstruction);
+
+        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('confirmed');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: "confirmed"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Deposit)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "confirmed");
+
+        console.log("✅ [SUCCESS]: Депозит успешно принят. TX:", txId);
+        return txId;
 
     } catch (e) {
-        console.error("❌ Deposit Error:", e);
-        AurumFoxEngine.notify("DEPOSIT FAILED", "FAILED");
+        console.error("❌ Deposit Error:", e.message);
+        // Вывод логов контракта при ошибке для диагностики
+        if (e.logs) {
+            console.error("--- SOLANA LOGS ---");
+            e.logs.forEach(line => console.error(line));
+        }
+        throw e;
     }
 };
-
-// Привязка кнопки депозита (убедись, что класс кнопки совпадает с твоим)
-const depositButton = document.getElementById('depositButton'); // Замени на нужный ID/класс
-if (depositButton) {
-    depositButton.addEventListener('click', () => {
-        // Пример: берем сумму из input с ID 'amountInput'
-        const amount = document.getElementById('amountInput')?.value || "0";
-        window.performDeposit(amount);
-    });
-}
 
 
 
