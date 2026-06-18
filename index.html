@@ -484,7 +484,8 @@
 
 
 
-<div id="depositView" class="hidden max-w-7xl mx-auto">
+ 
+                <div id="depositView" class="hidden max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Deposit: Staking Synchronization Audit</h1>
         <button onclick="switchView('mainStakingView')" class="text-gray-400 hover:text-white px-4 py-2 border border-white/10 rounded-xl">← Back to Staking</button>
@@ -567,22 +568,13 @@
                     <p class="text-[10px] text-indigo-300">Ready for synchronization with pool index: <span id="currentPoolIndex">0</span></p>
                 </div>
 
-                <button class="w-full mt-5 py-4 rounded-xl bg-indigo-500/20 border border-indigo-500/50 hover:bg-indigo-500/30 font-bold text-white transition-all">CONFIRM DEPOSIT</button>
+                <button onclick="handleDeposit()" class="w-full mt-5 py-4 rounded-xl bg-indigo-500/20 border border-indigo-500/50 hover:bg-indigo-500/30 font-bold text-white transition-all">CONFIRM DEPOSIT</button>
             </div>
             <p class="text-[10px] text-gray-500 mt-4 text-center">Your deposit will be locked according to pool index rules. Audit in progress.</p>
         </div>
     </div>
 </div>
 
-<script>
-    // Добавь эту функцию в свой app.js для работы кнопок
-    function setDepositAmount(percent) {
-        // Здесь замени 1000 на реальный баланс пользователя с кошелька
-        const userBalance = 1000; 
-        const amount = userBalance * percent;
-        document.getElementById('depositInput').value = amount.toFixed(2);
-    }
-</script>
 
 
 
