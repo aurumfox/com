@@ -1070,79 +1070,66 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Глобальная функция переключения представлений
     window.switchView = function(viewId) {
         const views = [
-            'initStakeView',
-            'mainStakingView', 
-            'collateralView', 
-            'decollateralizeView', 
-            'depositView', 
-            'claimView', 
-            'unstakeView', 
-            'closeAccountView'
+            'initStakeView', 'mainStakingView', 'collateralView', 
+            'decollateralizeView', 'depositView', 'claimView', 
+            'unstakeView', 'closeAccountView'
         ];
-        
         views.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('hidden');
         });
-        
         const target = document.getElementById(viewId);
-        if (target) {
-            target.classList.remove('hidden');
-        } else {
-            console.error("Элемент с ID " + viewId + " не найден!");
-        }
+        if (target) target.classList.remove('hidden');
     };
 
+    // --- Интегрированная логика initStakeView ---
+    const initStakeContainer = document.getElementById('initStakeView');
+    if (initStakeContainer) {
+        // Навигация
+        const backBtn = document.getElementById('backToStakingBtn');
+        if (backBtn) backBtn.addEventListener('click', () => switchView('mainStakingView'));
 
-// --- Обработка событий в initStakeView ---
-const backBtn = document.getElementById('backToStakingBtn');
-if (backBtn) {
-    backBtn.addEventListener('click', () => switchView('mainStakingView'));
-}
-
-const confirmBtn = document.getElementById('confirmInitBtn');
-if (confirmBtn) {
-    confirmBtn.addEventListener('click', () => {
-        console.log("Initialization confirmed");
-        if (typeof handleInitialize === 'function') handleInitialize();
-    });
-}
-
-// Логика выбора тиров с обновлением ВСЕХ индикаторов
-document.querySelectorAll('.tier-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const selectedBtn = e.currentTarget;
-        
-        // 1. Сбрасываем все кнопки
-        document.querySelectorAll('.tier-btn').forEach(b => {
-            b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
-            b.classList.add('border-white/10', 'bg-black/20');
-        });
-        
-        // 2. Активируем выбранную
-        selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-        selectedBtn.classList.remove('border-white/10', 'bg-black/20');
-        
-        // 3. Обновляем данные
-        const label = selectedBtn.dataset.label;
-        const index = selectedBtn.dataset.index;
-        const days = parseInt(selectedBtn.dataset.tier); // Получаем количество дней из data-tier
-        
-        // Обновляем текст
-        const lockupDisplay = document.getElementById('lockupDisplay');
-        const poolIndexDisplay = document.getElementById('poolIndexDisplay');
-        if (lockupDisplay) lockupDisplay.innerText = label;
-        if (poolIndexDisplay) poolIndexDisplay.innerText = `Tier ${label} (Index ${index})`;
-        
-        // 4. Обновляем индикатор прогресса (Progress Bar)
-        // Рассчитываем %: 14 дней = 20%, 365 дней = 100% (условно)
-        const progressBar = document.getElementById('lockupProgressBar');
-        if (progressBar) {
-            const percent = Math.min((days / 365) * 100, 100);
-            progressBar.style.width = percent + '%';
+        const confirmBtn = document.getElementById('confirmInitBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                console.log("Initialization confirmed");
+                if (typeof handleInitialize === 'function') handleInitialize();
+            });
         }
-    });
-});
+
+        // Логика выбора тиров
+        const tierBtns = document.querySelectorAll('.tier-btn');
+        tierBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const selectedBtn = e.currentTarget;
+                
+                // Сбрасываем все
+                tierBtns.forEach(b => {
+                    b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
+                    b.classList.add('border-white/10', 'bg-black/20');
+                });
+                
+                // Активируем одну
+                selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
+                selectedBtn.classList.remove('border-white/10', 'bg-black/20');
+                
+                // Обновление индикаторов
+                const label = selectedBtn.dataset.label;
+                const index = selectedBtn.dataset.index;
+                const days = parseInt(selectedBtn.dataset.tier);
+                
+                document.getElementById('lockupDisplay').innerText = label;
+                document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
+                
+                const progressBar = document.getElementById('lockupProgressBar');
+                if (progressBar) {
+                    progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
+                }
+            });
+        });
+    }
+
+   
 
 
     
