@@ -1066,21 +1066,7 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Глобальная функция переключения представлений
-    window.switchView = function(viewId) {
-        const views = [
-            'initStakeView', 'mainStakingView', 'collateralView', 
-            'decollateralizeView', 'depositView', 'claimView', 
-            'unstakeView', 'closeAccountView'
-        ];
-        views.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
-        });
-        const target = document.getElementById(viewId);
-        if (target) target.classList.remove('hidden');
-    };
+
 
 
         
