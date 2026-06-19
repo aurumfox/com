@@ -1,3 +1,6 @@
+
+
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -5,24 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QUBIT (QBT): DAO, Staking & Lending</title>
 
-
-
-
-
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'none';
-        script-src 'self';
-        style-src 'self';
-        font-src 'self';
-        img-src 'self' data:;
-        connect-src 'self' https://api.mainnet-beta.solana.com;
-        frame-ancestors 'none';
-        base-uri 'self';
-        form-action 'self';
-    ">
-
-    
-
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';">
 
     <script>
         window.global = window;
@@ -35,8 +21,7 @@
     <script src="js/solana.js"></script>
     <script src="js/anchor.js"></script>
     
-    <script src="js/tailwind.min.js"></script>
-    
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="./assets/foxcoin-hero.png" type="image/png">
 
@@ -56,40 +41,34 @@
             </div>
         </div>
 
-        <div class="wallet-controls">
+             <div class="wallet-controls">
             <button id="connectWalletBtn" class="px-6 py-2.5 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 font-bold text-sm hover:bg-blue-600 hover:text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.2)]">
                 Connect Wallet
             </button>
         </div>
     </div>
    
-    <div id="walletModal" class="fixed inset-0 bg-black/80 hidden z-[9999] flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-sm">
-            <h2 class="text-white text-lg font-bold mb-4 text-center">Select Wallet</h2>
-            <div id="walletList" class="space-y-2"></div>
-            <button id="closeModalBtn" class="w-full mt-4 text-gray-500 hover:text-white">Cancel</button>
-        </div>
+      <div id="walletModal" class="fixed inset-0 bg-black/80 hidden z-[9999] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-sm">
+        <h2 class="text-white text-lg font-bold mb-4 text-center">Select Wallet</h2>
+        <div id="walletList" class="space-y-2"></div>
+        <button onclick="document.getElementById('walletModal').classList.add('hidden')" class="w-full mt-4 text-gray-500 hover:text-white">Cancel</button>
+    </div>
+</div>
+
+
+        
     </div>
 </header>
 
-<main class="container mx-auto flex flex-col items-center justify-center py-10">
-    <div class="cube-container">
-        <div class="animated-cube"></div>
-    </div>
+    <main class="container mx-auto flex flex-col items-center justify-center py-10">
+        <div class="cube-container">
+            <div class="animated-cube"></div>
+        </div>
 
-    <div class="grid grid-cols-1 gap-4 mt-6">
-    </div>
-</main>
-
-
-
-
-
-
-
-
-
-
+        <div class="grid grid-cols-1 gap-4 mt-6">
+            </div>
+    </main>
 
 
 
