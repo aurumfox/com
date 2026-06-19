@@ -1074,7 +1074,10 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
     
            
 
-     document.addEventListener('DOMContentLoaded', () => {
+     
+
+    
+document.addEventListener('DOMContentLoaded', () => {
     // 1. Глобальная функция переключения представлений
     window.switchView = function(viewId) {
         const views = [
@@ -1139,12 +1142,12 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
    
 
-
-
-
-
-
    
+    
+
+       
+
+
 
 
     
@@ -1354,6 +1357,69 @@ if (executeClaimBtn) {
         connectBtn.addEventListener('click', () => modal.classList.remove('hidden'));
     }
 });
+
+
+
+это ты мне дал как я должен правильно делать 
+
+
+
+// --- Полная логика для initStakeView ---
+function updateInitStakeLogic() {
+    // 1. Навигация "Назад"
+    const backBtn = document.getElementById('backToStakingBtn');
+    if (backBtn) {
+        backBtn.onclick = () => switchView('mainStakingView');
+    }
+
+    // 2. Кнопка подтверждения
+    const confirmBtn = document.getElementById('confirmInitBtn');
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            console.log("Initialization confirmed");
+            if (typeof handleInitialize === 'function') handleInitialize();
+        };
+    }
+
+    // 3. Логика выбора тиров (динамическое обновление индикаторов)
+    const tierBtns = document.querySelectorAll('.tier-btn');
+    tierBtns.forEach(btn => {
+        btn.onclick = (e) => {
+            const selectedBtn = e.currentTarget;
+            
+            // Сбрасываем стили всех кнопок
+            tierBtns.forEach(b => {
+                b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
+                b.classList.add('border-white/10', 'bg-black/20');
+            });
+            
+            // Добавляем активный стиль выбранной
+            selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
+            selectedBtn.classList.remove('border-white/10', 'bg-black/20');
+            
+            // Данные
+            const label = selectedBtn.getAttribute('data-label');
+            const index = selectedBtn.getAttribute('data-index');
+            const days = parseInt(selectedBtn.getAttribute('data-tier'));
+            
+            // Обновляем текст
+            const lockupDisplay = document.getElementById('lockupDisplay');
+            const poolIndexDisplay = document.getElementById('poolIndexDisplay');
+            if (lockupDisplay) lockupDisplay.innerText = label;
+            if (poolIndexDisplay) poolIndexDisplay.innerText = `Tier ${label} (Index ${index})`;
+            
+            // Обновляем прогресс-бар
+            const progressBar = document.getElementById('lockupProgressBar');
+            if (progressBar) {
+                const percent = Math.min((days / 365) * 100, 100);
+                progressBar.style.width = percent + '%';
+            }
+        };
+    });
+}
+
+// Запускаем инициализацию
+updateInitStakeLogic();
 
 
 
