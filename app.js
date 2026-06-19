@@ -1088,7 +1088,23 @@ document.addEventListener('DOMContentLoaded', () => {
     
            
 
-        // --- Интегрированная логика initStakeView ---
+     document.addEventListener('DOMContentLoaded', () => {
+    // 1. Глобальная функция переключения представлений
+    window.switchView = function(viewId) {
+        const views = [
+            'initStakeView', 'mainStakingView', 'collateralView', 
+            'decollateralizeView', 'depositView', 'claimView', 
+            'unstakeView', 'closeAccountView'
+        ];
+        views.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        const target = document.getElementById(viewId);
+        if (target) target.classList.remove('hidden');
+    };
+
+    // --- Интегрированная логика initStakeView ---
     const initStakeContainer = document.getElementById('initStakeView');
     if (initStakeContainer) {
         // Навигация
@@ -1109,48 +1125,34 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const selectedBtn = e.currentTarget;
                 
-                // Проверяем, была ли эта кнопка активна ДО сброса
-                const isAlreadyActive = selectedBtn.classList.contains('active-tier');
-                
-                // Сбрасываем все кнопки в исходное «чистое» состояние (border-white/10, bg-black/20)
+                // Сбрасываем все
                 tierBtns.forEach(b => {
                     b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
                     b.classList.add('border-white/10', 'bg-black/20');
                 });
                 
-                // Если кнопка была неактивна — активируем её
-                if (!isAlreadyActive) {
-                    selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                    selectedBtn.classList.remove('border-white/10', 'bg-black/20');
-                    
-                    const label = selectedBtn.dataset.label;
-                    const index = selectedBtn.dataset.index;
-                    const days = parseInt(selectedBtn.dataset.tier);
-                    
-                    document.getElementById('lockupDisplay').innerText = label;
-                    document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
-                    
-                    const progressBar = document.getElementById('lockupProgressBar');
-                    if (progressBar) {
-                        progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
-                    }
-                } else {
-                    // Если она была активна, цикл выше уже сделал её «чистой».
-                    // Мы просто сбрасываем индикаторы, чтобы они не показывали старые данные.
-                    const lockupDisplay = document.getElementById('lockupDisplay');
-                    const poolIndexDisplay = document.getElementById('poolIndexDisplay');
-                    const progressBar = document.getElementById('lockupProgressBar');
-                    
-                    if (lockupDisplay) lockupDisplay.innerText = "--";
-                    if (poolIndexDisplay) poolIndexDisplay.innerText = "No Tier Selected";
-                    
-                    if (progressBar) {
-                        progressBar.style.width = '0%';
-                    }
+                // Активируем одну
+                selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
+                selectedBtn.classList.remove('border-white/10', 'bg-black/20');
+                
+                // Обновление индикаторов
+                const label = selectedBtn.dataset.label;
+                const index = selectedBtn.dataset.index;
+                const days = parseInt(selectedBtn.dataset.tier);
+                
+                document.getElementById('lockupDisplay').innerText = label;
+                document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
+                
+                const progressBar = document.getElementById('lockupProgressBar');
+                if (progressBar) {
+                    progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
                 }
             });
         });
     }
+
+   
+
 
 
 
