@@ -179,41 +179,43 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
 };
 /**
  * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
- * Вызывается напрямую из атрибута onclick="handleConfirmInitialize()" в твоем HTML
+ * Вызывается из кнопки CONFIRM INITIALIZATION
  */
-// 1. Функция навигации (чтобы кнопка в меню "заходила" на экран)
-function switchView(viewId) {
-    // Скрываем все блоки, если они имеют общий класс, например 'view-block'
-    document.querySelectorAll('.view-block').forEach(el => el.classList.add('hidden'));
-    
-    // Показываем нужный блок
-    const view = document.getElementById(viewId);
-    if (view) {
-        view.classList.remove('hidden');
-    } else {
-        console.error("Блок с ID " + viewId + " не найден!");
-    }
-}
-
-// 2. Функция подтверждения (которую мы писали ранее для транзакции)
 async function handleConfirmInitialize() {
+    // 1. Поиск активного тира в твоем HTML
     const activeBtn = document.querySelector('.tier-btn.active-tier');
+    
+    // 2. Валидация выбора
     if (!activeBtn) {
-        alert("Выберите тир!");
+        alert("⚠️ Пожалуйста, выберите Commitment Tier!");
         return;
     }
+
+    // 3. Получение индекса (строго как в твоем HTML)
     const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
     
-    // Вызываем твой проверенный метод из SDK
+    // 4. Финальная проверка на наличие переменной пула (важно для продакшена)
+    if (typeof POOL_STATE_PUBKEY === 'undefined') {
+        console.error("❌ Ошибка: POOL_STATE_PUBKEY не найден в контексте.");
+        alert("Ошибка инициализации: адрес пула не задан.");
+        return;
+    }
+    
+    console.log(`🚀 Начинаем вызов SDK для пула с индексом: ${poolIndex}`);
+
+    // 5. Вызов твоего метода (который ты скинул выше)
     try {
+        // Мы вызываем метод, который ты прислал, с правильными аргументами
         await window.performInitializeUserStake(POOL_STATE_PUBKEY, poolIndex);
+        
+        // Добавим уведомление, если всё прошло успешно
+        alert("✅ Аккаунт успешно инициализирован!");
     } catch (e) {
-        console.error("Ошибка:", e);
+        console.error("❌ Ошибка при вызове SDK:", e);
+        // Выводим ошибку, чтобы сразу понимать, что не так в транзакции
+        alert("Ошибка транзакции: " + e.message);
     }
 }
-
-
-
 
 
 
