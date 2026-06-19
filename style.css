@@ -10,12 +10,6 @@ body {
     margin: 0;
 }
 
-
-
-
-
-
-
 /* Улучшенные кнопки действий */
 .btn-action {
     background: rgba(255, 255, 255, 0.03);
@@ -41,12 +35,6 @@ body {
     transform: scale(0.98);
     background: rgba(99, 102, 241, 0.15);
 }
-
-
-
-
-
-
 
 .btn-premium {
     position: relative;
@@ -74,8 +62,6 @@ body {
 .btn-gold { border-color: rgba(234, 179, 8, 0.3); background: linear-gradient(180deg, #713f12 0%, #1e1b4b 100%); color: #fcd34d; }
 .btn-danger { border-color: rgba(185, 28, 28, 0.3); background: linear-gradient(180deg, #7f1d1d 0%, #1e1b4b 100%); color: #fca5a5; }
 
-
-
 /* Стилизация панелей (Glassmorphism) */
 .glass-panel { 
     background: rgba(15, 23, 42, 0.4);
@@ -84,6 +70,17 @@ body {
     border-radius: 24px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
