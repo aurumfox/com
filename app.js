@@ -1046,6 +1046,234 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
 
 
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Глобальная функция переключения представлений (оставлена как была)
+    window.switchView = function(viewId) {
+        const views = [
+            'initStakeView',
+            'mainStakingView', 
+            'collateralView', 
+            'decollateralizeView', 
+            'depositView', 
+            'claimView', 
+            'unstakeView', 
+            'closeAccountView'
+        ];
+        
+        views.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        
+        const target = document.getElementById(viewId);
+        if (target) {
+            target.classList.remove('hidden');
+        } else {
+            console.error("Элемент с ID " + viewId + " не найден!");
+        }
+    };
+
+    // --- Обработка событий в initStakeView ---
+    const backBtn = document.getElementById('backToStakingBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            console.log("Back to staking requested");
+        });
+    }
+
+    const confirmBtn = document.getElementById('confirmInitBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+            console.log("Initialization confirmed");
+        });
+    }
+
+    // --- Навигация и кнопки Collateral ---
+    const backCollateral = document.getElementById('backToStakingFromCollateral');
+    if (backCollateral) {
+        backCollateral.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    document.querySelectorAll('.hf-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const val = e.currentTarget.dataset.value;
+            console.log("Selected HF:", val);
+        });
+    });
+
+    document.querySelectorAll('.pct-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const pct = e.currentTarget.dataset.pct;
+            console.log("Selected %:", pct);
+        });
+    });
+
+    const claimRewardsBtn = document.getElementById('claimRewardsBtn');
+    if (claimRewardsBtn) {
+        claimRewardsBtn.addEventListener('click', () => console.log("Claiming rewards..."));
+    }
+
+    const adjustCollateralBtn = document.getElementById('adjustCollateralBtn');
+    if (adjustCollateralBtn) {
+        adjustCollateralBtn.addEventListener('click', () => console.log("Adjusting collateral..."));
+    }
+
+    // --- Деколлатерализация ---
+    const backDecollateral = document.getElementById('backToStakingFromDecollateralize');
+    if (backDecollateral) {
+        backDecollateral.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    document.querySelectorAll('.pct-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const pct = e.currentTarget.dataset.pct;
+            if (typeof setAmount === 'function') setAmount(pct);
+        });
+    });
+
+    const confirmDecollateralizeBtn = document.getElementById('confirmDecollateralizeBtn');
+    if (confirmDecollateralizeBtn) {
+        confirmDecollateralizeBtn.addEventListener('click', () => {
+            if (typeof handleDecollateralize === 'function') handleDecollateralize();
+        });
+    }
+
+    // --- Депозит ---
+    const backDeposit = document.getElementById('backToStakingFromDeposit');
+    if (backDeposit) {
+        backDeposit.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    document.querySelectorAll('.deposit-pct-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const pct = e.currentTarget.dataset.pct;
+            if (typeof setDepositAmount === 'function') setDepositAmount(pct);
+        });
+    });
+
+    const confirmDepositBtn = document.getElementById('confirmDepositBtn');
+    if (confirmDepositBtn) {
+        confirmDepositBtn.addEventListener('click', () => {
+            if (typeof handleDeposit === 'function') handleDeposit();
+        });
+    }
+
+    // --- Claim ---
+    const backClaim = document.getElementById('backToStakingFromClaim');
+    if (backClaim) {
+        backClaim.addEventListener('click', () => switchView('mainStakingView'));
+    }
+    
+    const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
+    if (selectAllTiersBtn) {
+        selectAllTiersBtn.addEventListener('click', () => {
+            if (typeof toggleAllTiers === 'function') toggleAllTiers();
+        });
+    }
+    
+    document.querySelectorAll('.tier-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (typeof toggleTier === 'function') toggleTier(e.currentTarget.dataset.index);
+        });
+    });
+    
+    document.querySelectorAll('.pct-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            console.log("Setting %:", e.currentTarget.dataset.pct);
+        });
+    });
+    
+    const executeClaimBtn = document.getElementById('executeClaimBtn');
+    if (executeClaimBtn) {
+        executeClaimBtn.addEventListener('click', () => {
+            if (typeof executeClaimRewards === 'function') executeClaimRewards();
+        });
+    }
+
+    // --- Unstake ---
+    const backUnstake = document.getElementById('backToStakingFromUnstake');
+    if (backUnstake) {
+        backUnstake.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    document.querySelectorAll('.unstake-pct-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (typeof setUnstakeAmount === 'function') setUnstakeAmount(pct);
+        });
+    });
+
+    const executeUnstakeBtn = document.getElementById('executeUnstakeBtn');
+    if (executeUnstakeBtn) {
+        executeUnstakeBtn.addEventListener('click', () => {
+            if (typeof handleUnstake === 'function') handleUnstake();
+        });
+    }
+
+    // --- Close Account ---
+    const backClose = document.getElementById('backToStakingFromClose');
+    if (backClose) {
+        backClose.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    const confirmCloseAccountBtn = document.getElementById('confirmCloseAccountBtn');
+    if (confirmCloseAccountBtn) {
+        confirmCloseAccountBtn.addEventListener('click', () => {
+            if (typeof handleCloseAccount === 'function') handleCloseAccount();
+        });
+    }
+
+    // --- Дропдаун ---
+    const trigger = document.getElementById('dropdownTrigger');
+    const list = document.getElementById('dropdownList');
+    const icon = document.getElementById('dropdownIcon');
+    const selectedText = document.getElementById('selectedTierText');
+    const initializeBtn = document.getElementById('initializeBtn');
+    const tierInputs = document.querySelectorAll('.tier-input');
+
+    if (trigger && list) {
+        trigger.addEventListener('click', (e) => {
+            list.classList.toggle('open');
+            icon.classList.toggle('rotated');
+            e.stopPropagation();
+        });
+    }
+
+    tierInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            if (selectedText) {
+                selectedText.innerText = `Selected: ${e.target.value} Days`;
+                selectedText.classList.add('text-white', 'font-bold');
+            }
+            if (initializeBtn) {
+                initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
+            }
+            if (list) list.classList.remove('open');
+            if (icon) icon.classList.remove('rotated');
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (list && trigger && !list.contains(e.target) && !trigger.contains(e.target)) {
+            list.classList.remove('open');
+            icon.classList.remove('rotated');
+        }
+    });
+
+    // --- Wallet Modal ---
+    const modal = document.getElementById('walletModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const connectBtn = document.getElementById('connectWalletBtn');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    }
+
+    if (connectBtn) {
+        connectBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+    }
+});
+
 
 
 
@@ -1275,22 +1503,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    const modal = document.getElementById('walletModal');
-    const closeBtn = document.getElementById('closeModalBtn');
-    const connectBtn = document.getElementById('connectWalletBtn');
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modal.classList.add('hidden');
-        });
-    }
-
-    if (connectBtn) {
-        connectBtn.addEventListener('click', () => {
-            modal.classList.remove('hidden');
-        });
-    }
-});
-
-            
