@@ -1050,8 +1050,24 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
       
 
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Глобальная функция переключения представлений
+    // 1. Глобальная функция переключения представлений (оставлена как была)
     window.switchView = function(viewId) {
         const views = [
             'initStakeView',
@@ -1077,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 2. Обработка событий в initStakeView
+    // --- Обработка событий в initStakeView ---
     const backBtn = document.getElementById('backToStakingBtn');
     if (backBtn) {
         backBtn.addEventListener('click', () => {
@@ -1092,12 +1108,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. Навигация и кнопки Collateral
-    const backToStakingFromCollateral = document.getElementById('backToStakingFromCollateral');
-    if (backToStakingFromCollateral) {
-        backToStakingFromCollateral.addEventListener('click', () => {
-            switchView('mainStakingView');
-        });
+    // --- Навигация и кнопки Collateral ---
+    const backCollateral = document.getElementById('backToStakingFromCollateral');
+    if (backCollateral) {
+        backCollateral.addEventListener('click', () => switchView('mainStakingView'));
     }
 
     document.querySelectorAll('.hf-btn').forEach(btn => {
@@ -1116,126 +1130,120 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const claimRewardsBtn = document.getElementById('claimRewardsBtn');
     if (claimRewardsBtn) {
-        claimRewardsBtn.addEventListener('click', () => {
-            console.log("Claiming rewards...");
-        });
+        claimRewardsBtn.addEventListener('click', () => console.log("Claiming rewards..."));
     }
 
     const adjustCollateralBtn = document.getElementById('adjustCollateralBtn');
     if (adjustCollateralBtn) {
-        adjustCollateralBtn.addEventListener('click', () => {
-            console.log("Adjusting collateral...");
-        });
+        adjustCollateralBtn.addEventListener('click', () => console.log("Adjusting collateral..."));
     }
 
-    // 4. Деколлатерализация
-    const backToStakingFromDecollateralize = document.getElementById('backToStakingFromDecollateralize');
-    if (backToStakingFromDecollateralize) {
-        backToStakingFromDecollateralize.addEventListener('click', () => {
-            switchView('mainStakingView');
-        });
+    // --- Деколлатерализация ---
+    const backDecollateral = document.getElementById('backToStakingFromDecollateralize');
+    if (backDecollateral) {
+        backDecollateral.addEventListener('click', () => switchView('mainStakingView'));
     }
 
     document.querySelectorAll('.pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const pct = e.currentTarget.dataset.pct;
-            setAmount(pct);
+            if (typeof setAmount === 'function') setAmount(pct);
         });
     });
 
     const confirmDecollateralizeBtn = document.getElementById('confirmDecollateralizeBtn');
     if (confirmDecollateralizeBtn) {
         confirmDecollateralizeBtn.addEventListener('click', () => {
-            handleDecollateralize();
+            if (typeof handleDecollateralize === 'function') handleDecollateralize();
         });
     }
 
-    // 5. Депозит
-    const backToStakingFromDeposit = document.getElementById('backToStakingFromDeposit');
-    if (backToStakingFromDeposit) {
-        backToStakingFromDeposit.addEventListener('click', () => {
-            switchView('mainStakingView');
-        });
+    // --- Депозит ---
+    const backDeposit = document.getElementById('backToStakingFromDeposit');
+    if (backDeposit) {
+        backDeposit.addEventListener('click', () => switchView('mainStakingView'));
     }
 
     document.querySelectorAll('.deposit-pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const pct = e.currentTarget.dataset.pct;
-            setDepositAmount(pct);
+            if (typeof setDepositAmount === 'function') setDepositAmount(pct);
         });
     });
 
     const confirmDepositBtn = document.getElementById('confirmDepositBtn');
     if (confirmDepositBtn) {
         confirmDepositBtn.addEventListener('click', () => {
-            handleDeposit();
+            if (typeof handleDeposit === 'function') handleDeposit();
         });
     }
 
-    // 6. Claim
-    const backToStakingFromClaim = document.getElementById('backToStakingFromClaim');
-    if (backToStakingFromClaim) {
-        backToStakingFromClaim.addEventListener('click', () => switchView('mainStakingView'));
+    // --- Claim ---
+    const backClaim = document.getElementById('backToStakingFromClaim');
+    if (backClaim) {
+        backClaim.addEventListener('click', () => switchView('mainStakingView'));
     }
-
+    
     const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
     if (selectAllTiersBtn) {
-        selectAllTiersBtn.addEventListener('click', () => toggleAllTiers());
+        selectAllTiersBtn.addEventListener('click', () => {
+            if (typeof toggleAllTiers === 'function') toggleAllTiers();
+        });
     }
-
+    
     document.querySelectorAll('.tier-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => toggleTier(e.currentTarget.dataset.index));
+        btn.addEventListener('click', (e) => {
+            if (typeof toggleTier === 'function') toggleTier(e.currentTarget.dataset.index);
+        });
     });
-
+    
     document.querySelectorAll('.pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             console.log("Setting %:", e.currentTarget.dataset.pct);
         });
     });
-
+    
     const executeClaimBtn = document.getElementById('executeClaimBtn');
     if (executeClaimBtn) {
-        executeClaimBtn.addEventListener('click', () => executeClaimRewards());
+        executeClaimBtn.addEventListener('click', () => {
+            if (typeof executeClaimRewards === 'function') executeClaimRewards();
+        });
     }
 
-    // 7. Unstake
-    const backToStakingFromUnstake = document.getElementById('backToStakingFromUnstake');
-    if (backToStakingFromUnstake) {
-        backToStakingFromUnstake.addEventListener('click', () => {
-            switchView('mainStakingView');
-        });
+    // --- Unstake ---
+    const backUnstake = document.getElementById('backToStakingFromUnstake');
+    if (backUnstake) {
+        backUnstake.addEventListener('click', () => switchView('mainStakingView'));
     }
 
     document.querySelectorAll('.unstake-pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const pct = parseFloat(e.currentTarget.dataset.pct);
-            setUnstakeAmount(pct);
+            if (typeof setUnstakeAmount === 'function') setUnstakeAmount(pct);
         });
     });
 
     const executeUnstakeBtn = document.getElementById('executeUnstakeBtn');
     if (executeUnstakeBtn) {
         executeUnstakeBtn.addEventListener('click', () => {
-            handleUnstake();
+            if (typeof handleUnstake === 'function') handleUnstake();
         });
     }
 
-    // 8. Close Account
-    const backToStakingFromClose = document.getElementById('backToStakingFromClose');
-    if (backToStakingFromClose) {
-        backToStakingFromClose.addEventListener('click', () => {
-            switchView('mainStakingView');
-        });
+    // --- Close Account ---
+    const backClose = document.getElementById('backToStakingFromClose');
+    if (backClose) {
+        backClose.addEventListener('click', () => switchView('mainStakingView'));
     }
 
     const confirmCloseAccountBtn = document.getElementById('confirmCloseAccountBtn');
     if (confirmCloseAccountBtn) {
         confirmCloseAccountBtn.addEventListener('click', () => {
-            handleCloseAccount();
+            if (typeof handleCloseAccount === 'function') handleCloseAccount();
         });
     }
 
-    // 9. Дропдаун
+    // --- Дропдаун ---
     const trigger = document.getElementById('dropdownTrigger');
     const list = document.getElementById('dropdownList');
     const icon = document.getElementById('dropdownIcon');
@@ -1273,52 +1281,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     
-
-    if (connectBtn) {
-        connectBtn.addEventListener('click', () => {
-            modal.classList.remove('hidden');
-        });
-    }
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
