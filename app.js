@@ -1074,12 +1074,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Обработка событий в initStakeView ---
-    const backBtn = document.getElementById('backToStakingBtn');
+    const backBtn = document.getElementById('backToStakingbackBtn');
     if (backBtn) {
-        backBtn.addEventListener('click', () => {
-            console.log("Back to staking requested");
-        });
+        backBtn.addEventListener('click', () => switchView('mainStakingView'));
     }
+    
+    
 
     const confirmBtn = document.getElementById('confirmInitBtn');
     if (confirmBtn) {
