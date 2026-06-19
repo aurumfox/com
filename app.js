@@ -1176,36 +1176,57 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Claim ---
-    const backClaim = document.getElementById('backToStakingFromClaim');
-    if (backClaim) {
-        backClaim.addEventListener('click', () => switchView('mainStakingView'));
-    }
+   // --- Claim ---
+const backClaim = document.getElementById('backToStakingFromClaim');
+if (backClaim) {
+    backClaim.addEventListener('click', () => switchView('mainStakingView'));
+}
 
-    const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
-    if (selectAllTiersBtn) {
-        selectAllTiersBtn.addEventListener('click', () => {
-            const tierButtons = document.querySelectorAll('.tier-btn');
-            tierButtons.forEach(btn => {
-                if (typeof toggleTier === 'function') {
-                    toggleTier(btn.dataset.index);
-                }
-            });
-        });
-    }
-    
-    document.querySelectorAll('.tier-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if (typeof toggleTier === 'function') toggleTier(e.currentTarget.dataset.index);
+const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
+if (selectAllTiersBtn) {
+    selectAllTiersBtn.addEventListener('click', () => {
+        // Мы находим все кнопки тиров по классу 'tier-btn'
+        const tierButtons = document.querySelectorAll('.tier-btn');
+        
+        // Проходим по каждой кнопке от 0 до 4
+        tierButtons.forEach(btn => {
+            // Добавляем визуальное выделение
+            btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
+            
+            // Если функция toggleTier существует, вызываем её для каждой кнопки
+            if (typeof toggleTier === 'function') {
+                toggleTier(btn.dataset.index);
+            }
         });
     });
-    
-    const executeClaimBtn = document.getElementById('executeClaimBtn');
-    if (executeClaimBtn) {
-        executeClaimBtn.addEventListener('click', () => {
-            if (typeof executeClaimRewards === 'function') executeClaimRewards();
-        });
-    }
+}
+
+document.querySelectorAll('.tier-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // Переключаем визуальное состояние (активен/неактивен)
+        e.currentTarget.classList.toggle('ring-2');
+        e.currentTarget.classList.toggle('ring-indigo-500');
+        e.currentTarget.classList.toggle('border-indigo-500');
+        
+        if (typeof toggleTier === 'function') {
+            toggleTier(e.currentTarget.dataset.index);
+        }
+    });
+});
+
+document.querySelectorAll('.pct-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        console.log("Setting %:", e.currentTarget.dataset.pct);
+    });
+});
+
+const executeClaimBtn = document.getElementById('executeClaimBtn');
+if (executeClaimBtn) {
+    executeClaimBtn.addEventListener('click', () => {
+        if (typeof executeClaimRewards === 'function') executeClaimRewards();
+    });
+}
+
 
     // --- Unstake ---
     const backUnstake = document.getElementById('backToStakingFromUnstake');
