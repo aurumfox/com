@@ -181,7 +181,7 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
  * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
  * Вызывается из кнопки CONFIRM INITIALIZATION
  */
-async function handleConfirmInitialize() {
+async function handleInitializeStake() {
     // 1. Поиск активного тира в твоем HTML
     const activeBtn = document.querySelector('.tier-btn.active-tier');
     
@@ -1084,8 +1084,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const confirmBtn = document.getElementById('confirmInitBtn');
-    if (confirmBtn) {
+    const initializeBtn = document.getElementById('initializeBtn');
+    if (initializeBtn) {
         confirmBtn.addEventListener('click', () => {
             console.log("Initialization confirmed");
         });
