@@ -1086,7 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
     
     
-       // --- Интегрированная логика initStakeView ---
+          // --- Интегрированная логика initStakeView ---
     const initStakeContainer = document.getElementById('initStakeView');
     if (initStakeContainer) {
         // Навигация
@@ -1110,7 +1110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Проверяем, нажата ли уже эта кнопка
                 const isAlreadyActive = selectedBtn.classList.contains('active-tier');
                 
-                // Сбрасываем все кнопки в любом случае
+                // Сбрасываем все кнопки в исходное "чистое" состояние (border-white/10, bg-black/20)
                 tierBtns.forEach(b => {
                     b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
                     b.classList.add('border-white/10', 'bg-black/20');
@@ -1133,7 +1133,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
                     }
                 } else {
-                    // Если кнопка была активна (мы её деактивировали) — сбрасываем индикаторы в «чистое» состояние
+                    // Если кнопка была активна, мы её уже сбросили циклом выше.
+                    // Теперь просто обновляем индикаторы в состояние «ничего не выбрано».
                     const lockupDisplay = document.getElementById('lockupDisplay');
                     const poolIndexDisplay = document.getElementById('poolIndexDisplay');
                     const progressBar = document.getElementById('lockupProgressBar');
@@ -1148,6 +1149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
 
 
 
