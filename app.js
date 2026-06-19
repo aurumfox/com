@@ -1093,18 +1093,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Обработка событий в initStakeView ---
-    const backBtn = document.getElementById('backToStakingBtn');
-    if (backBtn) {
-        backBtn.addEventListener('click', () => switchView('mainStakingView'));
-    }
-    
-    const confirmBtn = document.getElementById('confirminitBtn');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', () => {
-            console.log("Initialization confirmed");
+   // --- Обработка событий в initStakeView ---
+const backBtn = document.getElementById('backToStakingBtn');
+if (backBtn) {
+    backBtn.addEventListener('click', () => switchView('mainStakingView'));
+}
+
+// Исправлено: ID из HTML - confirmInitBtn
+const confirmBtn = document.getElementById('confirmInitBtn');
+if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+        console.log("Initialization confirmed");
+        // Здесь будет вызов функции инициализации, если она у тебя есть
+        if (typeof handleInitialize === 'function') handleInitialize();
+    });
+}
+
+// Логика выбора тиров (подсветка при клике)
+document.querySelectorAll('.tier-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // Убираем активный класс у всех
+        document.querySelectorAll('.tier-btn').forEach(b => {
+            b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
+            b.classList.add('border-white/10', 'bg-black/20');
         });
-    }
+        
+        // Добавляем активный класс к текущей
+        e.currentTarget.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
+        e.currentTarget.classList.remove('border-white/10', 'bg-black/20');
+        
+        // Логика отображения данных (если нужно для UI)
+        const label = e.currentTarget.dataset.label;
+        const index = e.currentTarget.dataset.index;
+        const lockupDisplay = document.getElementById('lockupDisplay');
+        const poolIndexDisplay = document.getElementById('poolIndexDisplay');
+        
+        if (lockupDisplay) lockupDisplay.innerText = label;
+        if (poolIndexDisplay) poolIndexDisplay.innerText = `Tier ${label} (Index ${index})`;
+    });
+});
 
     // --- Навигация и кнопки Collateral ---
     const backCollateral = document.getElementById('backToStakingFromCollateral');
