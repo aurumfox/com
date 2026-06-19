@@ -176,23 +176,6 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
         throw e;
     }
 };
-/**
- * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
- * Вызывается напрямую из атрибута onclick="handleConfirmInitialize()" в твоем HTML
- */
-// 1. Функция навигации (чтобы кнопка в меню "заходила" на экран)
-function switchView(viewId) {
-    // Скрываем все блоки, если они имеют общий класс, например 'view-block'
-    document.querySelectorAll('.view-block').forEach(el => el.classList.add('hidden'));
-    
-    // Показываем нужный блок
-    const view = document.getElementById(viewId);
-    if (view) {
-        view.classList.remove('hidden');
-    } else {
-        console.error("Блок с ID " + viewId + " не найден!");
-    }
-}
 
 // 2. Функция подтверждения (которую мы писали ранее для транзакции)
 async function handleConfirmInitialize() {
