@@ -1046,8 +1046,28 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Глобальная функция переключения представлений (оставлена как была)
+    // 1. Глобальная функция переключения представлений
     window.switchView = function(viewId) {
         const views = [
             'initStakeView',
@@ -1079,7 +1099,6 @@ document.addEventListener('DOMContentLoaded', () => {
         backBtn.addEventListener('click', () => switchView('mainStakingView'));
     }
     
-    // Привязка кнопки подтверждения (добавьте id="confirminitBtn" в HTML)
     const confirmBtn = document.getElementById('confirminitBtn');
     if (confirmBtn) {
         confirmBtn.addEventListener('click', () => {
@@ -1163,34 +1182,21 @@ document.addEventListener('DOMContentLoaded', () => {
         backClaim.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-       const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
+    const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
     if (selectAllTiersBtn) {
         selectAllTiersBtn.addEventListener('click', () => {
-            // Мы находим все кнопки тиров по классу 'tier-btn' (они у вас есть в HTML)
             const tierButtons = document.querySelectorAll('.tier-btn');
-            
-            // Проходим по каждой кнопке от 0 до 4
             tierButtons.forEach(btn => {
-                // Если функция toggleTier существует, вызываем её для каждой кнопки
-                // Мы передаем индекс (dataset.index), который уже есть в ваших кнопках
                 if (typeof toggleTier === 'function') {
                     toggleTier(btn.dataset.index);
                 }
             });
         });
     }
-
-    
     
     document.querySelectorAll('.tier-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (typeof toggleTier === 'function') toggleTier(e.currentTarget.dataset.index);
-        });
-    });
-    
-    document.querySelectorAll('.pct-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            console.log("Setting %:", e.currentTarget.dataset.pct);
         });
     });
     
@@ -1284,6 +1290,8 @@ document.addEventListener('DOMContentLoaded', () => {
         connectBtn.addEventListener('click', () => modal.classList.remove('hidden'));
     }
 });
+
+
 
 
 
