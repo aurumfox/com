@@ -1083,7 +1083,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-        // --- Интегрированная логика initStakeView ---
+        
+    
+    
+       // --- Интегрированная логика initStakeView ---
     const initStakeContainer = document.getElementById('initStakeView');
     if (initStakeContainer) {
         // Навигация
@@ -1130,19 +1133,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
                     }
                 } else {
-                    // Если кнопка была активна (мы её деактивировали) — сбрасываем индикаторы к дефолту
-                    // Можно вернуть дефолтное значение, например 14 дней:
-                    document.getElementById('lockupDisplay').innerText = "14 Days";
-                    document.getElementById('poolIndexDisplay').innerText = "Tier 14 Days (Index 0)";
-                    
+                    // Если кнопка была активна (мы её деактивировали) — сбрасываем индикаторы в «чистое» состояние
+                    const lockupDisplay = document.getElementById('lockupDisplay');
+                    const poolIndexDisplay = document.getElementById('poolIndexDisplay');
                     const progressBar = document.getElementById('lockupProgressBar');
+                    
+                    if (lockupDisplay) lockupDisplay.innerText = "--";
+                    if (poolIndexDisplay) poolIndexDisplay.innerText = "No Tier Selected";
+                    
                     if (progressBar) {
-                        progressBar.style.width = '20%';
+                        progressBar.style.width = '0%';
                     }
                 }
             });
         });
     }
+
 
 
    
