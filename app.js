@@ -1046,8 +1046,12 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
 
 
+
+      
+
+    
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Глобальная функция переключения представлений (оставлена как была)
+    // 1. Глобальная функция переключения представлений
     window.switchView = function(viewId) {
         const views = [
             'initStakeView',
@@ -1073,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Обработка событий в initStakeView ---
+    // 2. Обработка событий в initStakeView
     const backBtn = document.getElementById('backToStakingBtn');
     if (backBtn) {
         backBtn.addEventListener('click', () => {
@@ -1088,10 +1092,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Навигация и кнопки Collateral ---
-    const backCollateral = document.getElementById('backToStakingFromCollateral');
-    if (backCollateral) {
-        backCollateral.addEventListener('click', () => switchView('mainStakingView'));
+    // 3. Навигация и кнопки Collateral
+    const backToStakingFromCollateral = document.getElementById('backToStakingFromCollateral');
+    if (backToStakingFromCollateral) {
+        backToStakingFromCollateral.addEventListener('click', () => {
+            switchView('mainStakingView');
+        });
     }
 
     document.querySelectorAll('.hf-btn').forEach(btn => {
@@ -1110,120 +1116,126 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const claimRewardsBtn = document.getElementById('claimRewardsBtn');
     if (claimRewardsBtn) {
-        claimRewardsBtn.addEventListener('click', () => console.log("Claiming rewards..."));
+        claimRewardsBtn.addEventListener('click', () => {
+            console.log("Claiming rewards...");
+        });
     }
 
     const adjustCollateralBtn = document.getElementById('adjustCollateralBtn');
     if (adjustCollateralBtn) {
-        adjustCollateralBtn.addEventListener('click', () => console.log("Adjusting collateral..."));
+        adjustCollateralBtn.addEventListener('click', () => {
+            console.log("Adjusting collateral...");
+        });
     }
 
-    // --- Деколлатерализация ---
-    const backDecollateral = document.getElementById('backToStakingFromDecollateralize');
-    if (backDecollateral) {
-        backDecollateral.addEventListener('click', () => switchView('mainStakingView'));
+    // 4. Деколлатерализация
+    const backToStakingFromDecollateralize = document.getElementById('backToStakingFromDecollateralize');
+    if (backToStakingFromDecollateralize) {
+        backToStakingFromDecollateralize.addEventListener('click', () => {
+            switchView('mainStakingView');
+        });
     }
 
     document.querySelectorAll('.pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const pct = e.currentTarget.dataset.pct;
-            if (typeof setAmount === 'function') setAmount(pct);
+            setAmount(pct);
         });
     });
 
     const confirmDecollateralizeBtn = document.getElementById('confirmDecollateralizeBtn');
     if (confirmDecollateralizeBtn) {
         confirmDecollateralizeBtn.addEventListener('click', () => {
-            if (typeof handleDecollateralize === 'function') handleDecollateralize();
+            handleDecollateralize();
         });
     }
 
-    // --- Депозит ---
-    const backDeposit = document.getElementById('backToStakingFromDeposit');
-    if (backDeposit) {
-        backDeposit.addEventListener('click', () => switchView('mainStakingView'));
+    // 5. Депозит
+    const backToStakingFromDeposit = document.getElementById('backToStakingFromDeposit');
+    if (backToStakingFromDeposit) {
+        backToStakingFromDeposit.addEventListener('click', () => {
+            switchView('mainStakingView');
+        });
     }
 
     document.querySelectorAll('.deposit-pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const pct = e.currentTarget.dataset.pct;
-            if (typeof setDepositAmount === 'function') setDepositAmount(pct);
+            setDepositAmount(pct);
         });
     });
 
     const confirmDepositBtn = document.getElementById('confirmDepositBtn');
     if (confirmDepositBtn) {
         confirmDepositBtn.addEventListener('click', () => {
-            if (typeof handleDeposit === 'function') handleDeposit();
+            handleDeposit();
         });
     }
 
-    // --- Claim ---
-    const backClaim = document.getElementById('backToStakingFromClaim');
-    if (backClaim) {
-        backClaim.addEventListener('click', () => switchView('mainStakingView'));
+    // 6. Claim
+    const backToStakingFromClaim = document.getElementById('backToStakingFromClaim');
+    if (backToStakingFromClaim) {
+        backToStakingFromClaim.addEventListener('click', () => switchView('mainStakingView'));
     }
-    
+
     const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
     if (selectAllTiersBtn) {
-        selectAllTiersBtn.addEventListener('click', () => {
-            if (typeof toggleAllTiers === 'function') toggleAllTiers();
-        });
+        selectAllTiersBtn.addEventListener('click', () => toggleAllTiers());
     }
-    
+
     document.querySelectorAll('.tier-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if (typeof toggleTier === 'function') toggleTier(e.currentTarget.dataset.index);
-        });
+        btn.addEventListener('click', (e) => toggleTier(e.currentTarget.dataset.index));
     });
-    
+
     document.querySelectorAll('.pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             console.log("Setting %:", e.currentTarget.dataset.pct);
         });
     });
-    
+
     const executeClaimBtn = document.getElementById('executeClaimBtn');
     if (executeClaimBtn) {
-        executeClaimBtn.addEventListener('click', () => {
-            if (typeof executeClaimRewards === 'function') executeClaimRewards();
-        });
+        executeClaimBtn.addEventListener('click', () => executeClaimRewards());
     }
 
-    // --- Unstake ---
-    const backUnstake = document.getElementById('backToStakingFromUnstake');
-    if (backUnstake) {
-        backUnstake.addEventListener('click', () => switchView('mainStakingView'));
+    // 7. Unstake
+    const backToStakingFromUnstake = document.getElementById('backToStakingFromUnstake');
+    if (backToStakingFromUnstake) {
+        backToStakingFromUnstake.addEventListener('click', () => {
+            switchView('mainStakingView');
+        });
     }
 
     document.querySelectorAll('.unstake-pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const pct = parseFloat(e.currentTarget.dataset.pct);
-            if (typeof setUnstakeAmount === 'function') setUnstakeAmount(pct);
+            setUnstakeAmount(pct);
         });
     });
 
     const executeUnstakeBtn = document.getElementById('executeUnstakeBtn');
     if (executeUnstakeBtn) {
         executeUnstakeBtn.addEventListener('click', () => {
-            if (typeof handleUnstake === 'function') handleUnstake();
+            handleUnstake();
         });
     }
 
-    // --- Close Account ---
-    const backClose = document.getElementById('backToStakingFromClose');
-    if (backClose) {
-        backClose.addEventListener('click', () => switchView('mainStakingView'));
+    // 8. Close Account
+    const backToStakingFromClose = document.getElementById('backToStakingFromClose');
+    if (backToStakingFromClose) {
+        backToStakingFromClose.addEventListener('click', () => {
+            switchView('mainStakingView');
+        });
     }
 
     const confirmCloseAccountBtn = document.getElementById('confirmCloseAccountBtn');
     if (confirmCloseAccountBtn) {
         confirmCloseAccountBtn.addEventListener('click', () => {
-            if (typeof handleCloseAccount === 'function') handleCloseAccount();
+            handleCloseAccount();
         });
     }
 
-    // --- Дропдаун ---
+    // 9. Дропдаун
     const trigger = document.getElementById('dropdownTrigger');
     const list = document.getElementById('dropdownList');
     const icon = document.getElementById('dropdownIcon');
@@ -1260,19 +1272,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Wallet Modal ---
+    // 10. Wallet Modal
     const modal = document.getElementById('walletModal');
     const closeBtn = document.getElementById('closeModalBtn');
     const connectBtn = document.getElementById('connectWalletBtn');
 
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        closeBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
     }
 
     if (connectBtn) {
-        connectBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+        connectBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+        });
     }
 });
+
 
 
 
