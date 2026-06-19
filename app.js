@@ -1082,7 +1082,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target) target.classList.remove('hidden');
     };
 
-    // --- Интегрированная логика initStakeView ---
+
+        // --- Интегрированная логика initStakeView ---
     const initStakeContainer = document.getElementById('initStakeView');
     if (initStakeContainer) {
         // Навигация
@@ -1103,31 +1104,46 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const selectedBtn = e.currentTarget;
                 
-                // Сбрасываем все
+                // Проверяем, нажата ли уже эта кнопка
+                const isAlreadyActive = selectedBtn.classList.contains('active-tier');
+                
+                // Сбрасываем все кнопки в любом случае
                 tierBtns.forEach(b => {
                     b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
                     b.classList.add('border-white/10', 'bg-black/20');
                 });
                 
-                // Активируем одну
-                selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                selectedBtn.classList.remove('border-white/10', 'bg-black/20');
-                
-                // Обновление индикаторов
-                const label = selectedBtn.dataset.label;
-                const index = selectedBtn.dataset.index;
-                const days = parseInt(selectedBtn.dataset.tier);
-                
-                document.getElementById('lockupDisplay').innerText = label;
-                document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
-                
-                const progressBar = document.getElementById('lockupProgressBar');
-                if (progressBar) {
-                    progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
+                // Если кнопка была неактивна — активируем её
+                if (!isAlreadyActive) {
+                    selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
+                    selectedBtn.classList.remove('border-white/10', 'bg-black/20');
+                    
+                    const label = selectedBtn.dataset.label;
+                    const index = selectedBtn.dataset.index;
+                    const days = parseInt(selectedBtn.dataset.tier);
+                    
+                    document.getElementById('lockupDisplay').innerText = label;
+                    document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
+                    
+                    const progressBar = document.getElementById('lockupProgressBar');
+                    if (progressBar) {
+                        progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
+                    }
+                } else {
+                    // Если кнопка была активна (мы её деактивировали) — сбрасываем индикаторы к дефолту
+                    // Можно вернуть дефолтное значение, например 14 дней:
+                    document.getElementById('lockupDisplay').innerText = "14 Days";
+                    document.getElementById('poolIndexDisplay').innerText = "Tier 14 Days (Index 0)";
+                    
+                    const progressBar = document.getElementById('lockupProgressBar');
+                    if (progressBar) {
+                        progressBar.style.width = '20%';
+                    }
                 }
             });
         });
     }
+
 
    
 
