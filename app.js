@@ -1093,45 +1093,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-   // --- Обработка событий в initStakeView ---
+
+// --- Обработка событий в initStakeView ---
 const backBtn = document.getElementById('backToStakingBtn');
 if (backBtn) {
     backBtn.addEventListener('click', () => switchView('mainStakingView'));
 }
 
-// Исправлено: ID из HTML - confirmInitBtn
 const confirmBtn = document.getElementById('confirmInitBtn');
 if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
         console.log("Initialization confirmed");
-        // Здесь будет вызов функции инициализации, если она у тебя есть
         if (typeof handleInitialize === 'function') handleInitialize();
     });
 }
 
-// Логика выбора тиров (подсветка при клике)
+// Логика выбора тиров с обновлением ВСЕХ индикаторов
 document.querySelectorAll('.tier-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        // Убираем активный класс у всех
+        const selectedBtn = e.currentTarget;
+        
+        // 1. Сбрасываем все кнопки
         document.querySelectorAll('.tier-btn').forEach(b => {
             b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
             b.classList.add('border-white/10', 'bg-black/20');
         });
         
-        // Добавляем активный класс к текущей
-        e.currentTarget.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-        e.currentTarget.classList.remove('border-white/10', 'bg-black/20');
+        // 2. Активируем выбранную
+        selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
+        selectedBtn.classList.remove('border-white/10', 'bg-black/20');
         
-        // Логика отображения данных (если нужно для UI)
-        const label = e.currentTarget.dataset.label;
-        const index = e.currentTarget.dataset.index;
+        // 3. Обновляем данные
+        const label = selectedBtn.dataset.label;
+        const index = selectedBtn.dataset.index;
+        const days = parseInt(selectedBtn.dataset.tier); // Получаем количество дней из data-tier
+        
+        // Обновляем текст
         const lockupDisplay = document.getElementById('lockupDisplay');
         const poolIndexDisplay = document.getElementById('poolIndexDisplay');
-        
         if (lockupDisplay) lockupDisplay.innerText = label;
         if (poolIndexDisplay) poolIndexDisplay.innerText = `Tier ${label} (Index ${index})`;
+        
+        // 4. Обновляем индикатор прогресса (Progress Bar)
+        // Рассчитываем %: 14 дней = 20%, 365 дней = 100% (условно)
+        const progressBar = document.getElementById('lockupProgressBar');
+        if (progressBar) {
+            const percent = Math.min((days / 365) * 100, 100);
+            progressBar.style.width = percent + '%';
+        }
     });
 });
+
+
+    
 
     // --- Навигация и кнопки Collateral ---
     const backCollateral = document.getElementById('backToStakingFromCollateral');
