@@ -209,7 +209,7 @@ async function handleConfirmInitialize() {
             alert("Ошибка транзакции: " + e.message);
         }
     }
-</script>
+
 
 
 
