@@ -1,4 +1,4 @@
-
+    
 // --
 // --- 1. УТИЛИТЫ ---
 function formatBigInt(value, decimals) {
@@ -1046,111 +1046,47 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-    
-    
-           
-
-     
-
-    
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Глобальная функция переключения представлений
+    // 1. Глобальная функция переключения представлений (оставлена как была)
     window.switchView = function(viewId) {
         const views = [
-            'initStakeView', 'mainStakingView', 'collateralView', 
-            'decollateralizeView', 'depositView', 'claimView', 
-            'unstakeView', 'closeAccountView'
+            'initStakeView',
+            'mainStakingView', 
+            'collateralView', 
+            'decollateralizeView', 
+            'depositView', 
+            'claimView', 
+            'unstakeView', 
+            'closeAccountView'
         ];
+        
         views.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('hidden');
         });
+        
         const target = document.getElementById(viewId);
-        if (target) target.classList.remove('hidden');
+        if (target) {
+            target.classList.remove('hidden');
+        } else {
+            console.error("Элемент с ID " + viewId + " не найден!");
+        }
     };
 
-    // --- Интегрированная логика initStakeView ---
-    const initStakeContainer = document.getElementById('initStakeView');
-    if (initStakeContainer) {
-        // Навигация
-        const backBtn = document.getElementById('backToStakingBtn');
-        if (backBtn) backBtn.addEventListener('click', () => switchView('mainStakingView'));
-
-        const confirmBtn = document.getElementById('confirmInitBtn');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => {
-                console.log("Initialization confirmed");
-                if (typeof handleInitialize === 'function') handleInitialize();
-            });
-        }
-
-        // Логика выбора тиров
-        const tierBtns = document.querySelectorAll('.tier-btn');
-        tierBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const selectedBtn = e.currentTarget;
-                
-                // Сбрасываем все
-                tierBtns.forEach(b => {
-                    b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                    b.classList.add('border-white/10', 'bg-black/20');
-                });
-                
-                // Активируем одну
-                selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                selectedBtn.classList.remove('border-white/10', 'bg-black/20');
-                
-                // Обновление индикаторов
-                const label = selectedBtn.dataset.label;
-                const index = selectedBtn.dataset.index;
-                const days = parseInt(selectedBtn.dataset.tier);
-                
-                document.getElementById('lockupDisplay').innerText = label;
-                document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
-                
-                const progressBar = document.getElementById('lockupProgressBar');
-                if (progressBar) {
-                    progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
-                }
-            });
+    // --- Обработка событий в initStakeView ---
+    const backBtn = document.getElementById('backToStakingBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            console.log("Back to staking requested");
         });
     }
 
-   
-
-   
-    
-
-       
-
-
-
-
-    
+    const confirmBtn = document.getElementById('confirmInitBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+            console.log("Initialization confirmed");
+        });
+    }
 
     // --- Навигация и кнопки Collateral ---
     const backCollateral = document.getElementById('backToStakingFromCollateral');
@@ -1222,57 +1158,37 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-   // --- Claim ---
-const backClaim = document.getElementById('backToStakingFromClaim');
-if (backClaim) {
-    backClaim.addEventListener('click', () => switchView('mainStakingView'));
-}
-
-const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
-if (selectAllTiersBtn) {
-    selectAllTiersBtn.addEventListener('click', () => {
-        // Мы находим все кнопки тиров по классу 'tier-btn'
-        const tierButtons = document.querySelectorAll('.tier-btn');
-        
-        // Проходим по каждой кнопке от 0 до 4
-        tierButtons.forEach(btn => {
-            // Добавляем визуальное выделение
-            btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
-            
-            // Если функция toggleTier существует, вызываем её для каждой кнопки
-            if (typeof toggleTier === 'function') {
-                toggleTier(btn.dataset.index);
-            }
+    // --- Claim ---
+    const backClaim = document.getElementById('backToStakingFromClaim');
+    if (backClaim) {
+        backClaim.addEventListener('click', () => switchView('mainStakingView'));
+    }
+    
+    const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
+    if (selectAllTiersBtn) {
+        selectAllTiersBtn.addEventListener('click', () => {
+            if (typeof toggleAllTiers === 'function') toggleAllTiers();
+        });
+    }
+    
+    document.querySelectorAll('.tier-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (typeof toggleTier === 'function') toggleTier(e.currentTarget.dataset.index);
         });
     });
-}
-
-document.querySelectorAll('.tier-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        // Переключаем визуальное состояние (активен/неактивен)
-        e.currentTarget.classList.toggle('ring-2');
-        e.currentTarget.classList.toggle('ring-indigo-500');
-        e.currentTarget.classList.toggle('border-indigo-500');
-        
-        if (typeof toggleTier === 'function') {
-            toggleTier(e.currentTarget.dataset.index);
-        }
+    
+    document.querySelectorAll('.pct-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            console.log("Setting %:", e.currentTarget.dataset.pct);
+        });
     });
-});
-
-document.querySelectorAll('.pct-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        console.log("Setting %:", e.currentTarget.dataset.pct);
-    });
-});
-
-const executeClaimBtn = document.getElementById('executeClaimBtn');
-if (executeClaimBtn) {
-    executeClaimBtn.addEventListener('click', () => {
-        if (typeof executeClaimRewards === 'function') executeClaimRewards();
-    });
-}
-
+    
+    const executeClaimBtn = document.getElementById('executeClaimBtn');
+    if (executeClaimBtn) {
+        executeClaimBtn.addEventListener('click', () => {
+            if (typeof executeClaimRewards === 'function') executeClaimRewards();
+        });
+    }
 
     // --- Unstake ---
     const backUnstake = document.getElementById('backToStakingFromUnstake');
@@ -1357,71 +1273,6 @@ if (executeClaimBtn) {
         connectBtn.addEventListener('click', () => modal.classList.remove('hidden'));
     }
 });
-
-
-
-это ты мне дал как я должен правильно делать 
-
-
-
-// --- Полная логика для initStakeView ---
-function updateInitStakeLogic() {
-    // 1. Навигация "Назад"
-    const backBtn = document.getElementById('backToStakingBtn');
-    if (backBtn) {
-        backBtn.onclick = () => switchView('mainStakingView');
-    }
-
-    // 2. Кнопка подтверждения
-    const confirmBtn = document.getElementById('confirmInitBtn');
-    if (confirmBtn) {
-        confirmBtn.onclick = () => {
-            console.log("Initialization confirmed");
-            if (typeof handleInitialize === 'function') handleInitialize();
-        };
-    }
-
-    // 3. Логика выбора тиров (динамическое обновление индикаторов)
-    const tierBtns = document.querySelectorAll('.tier-btn');
-    tierBtns.forEach(btn => {
-        btn.onclick = (e) => {
-            const selectedBtn = e.currentTarget;
-            
-            // Сбрасываем стили всех кнопок
-            tierBtns.forEach(b => {
-                b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                b.classList.add('border-white/10', 'bg-black/20');
-            });
-            
-            // Добавляем активный стиль выбранной
-            selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-            selectedBtn.classList.remove('border-white/10', 'bg-black/20');
-            
-            // Данные
-            const label = selectedBtn.getAttribute('data-label');
-            const index = selectedBtn.getAttribute('data-index');
-            const days = parseInt(selectedBtn.getAttribute('data-tier'));
-            
-            // Обновляем текст
-            const lockupDisplay = document.getElementById('lockupDisplay');
-            const poolIndexDisplay = document.getElementById('poolIndexDisplay');
-            if (lockupDisplay) lockupDisplay.innerText = label;
-            if (poolIndexDisplay) poolIndexDisplay.innerText = `Tier ${label} (Index ${index})`;
-            
-            // Обновляем прогресс-бар
-            const progressBar = document.getElementById('lockupProgressBar');
-            if (progressBar) {
-                const percent = Math.min((days / 365) * 100, 100);
-                progressBar.style.width = percent + '%';
-            }
-        };
-    });
-}
-
-// Запускаем инициализацию
-updateInitStakeLogic();
-
-
 
 
 
