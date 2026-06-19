@@ -1078,20 +1078,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Обработка событий в initStakeView ---
     const backBtn = document.getElementById('backToStakingBtn');
-if (backBtn) {
-    backBtn.addEventListener('click', () => {
-        switchView('mainStakingView'); 
-    });
-}
-
-    
-
-    const initializeBtn = document.getElementById('initializeBtn');
-    if (initializeBtn) {
-        confirmBtn.addEventListener('click', () => {
-            console.log("Initialization confirmed");
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            switchView('mainStakingView');
         });
     }
+    
+
+    const confirmInitBtn = document.getElementById('confirmInitBtn');
+    if (confirmInitBtn) {
+        confirmInitBtn.addEventListener('click', () => {
+            if (typeof handleInitializeStake === 'function') {
+                handleInitializeStake();
+            } else {
+                console.error("Функция handleInitializeStake не найдена!");
+            }
+        });
+    }
+
+    
 
     // --- Навигация и кнопки Collateral ---
     const backCollateral = document.getElementById('backToStakingFromCollateral');
