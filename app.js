@@ -179,21 +179,37 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
 
 // 2. Функция подтверждения (которую мы писали ранее для транзакции)
 async function handleConfirmInitialize() {
-    const activeBtn = document.querySelector('.tier-btn.active-tier');
-    if (!activeBtn) {
-        alert("Выберите тир!");
-        return;
-    }
-    const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
-    
-    // Вызываем твой проверенный метод из SDK
-    try {
-        await window.performInitializeUserStake(POOL_STATE_PUBKEY, poolIndex);
-    } catch (e) {
-        console.error("Ошибка:", e);
-    }
-}
+        console.log("🔍 Нажата кнопка инициализации...");
+        
+        // Находим активный тир
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        if (!activeBtn) {
+            alert("⚠️ Пожалуйста, выберите тир (Commitment Tier)!");
+            return;
+        }
 
+        const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
+        
+        // Проверка наличия переменных перед вызовом
+        if (typeof POOL_STATE_PUBKEY === 'undefined') {
+            console.error("Ошибка: POOL_STATE_PUBKEY не определен");
+            alert("Ошибка конфигурации: Пул не найден.");
+            return;
+        }
+
+        try {
+            console.log(`🚀 Вызов performInitializeUserStake с индексом: ${poolIndex}`);
+            
+            // Вызов метода SDK
+            await window.performInitializeUserStake(POOL_STATE_PUBKEY, poolIndex);
+            
+            alert("✅ Инициализация успешна!");
+        } catch (e) {
+            console.error("❌ Ошибка инициализации:", e);
+            alert("Ошибка транзакции: " + e.message);
+        }
+    }
+</script>
 
 
 
