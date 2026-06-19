@@ -9,17 +9,21 @@
     <title>QUBIT (QBT): DAO, Staking & Lending</title>
 
 
-<meta http-equiv="Content-Security-Policy" content="
-    default-src 'none';
-    script-src 'self';
-    style-src 'self' https://fonts.googleapis.com;
-    font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data:;
-    connect-src 'self' https://api.mainnet-beta.solana.com;
-    frame-ancestors 'none';
-    base-uri 'self';
-    form-action 'self';
-">
+
+
+
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'none';
+        script-src 'self' https://trusted.cdn.com; 
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data: https://images.example.com;
+        connect-src 'self' https://api.mainnet-beta.solana.com https://api.analytics.com;
+        frame-ancestors 'none';
+        base-uri 'self';
+        form-action 'self';
+    ">
+
 
     
     <script>
