@@ -1086,7 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
     
     
-          // --- Интегрированная логика initStakeView ---
+            // --- Интегрированная логика initStakeView ---
     const initStakeContainer = document.getElementById('initStakeView');
     if (initStakeContainer) {
         // Навигация
@@ -1110,9 +1110,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Проверяем, нажата ли уже эта кнопка
                 const isAlreadyActive = selectedBtn.classList.contains('active-tier');
                 
-                // Сбрасываем все кнопки в исходное "чистое" состояние (border-white/10, bg-black/20)
+                // Сбрасываем все кнопки в «чистое» нейтральное состояние
                 tierBtns.forEach(b => {
+                    // Убираем все активные стили
                     b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
+                    // Убираем специфические цветные рамки, если они есть (например, border-green-500 и т.д.)
+                    // Добавляем нейтральные классы
                     b.classList.add('border-white/10', 'bg-black/20');
                 });
                 
@@ -1133,8 +1136,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
                     }
                 } else {
-                    // Если кнопка была активна, мы её уже сбросили циклом выше.
-                    // Теперь просто обновляем индикаторы в состояние «ничего не выбрано».
+                    // Если мы деактивировали кнопку, она уже стала «чистой» (серой) благодаря циклу выше.
+                    // Теперь просто очищаем индикаторы.
                     const lockupDisplay = document.getElementById('lockupDisplay');
                     const poolIndexDisplay = document.getElementById('poolIndexDisplay');
                     const progressBar = document.getElementById('lockupProgressBar');
@@ -1148,6 +1151,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+    }
+
     }
 
 
