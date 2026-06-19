@@ -1162,13 +1162,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (backClaim) {
         backClaim.addEventListener('click', () => switchView('mainStakingView'));
     }
-    
+
     const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
     if (selectAllTiersBtn) {
         selectAllTiersBtn.addEventListener('click', () => {
-            if (typeof toggleAllTiers === 'function') toggleAllTiers();
+            // Находим все кнопки тиров
+            const tierButtons = document.querySelectorAll('.tier-btn');
+            tierButtons.forEach(btn => {
+                // Вызываем вашу существующую функцию toggleTier для каждого индекса.
+                // Это лучший способ, так как логика выбора уже описана в toggleTier, 
+                // и нам не нужно дублировать её здесь.
+                if (typeof toggleTier === 'function') {
+                    toggleTier(btn.dataset.index);
+                }
+            });
         });
     }
+    
     
     document.querySelectorAll('.tier-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
