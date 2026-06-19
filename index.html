@@ -8,8 +8,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QUBIT (QBT): DAO, Staking & Lending</title>
 
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';">
 
+<meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self';
+    style-src 'self' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data:;
+    connect-src 'self' https://api.mainnet-beta.solana.com;
+    frame-ancestors 'none';
+    base-uri 'self';
+    form-action 'self';
+">
+
+    
     <script>
         window.global = window;
         window.process = { env: {} };
