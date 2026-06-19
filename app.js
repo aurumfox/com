@@ -1,4 +1,5 @@
 
+
 // --
 // --- 1. УТИЛИТЫ ---
 function formatBigInt(value, decimals) {
@@ -176,9 +177,8 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
         throw e;
     }
 };
-
-// 2. Функция подтверждения (которую мы писали ранее для транзакции)
-* БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
+/**
+ * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
  * Вызывается напрямую из атрибута onclick="handleConfirmInitialize()" в твоем HTML
  */
 // 1. Функция навигации (чтобы кнопка в меню "заходила" на экран)
@@ -211,8 +211,6 @@ async function handleConfirmInitialize() {
         console.error("Ошибка:", e);
     }
 }
-
-
 
 
 
@@ -1049,26 +1047,6 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
 
 
-
-      
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Глобальная функция переключения представлений (оставлена как была)
     window.switchView = function(viewId) {
@@ -1283,7 +1261,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    
+    // --- Wallet Modal ---
+    const modal = document.getElementById('walletModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const connectBtn = document.getElementById('connectWalletBtn');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    }
+
+    if (connectBtn) {
+        connectBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1470,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+            
             
 
 
