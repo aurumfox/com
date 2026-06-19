@@ -1074,16 +1074,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Обработка событий в initStakeView ---
-    const backBtn = document.getElementById('backToStakingbackBtn');
-    if (backBtn) {
-        backBtn.addEventListener('click', () => switchView('mainStakingView'));
+    const initStakeView = document.getElementById('backToStaking');
+    if (initStakeView) {
+        initStakeView.addEventListener('click', () => switchView('mainStakingView'));
     }
     
     
 
-    const confirmBtn = document.getElementById('confirmInitBtn');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', () => {
+    const initStakeView = document.getElementById('confirminitStakeView');
+    if (confirminitStakeView) {
+        confirminitStakeView.addEventListener('click', () => {
             console.log("Initialization confirmed");
         });
     }
