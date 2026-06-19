@@ -1163,17 +1163,17 @@ document.addEventListener('DOMContentLoaded', () => {
         backClaim.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-        const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
+       const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
     if (selectAllTiersBtn) {
         selectAllTiersBtn.addEventListener('click', () => {
+            // Мы находим все кнопки тиров по классу 'tier-btn' (они у вас есть в HTML)
             const tierButtons = document.querySelectorAll('.tier-btn');
             
+            // Проходим по каждой кнопке от 0 до 4
             tierButtons.forEach(btn => {
-                // ПРОВЕРКА: если кнопка еще не выбрана, тогда нажимаем на неё
-                // Вам нужно понять, какой класс у кнопки, когда она выбрана.
-                // Допустим, это класс 'border-indigo-500' или 'active'. 
-                // Замените 'border-indigo-500' на реальный класс, который появляется при выборе.
-                if (!btn.classList.contains('border-indigo-500')) {
+                // Если функция toggleTier существует, вызываем её для каждой кнопки
+                // Мы передаем индекс (dataset.index), который уже есть в ваших кнопках
+                if (typeof toggleTier === 'function') {
                     toggleTier(btn.dataset.index);
                 }
             });
