@@ -1627,7 +1627,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   
-        // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
+
+       
+   // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
 const walletBtn = document.getElementById('connectWalletBtn');
 const walletModal = document.getElementById('walletModal'); 
 const walletList = document.getElementById('walletList');
@@ -1780,6 +1782,4 @@ setTimeout(async () => {
             } catch (e) { console.log("Auto-connect trust-check skipped."); }
         }
     }
-}, 1000);
-
-};
+}, 1000); // <-- Добавлена закрывающая скобка и точка с запятой
