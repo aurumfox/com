@@ -1683,7 +1683,7 @@ const scanForWallets = () => {
 const triggerDeepLink = () => {
     const url = window.location.href;
     const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
-    showNotification("Opening Wallet App...", "emerald");
+    showNotification("Opening Wallet App...", "emerald", walletBtn);
     window.location.href = phantomDeepLink;
 };
 
@@ -1712,7 +1712,7 @@ if (walletBtn) {
                 await currentProvider.disconnect(); 
                 currentProvider = null;
                 updateUI(null);
-                showNotification("Wallet Disconnected", "red");
+                showNotification("Wallet Disconnected", "red", walletBtn);
             } catch (err) { console.error(err); }
             finally {
                 isManualDisconnect = false;
@@ -1758,22 +1758,22 @@ async function connectWallet(wallet) {
         const resp = await currentProvider.connect();
         const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
         updateUI(publicKey);
-        showNotification(`${wallet.name} Connected!`);
+        showNotification(`${wallet.name} Connected!`, "emerald", walletBtn);
         
-        // Исправление: скрываем модальное окно после успешного подключения
         if (walletModal) walletModal.classList.add('hidden');
+        window.focus(); 
         
         currentProvider.removeAllListeners?.('disconnect');
         currentProvider.on('disconnect', () => {
             if (!isManualDisconnect) {
                 currentProvider = null;
                 updateUI(null);
-                showNotification("Disconnected by wallet", "red");
+                showNotification("Disconnected by wallet", "red", walletBtn);
             }
         });
     } catch (err) {
         console.error("Connection Error:", err);
-        showNotification("Connection Failed", "red");
+        showNotification("Connection Failed", "red", walletBtn);
     }
 }
 
@@ -1793,3 +1793,5 @@ setTimeout(async () => {
         }
     }
 }, 1000);
+ 
+        
