@@ -1304,7 +1304,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const decollateralizeInput = document.getElementById('decollateralizeAmountInput');
     const maxAmountDisplay = document.getElementById('maxAvailableAmount');
     const safetyWarning = document.getElementById('safetyWarning');
-    const pctButtons = document.querySelectorAll('#decollateralizeView .pct-btn');
+    const decollateralizePctButtons = document.querySelectorAll('#decollateralizeView .pct-btn');
 
     pctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
