@@ -1106,16 +1106,24 @@ window.showNotification = function(message, type = "emerald") {
 
 
 // ВЫНЕСЕНО ИЗ DOMContentLoaded В ГЛОБАЛЬНУЮ ОБЛАСТЬ
-window.switchView = function(viewId) {
+window.switchView = function(viewId, event) {
+    // Безопасная проверка: если event есть, предотвращаем перезагрузку
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     const views = [
         'initStakeView', 'mainStakingView', 'collateralView', 
         'decollateralizeView', 'depositView', 'claimView', 
         'unstakeView', 'closeAccountView'
     ];
+    
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
     });
+    
     const target = document.getElementById(viewId);
     if (target) {
         target.classList.remove('hidden');
@@ -1123,6 +1131,7 @@ window.switchView = function(viewId) {
         console.error("View not found:", viewId);
     }
 };
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // ... остальной ваш код ...
