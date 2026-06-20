@@ -1355,7 +1355,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 
-        // --- Депозит ---
+   
+            // --- Депозит ---
     const backDeposit = document.getElementById('backToStakingFromDeposit');
     if (backDeposit) {
         backDeposit.addEventListener('click', () => switchView('mainStakingView'));
@@ -1365,8 +1366,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const depositInput = document.getElementById('depositInput');
     const depositPctButtons = document.querySelectorAll('.deposit-pct-btn');
     
-    // Пример баланса (замени на свою реальную переменную)
-    const walletBalance = 5000.00; 
+    // Исправлено: вместо жесткого const, используем динамический доступ к глобальному состоянию
+    // Убедитесь, что объект window.appState обновляется после подключения кошелька
+    const getWalletBalance = () => (window.appState && window.appState.walletBalance) ? parseFloat(window.appState.walletBalance) : 0.00;
 
     depositPctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1380,16 +1382,18 @@ document.addEventListener('DOMContentLoaded', () => {
             e.currentTarget.classList.remove('bg-white/5', 'border-white/5');
             e.currentTarget.classList.add('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
 
-            // 3. Расчет суммы
+            // 3. Расчет суммы (используем функцию для получения актуального баланса)
             const pct = parseFloat(e.currentTarget.dataset.pct);
+            const currentBalance = getWalletBalance();
+            
             if (depositInput) {
-                const calculatedValue = (walletBalance * pct).toFixed(2);
+                const calculatedValue = (currentBalance * pct).toFixed(2);
                 depositInput.value = calculatedValue;
             }
 
             // Вызов внешней функции, если она есть
             if (typeof setDepositAmount === 'function') setDepositAmount(pct);
-            console.log("Deposit % selected:", pct);
+            console.log("Deposit % selected:", pct, "Balance used:", currentBalance);
         });
     });
 
@@ -1400,6 +1404,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof handleDeposit === 'function') handleDeposit();
         });
     }
+
 
 
 
