@@ -1387,25 +1387,58 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
 
-    // --- Unstake ---
+       // --- Unstake ---
     const backUnstake = document.getElementById('backToStakingFromUnstake');
     if (backUnstake) {
         backUnstake.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-    document.querySelectorAll('.unstake-pct-btn').forEach(btn => {
+    // Управление кнопками процентов и полем ввода
+    const unstakeInput = document.getElementById('unstakeAmountInput');
+    const unstakePctButtons = document.querySelectorAll('.unstake-pct-btn');
+    const liquidityAlert = document.getElementById('liquidityAlert');
+
+    unstakePctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            // 1. Сброс стилей всех кнопок
+            unstakePctButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/5');
+            });
+
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+
+            // 3. Расчет суммы (логика процента)
             const pct = parseFloat(e.currentTarget.dataset.pct);
+            
+            // Если выбрано 100% (MAX), показываем алерт ликвидности
+            if (liquidityAlert) {
+                if (pct === 1.00) {
+                    liquidityAlert.classList.remove('hidden');
+                } else {
+                    liquidityAlert.classList.add('hidden');
+                }
+            }
+
+            // Вызов внешней функции
             if (typeof setUnstakeAmount === 'function') setUnstakeAmount(pct);
+            console.log("Unstake % selected:", pct);
         });
     });
 
     const executeUnstakeBtn = document.getElementById('executeUnstakeBtn');
     if (executeUnstakeBtn) {
         executeUnstakeBtn.addEventListener('click', () => {
+            console.log("Executing unstake amount:", unstakeInput ? unstakeInput.value : "0");
             if (typeof handleUnstake === 'function') handleUnstake();
         });
     }
+
+
+
+    
 
     // --- Close Account ---
     const backClose = document.getElementById('backToStakingFromClose');
