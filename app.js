@@ -1090,8 +1090,10 @@ window.showNotification = function(message, type = "emerald") {
 };
 
 
+
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Глобальная функция переключения представлений
+    // 1. Глобальная функция переключения
     window.switchView = function(viewId) {
         const views = [
             'initStakeView', 'mainStakingView', 'collateralView', 
@@ -1103,13 +1105,46 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.classList.add('hidden');
         });
         const target = document.getElementById(viewId);
-        if (target) target.classList.remove('hidden');
+        if (target) {
+            target.classList.remove('hidden');
+        } else {
+            console.error("View not found:", viewId);
+        }
     };
 
-    
+    // --- УНИВЕРСАЛЬНАЯ ЛОГИКА НАВИГАЦИИ ---
+    // Убедитесь, что ID кнопок в HTML совпадают с этими (например, backToStakingBtn)
+    const backButtons = {
+        'backToStakingBtn': 'mainStakingView',
+        'backToStakingFromCollateral': 'mainStakingView',
+        'backToStakingFromDecollateralize': 'mainStakingView',
+        'backToStakingFromDeposit': 'mainStakingView',
+        'backToStakingFromClaim': 'mainStakingView',
+        'backToStakingFromUnstake': 'mainStakingView',
+        'backToStakingFromClose': 'mainStakingView'
+    };
 
- 
-    
+    Object.keys(backButtons).forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', () => switchView(backButtons[btnId]));
+        }
+    });
+
+    // --- ЛОГИКА ТИРОВ (InitStake) ---
+    const tierSelector = document.getElementById('tierSelector');
+    if (tierSelector) {
+        const tierBtns = tierSelector.querySelectorAll('.tier-btn');
+        tierBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tierBtns.forEach(b => b.classList.remove('active-tier', 'border-blue-500'));
+                e.currentTarget.classList.add('active-tier', 'border-blue-500');
+                // ... ваш код обновления UI
+            });
+        });
+    }
+
+
 
 
     // --- Интегрированная логика initStakeView ---
