@@ -1626,7 +1626,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
+  
+        // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
 const walletBtn = document.getElementById('connectWalletBtn');
 const walletModal = document.getElementById('walletModal'); 
 const walletList = document.getElementById('walletList');
@@ -1780,4 +1781,3 @@ setTimeout(async () => {
         }
     }
 }, 1000);
-
