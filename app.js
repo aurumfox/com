@@ -1108,7 +1108,7 @@ window.showNotification = function(message, type = "emerald") {
 // ВЫНЕСЕНО ИЗ DOMContentLoaded В ГЛОБАЛЬНУЮ ОБЛАСТЬ
 window.switchView = function(viewId) {
     const views = [
-        'initStakeView', 'mainStakingView', 'collateralView', 
+        'initStakeView',  'collateralView', 
         'decollateralizeView', 'depositView', 'claimView', 
         'unstakeView', 'closeAccountView'
     ];
