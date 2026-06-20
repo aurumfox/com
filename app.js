@@ -1313,56 +1313,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     
-   // --- Claim ---
-const backClaim = document.getElementById('backToStakingFromClaim');
-if (backClaim) {
-    backClaim.addEventListener('click', () => switchView('mainStakingView'));
-}
+    // --- Claim ---
+    const backClaim = document.getElementById('backToStakingFromClaim');
+    if (backClaim) {
+        backClaim.addEventListener('click', () => switchView('mainStakingView'));
+    }
 
-const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
-if (selectAllTiersBtn) {
-    selectAllTiersBtn.addEventListener('click', () => {
-        // Мы находим все кнопки тиров по классу 'tier-btn'
-        const tierButtons = document.querySelectorAll('.tier-btn');
-        
-        // Проходим по каждой кнопке от 0 до 4
-        tierButtons.forEach(btn => {
-            // Добавляем визуальное выделение
-            btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
+    // Логика выбора тиров
+    const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
+    if (selectAllTiersBtn) {
+        selectAllTiersBtn.addEventListener('click', () => {
+            const tierButtons = document.querySelectorAll('.tier-btn');
+            tierButtons.forEach(btn => {
+                btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
+                if (typeof toggleTier === 'function') toggleTier(btn.dataset.index);
+            });
+        });
+    }
+
+    document.querySelectorAll('.tier-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('ring-2');
+            e.currentTarget.classList.toggle('ring-indigo-500');
+            e.currentTarget.classList.toggle('border-indigo-500');
             
-            // Если функция toggleTier существует, вызываем её для каждой кнопки
             if (typeof toggleTier === 'function') {
-                toggleTier(btn.dataset.index);
+                toggleTier(e.currentTarget.dataset.index);
             }
         });
     });
-}
 
-document.querySelectorAll('.tier-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        // Переключаем визуальное состояние (активен/неактивен)
-        e.currentTarget.classList.toggle('ring-2');
-        e.currentTarget.classList.toggle('ring-indigo-500');
-        e.currentTarget.classList.toggle('border-indigo-500');
-        
-        if (typeof toggleTier === 'function') {
-            toggleTier(e.currentTarget.dataset.index);
-        }
-    });
-});
+    // Логика процентов (%) и поля ввода
+    const claimInput = document.getElementById('claimAmountInput');
+    const totalYield = 125.75; // Значение из твоего HTML
+    const pctButtons = document.querySelectorAll('.pct-btn');
 
-document.querySelectorAll('.pct-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        console.log("Setting %:", e.currentTarget.dataset.pct);
-    });
-});
+    pctButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // 1. Сброс стилей всех кнопок процентов
+            pctButtons.forEach(b => {
+                b.classList.remove('bg-indigo-500/20', 'text-indigo-400');
+                b.classList.add('bg-white/5');
+            });
 
-const executeClaimBtn = document.getElementById('executeClaimBtn');
-if (executeClaimBtn) {
-    executeClaimBtn.addEventListener('click', () => {
-        if (typeof executeClaimRewards === 'function') executeClaimRewards();
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-indigo-500/20', 'text-indigo-400');
+
+            // 3. Расчет суммы
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (claimInput) {
+                const calculatedValue = (totalYield * pct).toFixed(2);
+                claimInput.value = calculatedValue;
+            }
+            console.log("Setting %:", pct);
+        });
     });
-}
+
+    const executeClaimBtn = document.getElementById('executeClaimBtn');
+    if (executeClaimBtn) {
+        executeClaimBtn.addEventListener('click', () => {
+            console.log("Executing claim for amount:", claimInput ? claimInput.value : "0");
+            if (typeof executeClaimRewards === 'function') executeClaimRewards();
+        });
+    }
+
+
+
+
+
+
+
+    
 
 
     // --- Unstake ---
