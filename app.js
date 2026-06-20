@@ -1412,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     
-    // --- Claim ---
+        // --- Claim ---
     const backClaim = document.getElementById('backToStakingFromClaim');
     if (backClaim) {
         backClaim.addEventListener('click', () => switchView('mainStakingView'));
@@ -1445,12 +1445,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Логика процентов (%) и поля ввода
     const claimInput = document.getElementById('claimAmountInput');
     const totalYield = 125.75; // Значение из твоего HTML
-    const pctButtons = document.querySelectorAll('.claim-pct-btn');
+    // Переименовано в claimPctButtons для исключения конфликта имен
+    const claimPctButtons = document.querySelectorAll('.claim-pct-btn');
 
-    pctButtons.forEach(btn => {
+    claimPctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
             // 1. Сброс стилей всех кнопок процентов
-            pctButtons.forEach(b => {
+            claimPctButtons.forEach(b => {
                 b.classList.remove('bg-indigo-500/20', 'text-indigo-400');
                 b.classList.add('bg-white/5');
             });
@@ -1476,6 +1477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof executeClaimRewards === 'function') executeClaimRewards();
         });
     }
+
 
 
 
