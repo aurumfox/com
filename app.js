@@ -1066,6 +1066,19 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
     
 
 
+
+        
+
+   
+
+   
+
+   
+    
+
+       
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Глобальная функция переключения представлений
     window.switchView = function(viewId) {
@@ -1081,6 +1094,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = document.getElementById(viewId);
         if (target) target.classList.remove('hidden');
     };
+
+    
+
+ 
+    
+
 
     // --- Интегрированная логика initStakeView ---
     const initStakeContainer = document.getElementById('initStakeView');
@@ -1143,45 +1162,122 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 
-    // --- Навигация и кнопки Collateral ---
+           // --- Навигация и логика Collateral ---
     const backCollateral = document.getElementById('backToStakingFromCollateral');
     if (backCollateral) {
         backCollateral.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-    document.querySelectorAll('.hf-btn').forEach(btn => {
+    // 1. Управление выбором Health Factor (HF)
+    const hfButtons = document.querySelectorAll('.hf-btn');
+    hfButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const val = e.currentTarget.dataset.value;
-            console.log("Selected HF:", val);
+            // Сначала сбрасываем стили у всех кнопок HF
+            hfButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/10');
+            });
+            
+            // Добавляем синий стиль выбранной кнопке
+            e.currentTarget.classList.remove('bg-white/10');
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+            
+            console.log("Selected HF:", e.currentTarget.dataset.value);
         });
     });
 
-    document.querySelectorAll('.pct-btn').forEach(btn => {
+    // 2. Управление процентами (%) и полем ввода
+    const collateralInput = document.getElementById('collateralAmountInput');
+    const walletBalance = 5000.00; // Пример баланса
+
+    const pctButtons = document.querySelectorAll('.pct-btn');
+    pctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const pct = e.currentTarget.dataset.pct;
+            // Сбрасываем стили у всех кнопок процентов (25, 50, 75, MAX)
+            pctButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/5');
+            });
+
+            // Добавляем синий стиль выбранной кнопке
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (collateralInput) {
+                const calculatedValue = (walletBalance * (pct / 100)).toFixed(2);
+                collateralInput.value = calculatedValue;
+            }
             console.log("Selected %:", pct);
         });
     });
 
+    // 3. Обработка кнопок действий
     const claimRewardsBtn = document.getElementById('claimRewardsBtn');
     if (claimRewardsBtn) {
-        claimRewardsBtn.addEventListener('click', () => console.log("Claiming rewards..."));
+        claimRewardsBtn.addEventListener('click', () => {
+            console.log("Claiming all rewards...");
+        });
     }
 
     const adjustCollateralBtn = document.getElementById('adjustCollateralBtn');
     if (adjustCollateralBtn) {
-        adjustCollateralBtn.addEventListener('click', () => console.log("Adjusting collateral..."));
+        adjustCollateralBtn.addEventListener('click', () => {
+            const amount = collateralInput.value;
+            console.log("Adjusting collateral to:", amount);
+        });
     }
 
-    // --- Деколлатерализация ---
+
+
+
+
+
+    
+
+      // --- Деколлатерализация ---
     const backDecollateral = document.getElementById('backToStakingFromDecollateralize');
     if (backDecollateral) {
         backDecollateral.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-    document.querySelectorAll('.pct-btn').forEach(btn => {
+    // Логика управления процентами и визуалом
+    const decollateralizeInput = document.getElementById('decollateralizeAmountInput');
+    const maxAmountDisplay = document.getElementById('maxAvailableAmount');
+    const safetyWarning = document.getElementById('safetyWarning');
+    const pctButtons = document.querySelectorAll('#decollateralizeView .pct-btn');
+
+    pctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const pct = e.currentTarget.dataset.pct;
+            // 1. Сброс стилей всех кнопок процентов
+            pctButtons.forEach(b => {
+                b.classList.remove('bg-emerald-500/20', 'text-emerald-400');
+                b.classList.add('bg-white/5');
+            });
+
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-emerald-500/20', 'text-emerald-400');
+
+            // 3. Расчет суммы
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            const maxVal = parseFloat(maxAmountDisplay.innerText);
+            
+            if (decollateralizeInput) {
+                const calculatedValue = (maxVal * pct).toFixed(2);
+                decollateralizeInput.value = calculatedValue;
+            }
+
+            // 4. Показ предупреждения только при MAX (100%)
+            if (safetyWarning) {
+                if (pct === 1.00) {
+                    safetyWarning.classList.remove('hidden');
+                } else {
+                    safetyWarning.classList.add('hidden');
+                }
+            }
+
+            // Вызов внешней функции, если она есть
             if (typeof setAmount === 'function') setAmount(pct);
         });
     });
@@ -1193,110 +1289,216 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Депозит ---
+
+
+
+
+
+    
+
+        // --- Депозит ---
     const backDeposit = document.getElementById('backToStakingFromDeposit');
     if (backDeposit) {
         backDeposit.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-    document.querySelectorAll('.deposit-pct-btn').forEach(btn => {
+    // Управление кнопками процентов и полем ввода
+    const depositInput = document.getElementById('depositInput');
+    const depositPctButtons = document.querySelectorAll('.deposit-pct-btn');
+    
+    // Пример баланса (замени на свою реальную переменную)
+    const walletBalance = 5000.00; 
+
+    depositPctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const pct = e.currentTarget.dataset.pct;
+            // 1. Сбрасываем стили всех кнопок
+            depositPctButtons.forEach(b => {
+                b.classList.remove('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
+                b.classList.add('bg-white/5', 'border-white/5');
+            });
+
+            // 2. Подсвечиваем активную кнопку
+            e.currentTarget.classList.remove('bg-white/5', 'border-white/5');
+            e.currentTarget.classList.add('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
+
+            // 3. Расчет суммы
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (depositInput) {
+                const calculatedValue = (walletBalance * pct).toFixed(2);
+                depositInput.value = calculatedValue;
+            }
+
+            // Вызов внешней функции, если она есть
             if (typeof setDepositAmount === 'function') setDepositAmount(pct);
+            console.log("Deposit % selected:", pct);
         });
     });
 
     const confirmDepositBtn = document.getElementById('confirmDepositBtn');
     if (confirmDepositBtn) {
         confirmDepositBtn.addEventListener('click', () => {
+            console.log("Confirming deposit amount:", depositInput ? depositInput.value : "0");
             if (typeof handleDeposit === 'function') handleDeposit();
         });
     }
 
-   // --- Claim ---
-const backClaim = document.getElementById('backToStakingFromClaim');
-if (backClaim) {
-    backClaim.addEventListener('click', () => switchView('mainStakingView'));
-}
 
-const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
-if (selectAllTiersBtn) {
-    selectAllTiersBtn.addEventListener('click', () => {
-        // Мы находим все кнопки тиров по классу 'tier-btn'
-        const tierButtons = document.querySelectorAll('.tier-btn');
-        
-        // Проходим по каждой кнопке от 0 до 4
-        tierButtons.forEach(btn => {
-            // Добавляем визуальное выделение
-            btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
+
+
+
+
+    
+    // --- Claim ---
+    const backClaim = document.getElementById('backToStakingFromClaim');
+    if (backClaim) {
+        backClaim.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    // Логика выбора тиров
+    const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
+    if (selectAllTiersBtn) {
+        selectAllTiersBtn.addEventListener('click', () => {
+            const tierButtons = document.querySelectorAll('.tier-btn');
+            tierButtons.forEach(btn => {
+                btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
+                if (typeof toggleTier === 'function') toggleTier(btn.dataset.index);
+            });
+        });
+    }
+
+    document.querySelectorAll('.tier-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('ring-2');
+            e.currentTarget.classList.toggle('ring-indigo-500');
+            e.currentTarget.classList.toggle('border-indigo-500');
             
-            // Если функция toggleTier существует, вызываем её для каждой кнопки
             if (typeof toggleTier === 'function') {
-                toggleTier(btn.dataset.index);
+                toggleTier(e.currentTarget.dataset.index);
             }
         });
     });
-}
 
-document.querySelectorAll('.tier-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        // Переключаем визуальное состояние (активен/неактивен)
-        e.currentTarget.classList.toggle('ring-2');
-        e.currentTarget.classList.toggle('ring-indigo-500');
-        e.currentTarget.classList.toggle('border-indigo-500');
-        
-        if (typeof toggleTier === 'function') {
-            toggleTier(e.currentTarget.dataset.index);
-        }
+    // Логика процентов (%) и поля ввода
+    const claimInput = document.getElementById('claimAmountInput');
+    const totalYield = 125.75; // Значение из твоего HTML
+    const pctButtons = document.querySelectorAll('.pct-btn');
+
+    pctButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // 1. Сброс стилей всех кнопок процентов
+            pctButtons.forEach(b => {
+                b.classList.remove('bg-indigo-500/20', 'text-indigo-400');
+                b.classList.add('bg-white/5');
+            });
+
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-indigo-500/20', 'text-indigo-400');
+
+            // 3. Расчет суммы
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (claimInput) {
+                const calculatedValue = (totalYield * pct).toFixed(2);
+                claimInput.value = calculatedValue;
+            }
+            console.log("Setting %:", pct);
+        });
     });
-});
 
-document.querySelectorAll('.pct-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        console.log("Setting %:", e.currentTarget.dataset.pct);
-    });
-});
-
-const executeClaimBtn = document.getElementById('executeClaimBtn');
-if (executeClaimBtn) {
-    executeClaimBtn.addEventListener('click', () => {
-        if (typeof executeClaimRewards === 'function') executeClaimRewards();
-    });
-}
+    const executeClaimBtn = document.getElementById('executeClaimBtn');
+    if (executeClaimBtn) {
+        executeClaimBtn.addEventListener('click', () => {
+            console.log("Executing claim for amount:", claimInput ? claimInput.value : "0");
+            if (typeof executeClaimRewards === 'function') executeClaimRewards();
+        });
+    }
 
 
-    // --- Unstake ---
+
+
+
+
+
+    
+
+
+       // --- Unstake ---
     const backUnstake = document.getElementById('backToStakingFromUnstake');
     if (backUnstake) {
         backUnstake.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-    document.querySelectorAll('.unstake-pct-btn').forEach(btn => {
+    // Управление кнопками процентов и полем ввода
+    const unstakeInput = document.getElementById('unstakeAmountInput');
+    const unstakePctButtons = document.querySelectorAll('.unstake-pct-btn');
+    const liquidityAlert = document.getElementById('liquidityAlert');
+
+    unstakePctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            // 1. Сброс стилей всех кнопок
+            unstakePctButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/5');
+            });
+
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+
+            // 3. Расчет суммы (логика процента)
             const pct = parseFloat(e.currentTarget.dataset.pct);
+            
+            // Если выбрано 100% (MAX), показываем алерт ликвидности
+            if (liquidityAlert) {
+                if (pct === 1.00) {
+                    liquidityAlert.classList.remove('hidden');
+                } else {
+                    liquidityAlert.classList.add('hidden');
+                }
+            }
+
+            // Вызов внешней функции
             if (typeof setUnstakeAmount === 'function') setUnstakeAmount(pct);
+            console.log("Unstake % selected:", pct);
         });
     });
 
     const executeUnstakeBtn = document.getElementById('executeUnstakeBtn');
     if (executeUnstakeBtn) {
         executeUnstakeBtn.addEventListener('click', () => {
+            console.log("Executing unstake amount:", unstakeInput ? unstakeInput.value : "0");
             if (typeof handleUnstake === 'function') handleUnstake();
         });
     }
 
-    // --- Close Account ---
+
+
+    
+
+        // --- Close Account ---
+    // Навигация назад к главному экрану
     const backClose = document.getElementById('backToStakingFromClose');
     if (backClose) {
         backClose.addEventListener('click', () => switchView('mainStakingView'));
     }
 
+    // Подтверждение перманентного закрытия аккаунта
     const confirmCloseAccountBtn = document.getElementById('confirmCloseAccountBtn');
     if (confirmCloseAccountBtn) {
         confirmCloseAccountBtn.addEventListener('click', () => {
-            if (typeof handleCloseAccount === 'function') handleCloseAccount();
+            console.log("Initiating permanent account closure...");
+            // Проверка на существование функции перед вызовом
+            if (typeof handleCloseAccount === 'function') {
+                handleCloseAccount();
+            } else {
+                console.warn("Function handleCloseAccount is not defined");
+            }
         });
+    
     }
+
+
+    
 
     // --- Дропдаун ---
     const trigger = document.getElementById('dropdownTrigger');
@@ -1348,8 +1550,6 @@ if (executeClaimBtn) {
         connectBtn.addEventListener('click', () => modal.classList.remove('hidden'));
     }
 });
-
-
 
 
 
