@@ -1571,11 +1571,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- ИНТЕГРИРОВАННЫЙ БЛОК CONNECT WALLET ---
-    const btn = document.getElementById('connectWalletBtn');
-    const modal = document.getElementById('walletModal');
-    const list = document.getElementById('walletList');
+    // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
+const walletBtn = document.getElementById('connectWalletBtn');
+const walletModal = document.getElementById('walletModal'); // переименовали
+const walletList = document.getElementById('walletList');   // переименовали
 
-    let currentProvider = null;
+let currentProvider = null;
+// ... далее везде в коде используй walletBtn, walletModal, walletList ...
+
     let availableWallets = [];
     let isManualDisconnect = false;
 
