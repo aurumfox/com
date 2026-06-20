@@ -1105,25 +1105,29 @@ window.showNotification = function(message, type = "emerald") {
 
 
 
+// ВЫНЕСЕНО ИЗ DOMContentLoaded В ГЛОБАЛЬНУЮ ОБЛАСТЬ
+window.switchView = function(viewId) {
+    const views = [
+        'initStakeView', 'mainStakingView', 'collateralView', 
+        'decollateralizeView', 'depositView', 'claimView', 
+        'unstakeView', 'closeAccountView'
+    ];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(viewId);
+    if (target) {
+        target.classList.remove('hidden');
+    } else {
+        console.error("View not found:", viewId);
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Глобальная функция переключения
-    window.switchView = function(viewId) {
-        const views = [
-            'initStakeView', 'mainStakingView', 'collateralView', 
-            'decollateralizeView', 'depositView', 'claimView', 
-            'unstakeView', 'closeAccountView'
-        ];
-        views.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
-        });
-        const target = document.getElementById(viewId);
-        if (target) {
-            target.classList.remove('hidden');
-        } else {
-            console.error("View not found:", viewId);
-        }
-    };
+    // ... остальной ваш код ...
+
+
 
     // --- УНИВЕРСАЛЬНАЯ ЛОГИКА НАВИГАЦИИ ---
     // Убедитесь, что ID кнопок в HTML совпадают с этими (например, backToStakingBtn)
