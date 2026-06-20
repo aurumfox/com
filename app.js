@@ -1440,18 +1440,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 
-    // --- Close Account ---
+        // --- Close Account ---
+    // Навигация назад к главному экрану
     const backClose = document.getElementById('backToStakingFromClose');
     if (backClose) {
         backClose.addEventListener('click', () => switchView('mainStakingView'));
     }
 
+    // Подтверждение перманентного закрытия аккаунта
     const confirmCloseAccountBtn = document.getElementById('confirmCloseAccountBtn');
     if (confirmCloseAccountBtn) {
         confirmCloseAccountBtn.addEventListener('click', () => {
-            if (typeof handleCloseAccount === 'function') handleCloseAccount();
+            console.log("Initiating permanent account closure...");
+            // Проверка на существование функции перед вызовом
+            if (typeof handleCloseAccount === 'function') {
+                handleCloseAccount();
+            } else {
+                console.warn("Function handleCloseAccount is not defined");
+            }
         });
     }
+
+
+
+    
 
     // --- Дропдаун ---
     const trigger = document.getElementById('dropdownTrigger');
