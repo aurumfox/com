@@ -92,39 +92,53 @@
     <!-- Это ваш главный экран, он должен быть виден изначально -->
 <div id="mainStakingView" class="space-y-4">
     
-    <!-- Кнопка Initialize -->
-    <button onclick="switchView('initStakeView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
-        INITIALIZE USER STAKE
+    <button 
+    onclick="switchView('initStakeView')" 
+    class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
+    INITIALIZE USER STAKE
+</button>
+
+
+<div class="grid grid-cols-2 gap-3">
+    <button 
+        onclick="switchView('depositView')" 
+        class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white transition-all hover:opacity-90">
+        DEPOSIT
     </button>
-
-    <!-- Сетка Deposit / Claim -->
-    <div class="grid grid-cols-2 gap-3">
-        <button onclick="switchView('depositView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
-            DEPOSIT
-        </button>
-        <button onclick="switchView('claimView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-gold text-sm text-white">
-            CLAIM ALL REWARDS
-        </button>
-    </div>
-
-    <!-- Сетка Collateral -->
-    <div class="grid grid-cols-2 gap-3">
-        <button onclick="switchView('collateralView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
-            ENABLE COLLATERAL
-        </button>
-        <button onclick="switchView('decollateralizeView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
-            DISABLE COLLATERAL
-        </button>
-    </div>
-
-    <!-- Нижние кнопки -->
-    <button onclick="switchView('unstakeView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
-        UNSTAKE (Withdraw)
-    </button>
-    <button onclick="switchView('closeAccountView')" class="w-full py-4 rounded-xl font-bold btn-premium btn-danger text-sm text-white">
-        CLOSE STAKING ACCOUNT
+    
+    <button 
+        onclick="switchView('claimView')" 
+        class="w-full py-4 rounded-xl font-bold btn-premium btn-gold text-sm text-white transition-all hover:opacity-90">
+        CLAIM ALL REWARDS
     </button>
 </div>
+
+
+<div class="grid grid-cols-2 gap-3">
+    <button 
+        onclick="switchView('collateralView')" 
+        class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
+        ENABLE COLLATERAL
+    </button>
+    <button 
+        onclick="switchView('decollateralizeView')" 
+        class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white">
+        DISABLE COLLATERAL
+    </button>
+</div>
+
+
+<button 
+    onclick="switchView('unstakeView')" 
+    class="w-full py-4 rounded-xl font-bold btn-premium btn-blue text-sm text-white mt-3 transition-all hover:opacity-90">
+    UNSTAKE (Withdraw)
+</button>
+
+<button 
+    onclick="switchView('closeAccountView')" 
+    class="w-full py-4 rounded-xl font-bold btn-premium btn-danger text-sm text-white mt-3 transition-all hover:opacity-90">
+    CLOSE STAKING ACCOUNT
+</button>
 
 
 
