@@ -1200,15 +1200,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 
-    // --- Деколлатерализация ---
+      // --- Деколлатерализация ---
     const backDecollateral = document.getElementById('backToStakingFromDecollateralize');
     if (backDecollateral) {
         backDecollateral.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-    document.querySelectorAll('.pct-btn').forEach(btn => {
+    // Логика управления процентами и визуалом
+    const decollateralizeInput = document.getElementById('decollateralizeAmountInput');
+    const maxAmountDisplay = document.getElementById('maxAvailableAmount');
+    const safetyWarning = document.getElementById('safetyWarning');
+    const pctButtons = document.querySelectorAll('#decollateralizeView .pct-btn');
+
+    pctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const pct = e.currentTarget.dataset.pct;
+            // 1. Сброс стилей всех кнопок процентов
+            pctButtons.forEach(b => {
+                b.classList.remove('bg-emerald-500/20', 'text-emerald-400');
+                b.classList.add('bg-white/5');
+            });
+
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-emerald-500/20', 'text-emerald-400');
+
+            // 3. Расчет суммы
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            const maxVal = parseFloat(maxAmountDisplay.innerText);
+            
+            if (decollateralizeInput) {
+                const calculatedValue = (maxVal * pct).toFixed(2);
+                decollateralizeInput.value = calculatedValue;
+            }
+
+            // 4. Показ предупреждения только при MAX (100%)
+            if (safetyWarning) {
+                if (pct === 1.00) {
+                    safetyWarning.classList.remove('hidden');
+                } else {
+                    safetyWarning.classList.add('hidden');
+                }
+            }
+
+            // Вызов внешней функции, если она есть
             if (typeof setAmount === 'function') setAmount(pct);
         });
     });
@@ -1219,6 +1253,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof handleDecollateralize === 'function') handleDecollateralize();
         });
     }
+
+
+
+
+
+
+    
 
     // --- Депозит ---
     const backDeposit = document.getElementById('backToStakingFromDeposit');
