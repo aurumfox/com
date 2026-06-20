@@ -1105,71 +1105,62 @@ window.showNotification = function(message, type = "emerald") {
 
 
 
+// ВЫНЕСЕНО ИЗ DOMContentLoaded В ГЛОБАЛЬНУЮ ОБЛАСТЬ
+window.switchView = function(viewId) {
+    const views = [
+        'initStakeView', 'mainStakingView', 'collateralView', 
+        'decollateralizeView', 'depositView', 'claimView', 
+        'unstakeView', 'closeAccountView'
+    ];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(viewId);
+    if (target) {
+        target.classList.remove('hidden');
+    } else {
+        console.error("View not found:", viewId);
+    }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Глобальная функция переключения представлений
-    window.switchView = function(viewId) {
-        const views = [
-            'initStakeView', 'mainStakingView', 'collateralView', 
-            'decollateralizeView', 'depositView', 'claimView', 
-            'unstakeView', 'closeAccountView'
-        ];
-        views.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
-        });
-        const target = document.getElementById(viewId);
-        if (target) target.classList.remove('hidden');
+    // ... остальной ваш код ...
+
+
+
+    // --- УНИВЕРСАЛЬНАЯ ЛОГИКА НАВИГАЦИИ ---
+    // Убедитесь, что ID кнопок в HTML совпадают с этими (например, backToStakingBtn)
+    const backButtons = {
+        'backToStakingBtn': 'mainStakingView',
+        'backToStakingFromCollateral': 'mainStakingView',
+        'backToStakingFromDecollateralize': 'mainStakingView',
+        'backToStakingFromDeposit': 'mainStakingView',
+        'backToStakingFromClaim': 'mainStakingView',
+        'backToStakingFromUnstake': 'mainStakingView',
+        'backToStakingFromClose': 'mainStakingView'
     };
 
-    // --- Интегрированная логика initStakeView ---
-    const initStakeContainer = document.getElementById('initStakeView');
-    if (initStakeContainer) {
-        // Навигация
-        const backBtn = document.getElementById('backToStakingBtn');
-        if (backBtn) backBtn.addEventListener('click', () => switchView('mainStakingView'));
-
-        const confirmBtn = document.getElementById('confirmInitBtn');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => {
-                console.log("Initialization confirmed");
-                if (typeof handleInitialize === 'function') handleInitialize();
-            });
+    Object.keys(backButtons).forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', () => switchView(backButtons[btnId]));
         }
+    });
 
-        // Логика выбора тиров
-        const tierBtns = document.querySelectorAll('.tier-btn');
+    // --- ЛОГИКА ТИРОВ (InitStake) ---
+    const tierSelector = document.getElementById('tierSelector');
+    if (tierSelector) {
+        const tierBtns = tierSelector.querySelectorAll('.tier-btn');
         tierBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const selectedBtn = e.currentTarget;
-                
-                // Сбрасываем все
-                tierBtns.forEach(b => {
-                    b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                    b.classList.add('border-white/10', 'bg-black/20');
-                });
-                
-                // Активируем одну
-                selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                selectedBtn.classList.remove('border-white/10', 'bg-black/20');
-                
-                // Обновление индикаторов
-                const label = selectedBtn.dataset.label;
-                const index = selectedBtn.dataset.index;
-                const days = parseInt(selectedBtn.dataset.tier);
-                
-                document.getElementById('lockupDisplay').innerText = label;
-                document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
-                
-                const progressBar = document.getElementById('lockupProgressBar');
-                if (progressBar) {
-                    progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
-                }
+                tierBtns.forEach(b => b.classList.remove('active-tier', 'border-blue-500'));
+                e.currentTarget.classList.add('active-tier', 'border-blue-500');
+                // ... ваш код обновления UI
             });
         });
     }
 
-    
 
 
 
