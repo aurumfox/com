@@ -1427,7 +1427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Логика процентов (%) и поля ввода
     const claimInput = document.getElementById('claimAmountInput');
     const totalYield = 125.75; // Значение из твоего HTML
-    const pctButtons = document.querySelectorAll('.pct-btn');
+    const pctButtons = document.querySelectorAll('.claim-pct-btn');
 
     pctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
