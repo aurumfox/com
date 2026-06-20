@@ -1112,17 +1112,26 @@ window.switchView = function(viewId) {
         'decollateralizeView', 'depositView', 'claimView', 
         'unstakeView', 'closeAccountView'
     ];
+
+    // 1. Скрываем все
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
     });
+
+    // 2. Показываем нужный
     const target = document.getElementById(viewId);
     if (target) {
         target.classList.remove('hidden');
+        console.log("Switched to:", viewId);
     } else {
         console.error("View not found:", viewId);
+        // Если что-то пошло не так, возвращаем главный экран, чтобы не было пустого экрана
+        const main = document.getElementById('mainStakingView');
+        if (main) main.classList.remove('hidden');
     }
 };
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // ... остальной ваш код ...
