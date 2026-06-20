@@ -1570,165 +1570,159 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-   // --- Исправленный блок CONNECT WALLET ---
+
+    // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
 const walletBtn = document.getElementById('connectWalletBtn');
 const walletModal = document.getElementById('walletModal'); 
 const walletList = document.getElementById('walletList');
 
 let currentProvider = null;
 let isManualDisconnect = false;
+let availableWallets = [];
 
 const updateUI = (publicKey = null) => {
-    if (!walletBtn) return; // Заменили btn на walletBtn
+    if (!walletBtn) return;
     if (publicKey) {
         const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-        walletBtn.innerText = `Connected: ${short}`; // Заменили btn на walletBtn
+        walletBtn.innerText = `Connected: ${short}`;
         walletBtn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
+        localStorage.setItem('wallet_connected', publicKey);
     } else {
         walletBtn.innerText = "Connect Wallet";
         walletBtn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
+        localStorage.removeItem('wallet_connected');
     }
 };
 
-// ... далее внутри функции walletBtn.addEventListener('click', ...
-walletBtn.addEventListener('click', async () => {
-    // ... логика подключения ...
-    // Замените здесь везде 'btn' на 'walletBtn'
-    // Замените 'modal' на 'walletModal'
-    // Замените 'list' на 'walletList'
-});
+const scanForWallets = () => {
+    const found = [];
+    const providers = [
+        { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
+        { name: 'Solflare', check: () => window.solflare?.isSolflare ? window.solflare : window.solflare },
+        { name: 'Backpack', check: () => window.backpack },
+        { name: 'Glow', check: () => window.glowSolana },
+        { name: 'Coinbase', check: () => window.coinbaseSolana }
+    ];
 
-
-    const scanForWallets = () => {
-        const found = [];
-        const providers = [
-            { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
-            { name: 'Solflare', check: () => window.solflare?.isSolflare ? window.solflare : window.solflare },
-            { name: 'Backpack', check: () => window.backpack },
-            { name: 'Glow', check: () => window.glowSolana },
-            { name: 'Coinbase', check: () => window.coinbaseSolana }
-        ];
-
-        providers.forEach(p => {
-            try {
-                const provider = p.check();
-                if (provider && !found.find(w => w.name === p.name)) {
-                    found.push({ name: p.name, provider });
-                }
-            } catch (e) { console.error(`Error detecting ${p.name}:`, e); }
-        });
-        return found;
-    };
-
-    const triggerDeepLink = () => {
-        const url = window.location.href;
-        const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
-        showNotification("Opening Wallet App...", "emerald");
-        window.location.href = phantomDeepLink;
-    };
-
-    const getAvailableWallets = () => {
-        return new Promise((resolve) => {
-            const found = scanForWallets();
-            if (found.length > 0) return resolve(found);
-
-            let attempts = 0;
-            const interval = setInterval(() => {
-                attempts++;
-                const foundAgain = scanForWallets();
-                if (foundAgain.length > 0 || attempts >= 40) {
-                    clearInterval(interval);
-                    resolve(foundAgain);
-                }
-            }, 200);
-        });
-    };
-
-    if (btn) {
-        btn.addEventListener('click', async () => {
-            if (currentProvider) {
-                try { 
-                    isManualDisconnect = true; 
-                    await currentProvider.disconnect(); 
-                    currentProvider = null;
-                    updateUI(null);
-                    showNotification("Wallet Disconnected", "red");
-                } catch (err) { console.error(err); }
-                finally {
-                    isManualDisconnect = false;
-                }
-                return;
-            }
-
-            const originalText = btn.innerText;
-            btn.innerText = "Loading...";
-            btn.disabled = true;
-
-            availableWallets = await getAvailableWallets();
-            
-            btn.innerText = originalText;
-            btn.disabled = false;
-            
-            if (availableWallets.length === 0) {
-                triggerDeepLink();
-                return;
-            }
-
-            if (availableWallets.length === 1) {
-                connectWallet(availableWallets[0]);
-            } else {
-                if (list) {
-                    list.innerHTML = '';
-                    availableWallets.forEach(w => {
-                        const item = document.createElement('button');
-                        item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
-                        item.innerText = w.name;
-                        item.onclick = () => { connectWallet(w); if(modal) modal.classList.add('hidden'); };
-                        list.appendChild(item);
-                    });
-                    if (modal) modal.classList.remove('hidden');
-                }
-            }
-        });
-    }
-
-    async function connectWallet(wallet) {
+    providers.forEach(p => {
         try {
-            currentProvider = wallet.provider;
-            const resp = await currentProvider.connect();
-            const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-            updateUI(publicKey);
-            showNotification(`${wallet.name} Connected!`);
-            
-            currentProvider.removeAllListeners?.('disconnect');
-            currentProvider.on('disconnect', () => {
-                if (!isManualDisconnect) {
-                    currentProvider = null;
-                    updateUI(null);
-                    showNotification("Disconnected by wallet", "red");
-                }
-            });
-        } catch (err) {
-            console.error("Connection Error:", err);
-            showNotification("Connection Failed", "red");
-        }
-    }
+            const provider = p.check();
+            if (provider && !found.find(w => w.name === p.name)) {
+                found.push({ name: p.name, provider });
+            }
+        } catch (e) { console.error(`Error detecting ${p.name}:`, e); }
+    });
+    return found;
+};
 
-    // Авто-коннект при загрузке
-    setTimeout(async () => {
-        const savedWallet = localStorage.getItem('wallet_connected');
-        if (savedWallet) {
-            const wallets = await getAvailableWallets();
-            const phantom = wallets.find(w => w.name === 'Phantom');
-            if (phantom) {
-                try {
-                    const resp = await phantom.provider.connect({ onlyIfTrusted: true });
-                    const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-                    updateUI(pubKey);
-                    currentProvider = phantom.provider;
-                } catch (e) { console.log("Auto-connect trust-check skipped."); }
+const triggerDeepLink = () => {
+    const url = window.location.href;
+    const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
+    showNotification("Opening Wallet App...", "emerald");
+    window.location.href = phantomDeepLink;
+};
+
+const getAvailableWallets = () => {
+    return new Promise((resolve) => {
+        const found = scanForWallets();
+        if (found.length > 0) return resolve(found);
+
+        let attempts = 0;
+        const interval = setInterval(() => {
+            attempts++;
+            const foundAgain = scanForWallets();
+            if (foundAgain.length > 0 || attempts >= 40) {
+                clearInterval(interval);
+                resolve(foundAgain);
+            }
+        }, 200);
+    });
+};
+
+if (walletBtn) {
+    walletBtn.addEventListener('click', async () => {
+        if (currentProvider) {
+            try { 
+                isManualDisconnect = true; 
+                await currentProvider.disconnect(); 
+                currentProvider = null;
+                updateUI(null);
+                showNotification("Wallet Disconnected", "red");
+            } catch (err) { console.error(err); }
+            finally {
+                isManualDisconnect = false;
+            }
+            return;
+        }
+
+        const originalText = walletBtn.innerText;
+        walletBtn.innerText = "Loading...";
+        walletBtn.disabled = true;
+
+        availableWallets = await getAvailableWallets();
+        
+        walletBtn.innerText = originalText;
+        walletBtn.disabled = false;
+        
+        if (availableWallets.length === 0) {
+            triggerDeepLink();
+            return;
+        }
+
+        if (availableWallets.length === 1) {
+            connectWallet(availableWallets[0]);
+        } else {
+            if (walletList) {
+                walletList.innerHTML = '';
+                availableWallets.forEach(w => {
+                    const item = document.createElement('button');
+                    item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
+                    item.innerText = w.name;
+                    item.onclick = () => { connectWallet(w); if(walletModal) walletModal.classList.add('hidden'); };
+                    walletList.appendChild(item);
+                });
+                if (walletModal) walletModal.classList.remove('hidden');
             }
         }
-    }, 1000);
+    });
+}
 
-});
+async function connectWallet(wallet) {
+    try {
+        currentProvider = wallet.provider;
+        const resp = await currentProvider.connect();
+        const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
+        updateUI(publicKey);
+        showNotification(`${wallet.name} Connected!`);
+        
+        currentProvider.removeAllListeners?.('disconnect');
+        currentProvider.on('disconnect', () => {
+            if (!isManualDisconnect) {
+                currentProvider = null;
+                updateUI(null);
+                showNotification("Disconnected by wallet", "red");
+            }
+        });
+    } catch (err) {
+        console.error("Connection Error:", err);
+        showNotification("Connection Failed", "red");
+    }
+}
+
+// Авто-коннект при загрузке
+setTimeout(async () => {
+    const savedWallet = localStorage.getItem('wallet_connected');
+    if (savedWallet) {
+        const wallets = await getAvailableWallets();
+        const phantom = wallets.find(w => w.name === 'Phantom');
+        if (phantom) {
+            try {
+                const resp = await phantom.provider.connect({ onlyIfTrusted: true });
+                const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
+                updateUI(pubKey);
+                currentProvider = phantom.provider;
+            } catch (e) { console.log("Auto-connect trust-check skipped."); }
+        }
+    }
+}, 1000);
+
