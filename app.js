@@ -1107,13 +1107,6 @@ window.showNotification = function(message, type = "emerald") {
 
 // ВЫНЕСЕНО ИЗ DOMContentLoaded В ГЛОБАЛЬНУЮ ОБЛАСТЬ
 window.switchView = function(viewId) {
-window.switchView = function(viewId, event) {
-    // Предотвращаем перезагрузку страницы
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-    
     const views = [
         'initStakeView', 'mainStakingView', 'collateralView', 
         'decollateralizeView', 'depositView', 'claimView', 
@@ -1130,7 +1123,6 @@ window.switchView = function(viewId, event) {
         console.error("View not found:", viewId);
     }
 };
-
 
 document.addEventListener('DOMContentLoaded', () => {
     // ... остальной ваш код ...
@@ -1181,7 +1173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const confirmBtn = document.getElementById('confirmInitBtn');
         if (confirmBtn) {
-            confirmBtn.addEventListener('click', (e) => {
+            confirmBtn.addEventListener('click', () => {
                 console.log("Initialization confirmed");
                 if (typeof handleInitialize === 'function') handleInitialize();
             });
@@ -1795,4 +1787,3 @@ setTimeout(async () => {
         }
     }
 }, 1000); // <-- Добавлена закрывающая скобка и точка с запятой
-
