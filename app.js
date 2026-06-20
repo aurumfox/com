@@ -1607,7 +1607,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-   
+    });
 
 
 
