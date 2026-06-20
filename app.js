@@ -1043,7 +1043,7 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
         }
     }
 
-
+}
 
 
 
@@ -1787,4 +1787,4 @@ setTimeout(async () => {
         }
     }
 }, 1000); // <-- Добавлена закрывающая скобка и точка с запятой
-}
+
