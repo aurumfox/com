@@ -1459,7 +1459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn("Function handleCloseAccount is not defined");
             }
         });
-    }
+    
 
 
 
