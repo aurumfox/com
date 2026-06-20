@@ -1173,7 +1173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const confirmBtn = document.getElementById('confirmInitBtn');
         if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => {
+            confirmBtn.addEventListener('click', (e) => {
                 console.log("Initialization confirmed");
                 if (typeof handleInitialize === 'function') handleInitialize();
             });
