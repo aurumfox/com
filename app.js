@@ -914,26 +914,39 @@ window.performUnstake = async function(poolPubKey, userStAta, userRewardsAta, po
 
 
 async function handleUnstake() {
-        const amount = document.getElementById('unstakeAmountInput').value;
-        if (!amount || amount <= 0) return;
-        
-        // Преобразуем в BN (предполагая 9 знаков после запятой для токена)
-        const amountBN = new anchor.BN(amount * 1e9); 
-        
-        await window.performUnstake(
-            CURRENT_POOL_PUBKEY, 
-            USER_ST_ATA, 
-            USER_REWARDS_ATA, 
-            CURRENT_POOL_INDEX, 
-            amountBN
-        );
+    const input = document.getElementById('unstakeAmountInput');
+    const amount = parseFloat(input.value);
+    
+    if (!amount || amount <= 0) {
+        alert("Введите корректную сумму");
+        return;
     }
     
-    function setUnstakeAmount(percent) {
-        // Здесь берем макс. доступное значение из appState
-        const max = window.appState.stakedBalance || 0;
-        document.getElementById('unstakeAmountInput').value = (max * percent).toFixed(2);
+    try {
+        // Добавьте визуальный индикатор загрузки
+        const btn = document.getElementById('executeUnstakeBtn');
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        const amountBN = new anchor.BN(amount * 1e9); 
+        await window.performUnstake(
+            window.appState.currentPoolPubKey, 
+            window.appState.userStAta, 
+            window.appState.userRewardsAta, 
+            window.appState.poolIndex, 
+            amountBN
+        );
+        alert("Успешно!");
+    } catch (err) {
+        console.error(err);
+        alert("Ошибка транзакции: " + err.message);
+    } finally {
+        const btn = document.getElementById('executeUnstakeBtn');
+        btn.innerText = "CONFIRM & EXIT";
+        btn.disabled = false;
     }
+}
+
 
 
 
