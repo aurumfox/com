@@ -1570,31 +1570,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // --- ИНТЕГРИРОВАННЫЙ БЛОК CONNECT WALLET ---
-    // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
+   // --- Исправленный блок CONNECT WALLET ---
 const walletBtn = document.getElementById('connectWalletBtn');
-const walletModal = document.getElementById('walletModal'); // переименовали
-const walletList = document.getElementById('walletList');   // переименовали
+const walletModal = document.getElementById('walletModal'); 
+const walletList = document.getElementById('walletList');
 
 let currentProvider = null;
-// ... далее везде в коде используй walletBtn, walletModal, walletList ...
+let isManualDisconnect = false;
 
-    let availableWallets = [];
-    let isManualDisconnect = false;
+const updateUI = (publicKey = null) => {
+    if (!walletBtn) return; // Заменили btn на walletBtn
+    if (publicKey) {
+        const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+        walletBtn.innerText = `Connected: ${short}`; // Заменили btn на walletBtn
+        walletBtn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
+    } else {
+        walletBtn.innerText = "Connect Wallet";
+        walletBtn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
+    }
+};
 
-    const updateUI = (publicKey = null) => {
-        if (!btn) return;
-        if (publicKey) {
-            const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-            btn.innerText = `Connected: ${short}`;
-            btn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
-            localStorage.setItem('wallet_connected', publicKey);
-        } else {
-            btn.innerText = "Connect Wallet";
-            btn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
-            localStorage.removeItem('wallet_connected');
-        }
-    };
+// ... далее внутри функции walletBtn.addEventListener('click', ...
+walletBtn.addEventListener('click', async () => {
+    // ... логика подключения ...
+    // Замените здесь везде 'btn' на 'walletBtn'
+    // Замените 'modal' на 'walletModal'
+    // Замените 'list' на 'walletList'
+});
+
 
     const scanForWallets = () => {
         const found = [];
