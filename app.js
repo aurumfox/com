@@ -1043,7 +1043,7 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
         }
     }
 
-}
+
 
 
 
