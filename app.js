@@ -1107,6 +1107,13 @@ window.showNotification = function(message, type = "emerald") {
 
 // ВЫНЕСЕНО ИЗ DOMContentLoaded В ГЛОБАЛЬНУЮ ОБЛАСТЬ
 window.switchView = function(viewId) {
+window.switchView = function(viewId, event) {
+    // Предотвращаем перезагрузку страницы
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     const views = [
         'initStakeView', 'mainStakingView', 'collateralView', 
         'decollateralizeView', 'depositView', 'claimView', 
@@ -1123,6 +1130,7 @@ window.switchView = function(viewId) {
         console.error("View not found:", viewId);
     }
 };
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // ... остальной ваш код ...
