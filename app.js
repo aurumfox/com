@@ -1636,13 +1636,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-
-
-  
-
-       
-   // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
+  // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
 const walletBtn = document.getElementById('connectWalletBtn');
 const walletModal = document.getElementById('walletModal'); 
 const walletList = document.getElementById('walletList');
@@ -1749,7 +1743,7 @@ if (walletBtn) {
                     const item = document.createElement('button');
                     item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
                     item.innerText = w.name;
-                    item.onclick = () => { connectWallet(w); if(walletModal) walletModal.classList.add('hidden'); };
+                    item.onclick = () => { connectWallet(w); };
                     walletList.appendChild(item);
                 });
                 if (walletModal) walletModal.classList.remove('hidden');
@@ -1765,6 +1759,9 @@ async function connectWallet(wallet) {
         const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
         updateUI(publicKey);
         showNotification(`${wallet.name} Connected!`);
+        
+        // Исправление: скрываем модальное окно после успешного подключения
+        if (walletModal) walletModal.classList.add('hidden');
         
         currentProvider.removeAllListeners?.('disconnect');
         currentProvider.on('disconnect', () => {
@@ -1795,4 +1792,4 @@ setTimeout(async () => {
             } catch (e) { console.log("Auto-connect trust-check skipped."); }
         }
     }
-}, 1000); // <-- Добавлена закрывающая скобка и точка с запятой
+}, 1000);
