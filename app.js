@@ -1077,6 +1077,17 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
     
 
        
+// В начале DOMContentLoaded
+window.showNotification = function(message, type = "emerald") {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg text-white font-bold z-[10000] bg-${type}-600 shadow-xl transition-opacity duration-500`;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+};
 
 
 document.addEventListener('DOMContentLoaded', () => {
