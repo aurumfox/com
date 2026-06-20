@@ -1127,35 +1127,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 
-    // --- Навигация и кнопки Collateral ---
+       // --- Навигация и логика Collateral ---
     const backCollateral = document.getElementById('backToStakingFromCollateral');
     if (backCollateral) {
         backCollateral.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-    document.querySelectorAll('.hf-btn').forEach(btn => {
+    // 1. Управление выбором Health Factor (HF)
+    const hfButtons = document.querySelectorAll('.hf-btn');
+    hfButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const val = e.currentTarget.dataset.value;
-            console.log("Selected HF:", val);
+            // Сбрасываем стили всех кнопок HF
+            hfButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/10');
+            });
+            // Подсвечиваем выбранную
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+            console.log("Selected HF:", e.currentTarget.dataset.value);
         });
     });
 
+    // 2. Управление процентами (%) и полем ввода
+    const collateralInput = document.getElementById('collateralAmountInput');
+    const walletBalance = 5000.00; // Пример баланса
+
     document.querySelectorAll('.pct-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const pct = e.currentTarget.dataset.pct;
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (collateralInput) {
+                const calculatedValue = (walletBalance * (pct / 100)).toFixed(2);
+                collateralInput.value = calculatedValue;
+            }
             console.log("Selected %:", pct);
         });
     });
 
+    // 3. Обработка кнопок действий
     const claimRewardsBtn = document.getElementById('claimRewardsBtn');
     if (claimRewardsBtn) {
-        claimRewardsBtn.addEventListener('click', () => console.log("Claiming rewards..."));
+        claimRewardsBtn.addEventListener('click', () => {
+            alert("Claiming all rewards...");
+        });
     }
 
     const adjustCollateralBtn = document.getElementById('adjustCollateralBtn');
     if (adjustCollateralBtn) {
-        adjustCollateralBtn.addEventListener('click', () => console.log("Adjusting collateral..."));
+        adjustCollateralBtn.addEventListener('click', () => {
+            const amount = collateralInput.value;
+            console.log("Adjusting collateral to:", amount);
+            alert(`Collateral adjusted to ${amount} TOKEN`);
+        });
     }
+
+
+
+
+
+    
 
     // --- Деколлатерализация ---
     const backDecollateral = document.getElementById('backToStakingFromDecollateralize');
