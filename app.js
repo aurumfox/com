@@ -1586,28 +1586,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ---
-function showNotification(text, color = 'emerald') {
-    const existingNotifications = Array.from(document.querySelectorAll('.toast-notification'));
-    if (existingNotifications.some(n => n.innerText === text)) return;
 
-    const toast = document.createElement('div');
-    toast.className = `toast-notification fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
-    toast.innerText = text;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
 
-document.addEventListener('DOMContentLoaded', () => {
+
+
+
+
+
+
+
+
+    // --- ИНТЕГРИРОВАННЫЙ БЛОК CONNECT WALLET ---
     const btn = document.getElementById('connectWalletBtn');
     const modal = document.getElementById('walletModal');
     const list = document.getElementById('walletList');
 
     let currentProvider = null;
     let availableWallets = [];
-    let isManualDisconnect = false; // Флаг для предотвращения дублей при дисконнекте
+    let isManualDisconnect = false;
 
     const updateUI = (publicKey = null) => {
+        if (!btn) return;
         if (publicKey) {
             const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
             btn.innerText = `Connected: ${short}`;
@@ -1665,53 +1664,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    btn.addEventListener('click', async () => {
-        if (currentProvider) {
-            try { 
-                isManualDisconnect = true; 
-                await currentProvider.disconnect(); 
-                currentProvider = null;
-                updateUI(null);
-                showNotification("Wallet Disconnected", "red");
-            } catch (err) { console.error(err); }
-            finally {
-                isManualDisconnect = false;
+    if (btn) {
+        btn.addEventListener('click', async () => {
+            if (currentProvider) {
+                try { 
+                    isManualDisconnect = true; 
+                    await currentProvider.disconnect(); 
+                    currentProvider = null;
+                    updateUI(null);
+                    showNotification("Wallet Disconnected", "red");
+                } catch (err) { console.error(err); }
+                finally {
+                    isManualDisconnect = false;
+                }
+                return;
             }
-            return;
-        }
 
-        // --- ДОБАВЛЕНО: Индикация загрузки ---
-        const originalText = btn.innerText;
-        btn.innerText = "Loading...";
-        btn.disabled = true; // Блокируем кнопку, чтобы не нажимали повторно
-        // -------------------------------------
+            const originalText = btn.innerText;
+            btn.innerText = "Loading...";
+            btn.disabled = true;
 
-        availableWallets = await getAvailableWallets();
-        
-        // --- ДОБАВЛЕНО: Сброс состояния загрузки ---
-        btn.innerText = originalText;
-        btn.disabled = false;
-        // --------------------------------------------
-        
-        if (availableWallets.length === 0) {
-            triggerDeepLink();
-            return;
-        }
+            availableWallets = await getAvailableWallets();
+            
+            btn.innerText = originalText;
+            btn.disabled = false;
+            
+            if (availableWallets.length === 0) {
+                triggerDeepLink();
+                return;
+            }
 
-        if (availableWallets.length === 1) {
-            connectWallet(availableWallets[0]);
-        } else {
-            list.innerHTML = '';
-            availableWallets.forEach(w => {
-                const item = document.createElement('button');
-                item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
-                item.innerText = w.name;
-                item.onclick = () => { connectWallet(w); modal.classList.add('hidden'); };
-                list.appendChild(item);
-            });
-            modal.classList.remove('hidden');
-        }
-    });
+            if (availableWallets.length === 1) {
+                connectWallet(availableWallets[0]);
+            } else {
+                if (list) {
+                    list.innerHTML = '';
+                    availableWallets.forEach(w => {
+                        const item = document.createElement('button');
+                        item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
+                        item.innerText = w.name;
+                        item.onclick = () => { connectWallet(w); if(modal) modal.classList.add('hidden'); };
+                        list.appendChild(item);
+                    });
+                    if (modal) modal.classList.remove('hidden');
+                }
+            }
+        });
+    }
 
     async function connectWallet(wallet) {
         try {
@@ -1723,8 +1722,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             currentProvider.removeAllListeners?.('disconnect');
             currentProvider.on('disconnect', () => {
-                // Если мы отключились сами кнопкой, мы уже показали уведомление выше.
-                // Поэтому тут показываем сообщение только если кошелек отвалился САМ (из расширения).
                 if (!isManualDisconnect) {
                     currentProvider = null;
                     updateUI(null);
@@ -1737,30 +1734,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.addEventListener('load', async () => {
-        setTimeout(async () => {
-            const savedWallet = localStorage.getItem('wallet_connected');
-            if (savedWallet) {
-                const wallets = await getAvailableWallets();
-                const phantom = wallets.find(w => w.name === 'Phantom');
-                if (phantom) {
-                    try {
-                        const resp = await phantom.provider.connect({ onlyIfTrusted: true });
-                        const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-                        updateUI(pubKey);
-                        currentProvider = phantom.provider;
-                    } catch (e) { console.log("Auto-connect trust-check skipped."); }
-                }
+    // Авто-коннект при загрузке
+    setTimeout(async () => {
+        const savedWallet = localStorage.getItem('wallet_connected');
+        if (savedWallet) {
+            const wallets = await getAvailableWallets();
+            const phantom = wallets.find(w => w.name === 'Phantom');
+            if (phantom) {
+                try {
+                    const resp = await phantom.provider.connect({ onlyIfTrusted: true });
+                    const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
+                    updateUI(pubKey);
+                    currentProvider = phantom.provider;
+                } catch (e) { console.log("Auto-connect trust-check skipped."); }
             }
-        }, 1000);
-    });
-});
-
-
-
-
-
-
-
-
-            
+        }
+    }, 1000);
