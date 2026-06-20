@@ -1261,26 +1261,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 
-    // --- Депозит ---
+        // --- Депозит ---
     const backDeposit = document.getElementById('backToStakingFromDeposit');
     if (backDeposit) {
         backDeposit.addEventListener('click', () => switchView('mainStakingView'));
     }
 
-    document.querySelectorAll('.deposit-pct-btn').forEach(btn => {
+    // Управление кнопками процентов и полем ввода
+    const depositInput = document.getElementById('depositInput');
+    const depositPctButtons = document.querySelectorAll('.deposit-pct-btn');
+    
+    // Пример баланса (замени на свою реальную переменную)
+    const walletBalance = 5000.00; 
+
+    depositPctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const pct = e.currentTarget.dataset.pct;
+            // 1. Сбрасываем стили всех кнопок
+            depositPctButtons.forEach(b => {
+                b.classList.remove('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
+                b.classList.add('bg-white/5', 'border-white/5');
+            });
+
+            // 2. Подсвечиваем активную кнопку
+            e.currentTarget.classList.remove('bg-white/5', 'border-white/5');
+            e.currentTarget.classList.add('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
+
+            // 3. Расчет суммы
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (depositInput) {
+                const calculatedValue = (walletBalance * pct).toFixed(2);
+                depositInput.value = calculatedValue;
+            }
+
+            // Вызов внешней функции, если она есть
             if (typeof setDepositAmount === 'function') setDepositAmount(pct);
+            console.log("Deposit % selected:", pct);
         });
     });
 
     const confirmDepositBtn = document.getElementById('confirmDepositBtn');
     if (confirmDepositBtn) {
         confirmDepositBtn.addEventListener('click', () => {
+            console.log("Confirming deposit amount:", depositInput ? depositInput.value : "0");
             if (typeof handleDeposit === 'function') handleDeposit();
         });
     }
 
+
+
+
+
+
+    
    // --- Claim ---
 const backClaim = document.getElementById('backToStakingFromClaim');
 if (backClaim) {
