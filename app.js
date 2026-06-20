@@ -1127,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 
-       // --- Навигация и логика Collateral ---
+           // --- Навигация и логика Collateral ---
     const backCollateral = document.getElementById('backToStakingFromCollateral');
     if (backCollateral) {
         backCollateral.addEventListener('click', () => switchView('mainStakingView'));
@@ -1137,13 +1137,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const hfButtons = document.querySelectorAll('.hf-btn');
     hfButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // Сбрасываем стили всех кнопок HF
+            // Сначала сбрасываем стили у всех кнопок HF
             hfButtons.forEach(b => {
                 b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
                 b.classList.add('bg-white/10');
             });
-            // Подсвечиваем выбранную
+            
+            // Добавляем синий стиль выбранной кнопке
+            e.currentTarget.classList.remove('bg-white/10');
             e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+            
             console.log("Selected HF:", e.currentTarget.dataset.value);
         });
     });
@@ -1152,8 +1155,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const collateralInput = document.getElementById('collateralAmountInput');
     const walletBalance = 5000.00; // Пример баланса
 
-    document.querySelectorAll('.pct-btn').forEach(btn => {
+    const pctButtons = document.querySelectorAll('.pct-btn');
+    pctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            // Сбрасываем стили у всех кнопок процентов (25, 50, 75, MAX)
+            pctButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/5');
+            });
+
+            // Добавляем синий стиль выбранной кнопке
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+
             const pct = parseFloat(e.currentTarget.dataset.pct);
             if (collateralInput) {
                 const calculatedValue = (walletBalance * (pct / 100)).toFixed(2);
@@ -1167,7 +1181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const claimRewardsBtn = document.getElementById('claimRewardsBtn');
     if (claimRewardsBtn) {
         claimRewardsBtn.addEventListener('click', () => {
-            alert("Claiming all rewards...");
+            console.log("Claiming all rewards...");
         });
     }
 
@@ -1176,9 +1190,9 @@ document.addEventListener('DOMContentLoaded', () => {
         adjustCollateralBtn.addEventListener('click', () => {
             const amount = collateralInput.value;
             console.log("Adjusting collateral to:", amount);
-            alert(`Collateral adjusted to ${amount} TOKEN`);
         });
     }
+
 
 
 
