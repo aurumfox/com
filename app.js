@@ -78,7 +78,7 @@ const QubitProgramManager = {
 
         // ВАЖНО: Убедись, что используешь Mainnet (api.mainnet-beta.solana.com) 
         // для реальной сети, т.к. твой пул (DtAAY...) находится там.
-        const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
+        const connection = new solanaWeb3.Connection("https://api.devnet.solana.com", "confirmed");
         
         const provider = new anchor.AnchorProvider(
             connection, 
