@@ -242,22 +242,32 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
 
 // 1. Функция навигации (чтобы кнопка в меню "заходила" на экран)
 function switchView(viewId) {
-    // Скрываем все блоки, если они имеют общий класс, например 'view-block'
-    document.querySelectorAll('.view-block').forEach(el => el.classList.add('hidden'));
-    
-    // Показываем нужный блок
-    const view = document.getElementById(viewId);
-    if (view) {
-        view.classList.remove('hidden');
-        console.log(`👁️ Переключение на: ${viewId}`);
-    } else {
-        console.error("❌ Блок с ID " + viewId + " не найден!");
+    try {
+        console.log(`====================================================================================================`);
+        console.log(`👁️ [UI NAVIGATION]: ПЕРЕКЛЮЧЕНИЕ НА VIEW: ${viewId}...`);
+        
+        // Скрываем все блоки, если они имеют общий класс, например 'view-block'
+        document.querySelectorAll('.view-block').forEach(el => el.classList.add('hidden'));
+        
+        // Показываем нужный блок
+        const view = document.getElementById(viewId);
+        if (view) {
+            view.classList.remove('hidden');
+            console.log(`✨ [SUCCESS]: Блок ${viewId} успешно отображен.`);
+        } else {
+            throw new Error(`Блок с ID ${viewId} не найден!`);
+        }
+    } catch (e) {
+        console.error("❌ Navigation Error:", e.message);
     }
 }
 
 // 2. Функция подтверждения (обновлена для взаимодействия с performInitializeUserStake)
 async function handleConfirmInitialize() {
     try {
+        console.log("====================================================================================================");
+        console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ЧЕРЕЗ UI...");
+
         const activeBtn = document.querySelector('.tier-btn.active-tier');
         if (!activeBtn) {
             alert("⚠️ Пожалуйста, выберите тир перед инициализацией!");
@@ -265,28 +275,31 @@ async function handleConfirmInitialize() {
         }
         
         const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
-        const poolPubKey = window.appState?.currentPoolPubKey; // Используем динамический адрес пула, если есть
+        const poolPubKey = window.appState?.currentPoolPubKey;
 
         if (!poolPubKey) {
             throw new Error("Адрес пула (poolPubKey) не определен в приложении.");
         }
 
-        console.log(`⚙️ [UI EVENT]: Инициализация пула ${poolIndex} для ${poolPubKey.toBase58()}...`);
+        console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
 
         // Вызываем проверенный глобальный метод
         const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
 
         if (result === "ALREADY_INITIALIZED") {
+            console.warn("ℹ️ [UI INFO]: Аккаунт уже инициализирован.");
             alert("ℹ️ Стейкинг-аккаунт уже был инициализирован ранее.");
         } else {
+            console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
             alert("✅ Стейкинг-аккаунт успешно инициализирован!");
         }
 
     } catch (e) {
-        console.error("❌ Ошибка при инициализации через UI:", e);
+        console.error("❌ Handle Confirm Initialize Error:", e.message);
         alert("Ошибка: " + e.message);
     }
 }
+
 
 
 
