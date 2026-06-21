@@ -105,7 +105,7 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-    /**
+/**
  * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE (ИНИЦИАЛИЗАЦИЯ)
  * 100% синхронизация с SDK: PDA, SystemProgram, Compute Budget
  */
@@ -132,6 +132,13 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
             ],
             program.programId
         );
+
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Проверяем, не инициализирован ли аккаунт уже
+        const accountInfo = await provider.connection.getAccountInfo(userStakePda);
+        if (accountInfo !== null) {
+            console.warn("⚠️ Аккаунт уже существует. Инициализация не требуется.");
+            return "ALREADY_INITIALIZED";
+        }
 
         // 2. СБОРКА ТРАНЗАКЦИИ
         const transaction = new anchor.web3.Transaction();
@@ -238,10 +245,9 @@ window.performCollateralizeLending = async function(
         
         const program = await QubitProgramManager.getProgram();
         const provider = program.provider;
-        const ownerKeypair = provider.wallet.payer; // Используем payer провайдера как владельца
-        const ownerPubkey = ownerKeypair.publicKey;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 1. Деривация PDA (по алгоритму SDK)
+        // 1. Деривация PDA
         const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
@@ -255,7 +261,6 @@ window.performCollateralizeLending = async function(
         // 2. Сборка транзакции
         const transaction = new anchor.web3.Transaction();
         
-        // Инъекция лимитов вычислений для работы с оракулом
         transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
         transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
@@ -276,18 +281,24 @@ window.performCollateralizeLending = async function(
 
         transaction.add(collateralizeInstruction);
 
-        // 4. Подпись всеми необходимыми участниками (Owner, Guardian, LendingAuthority)
+        // 4. Подготовка транзакции
         const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = ownerPubkey;
 
-        // Важно: подписываем всеми тремя ключами, как требует контракт
-        transaction.partialSign(ownerKeypair);
+        // Важно: сначала подписываем внешними ключами (Guardian, LendingAuth)
         transaction.partialSign(guardianKeypair);
         transaction.partialSign(lendingAuthorityKeypair);
 
-        // 5. Отправка RAW-пакета
-        const txId = await provider.connection.sendRawTransaction(transaction.serialize(), {
+        // 5. Симуляция для проверки работоспособности перед отправкой
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            throw new Error("Simulation failed: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 6. Подпись кошельком пользователя и отправка
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
             skipPreflight: true,
             preflightCommitment: "finalized"
         });
@@ -304,19 +315,15 @@ window.performCollateralizeLending = async function(
     }
 };
 
-
-
-
-// Бридж-функция (добавь в свой JS-файл)
+// Бридж-функция
 async function handleCollateralize() {
-    const amount = new anchor.BN(document.getElementById('collateralAmountInput').value); // Учти конвертацию в lamports если нужно
-    const minHF = 2000; // Пример (2.0x), логику кнопок можно вынести в переменную
+    const amount = new anchor.BN(document.getElementById('collateralAmountInput').value);
+    const minHF = 2000; 
     
-    // ВАЖНО: guardianKeypair, lendingAuthorityKeypair и oracleFeeds должны быть 
-    // определены в твоем контексте приложения (например, из стейта кошелька или конфига)
+    // ВАЖНО: убедись, что переменные доступны глобально или в замыкании
     await window.performCollateralizeLending(
         POOL_STATE_PUBKEY, 
-        0, // poolIndex
+        0, 
         amount, 
         new anchor.BN(minHF),
         window.GUARDIAN_KEYPAIR, 
@@ -324,6 +331,7 @@ async function handleCollateralize() {
         ORACLE_FEEDS_ARRAY
     );
 }
+
 
 
 
@@ -374,11 +382,20 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
 
         transaction.add(decollateralizeInstruction);
 
-        // 4. Подпись и отправка RAW-пакета
+        // 4. Подготовка и симуляция
         const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = ownerPubkey;
 
+        // Добавляем симуляцию для предотвращения ошибок и лишних трат
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 5. Подпись и отправка RAW-пакета
         const signedTx = await provider.wallet.signTransaction(transaction);
         const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
             skipPreflight: true,
@@ -396,8 +413,6 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
         throw e;
     }
 };
-
-
 
     /**
      * Функция для автоматического расчета и установки суммы залога.
@@ -427,15 +442,6 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
 
         console.log("Установлена сумма:", result, "для процента:", percent * 100 + "%");
     }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -498,11 +504,20 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
 
         transaction.add(depositInstruction);
 
-        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
+        // 5. ПОДГОТОВКА И СИМУЛЯЦИЯ
         const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('confirmed');
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = ownerPubkey;
 
+        // Добавляем симуляцию для защиты от ошибок на этапе отправки
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция депозита не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 6. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
         const signedTx = await provider.wallet.signTransaction(transaction);
         const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
             skipPreflight: false,
@@ -544,20 +559,9 @@ async function handleDeposit() {
         alert("Депозит успешен!");
     } catch (e) {
         console.error("Ошибка депозита:", e);
+        alert("Ошибка депозита: " + e.message);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -629,11 +633,20 @@ window.performClaimAllRewards = async function(poolPubKey, poolIndices, userRewa
 
         transaction.add(claimInstruction);
 
-        // 4. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
+        // 4. ПОДГОТОВКА И СИМУЛЯЦИЯ
         const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = ownerPubkey;
 
+        // Добавляем симуляцию для предотвращения ошибок транзакции
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция клейма не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
         const signedTx = await provider.wallet.signTransaction(transaction);
         const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
             skipPreflight: true,
@@ -666,7 +679,10 @@ if (claimButton) {
 
 
 
-   /**
+
+
+
+/**
  * Улучшенная функция: автоматическое определение адресов и запуск клейма
  */
 async function executeClaimRewards() {
@@ -686,16 +702,24 @@ async function executeClaimRewards() {
         const provider = program.provider;
         const owner = provider.wallet.publicKey;
 
-        // 2. АВТОМАТИЗАЦИЯ: Определяем пул (например, из стейта приложения)
-        // Предполагаем, что у тебя есть активный пул в appState
+        // 2. АВТОМАТИЗАЦИЯ: Определяем пул (проверка на наличие данных)
+        if (!window.appState || !window.appState.currentPoolPubKey) {
+            throw new Error("Состояние пула не загружено.");
+        }
         const poolPubKey = window.appState.currentPoolPubKey; 
 
         // 3. АВТОМАТИЗАЦИЯ: Находим ATA наград пользователя (на лету)
-        const rewardMint = window.appState.rewardMint; // Адрес токена наград
+        const rewardMint = window.appState.rewardMint; 
         const userRewardsAta = await spl.getAssociatedTokenAddress(
             rewardMint,
             owner
         );
+
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Проверяем, существует ли ATA в сети
+        const ataAccount = await provider.connection.getAccountInfo(userRewardsAta);
+        if (!ataAccount) {
+            throw new Error("ATA наград не найден. Пожалуйста, убедитесь, что вы инициализировали кошелек для получения наград.");
+        }
 
         console.log("🔍 Автоматическое определение адресов завершено...");
 
@@ -712,243 +736,6 @@ async function executeClaimRewards() {
         alert("Ошибка: " + e.message);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: UNSTAKE (ВЫВОД СРЕДСТВ)
- * 100% синхронизация с SDK: PDA, Аудит, Compute Budget, Симуляция, RAW транзакция, Пост-аудит
- */
-window.performUnstake = async function(poolPubKey, userStAta, userRewardsAta, poolIndex, amountBN) {
-    try {
-        console.log("====================================================================================================");
-        console.log("📉 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ВЫВОДА СРЕДСТВ (UNSTAKE)...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        // Входной контроль
-        if (poolIndex < 0 || poolIndex > 4) throw new Error("ErrorCode::InvalidPoolIndex");
-        if (amountBN.isZero() || amountBN.isNeg()) throw new Error("ErrorCode::ZeroAmount");
-
-        // ШАГ 1: Деривация PDA и предварительный аудит
-        const [userStakePda, userStakeBump] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPubKey.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Buffer.from([poolIndex])
-            ],
-            program.programId
-        );
-
-        const [poolData, userState, currentSlot] = await Promise.all([
-            program.account.poolState.fetch(poolPubKey, "finalized"),
-            program.account.userStakingAccount.fetch(userStakePda, "finalized"),
-            provider.connection.getSlot("finalized")
-        ]);
-
-        if (poolData.globalPause !== 0) throw new Error("ErrorCode::ReentrancyGuardTriggered");
-        if (new anchor.BN(currentSlot).lte(new anchor.BN(userState.lastDepositSlot))) throw new Error("ErrorCode::OperationInSameSlot");
-        if (userState.stakedAmount.lt(amountBN)) throw new Error("ErrorCode::InsufficientStake");
-        
-        const lending = userState.lending || new anchor.BN(0);
-        if (!lending.isZero() && userState.stakedAmount.sub(lending).lt(amountBN)) throw new Error("ErrorCode::CollateralLock");
-
-        const isFullUnstake = userState.stakedAmount.eq(amountBN);
-
-        // ШАГ 2: Сборка транзакции
-        const transaction = new anchor.web3.Transaction();
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        const unstakeInstruction = await program.methods
-            .unstake(poolIndex, amountBN)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakePda,
-                owner: ownerPubkey,
-                vault: poolData.vault,
-                daoTreasuryVault: poolData.daoTreasuryVault,
-                adminFeeVault: poolData.adminFeeVault,
-                userRewardsAta: userRewardsAta,
-                userStAta: userStAta,
-                stMint: poolData.stMint,
-                rewardMint: poolData.rewardMint,
-                tokenProgram: spl.TOKEN_PROGRAM_ID,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .instruction();
-
-        transaction.add(unstakeInstruction);
-
-        // ШАГ 3: Симуляция и отправка
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Simulation failed: " + JSON.stringify(simulation.value.err));
-        }
-
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        // ШАГ 4: Пост-аудит
-        for (let attempt = 1; attempt <= 5; attempt++) {
-            await new Promise(r => setTimeout(r, 4000));
-            try {
-                const stakeAfter = await program.account.userStakingAccount.fetch(userStakePda, "finalized");
-                if (!isFullUnstake && stakeAfter.stakedAmount.lt(userState.stakedAmount)) break;
-            } catch (e) {
-                if (isFullUnstake) break;
-            }
-        }
-
-        console.log("✅ [SUCCESS]: Транзакция подтверждена. ID:", txId);
-        return txId;
-    } catch (e) {
-        if (e.logs) {
-            console.error("--- SOLANA LOGS (TRANSACTION) ---");
-            e.logs.forEach(line => console.error(line));
-        }
-        console.error("❌ Unstake Error:", e.message);
-        throw e;
-    }
-};
-
-
-
-
-
-async function handleUnstake() {
-    const input = document.getElementById('unstakeAmountInput');
-    const amount = parseFloat(input.value);
-    
-    if (!amount || amount <= 0) {
-        alert("Введите корректную сумму");
-        return;
-    }
-    
-    try {
-        // Добавьте визуальный индикатор загрузки
-        const btn = document.getElementById('executeUnstakeBtn');
-        btn.innerText = "Processing...";
-        btn.disabled = true;
-
-        const amountBN = new anchor.BN(amount * 1e9); 
-        await window.performUnstake(
-            window.appState.currentPoolPubKey, 
-            window.appState.userStAta, 
-            window.appState.userRewardsAta, 
-            window.appState.poolIndex, 
-            amountBN
-        );
-        alert("Успешно!");
-    } catch (err) {
-        console.error(err);
-        alert("Ошибка транзакции: " + err.message);
-    } finally {
-        const btn = document.getElementById('executeUnstakeBtn');
-        btn.innerText = "CONFIRM & EXIT";
-        btn.disabled = false;
-    }
-}
-
-
-
 
 
 
@@ -998,11 +785,19 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
         transaction.add(closeInstruction);
 
-        // 3. Подпись и отправка RAW-пакета
+        // 3. Подготовка и симуляция (защита от ошибок контракта)
         const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = ownerPubkey;
 
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция закрытия не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 4. Подпись и отправка RAW-пакета
         const signedTx = await provider.wallet.signTransaction(transaction);
         const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
             skipPreflight: true,
@@ -1026,25 +821,114 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
 
 
 
+async function handleCloseAccount() {
+    // Добавим кнопку в качестве аргумента или найдем ее по ID
+    const btn = document.getElementById('closeAccountBtn'); 
 
+    try {
+        if (btn) {
+            btn.innerText = "Closing...";
+            btn.disabled = true;
+        }
 
-    async function handleCloseAccount() {
         // Эти переменные (POOL_PUBKEY, USER_STAKING_PDA, CURRENT_INDEX) 
         // должны быть доступны в твоем контексте
-        try {
-            await window.performCloseStakingAccount(
-                POOL_PUBKEY, 
-                USER_STAKING_PDA, 
-                CURRENT_INDEX
-            );
-            alert("✅ Аккаунт успешно закрыт!");
-        } catch (e) {
-            console.error("Ошибка закрытия аккаунта:", e);
+        await window.performCloseStakingAccount(
+            POOL_PUBKEY, 
+            USER_STAKING_PDA, 
+            CURRENT_INDEX
+        );
+        
+        alert("✅ Аккаунт успешно закрыт!");
+    } catch (e) {
+        console.error("Ошибка закрытия аккаунта:", e);
+        alert("Ошибка закрытия: " + e.message);
+    } finally {
+        if (btn) {
+            btn.innerText = "CLOSE ACCOUNT";
+            btn.disabled = false;
         }
     }
+}
+
+
+             
+        
+       
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       
 
 
 
