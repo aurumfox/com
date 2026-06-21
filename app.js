@@ -1519,7 +1519,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
   // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
 const walletBtn = document.getElementById('connectWalletBtn');
 const walletModal = document.getElementById('walletModal'); 
@@ -1567,7 +1566,7 @@ const scanForWallets = () => {
 const triggerDeepLink = () => {
     const url = window.location.href;
     const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
-    showNotification("Opening Wallet App...", "emerald", walletBtn);
+    showNotification("Opening Wallet App...", "emerald");
     window.location.href = phantomDeepLink;
 };
 
@@ -1596,7 +1595,7 @@ if (walletBtn) {
                 await currentProvider.disconnect(); 
                 currentProvider = null;
                 updateUI(null);
-                showNotification("Wallet Disconnected", "red", walletBtn);
+                showNotification("Wallet Disconnected", "red");
             } catch (err) { console.error(err); }
             finally {
                 isManualDisconnect = false;
@@ -1642,9 +1641,12 @@ async function connectWallet(wallet) {
         const resp = await currentProvider.connect();
         const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
         updateUI(publicKey);
-        showNotification(`${wallet.name} Connected!`, "emerald", walletBtn);
+        showNotification(`${wallet.name} Connected!`);
         
-        if (walletModal) walletModal.classList.add('hidden');
+        // Исправление: принудительно скрываем окно и возвращаем фокус на окно браузера
+        if (walletModal) {
+            walletModal.classList.add('hidden');
+        }
         window.focus(); 
         
         currentProvider.removeAllListeners?.('disconnect');
@@ -1652,12 +1654,12 @@ async function connectWallet(wallet) {
             if (!isManualDisconnect) {
                 currentProvider = null;
                 updateUI(null);
-                showNotification("Disconnected by wallet", "red", walletBtn);
+                showNotification("Disconnected by wallet", "red");
             }
         });
     } catch (err) {
         console.error("Connection Error:", err);
-        showNotification("Connection Failed", "red", walletBtn);
+        showNotification("Connection Failed", "red");
     }
 }
 
@@ -1677,5 +1679,3 @@ setTimeout(async () => {
         }
     }
 }, 1000);
- 
-        
