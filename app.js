@@ -59,13 +59,14 @@ function formatBigInt(value, decimals) {
     setTimeout(report, 500);
 })();
 
-// --- 2. КОНФИГУРАЦИЯ QUBIT ---
+// --- 2. КОНФИГУРАЦИЯ QUBIT (БЕЗОПАСНЫЙ МИНИМУМ) ---
 const QUBIT_CONFIG = {
-    programId: "77jJ2qm8VmsQWz82PgEgFJzj6gWpu1jLkqQ95YF7DaSz",
-    idlAccount: "2YaGmSTFDbjjxEM5Lsj9XVwXzLiiN3PxhuJAyse7FUW6",
-    // Сюда вставьте ваш JSON IDL (если он короткий) 
-    // или укажите путь, если вы подгружаете его отдельно
-    idl: null 
+    // ID программы - база для всех вычислений
+    programId: new solanaWeb3.PublicKey("77jJ2qm8VmsQWz82PgEgFJzj6gWpu1jLkqQ95YF7DaSz"),
+    // Основные публичные аккаунты, с которыми взаимодействует пользователь
+    pool: new solanaWeb3.PublicKey("DtAAYa8d9bUYNrvrTPCcsb2yGFfirq1DcqsjfXdK34nd"),
+    vault: new solanaWeb3.PublicKey("14jYS3KKLgp58hevDrHKcSkpQcTJ2mWZWM5CmfLGL6CZ"),
+    mint: new solanaWeb3.PublicKey("DDVgZ5GYxG7fLkJS7BTsbiRXBuSCcFLWrMMzZCJhBfCd")
 };
 
 // Менеджер программы
@@ -75,16 +76,19 @@ const QubitProgramManager = {
     async getProgram() {
         if (this.program) return this.program;
 
-        // Инициализация провайдера (через phantom/solflare)
+        // ВАЖНО: Убедись, что используешь Mainnet (api.mainnet-beta.solana.com) 
+        // для реальной сети, т.к. твой пул (DtAAY...) находится там.
+        const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
+        
         const provider = new anchor.AnchorProvider(
-            new solanaWeb3.Connection("https://api.devnet.solana.com"), // или devnet
+            connection, 
             window.solana, 
             { preflightCommitment: "confirmed" }
         );
 
-        // Если IDL еще не загружен, можно попробовать взять его из сети 
-        // через idlAccount (наиболее профессиональный путь)
-        const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId, provider);
+        // Загрузка IDL по программе - это самый надежный путь
+        const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId.toBase58(), provider);
+        if (!idl) throw new Error("Не удалось загрузить IDL программы!");
         
         this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
         return this.program;
@@ -1262,6 +1266,50 @@ async function handleCloseAccount() {
     
 
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+async function stakeTokens(amount) {
+    const program = await QubitProgramManager.getProgram();
+    
+    // Вычисляем PDA "на лету" (если нужно для транзакции)
+    // const [userStake] = await anchor.web3.PublicKey.findProgramAddress([...], QUBIT_CONFIG.programId);
+
+    const tx = await program.methods
+        .stake(new anchor.BN(amount)) // Пример метода
+        .accounts({
+            pool: QUBIT_CONFIG.pool,
+            vault: QUBIT_CONFIG.vault,
+            tokenMint: QUBIT_CONFIG.mint,
+            user: window.solana.publicKey,
+            // ... остальные аккаунты по IDL
+        })
+        .rpc();
+    
+    console.log("Транзакция отправлена:", tx);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
