@@ -706,7 +706,6 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
 
 
 
-
 /**
  * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
  * Вызывается напрямую из атрибута onclick="handleDeposit()" в твоем HTML
@@ -738,18 +737,28 @@ async function handleDeposit() {
             btn.disabled = true;
         }
 
-        // 3. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ (Убеждаемся, что данные подгружены)
-        if (typeof POOL_PUBKEY === 'undefined' || typeof USER_SOURCE_ATA === 'undefined' || typeof USER_ST_ATA === 'undefined') {
+        // 3. ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ ПЕРЕД ДЕПОЗИТОМ
+        // Используем конфигурацию пула (QUBIT_CONFIG), которая у тебя уже есть
+        console.log("🔄 Синхронизация данных перед отправкой...");
+        await window.syncUserAccountState(QUBIT_CONFIG.pool, QUBIT_CONFIG.mint);
+
+        // 4. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ
+        // Теперь USER_SOURCE_ATA точно определен благодаря синхронизации выше
+        if (typeof POOL_PUBKEY === 'undefined' && typeof QUBIT_CONFIG !== 'undefined') {
+            window.POOL_PUBKEY = QUBIT_CONFIG.pool;
+        }
+        
+        if (!window.POOL_PUBKEY || !window.USER_SOURCE_ATA || !window.USER_ST_ATA) {
             throw new Error("Необходимые данные (PUBKEY/ATA) не определены в контексте.");
         }
 
         console.log(`⚙️ Депозит: ${amountVal} | Пул: ${poolIndex}`);
 
-        // 4. ВЫЗОВ SDK-МЕТОДА
+        // 5. ВЫЗОВ SDK-МЕТОДА
         await window.performDeposit(
-            POOL_PUBKEY, 
-            USER_SOURCE_ATA, 
-            USER_ST_ATA, 
+            window.POOL_PUBKEY, 
+            window.USER_SOURCE_ATA, 
+            window.USER_ST_ATA, 
             poolIndex, 
             amountBN
         );
@@ -762,14 +771,13 @@ async function handleDeposit() {
         alert("Ошибка депозита: " + e.message);
         
     } finally {
-        // 5. ВОССТАНОВЛЕНИЕ UI
+        // 6. ВОССТАНОВЛЕНИЕ UI
         if (btn) {
             btn.innerText = "CONFIRM DEPOSIT";
             btn.disabled = false;
         }
     }
 }
-
 
 
 
