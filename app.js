@@ -480,12 +480,12 @@ async function handleCollateralize() {
 
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE LENDING
- * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
+ * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция
  */
 window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amountBN) {
     try {
         console.log("====================================================================================================");
-        console.log("🔓 [START]: ИНИЦИАЦИЯ СНЯТИЯ ЗАЛОГА (DECOLLATERALIZE LENDING)...");
+        console.log("🔓 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА СНЯТИЯ ЗАЛОГА (DECOLLATERALIZE LENDING)...");
         
         const program = await QubitProgramManager.getProgram();
         const provider = program.provider;
@@ -547,6 +547,10 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
         return txId;
 
     } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
         console.error("❌ Decollateralize Error:", e.message);
         throw e;
     }
@@ -561,7 +565,7 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
 window.setAmount = function(percent) {
     try {
         console.log("====================================================================================================");
-        console.log("🔢 [START]: РАСЧЕТ СУММЫ (PERCENT:", percent * 100 + "%)...");
+        console.log(`🔢 [START]: ИНИЦИАЦИЯ РАСЧЕТА СУММЫ (PERCENT: ${percent * 100}%)...`);
 
         // 1. ПОЛУЧЕНИЕ МАКСИМАЛЬНОГО ЗНАЧЕНИЯ
         const maxElement = document.getElementById('maxAvailableAmount');
@@ -576,9 +580,9 @@ window.setAmount = function(percent) {
 
         // 3. ПРОВЕРКА НА ВАЛИДНОСТЬ ДАННЫХ
         if (isNaN(max) || max <= 0) {
-            console.warn("⚠️ Максимально доступная сумма не определена или равна 0.");
+            console.warn("⚠️ [WARNING]: Максимально доступная сумма не определена или равна 0.");
             input.value = "0.00";
-            return;
+            return "0.00";
         }
 
         // 4. РАСЧЕТ И ФОРМАТИРОВАНИЕ (оставляем 2 знака после запятой)
@@ -587,16 +591,16 @@ window.setAmount = function(percent) {
         // 5. УСТАНОВКА ЗНАЧЕНИЯ
         input.value = result;
 
-        console.log("✨ [SUCCESS]: Установлена сумма:", result, "для процента:", percent * 100 + "%");
+        console.log(`✨ [SUCCESS]: Сумма успешно рассчитана: ${result} (процент: ${percent * 100}%).`);
         return result;
 
     } catch (e) {
         console.error("❌ Set Amount Error:", e.message);
-        // Не выбрасываем исключение наружу, чтобы не ломать поток в UI, 
-        // но уведомляем в консоли
+        // Не выбрасываем исключение наружу, чтобы не ломать поток в UI
         return null;
     }
 };
+
 
 
 
