@@ -156,51 +156,21 @@ async function ensureWalletConnected() {
 
 
 
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE
- * 100% синхронизация с SDK (Zero-Copy, корректная симуляция)
- * Добавлена повышенная защита: проверка состояния и симуляция ресурсов
- */
 window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
     try {
-        console.log("====================================================================================================");
-        console.log(`🛠 [START]: ИНИЦИАЛИЗАЦИЯ СТЕЙКИНГ-АККАУНТА (POOL INDEX: ${poolIndex})...`);
-        
         const program = await QubitProgramManager.getProgram();
         const provider = program.provider;
         const ownerPubkey = provider.wallet.publicKey;
 
-        // Валидация входных данных (индекс пула 0-4)
-        if (poolIndex < 0 || poolIndex > 4) {
-            throw new Error("⛔️ ОШИБКА: Неверный индекс пула (0-4).");
-        }
-
-        // 1. ДЕРИВАЦИЯ PDA (строго по семенам из Rust)
+        // 1. PDA вычисляем так же, как в тестах и utils
         const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPubKey.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Buffer.from([poolIndex])
-            ],
+            [Buffer.from("user_stake"), poolPubKey.toBuffer(), ownerPubkey.toBuffer(), Buffer.from([poolIndex])],
             program.programId
         );
 
-        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Проверяем, не инициализирован ли аккаунт уже
-        const accountInfo = await provider.connection.getAccountInfo(userStakePda);
-        if (accountInfo !== null) {
-            console.warn("⚠️ Аккаунт уже существует. Инициализация не требуется.");
-            return "ALREADY_INITIALIZED";
-        }
-
-        // 2. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
-        const transaction = new anchor.web3.Transaction();
-        // Устанавливаем лимиты, достаточные для инициализации аккаунта
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        // 3. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
-        const initInstruction = await program.methods
+        // 2. БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ (через .rpc)
+        // .rpc() внутри себя делает: .transaction() -> .sign() -> .send() -> .confirm()
+        const txId = await program.methods
             .initializeUserStake(poolIndex)
             .accounts({
                 poolState: poolPubKey,
@@ -209,41 +179,21 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
                 systemProgram: anchor.web3.SystemProgram.programId,
                 clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             })
-            .instruction();
+            .preInstructions([
+                anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
+            ])
+            .rpc({ commitment: "confirmed" }); // Как в тестах!
 
-        transaction.add(initInstruction);
-
-        // 4. ПОДГОТОВКА И СИМУЛЯЦИЯ
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        // Симуляция для предотвращения заведомо провальных транзакций
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Симуляция инициализации не пройдена: " + JSON.stringify(simulation.value.err));
-        }
-
-        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        console.log("⏳ Ожидание подтверждения (Initialize)...");
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        console.log("✨ [SUCCESS]: Стейкинг-аккаунт успешно инициализирован. TX:", txId);
+        console.log("✨ [SUCCESS]: Транзакция подтверждена:", txId);
         return txId;
 
     } catch (e) {
-        console.error("❌ Initialize Error:", e.message);
+        console.error("❌ Initialize Error:", e);
         throw e;
     }
 };
+
 
 
 
