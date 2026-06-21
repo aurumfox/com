@@ -311,7 +311,7 @@ async function handleConfirmInitialize() {
 
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE LENDING
- * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
+ * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция, Аудит
  */
 window.performCollateralizeLending = async function(
     poolPubKey, 
@@ -324,13 +324,13 @@ window.performCollateralizeLending = async function(
 ) {
     try {
         console.log("====================================================================================================");
-        console.log("🛡️ [START]: ИНИЦИАЦИЯ УСТАНОВКИ ЗАЛОГА (COLLATERALIZE LENDING)...");
+        console.log("🛡️ [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА УСТАНОВКИ ЗАЛОГА (COLLATERALIZE LENDING)...");
         
         const program = await QubitProgramManager.getProgram();
         const provider = program.provider;
         const ownerPubkey = provider.wallet.publicKey;
 
-        // 1. Деривация PDA (строго по семенам из Rust)
+        // 1. Деривация PDA и предварительный аудит
         const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
@@ -364,7 +364,7 @@ window.performCollateralizeLending = async function(
 
         transaction.add(collateralizeInstruction);
 
-        // 4. Подготовка транзакции
+        // 4. Подготовка транзакции и симуляция
         const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = ownerPubkey;
@@ -373,7 +373,6 @@ window.performCollateralizeLending = async function(
         transaction.partialSign(guardianKeypair);
         transaction.partialSign(lendingAuthorityKeypair);
 
-        // 5. Симуляция для предотвращения ошибок транзакции
         const simulation = await provider.connection.simulateTransaction(transaction);
         if (simulation.value.err) {
             console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
@@ -381,7 +380,7 @@ window.performCollateralizeLending = async function(
             throw new Error("Симуляция коллатерализации не пройдена: " + JSON.stringify(simulation.value.err));
         }
 
-        // 6. Подпись кошельком пользователя и отправка
+        // 5. Подпись кошельком пользователя и отправка
         const signedTx = await provider.wallet.signTransaction(transaction);
         const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
             skipPreflight: true,
@@ -391,14 +390,21 @@ window.performCollateralizeLending = async function(
         console.log("⏳ Ожидание подтверждения (Collateralize)...");
         await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
 
-        console.log("✅ [SUCCESS]: Залог установлен успешно. TX:", txId);
+        console.log("✨ [SUCCESS]: Залог установлен успешно. TX:", txId);
         return txId;
 
     } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
         console.error("❌ Collateralize Error:", e.message);
         throw e;
     }
 };
+
+
+
 
 
 /**
@@ -406,25 +412,38 @@ window.performCollateralizeLending = async function(
  * Вызывается напрямую из атрибута onclick="handleCollateralize()" в твоем HTML
  */
 async function handleCollateralize() {
+    const btn = document.getElementById('collateralizeBtn'); // Предполагаем ID кнопки
+
     try {
         console.log("====================================================================================================");
-        console.log("🛡️ [UI EVENT]: ИНИЦИАЦИЯ COLLATERALIZE LENDING...");
+        console.log("🛡️ [UI EVENT]: ИНИЦИАЦИЯ COLLATERALIZE LENDING ЧЕРЕЗ UI...");
 
-        // Получение и валидация данных из input
-        const rawAmount = document.getElementById('collateralAmountInput').value;
-        if (!rawAmount || isNaN(rawAmount)) {
+        // 1. ПОЛУЧЕНИЕ И ВАЛИДАЦИЯ ДАННЫХ ИЗ ИНПУТА
+        const rawAmount = document.getElementById('collateralAmountInput')?.value;
+        if (!rawAmount || isNaN(rawAmount) || parseFloat(rawAmount) <= 0) {
             throw new Error("Введите корректное число для залога.");
         }
         
         const amount = new anchor.BN(rawAmount);
         const minHF = 2000; 
 
-        // Проверка наличия необходимых глобальных переменных
+        // 2. ПОДГОТОВКА UI
+        if (btn) {
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+        }
+
+        // 3. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ (Убеждаемся, что ключи и данные загружены)
         if (!window.GUARDIAN_KEYPAIR || !window.LENDING_AUTH_KEYPAIR) {
             throw new Error("Ключи Guardian или Lending Authority не загружены.");
         }
+        if (typeof POOL_STATE_PUBKEY === 'undefined' || typeof ORACLE_FEEDS_ARRAY === 'undefined') {
+            throw new Error("Необходимые данные пула или оракулов не определены.");
+        }
 
-        // Вызов проверенного SDK-метода
+        console.log(`⚙️ Залог: ${rawAmount} | MinHF: ${minHF}`);
+
+        // 4. ВЫЗОВ ПРОВЕРЕННОГО SDK-МЕТОДА
         await window.performCollateralizeLending(
             POOL_STATE_PUBKEY, 
             0, 
@@ -441,6 +460,13 @@ async function handleCollateralize() {
     } catch (e) {
         console.error("❌ Collateralize UI Error:", e.message);
         alert("Ошибка при установке залога: " + e.message);
+        
+    } finally {
+        // 5. ВОССТАНОВЛЕНИЕ UI
+        if (btn) {
+            btn.innerText = "CONFIRM COLLATERAL";
+            btn.disabled = false;
+        }
     }
 }
 
