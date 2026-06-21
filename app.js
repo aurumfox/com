@@ -620,7 +620,7 @@ window.setAmount = function(percent) {
 window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poolIndex, amountBN) {
     try {
         console.log("====================================================================================================");
-        console.log("🚀 [START]: ИНИЦИАЦИЯ ДЕПОЗИТА...");
+        console.log("🚀 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ДЕПОЗИТА...");
         
         const program = await QubitProgramManager.getProgram();
         const provider = program.provider;
@@ -691,10 +691,15 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
         return txId;
 
     } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
         console.error("❌ Deposit Error:", e.message);
         throw e;
     }
 };
+
 
 
 
@@ -703,6 +708,8 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
  * Вызывается напрямую из атрибута onclick="handleDeposit()" в твоем HTML
  */
 async function handleDeposit() {
+    const btn = document.getElementById('executeDepositBtn'); // Предполагаем ID кнопки
+
     try {
         console.log("====================================================================================================");
         console.log("🚀 [UI EVENT]: ИНИЦИАЦИЯ ДЕПОЗИТА ЧЕРЕЗ UI...");
@@ -721,14 +728,20 @@ async function handleDeposit() {
         const amountBN = new anchor.BN(amountVal);
         const poolIndex = parseInt(indexElement.innerText);
 
-        // 2. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ (Убеждаемся, что данные подгружены)
+        // 2. ПОДГОТОВКА UI
+        if (btn) {
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+        }
+
+        // 3. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ (Убеждаемся, что данные подгружены)
         if (typeof POOL_PUBKEY === 'undefined' || typeof USER_SOURCE_ATA === 'undefined' || typeof USER_ST_ATA === 'undefined') {
             throw new Error("Необходимые данные (PUBKEY/ATA) не определены в контексте.");
         }
 
         console.log(`⚙️ Депозит: ${amountVal} | Пул: ${poolIndex}`);
 
-        // 3. ВЫЗОВ SDK-МЕТОДА
+        // 4. ВЫЗОВ SDK-МЕТОДА
         await window.performDeposit(
             POOL_PUBKEY, 
             USER_SOURCE_ATA, 
@@ -743,8 +756,16 @@ async function handleDeposit() {
     } catch (e) {
         console.error("❌ Handle Deposit Error:", e.message);
         alert("Ошибка депозита: " + e.message);
+        
+    } finally {
+        // 5. ВОССТАНОВЛЕНИЕ UI
+        if (btn) {
+            btn.innerText = "CONFIRM DEPOSIT";
+            btn.disabled = false;
+        }
     }
 }
+
 
 
 
