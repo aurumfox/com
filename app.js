@@ -248,21 +248,30 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
 
 
 
+
+
 /**
- * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
- * Вызывается напрямую из атрибута onclick="handleConfirmInitialize()" в твоем HTML
+ * ГЛОБАЛЬНЫЙ БЛОК UI-ИНТЕГРАЦИИ: НАВИГАЦИЯ И ИНИЦИАЛИЗАЦИЯ
+ * Объединенный метод для управления состоянием и вызова смарт-контракта
  */
 
-// 1. Функция навигации (чтобы кнопка в меню "заходила" на экран)
+// 1. Вспомогательная функция проверки подключения кошелька
+async function ensureWalletConnected() {
+    const program = await QubitProgramManager.getProgram();
+    if (!program.provider.wallet.publicKey) {
+        throw new Error("Кошелек не подключен! Пожалуйста, подключите Phantom.");
+    }
+    return program.provider.wallet.publicKey;
+}
+
+// 2. Функция навигации (переключение экранов)
 function switchView(viewId) {
     try {
         console.log(`====================================================================================================`);
         console.log(`👁️ [UI NAVIGATION]: ПЕРЕКЛЮЧЕНИЕ НА VIEW: ${viewId}...`);
         
-        // Скрываем все блоки, если они имеют общий класс, например 'view-block'
         document.querySelectorAll('.view-block').forEach(el => el.classList.add('hidden'));
         
-        // Показываем нужный блок
         const view = document.getElementById(viewId);
         if (view) {
             view.classList.remove('hidden');
@@ -275,36 +284,18 @@ function switchView(viewId) {
     }
 }
 
-
-
-async function handleConfirmInitialize() {
-    try {
-        // --- ПРОВЕРКА СОЕДИНЕНИЯ ---
-        const walletPubkey = await ensureWalletConnected();
-        
-        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
-        const signerEl = document.querySelector('.wallet-signer-display'); // Убедись, что такой класс есть в HTML
-        if (signerEl) signerEl.innerText = walletPubkey.toBase58();
-
-        console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ДЛЯ:", walletPubkey.toBase58());
-
-        // ... (остальной твой код) ...
-        
-        // ВАЖНО: Вызывай метод, передавая актуальный pubkey
-        const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
-        
-        // ...
-    } catch (e) {
-        console.error("❌ Connection/Init Error:", e.message);
-        alert("Ошибка подключения: " + e.message);
-    }
-}
-
-// 2. Функция подтверждения (обновлена для взаимодействия с performInitializeUserStake)
+// 3. Единая функция инициализации (объединенная логика)
 async function handleConfirmInitialize() {
     try {
         console.log("====================================================================================================");
         console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ЧЕРЕЗ UI...");
+
+        // --- ПРОВЕРКА СОЕДИНЕНИЯ И ПОЛУЧЕНИЕ ПУБЛИЧНОГО КЛЮЧА ---
+        const walletPubkey = await ensureWalletConnected();
+        
+        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
+        const signerEl = document.querySelector('.wallet-signer-display'); 
+        if (signerEl) signerEl.innerText = walletPubkey.toBase58();
 
         const activeBtn = document.querySelector('.tier-btn.active-tier');
         if (!activeBtn) {
@@ -321,7 +312,7 @@ async function handleConfirmInitialize() {
 
         console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
 
-        // 1. Вызываем проверенный глобальный метод
+        // Вызываем проверенный глобальный метод инициализации
         const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
 
         if (result === "ALREADY_INITIALIZED") {
@@ -330,17 +321,15 @@ async function handleConfirmInitialize() {
         } else {
             console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
             
-            // 2. ДОБАВЛЕН БЛОК ВЕРИФИКАЦИИ (как в тесте)
-            // Это гарантирует, что данные в блокчейне соответствуют ожиданиям
+            // --- БЛОК ВЕРИФИКАЦИИ ---
             const program = await QubitProgramManager.getProgram();
-            const ownerPubkey = program.provider.wallet.publicKey;
             
-            // Вычисляем PDA для проверки
+            // Вычисляем PDA для верификации
             const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
                 [
                     Buffer.from("user_stake"),
                     poolPubKey.toBuffer(),
-                    ownerPubkey.toBuffer(),
+                    walletPubkey.toBuffer(),
                     Buffer.from([poolIndex])
                 ],
                 program.programId
@@ -349,7 +338,6 @@ async function handleConfirmInitialize() {
             // Читаем данные из блокчейна для подтверждения
             let stakeData;
             try {
-                // Пытаемся получить данные аккаунта (как в тесте)
                 stakeData = await program.account.userStaking.fetch(userStakePda);
                 
                 console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
@@ -369,7 +357,6 @@ async function handleConfirmInitialize() {
         alert("Ошибка: " + e.message);
     }
 }
-
 
 
 
