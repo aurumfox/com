@@ -1134,12 +1134,12 @@ async function handleUnstake() {
 
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: CLOSE STAKING ACCOUNT
- * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
+ * 100% синхронизация с SDK: Compute Budget, Симуляция, RAW транзакция
  */
 window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, poolIndex) {
     try {
         console.log("====================================================================================================");
-        console.log("🗑️ [START]: ИНИЦИАЦИЯ ЗАКРЫТИЯ СТЕЙКИНГ-АККАУНТА...");
+        console.log("🗑️ [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ЗАКРЫТИЯ СТЕЙКИНГ-АККАУНТА...");
         
         const program = await QubitProgramManager.getProgram();
         const provider = program.provider;
@@ -1190,6 +1190,10 @@ window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, p
         return txId;
 
     } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
         console.error("❌ Close Account Error:", e.message);
         
         // Логирование типичных ошибок контракта
@@ -1220,7 +1224,7 @@ async function handleCloseAccount() {
 
         // 1. ПОДГОТОВКА UI
         if (btn) {
-            btn.innerText = "Closing...";
+            btn.innerText = "Processing...";
             btn.disabled = true;
         }
 
