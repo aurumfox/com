@@ -1060,6 +1060,161 @@ async function executeClaimRewards() {
 
 
 
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: UNSTAKE (ВЫВОД СРЕДСТВ)
+ * 100% синхронизация с SDK: PDA, Аудит, Compute Budget, Симуляция, RAW транзакция, Пост-аудит
+ */
+window.performUnstake = async function(poolPubKey, userStAta, userRewardsAta, poolIndex, amountBN) {
+    try {
+        console.log("====================================================================================================");
+        console.log("📉 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ВЫВОДА СРЕДСТВ (UNSTAKE)...");
+        
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
+
+        // Входной контроль
+        if (poolIndex < 0 || poolIndex > 4) throw new Error("ErrorCode::InvalidPoolIndex");
+        if (amountBN.isZero() || amountBN.isNeg()) throw new Error("ErrorCode::ZeroAmount");
+
+        // ШАГ 1: Деривация PDA и предварительный аудит
+        const [userStakePda, userStakeBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("user_stake"),
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        const [poolData, userState, currentSlot] = await Promise.all([
+            program.account.poolState.fetch(poolPubKey, "finalized"),
+            program.account.userStakingAccount.fetch(userStakePda, "finalized"),
+            provider.connection.getSlot("finalized")
+        ]);
+
+        if (poolData.globalPause !== 0) throw new Error("ErrorCode::ReentrancyGuardTriggered");
+        if (new anchor.BN(currentSlot).lte(new anchor.BN(userState.lastDepositSlot))) throw new Error("ErrorCode::OperationInSameSlot");
+        if (userState.stakedAmount.lt(amountBN)) throw new Error("ErrorCode::InsufficientStake");
+        
+        const lending = userState.lending || new anchor.BN(0);
+        if (!lending.isZero() && userState.stakedAmount.sub(lending).lt(amountBN)) throw new Error("ErrorCode::CollateralLock");
+
+        const isFullUnstake = userState.stakedAmount.eq(amountBN);
+
+        // ШАГ 2: Сборка транзакции
+        const transaction = new anchor.web3.Transaction();
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
+
+        const unstakeInstruction = await program.methods
+            .unstake(poolIndex, amountBN)
+            .accounts({
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                vault: poolData.vault,
+                daoTreasuryVault: poolData.daoTreasuryVault,
+                adminFeeVault: poolData.adminFeeVault,
+                userRewardsAta: userRewardsAta,
+                userStAta: userStAta,
+                stMint: poolData.stMint,
+                rewardMint: poolData.rewardMint,
+                tokenProgram: spl.TOKEN_PROGRAM_ID,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .instruction();
+
+        transaction.add(unstakeInstruction);
+
+        // ШАГ 3: Симуляция и отправка
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Simulation failed: " + JSON.stringify(simulation.value.err));
+        }
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        // ШАГ 4: Пост-аудит
+        for (let attempt = 1; attempt <= 5; attempt++) {
+            await new Promise(r => setTimeout(r, 4000));
+            try {
+                const stakeAfter = await program.account.userStakingAccount.fetch(userStakePda, "finalized");
+                if (!isFullUnstake && stakeAfter.stakedAmount.lt(userState.stakedAmount)) break;
+            } catch (e) {
+                if (isFullUnstake) break;
+            }
+        }
+
+        console.log("✅ [SUCCESS]: Транзакция подтверждена. ID:", txId);
+        return txId;
+    } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
+        console.error("❌ Unstake Error:", e.message);
+        throw e;
+    }
+};
+
+
+
+
+
+async function handleUnstake() {
+    const input = document.getElementById('unstakeAmountInput');
+    const amount = parseFloat(input.value);
+    
+    if (!amount || amount <= 0) {
+        alert("Введите корректную сумму");
+        return;
+    }
+    
+    try {
+        // Добавьте визуальный индикатор загрузки
+        const btn = document.getElementById('executeUnstakeBtn');
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        const amountBN = new anchor.BN(amount * 1e9); 
+        await window.performUnstake(
+            window.appState.currentPoolPubKey, 
+            window.appState.userStAta, 
+            window.appState.userRewardsAta, 
+            window.appState.poolIndex, 
+            amountBN
+        );
+        alert("Успешно!");
+    } catch (err) {
+        console.error(err);
+        alert("Ошибка транзакции: " + err.message);
+    } finally {
+        const btn = document.getElementById('executeUnstakeBtn');
+        btn.innerText = "CONFIRM & EXIT";
+        btn.disabled = false;
+    }
+}
+
+
+
+
+
+
+
 
 
 
