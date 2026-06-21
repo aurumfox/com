@@ -69,31 +69,100 @@ const QUBIT_CONFIG = {
     mint: new solanaWeb3.PublicKey("DDVgZ5GYxG7fLkJS7BTsbiRXBuSCcFLWrMMzZCJhBfCd")
 };
 
-// Менеджер программы
+// Менеджер программы: Исправлено для стабильной работы в Devnet
 const QubitProgramManager = {
     program: null,
 
     async getProgram() {
         if (this.program) return this.program;
 
-        // ВАЖНО: Убедись, что используешь Mainnet (api.mainnet-beta.solana.com) 
-        // для реальной сети, т.к. твой пул (DtAAY...) находится там.
+        // Жестко фиксируем Devnet, как ты и просил
         const connection = new solanaWeb3.Connection("https://api.devnet.solana.com", "confirmed");
         
+        // Проверка наличия кошелька
+        if (!window.solana || !window.solana.isConnected) {
+            console.warn("⚠️ Кошелек не подключен, попытка инициализации без подписи...");
+        }
+
         const provider = new anchor.AnchorProvider(
             connection, 
             window.solana, 
             { preflightCommitment: "confirmed" }
         );
 
-        // Загрузка IDL по программе - это самый надежный путь
+        // Загрузка IDL по программе из Devnet
         const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId.toBase58(), provider);
-        if (!idl) throw new Error("Не удалось загрузить IDL программы!");
+        if (!idl) throw new Error("Не удалось загрузить IDL программы с Devnet!");
         
         this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
+        console.log("✅ Qubit Program Manager: Инициализирована в Devnet");
+        
         return this.program;
     }
 };
+
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE (DEVNET FIXED)
+ */
+window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
+    try {
+        console.log("====================================================================================================");
+        console.log(`🛠 [START]: ИНИЦИАЛИЗАЦИЯ (DEVNET) | POOL INDEX: ${poolIndex}...`);
+        
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
+
+        if (poolIndex < 0 || poolIndex > 4) {
+            throw new Error("⛔️ ОШИБКА: Неверный индекс пула (0-4).");
+        }
+
+        // 1. ДЕРИВАЦИЯ PDA
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("user_stake"),
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        // 2. ПРОВЕРКА СОСТОЯНИЯ
+        const accountInfo = await provider.connection.getAccountInfo(userStakePda);
+        if (accountInfo !== null) {
+            console.warn("⚠️ Аккаунт уже существует. Инициализация не требуется.");
+            return "ALREADY_INITIALIZED";
+        }
+
+        // 3. ФОРМИРОВАНИЕ ТРАНЗАКЦИИ
+        const tx = await program.methods
+            .initializeUserStake(poolIndex)
+            .accounts({
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                systemProgram: anchor.web3.SystemProgram.programId,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .preInstructions([
+                anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
+            ])
+            .rpc({
+                skipPreflight: false,
+                preflightCommitment: "confirmed"
+            });
+
+        console.log("✨ [SUCCESS]: Инициализация в Devnet прошла успешно. TX:", tx);
+        return tx;
+
+    } catch (e) {
+        console.error("❌ Initialize Error (Devnet):", e);
+        throw e;
+    }
+};
+
 
 // --- 3. ГЛОБАЛЬНЫЕ КОНСТАНТЫ И ЛОГИКА ---
 const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
@@ -155,44 +224,6 @@ async function ensureWalletConnected() {
 
 
 
-
-window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
-    try {
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        // 1. PDA вычисляем так же, как в тестах и utils
-        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-            [Buffer.from("user_stake"), poolPubKey.toBuffer(), ownerPubkey.toBuffer(), Buffer.from([poolIndex])],
-            program.programId
-        );
-
-        // 2. БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ (через .rpc)
-        // .rpc() внутри себя делает: .transaction() -> .sign() -> .send() -> .confirm()
-        const txId = await program.methods
-            .initializeUserStake(poolIndex)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakePda,
-                owner: ownerPubkey,
-                systemProgram: anchor.web3.SystemProgram.programId,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .preInstructions([
-                anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
-            ])
-            .rpc({ commitment: "confirmed" }); // Как в тестах!
-
-        console.log("✨ [SUCCESS]: Транзакция подтверждена:", txId);
-        return txId;
-
-    } catch (e) {
-        console.error("❌ Initialize Error:", e);
-        throw e;
-    }
-};
 
 
 
