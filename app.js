@@ -776,26 +776,25 @@ async function handleDeposit() {
 
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: CLAIM ALL REWARDS
- * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
+ * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция, Пост-аудит
  */
 window.performClaimAllRewards = async function(poolPubKey, poolIndices, userRewardsAta) {
     try {
         console.log("====================================================================================================");
-        console.log("🎁 [START]: ИНИЦИАЦИЯ CLAIM ALL REWARDS...");
+        console.log("🎁 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА CLAIM ALL REWARDS...");
         
         const program = await QubitProgramManager.getProgram();
         const provider = program.provider;
         const ownerPubkey = provider.wallet.publicKey;
 
         if (!poolIndices || poolIndices.length === 0) {
-            throw new Error("⛔️ ОШИБКА: Массив poolIndices пуст.");
+            throw new Error("ErrorCode::InvalidPoolIndices");
         }
 
         // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА (через fetchData для Zero-Copy)
         const poolData = await program.account.poolState.fetchData(poolPubKey);
 
         // 2. ФОРМИРОВАНИЕ REMAINING ACCOUNTS
-        // Генерируем PDA для каждого индекса динамически
         const remainingAccounts = poolIndices.map(index => {
             const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
                 [
@@ -842,7 +841,6 @@ window.performClaimAllRewards = async function(poolPubKey, poolIndices, userRewa
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = ownerPubkey;
 
-        // Добавляем симуляцию для предотвращения ошибок транзакции
         const simulation = await provider.connection.simulateTransaction(transaction);
         if (simulation.value.err) {
             console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
@@ -860,29 +858,18 @@ window.performClaimAllRewards = async function(poolPubKey, poolIndices, userRewa
         console.log("⏳ Ожидание подтверждения (Claim All)...");
         await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
 
-        console.log("✨ Награды успешно заклеймлены! TX:", txId);
+        console.log("✨ [SUCCESS]: Награды успешно заклеймлены! TX:", txId);
         return txId;
 
     } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
         console.error("❌ Claim All Error:", e.message);
         throw e;
     }
 };
-
-
-// --- ПРИВЯЗКА К UI ---
-// Пример: при клике на кнопку вызываем функцию
-const claimButton = document.getElementById('claimAllBtn');
-if (claimButton) {
-    claimButton.addEventListener('click', async () => {
-        // Здесь ты передаешь актуальные данные пула и ATA
-        await window.performClaimAllRewards(AFOX_POOL_STATE_PUBKEY, [0, 1, 2], userRewardsAta);
-    });
-}
-
-
-
-
 
 
 
@@ -891,231 +878,93 @@ if (claimButton) {
  * Улучшенная функция: автоматическое определение адресов и запуск клейма
  */
 async function executeClaimRewards() {
-    const selectedTiers = [];
-    document.querySelectorAll('.tier-btn.active').forEach(btn => {
-        selectedTiers.push(parseInt(btn.getAttribute('data-index')));
-    });
+    const btn = document.getElementById('executeClaimBtn'); // Предполагаем ID кнопки
 
-    if (selectedTiers.length === 0) {
-        console.warn("⚠️ Ни один пул не выбран.");
-        return;
-    }
-
-    try {
-        // 1. АВТОМАТИЗАЦИЯ: Получаем программу и провайдер
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const owner = provider.wallet.publicKey;
-
-        // 2. АВТОМАТИЗАЦИЯ: Определяем пул (проверка на наличие данных)
-        if (!window.appState || !window.appState.currentPoolPubKey) {
-            throw new Error("Состояние пула не загружено.");
-        }
-        const poolPubKey = window.appState.currentPoolPubKey; 
-
-        // 3. АВТОМАТИЗАЦИЯ: Находим ATA наград пользователя (на лету)
-        const rewardMint = window.appState.rewardMint; 
-        const userRewardsAta = await spl.getAssociatedTokenAddress(
-            rewardMint,
-            owner
-        );
-
-        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Проверяем, существует ли ATA в сети
-        const ataAccount = await provider.connection.getAccountInfo(userRewardsAta);
-        if (!ataAccount) {
-            throw new Error("ATA наград не найден. Пожалуйста, убедитесь, что вы инициализировали кошелек для получения наград.");
-        }
-
-        console.log("🔍 Автоматическое определение адресов завершено...");
-
-        // 4. Вызов клейма с уже готовыми данными
-        await window.performClaimAllRewards(
-            poolPubKey, 
-            selectedTiers, 
-            userRewardsAta
-        );
-        
-        alert("✅ Награды успешно заклеймлены!");
-    } catch (e) {
-        console.error("❌ Ошибка авто-определения или клейма:", e);
-        alert("Ошибка: " + e.message);
-    }
-}
-
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: CLAIM ALL REWARDS
- * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
- */
-window.performClaimAllRewards = async function(poolPubKey, poolIndices, userRewardsAta) {
     try {
         console.log("====================================================================================================");
-        console.log("🎁 [START]: ИНИЦИАЦИЯ CLAIM ALL REWARDS...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
+        console.log("🎁 [UI EVENT]: ИНИЦИАЦИЯ КЛЕЙМА НАГРАД ЧЕРЕЗ UI...");
 
-        if (!poolIndices || poolIndices.length === 0) {
-            throw new Error("⛔️ ОШИБКА: Массив poolIndices пуст.");
-        }
-
-        // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА (через fetchData для Zero-Copy)
-        const poolData = await program.account.poolState.fetchData(poolPubKey);
-
-        // 2. ФОРМИРОВАНИЕ REMAINING ACCOUNTS
-        // Генерируем PDA для каждого индекса динамически
-        const remainingAccounts = poolIndices.map(index => {
-            const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
-                [
-                    Buffer.from("user_stake"),
-                    poolPubKey.toBuffer(),
-                    ownerPubkey.toBuffer(),
-                    Buffer.from([index])
-                ],
-                program.programId
-            );
-            return {
-                pubkey: pda,
-                isWritable: true,
-                isSigner: false,
-            };
+        // 1. ПОДГОТОВКА И ВАЛИДАЦИЯ ВЫБОРА
+        const selectedTiers = [];
+        document.querySelectorAll('.tier-btn.active').forEach(btn => {
+            selectedTiers.push(parseInt(btn.getAttribute('data-index')));
         });
 
-        console.log(`📊 Обработка пулов: [${poolIndices.join(", ")}] | Аккаунтов: ${remainingAccounts.length}`);
-
-        // 3. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
-        const transaction = new anchor.web3.Transaction();
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1000000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        const claimInstruction = await program.methods
-            .claimAllRewards(poolIndices)
-            .accounts({
-                poolState: poolPubKey,
-                owner: ownerPubkey,
-                userRewardsAta: userRewardsAta,
-                vault: poolData.vault,
-                adminFeeVault: poolData.adminFeeVault,
-                rewardMint: poolData.rewardMint,
-                tokenProgram: spl.TOKEN_PROGRAM_ID,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .remainingAccounts(remainingAccounts)
-            .instruction();
-
-        transaction.add(claimInstruction);
-
-        // 4. ПОДГОТОВКА И СИМУЛЯЦИЯ
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        // Добавляем симуляцию для предотвращения ошибок транзакции
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Симуляция клейма не пройдена: " + JSON.stringify(simulation.value.err));
+        if (selectedTiers.length === 0) {
+            console.warn("⚠️ [UI WARNING]: Ни один пул не выбран.");
+            alert("Пожалуйста, выберите хотя бы один пул.");
+            return;
         }
 
-        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
+        // 2. ПОДГОТОВКА UI
+        if (btn) {
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+        }
 
-        console.log("⏳ Ожидание подтверждения (Claim All)...");
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        console.log("✨ Награды успешно заклеймлены! TX:", txId);
-        return txId;
-
-    } catch (e) {
-        console.error("❌ Claim All Error:", e.message);
-        throw e;
-    }
-};
-
-// --- ПРИВЯЗКА К UI ---
-// Пример: при клике на кнопку вызываем функцию
-const claimButton = document.getElementById('claimAllBtn');
-if (claimButton) {
-    claimButton.addEventListener('click', async () => {
-        // Здесь ты передаешь актуальные данные пула и ATA
-        await window.performClaimAllRewards(AFOX_POOL_STATE_PUBKEY, [0, 1, 2], userRewardsAta);
-    });
-}
-
-
-
-
-
-
-
-
-/**
- * Улучшенная функция: автоматическое определение адресов и запуск клейма
- */
-async function executeClaimRewards() {
-    const selectedTiers = [];
-    document.querySelectorAll('.tier-btn.active').forEach(btn => {
-        selectedTiers.push(parseInt(btn.getAttribute('data-index')));
-    });
-
-    if (selectedTiers.length === 0) {
-        console.warn("⚠️ Ни один пул не выбран.");
-        return;
-    }
-
-    try {
-        // 1. АВТОМАТИЗАЦИЯ: Получаем программу и провайдер
+        // 3. АВТОМАТИЗАЦИЯ: Получаем программу и провайдер
         const program = await QubitProgramManager.getProgram();
         const provider = program.provider;
         const owner = provider.wallet.publicKey;
 
-        // 2. АВТОМАТИЗАЦИЯ: Определяем пул (проверка на наличие данных)
+        // 4. ПРОВЕРКА СОСТОЯНИЯ (AppState)
         if (!window.appState || !window.appState.currentPoolPubKey) {
             throw new Error("Состояние пула не загружено.");
         }
         const poolPubKey = window.appState.currentPoolPubKey; 
 
-        // 3. АВТОМАТИЗАЦИЯ: Находим ATA наград пользователя (на лету)
+        // 5. АВТОМАТИЗАЦИЯ: Находим ATA наград пользователя
         const rewardMint = window.appState.rewardMint; 
         const userRewardsAta = await spl.getAssociatedTokenAddress(
             rewardMint,
             owner
         );
 
-        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Проверяем, существует ли ATA в сети
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Существование ATA
         const ataAccount = await provider.connection.getAccountInfo(userRewardsAta);
         if (!ataAccount) {
-            throw new Error("ATA наград не найден. Пожалуйста, убедитесь, что вы инициализировали кошелек для получения наград.");
+            throw new Error("ATA наград не найден. Инициализируйте кошелек для получения наград.");
         }
 
-        console.log("🔍 Автоматическое определение адресов завершено...");
+        console.log(`🔍 [UI INFO]: Адреса определены. Пулы: [${selectedTiers.join(", ")}].`);
 
-        // 4. Вызов клейма с уже готовыми данными
+        // 6. ВЫЗОВ SDK-МЕТОДА
         await window.performClaimAllRewards(
             poolPubKey, 
             selectedTiers, 
             userRewardsAta
         );
-        
+
+        console.log("✨ [UI SUCCESS]: Награды успешно заклеймлены.");
         alert("✅ Награды успешно заклеймлены!");
+
     } catch (e) {
-        console.error("❌ Ошибка авто-определения или клейма:", e);
-        alert("Ошибка: " + e.message);
+        console.error("❌ Handle Claim Rewards Error:", e.message);
+        alert("Ошибка клейма: " + e.message);
+        
+    } finally {
+        // 7. ВОССТАНОВЛЕНИЕ UI
+        if (btn) {
+            btn.innerText = "CLAIM ALL REWARDS";
+            btn.disabled = false;
+        }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
+      
 
 
 
