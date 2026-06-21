@@ -61,8 +61,8 @@ function formatBigInt(value, decimals) {
 
 // --- 2. КОНФИГУРАЦИЯ QUBIT ---
 const QUBIT_CONFIG = {
-    programId: "Auzd7mGQJSCSDJgopWrLtLqQPvgWBCXLQbQ8SNgDaYbb",
-    idlAccount: "F3LMDpRENLbFWaYB9GJAszKXkoc3PhZ9bwecxmHg2sP",
+    programId: "77jJ2qm8VmsQWz82PgEgFJzj6gWpu1jLkqQ95YF7DaSz",
+    idlAccount: "2YaGmSTFDbjjxEM5Lsj9XVwXzLiiN3PxhuJAyse7FUW6",
     // Сюда вставьте ваш JSON IDL (если он короткий) 
     // или укажите путь, если вы подгружаете его отдельно
     idl: null 
