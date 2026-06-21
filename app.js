@@ -142,6 +142,14 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
+// ДОБАВИТЬ ЭТОТ БЛОК В НАЧАЛО СЦЕНАРИЯ
+async function ensureWalletConnected() {
+    const program = await QubitProgramManager.getProgram();
+    if (!program.provider.wallet.publicKey) {
+        throw new Error("Кошелек не подключен! Пожалуйста, подключите Phantom.");
+    }
+    return program.provider.wallet.publicKey;
+}
 
 
 
@@ -264,6 +272,31 @@ function switchView(viewId) {
         }
     } catch (e) {
         console.error("❌ Navigation Error:", e.message);
+    }
+}
+
+
+
+async function handleConfirmInitialize() {
+    try {
+        // --- ПРОВЕРКА СОЕДИНЕНИЯ ---
+        const walletPubkey = await ensureWalletConnected();
+        
+        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
+        const signerEl = document.querySelector('.wallet-signer-display'); // Убедись, что такой класс есть в HTML
+        if (signerEl) signerEl.innerText = walletPubkey.toBase58();
+
+        console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ДЛЯ:", walletPubkey.toBase58());
+
+        // ... (остальной твой код) ...
+        
+        // ВАЖНО: Вызывай метод, передавая актуальный pubkey
+        const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
+        
+        // ...
+    } catch (e) {
+        console.error("❌ Connection/Init Error:", e.message);
+        alert("Ошибка подключения: " + e.message);
     }
 }
 
