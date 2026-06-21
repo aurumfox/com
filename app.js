@@ -617,9 +617,11 @@ window.setAmount = function(percent) {
 
 
 
+
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: DEPOSIT
  * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
+ * Исправлено: Авто-определение ATA и проверка состояний внутри метода.
  */
 window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poolIndex, amountBN) {
     try {
@@ -632,6 +634,19 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
 
         // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА (через fetchData для Zero-Copy)
         const poolData = await program.account.poolState.fetchData(poolPubKey);
+
+        // --- БЛОК АВТО-ОПРЕДЕЛЕНИЯ (Если ATA не переданы из UI) ---
+        let finalSourceAta = userSourceAta;
+        let finalStAta = userStAta;
+
+        if (!finalSourceAta) {
+            finalSourceAta = await spl.getAssociatedTokenAddress(poolData.mint, ownerPubkey);
+            console.log("⚠️ [AUTO]: Адрес источника (ATA) определен автоматически:", finalSourceAta.toBase58());
+        }
+        if (!finalStAta) {
+            finalStAta = await spl.getAssociatedTokenAddress(poolData.stMint, ownerPubkey);
+            console.log("⚠️ [AUTO]: Адрес стейк-токена (ATA) определен автоматически:", finalStAta.toBase58());
+        }
 
         // 2. ДЕРИВАЦИЯ PDA (строго по семенам из Rust)
         const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -658,8 +673,8 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
                 owner: ownerPubkey,
                 vault: poolData.vault,
                 stMint: poolData.stMint,
-                userSourceAta: userSourceAta,
-                userStAta: userStAta,
+                userSourceAta: finalSourceAta,
+                userStAta: finalStAta,
                 tokenProgram: spl.TOKEN_PROGRAM_ID,
                 systemProgram: anchor.web3.SystemProgram.programId,
                 clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
@@ -703,6 +718,7 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
         throw e;
     }
 };
+
 
 
 
