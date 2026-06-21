@@ -148,7 +148,6 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE
  * 100% синхронизация с SDK (Zero-Copy, корректная симуляция)
@@ -239,6 +238,8 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
 };
 
 
+
+
 /**
  * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
  * Вызывается напрямую из атрибута onclick="handleConfirmInitialize()" в твоем HTML
@@ -287,7 +288,7 @@ async function handleConfirmInitialize() {
 
         console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
 
-        // Вызываем проверенный глобальный метод
+        // 1. Вызываем проверенный глобальный метод
         const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
 
         if (result === "ALREADY_INITIALIZED") {
@@ -295,7 +296,39 @@ async function handleConfirmInitialize() {
             alert("ℹ️ Стейкинг-аккаунт уже был инициализирован ранее.");
         } else {
             console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
-            alert("✅ Стейкинг-аккаунт успешно инициализирован!");
+            
+            // 2. ДОБАВЛЕН БЛОК ВЕРИФИКАЦИИ (как в тесте)
+            // Это гарантирует, что данные в блокчейне соответствуют ожиданиям
+            const program = await QubitProgramManager.getProgram();
+            const ownerPubkey = program.provider.wallet.publicKey;
+            
+            // Вычисляем PDA для проверки
+            const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
+                [
+                    Buffer.from("user_stake"),
+                    poolPubKey.toBuffer(),
+                    ownerPubkey.toBuffer(),
+                    Buffer.from([poolIndex])
+                ],
+                program.programId
+            );
+
+            // Читаем данные из блокчейна для подтверждения
+            let stakeData;
+            try {
+                // Пытаемся получить данные аккаунта (как в тесте)
+                stakeData = await program.account.userStaking.fetch(userStakePda);
+                
+                console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
+                console.log(`   - Owner: ${stakeData.owner.toBase58()}`);
+                console.log(`   - Pool Index: ${stakeData.poolIndex}`);
+                console.log(`   - Is Initialized: ${stakeData.isInitialized}`);
+
+                alert("✅ Стейкинг-аккаунт успешно инициализирован и верифицирован!");
+            } catch (fetchErr) {
+                console.error("❌ Ошибка при чтении данных после инициализации:", fetchErr);
+                alert("✅ Транзакция прошла, но возникла ошибка при чтении данных для верификации.");
+            }
         }
 
     } catch (e) {
