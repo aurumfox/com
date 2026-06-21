@@ -101,6 +101,21 @@ const QubitProgramManager = {
     }
 };
 
+
+// --- 3. ГЛОБАЛЬНЫЕ КОНСТАНТЫ И ЛОГИКА ---
+const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE (DEVNET FIXED)
  */
@@ -164,11 +179,113 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
 };
 
 
-// --- 3. ГЛОБАЛЬНЫЕ КОНСТАНТЫ И ЛОГИКА ---
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
 
 
+/**
+ * Единая функция инициализации (ПРОФЕССИОНАЛЬНЫЙ UI + ВЕРИФИКАЦИЯ)
+ */
+async function handleConfirmInitialize() {
+    // Получаем кнопку для управления состоянием
+    const btn = document.querySelector('.tier-btn.active-tier');
+    // Безопасная проверка наличия кнопки перед тем, как брать текст
+    const originalText = btn ? btn.innerText : "Инициализировать";
 
+    try {
+        console.log("====================================================================================================");
+        console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ЧЕРЕЗ UI...");
+
+        // 1. БЛОКИРОВКА КНОПКИ (защита от повторного нажатия)
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "⏳ Отправка...";
+        }
+
+        // --- ПРОВЕРКА СОЕДИНЕНИЯ И ПОЛУЧЕНИЕ ПУБЛИЧНОГО КЛЮЧА ---
+        const walletPubkey = await ensureWalletConnected();
+        
+        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
+        const signerEl = document.querySelector('.wallet-signer-display'); 
+        if (signerEl) signerEl.innerText = walletPubkey.toBase58();
+
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        if (!activeBtn) {
+            alert("⚠️ Пожалуйста, выберите тир перед инициализацией!");
+            return;
+        }
+        
+        const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
+        const poolPubKey = window.appState?.currentPoolPubKey;
+
+        if (!poolPubKey) {
+            throw new Error("Адрес пула (poolPubKey) не определен в приложении.");
+        }
+
+        console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
+
+        // 2. ВЫЗОВ МЕТОДА (через глобальный performInitializeUserStake)
+        const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
+
+        if (result === "ALREADY_INITIALIZED") {
+            console.warn("ℹ️ [UI INFO]: Аккаунт уже инициализирован.");
+            alert("ℹ️ Стейкинг-аккаунт уже был инициализирован ранее.");
+        } else {
+            console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
+            
+            // --- БЛОК ВЕРИФИКАЦИИ (Чтение данных из блокчейна) ---
+            const program = await QubitProgramManager.getProgram();
+            
+            // Вычисляем PDA для проверки
+            const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
+                [
+                    Buffer.from("user_stake"),
+                    poolPubKey.toBuffer(),
+                    walletPubkey.toBuffer(),
+                    Buffer.from([poolIndex])
+                ],
+                program.programId
+            );
+
+            // Читаем данные из блокчейна для подтверждения
+            let stakeData;
+            try {
+                stakeData = await program.account.userStaking.fetch(userStakePda);
+                
+                console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
+                console.log(`   - Owner: ${stakeData.owner.toBase58()}`);
+                console.log(`   - Pool Index: ${stakeData.poolIndex}`);
+                console.log(`   - Is Initialized: ${stakeData.isInitialized}`);
+
+                // УСПЕШНЫЙ РЕЗУЛЬТАТ (ссылка на Solana Explorer)
+                const explorerUrl = `https://explorer.solana.com/tx/${result}?cluster=devnet`;
+                const message = `✅ Стейкинг-аккаунт успешно инициализирован и верифицирован!\n\nTX: ${result.slice(0, 8)}...\n\nНажмите OK, чтобы увидеть транзакцию в Explorer.`;
+                
+                if (confirm(message)) {
+                    window.open(explorerUrl, '_blank');
+                }
+
+            } catch (fetchErr) {
+                console.error("❌ Ошибка при чтении данных после инициализации:", fetchErr);
+                alert("✅ Транзакция прошла, но возникла ошибка при чтении данных для верификации.");
+            }
+        }
+
+    } catch (e) {
+        console.error("❌ Handle Confirm Initialize Error:", e.message);
+        
+        // ПРОФЕССИОНАЛЬНАЯ ОБРАБОТКА ОШИБОК
+        let errorMsg = "Ошибка транзакции: " + e.message;
+        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно средств на балансе.";
+        if (e.message.includes("User rejected")) errorMsg = "Вы отменили подпись в кошельке.";
+        
+        alert(errorMsg);
+    } finally {
+        // 4. ВОЗВРАТ СОСТОЯНИЯ КНОПКИ
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+}
 
 
 
@@ -211,133 +328,6 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
-// ДОБАВИТЬ ЭТОТ БЛОК В НАЧАЛО СЦЕНАРИЯ
-async function ensureWalletConnected() {
-    const program = await QubitProgramManager.getProgram();
-    if (!program.provider.wallet.publicKey) {
-        throw new Error("Кошелек не подключен! Пожалуйста, подключите Phantom.");
-    }
-    return program.provider.wallet.publicKey;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ БЛОК UI-ИНТЕГРАЦИИ: НАВИГАЦИЯ И ИНИЦИАЛИЗАЦИЯ
- * Объединенный метод для управления состоянием и вызова смарт-контракта
- */
-
-// 1. Вспомогательная функция проверки подключения кошелька
-async function ensureWalletConnected() {
-    const program = await QubitProgramManager.getProgram();
-    if (!program.provider.wallet.publicKey) {
-        throw new Error("Кошелек не подключен! Пожалуйста, подключите Phantom.");
-    }
-    return program.provider.wallet.publicKey;
-}
-
-// 2. Функция навигации (переключение экранов)
-function switchView(viewId) {
-    try {
-        console.log(`====================================================================================================`);
-        console.log(`👁️ [UI NAVIGATION]: ПЕРЕКЛЮЧЕНИЕ НА VIEW: ${viewId}...`);
-        
-        document.querySelectorAll('.view-block').forEach(el => el.classList.add('hidden'));
-        
-        const view = document.getElementById(viewId);
-        if (view) {
-            view.classList.remove('hidden');
-            console.log(`✨ [SUCCESS]: Блок ${viewId} успешно отображен.`);
-        } else {
-            throw new Error(`Блок с ID ${viewId} не найден!`);
-        }
-    } catch (e) {
-        console.error("❌ Navigation Error:", e.message);
-    }
-}
-
-// 3. Единая функция инициализации (объединенная логика)
-async function handleConfirmInitialize() {
-    try {
-        console.log("====================================================================================================");
-        console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ЧЕРЕЗ UI...");
-
-        // --- ПРОВЕРКА СОЕДИНЕНИЯ И ПОЛУЧЕНИЕ ПУБЛИЧНОГО КЛЮЧА ---
-        const walletPubkey = await ensureWalletConnected();
-        
-        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
-        const signerEl = document.querySelector('.wallet-signer-display'); 
-        if (signerEl) signerEl.innerText = walletPubkey.toBase58();
-
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        if (!activeBtn) {
-            alert("⚠️ Пожалуйста, выберите тир перед инициализацией!");
-            return;
-        }
-        
-        const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
-        const poolPubKey = window.appState?.currentPoolPubKey;
-
-        if (!poolPubKey) {
-            throw new Error("Адрес пула (poolPubKey) не определен в приложении.");
-        }
-
-        console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
-
-        // Вызываем проверенный глобальный метод инициализации
-        const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
-
-        if (result === "ALREADY_INITIALIZED") {
-            console.warn("ℹ️ [UI INFO]: Аккаунт уже инициализирован.");
-            alert("ℹ️ Стейкинг-аккаунт уже был инициализирован ранее.");
-        } else {
-            console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
-            
-            // --- БЛОК ВЕРИФИКАЦИИ ---
-            const program = await QubitProgramManager.getProgram();
-            
-            // Вычисляем PDA для верификации
-            const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-                [
-                    Buffer.from("user_stake"),
-                    poolPubKey.toBuffer(),
-                    walletPubkey.toBuffer(),
-                    Buffer.from([poolIndex])
-                ],
-                program.programId
-            );
-
-            // Читаем данные из блокчейна для подтверждения
-            let stakeData;
-            try {
-                stakeData = await program.account.userStaking.fetch(userStakePda);
-                
-                console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
-                console.log(`   - Owner: ${stakeData.owner.toBase58()}`);
-                console.log(`   - Pool Index: ${stakeData.poolIndex}`);
-                console.log(`   - Is Initialized: ${stakeData.isInitialized}`);
-
-                alert("✅ Стейкинг-аккаунт успешно инициализирован и верифицирован!");
-            } catch (fetchErr) {
-                console.error("❌ Ошибка при чтении данных после инициализации:", fetchErr);
-                alert("✅ Транзакция прошла, но возникла ошибка при чтении данных для верификации.");
-            }
-        }
-
-    } catch (e) {
-        console.error("❌ Handle Confirm Initialize Error:", e.message);
-        alert("Ошибка: " + e.message);
-    }
-}
 
 
 
