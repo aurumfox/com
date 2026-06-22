@@ -59,73 +59,81 @@ function formatBigInt(value, decimals) {
     setTimeout(report, 500);
 })();
 
-// --- 2. КОНФИГУРАЦИЯ QUBIT (БЕЗОПАСНЫЙ МИНИМУМ) ---
+
+
+/**
+ * ЦЕНТР КОНФИГУРАЦИИ И УПРАВЛЕНИЯ QUBIT
+ * Единая точка доступа ко всем данным и методам
+ */
+
+// 1. Конфигурация: всё в одном месте, никаких магических глобальных window.*
 const QUBIT_CONFIG = {
-    // ID программы - база для всех вычислений
     programId: new solanaWeb3.PublicKey("77jJ2qm8VmsQWz82PgEgFJzj6gWpu1jLkqQ95YF7DaSz"),
-    // Основные публичные аккаунты, с которыми взаимодействует пользователь
     pool: new solanaWeb3.PublicKey("DtAAYa8d9bUYNrvrTPCcsb2yGFfirq1DcqsjfXdK34nd"),
     vault: new solanaWeb3.PublicKey("14jYS3KKLgp58hevDrHKcSkpQcTJ2mWZWM5CmfLGL6CZ"),
-    mint: new solanaWeb3.PublicKey("DDVgZ5GYxG7fLkJS7BTsbiRXBuSCcFLWrMMzZCJhBfCd")
+    mint: new solanaWeb3.PublicKey("DDVgZ5GYxG7fLkJS7BTsbiRXBuSCcFLWrMMzZCJhBfCd"),
+    // RPC адрес вынесен сюда, чтобы можно было легко менять при необходимости
+    rpcUrl: "https://api.devnet.solana.com"
 };
 
-// Менеджер программы: Исправлено для стабильной работы в Devnet
+// 2. Сервис управления программой
 const QubitProgramManager = {
     program: null,
 
     async getProgram() {
         if (this.program) return this.program;
 
-        // Жестко фиксируем Devnet, как ты и просил
-        const connection = new solanaWeb3.Connection("https://api.devnet.solana.com", "confirmed");
-        
-        // Проверка наличия кошелька
-        if (!window.solana || !window.solana.isConnected) {
-            console.warn("⚠️ Кошелек не подключен, попытка инициализации без подписи...");
+        try {
+            const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
+            
+            // Если Phantom не подключен, используем только Read-Only провайдер
+            const wallet = window.solana && window.solana.isConnected ? window.solana : {
+                publicKey: null,
+                signTransaction: async () => { throw new Error("Кошелек не подключен"); },
+                signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
+            };
+
+            const provider = new anchor.AnchorProvider(
+                connection, 
+                wallet, 
+                { preflightCommitment: "confirmed" }
+            );
+
+            const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId.toBase58(), provider);
+            if (!idl) throw new Error("IDL программы не найден");
+            
+            this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
+            console.log("✅ Qubit Program Manager: Инициализирована");
+            
+            return this.program;
+        } catch (e) {
+            console.error("❌ Qubit Program Manager Error:", e);
+            throw e;
         }
-
-        const provider = new anchor.AnchorProvider(
-            connection, 
-            window.solana, 
-            { preflightCommitment: "confirmed" }
-        );
-
-        // Загрузка IDL по программе из Devnet
-        const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId.toBase58(), provider);
-        if (!idl) throw new Error("Не удалось загрузить IDL программы с Devnet!");
-        
-        this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
-        console.log("✅ Qubit Program Manager: Инициализирована в Devnet");
-        
-        return this.program;
     }
 };
 
+// 3. Состояние приложения (вместо мусорных глобальных переменных)
+const AppState = {
+    connection: null,
+    isInitialized: false,
+    lastUpdate: null
+};
 
-// --- 3. ГЛОБАЛЬНЫЕ КОНСТАНТЫ И ЛОГИКА ---
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
-
-
-
-
-
-
-
-
-
-
-const RPC_ENDPOINTS = [
-    'https://solana-rpc.publicnode.com',
-    'https://rpc.ankr.com/solana',
-    'https://api.devnet.solana.com'
-];
-const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[0]; 
-
-
+// 4. Инициализация (вызывай один раз при старте страницы)
+async function initApp() {
+    console.log("🚀 Запуск инициализации Qubit App...");
+    try {
+        await QubitProgramManager.getProgram();
+        AppState.isInitialized = true;
+        // Здесь можно вызвать WalletBalanceManager.init() из прошлого сообщения
+        console.log("✨ App Ready");
+    } catch (e) {
+        console.error("⚠️ Ошибка инициализации приложения:", e);
+    }
+}
 
 
-
-let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, : 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
 
 /**
