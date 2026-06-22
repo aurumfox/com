@@ -109,6 +109,76 @@ const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28
 
 
 
+/**
+ * УМНЫЙ АВТОНОМНЫЙ БЛОК: УПРАВЛЕНИЕ БАЛАНСОМ
+ * Работает как сервис: следит за состоянием, обновляет UI и готов отдавать баланс
+ */
+const WalletBalanceManager = {
+    cachedBalance: 0,
+    isUpdating: false,
+
+    async updateBalance() {
+        if (this.isUpdating) return this.cachedBalance;
+        this.isUpdating = true;
+        
+        const displayEl = document.getElementById('wallet-balance-display');
+        
+        try {
+            console.log("⚡ [BALANCE SERVICE]: Запрос баланса через RPC...");
+            
+            const program = await QubitProgramManager.getProgram();
+            const connection = program.provider.connection;
+            const walletPubkey = program.provider.wallet.publicKey;
+
+            if (!walletPubkey) {
+                if (displayEl) displayEl.innerText = "Balance: Connect Wallet";
+                return 0;
+            }
+
+            // Находим ATA
+            const ata = await anchor.utils.token.associatedAddress({
+                mint: QUBIT_CONFIG.mint,
+                owner: walletPubkey
+            });
+
+            // Запрос баланса
+            const balanceInfo = await connection.getTokenAccountBalance(ata);
+            const balance = balanceInfo.value.uiAmount;
+            
+            this.cachedBalance = balance;
+            
+            if (displayEl) {
+                displayEl.innerText = `Balance: ${balance.toFixed(4)}`;
+                displayEl.classList.remove('text-red-400');
+            }
+            
+            console.log(`✅ [BALANCE SERVICE]: Обновлено до ${balance}`);
+            return balance;
+
+        } catch (e) {
+            console.error("❌ [BALANCE SERVICE ERROR]:", e);
+            if (displayEl) {
+                displayEl.innerText = "Balance: 0.0000";
+                displayEl.classList.add('text-red-400');
+            }
+            return 0;
+        } finally {
+            this.isUpdating = false;
+        }
+    },
+
+    // Авто-инициализация: вызови это один раз при старте приложения
+    init() {
+        console.log("🚀 [BALANCE SERVICE]: Запуск авто-мониторинга...");
+        // Первое обновление
+        this.updateBalance();
+        // Обновление каждые 30 секунд для «живого» интерфейса
+        setInterval(() => this.updateBalance(), 30000);
+    }
+};
+
+// Переопределяем глобальную функцию, чтобы handleDeposit её использовал
+window.updateWalletBalance = () => WalletBalanceManager.updateBalance();
 
 
 
@@ -1336,25 +1406,7 @@ async function handleCloseAccount() {
 
 
 
-async function stakeTokens(amount) {
-    const program = await QubitProgramManager.getProgram();
-    
-    // Вычисляем PDA "на лету" (если нужно для транзакции)
-    // const [userStake] = await anchor.web3.PublicKey.findProgramAddress([...], QUBIT_CONFIG.programId);
 
-    const tx = await program.methods
-        .stake(new anchor.BN(amount)) // Пример метода
-        .accounts({
-            pool: QUBIT_CONFIG.pool,
-            vault: QUBIT_CONFIG.vault,
-            tokenMint: QUBIT_CONFIG.mint,
-            user: window.solana.publicKey,
-            // ... остальные аккаунты по IDL
-        })
-        .rpc();
-    
-    console.log("Транзакция отправлена:", tx);
-}
 
 
 
