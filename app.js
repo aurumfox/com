@@ -747,7 +747,7 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
 
 
 /**
- * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
+ * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS (ПРОФЕССИОНАЛЬНАЯ ВЕРСИЯ)
  * Вызывается напрямую из атрибута onclick="handleDeposit()" в твоем HTML
  */
 async function handleDeposit() {
@@ -757,12 +757,16 @@ async function handleDeposit() {
         console.log("====================================================================================================");
         console.log("🚀 [UI EVENT]: ИНИЦИАЦИЯ ДЕПОЗИТА ЧЕРЕЗ UI...");
 
-        // 1. ПОЛУЧЕНИЕ ДАННЫХ ИЗ ИНПУТОВ
+        // 1. ПРОВЕРКА БАЛАНСА ПЕРЕД ДЕЙСТВИЕМ
+        const currentBalance = await updateWalletBalance(); 
         const amountVal = document.getElementById('depositInput')?.value;
         const indexElement = document.getElementById('currentPoolIndex');
-        
+
         if (!amountVal || parseFloat(amountVal) <= 0) {
             throw new Error("Введите корректную сумму для депозита.");
+        }
+        if (parseFloat(amountVal) > currentBalance) {
+            throw new Error("Недостаточно средств на балансе!");
         }
         if (!indexElement) {
             throw new Error("Не удалось определить индекс пула.");
@@ -773,17 +777,15 @@ async function handleDeposit() {
 
         // 2. ПОДГОТОВКА UI
         if (btn) {
-            btn.innerText = "Processing...";
+            btn.innerText = "Подпись в кошельке...";
             btn.disabled = true;
         }
 
         // 3. ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ ПЕРЕД ДЕПОЗИТОМ
-        // Используем конфигурацию пула (QUBIT_CONFIG), которая у тебя уже есть
         console.log("🔄 Синхронизация данных перед отправкой...");
         await window.syncUserAccountState(QUBIT_CONFIG.pool, QUBIT_CONFIG.mint);
 
         // 4. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ
-        // Теперь USER_SOURCE_ATA точно определен благодаря синхронизации выше
         if (typeof POOL_PUBKEY === 'undefined' && typeof QUBIT_CONFIG !== 'undefined') {
             window.POOL_PUBKEY = QUBIT_CONFIG.pool;
         }
@@ -808,7 +810,13 @@ async function handleDeposit() {
 
     } catch (e) {
         console.error("❌ Handle Deposit Error:", e.message);
-        alert("Ошибка депозита: " + e.message);
+        
+        // ПРОФЕССИОНАЛЬНАЯ ОБРАБОТКА ОШИБОК
+        let errorMsg = "Ошибка депозита: " + e.message;
+        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно средств на балансе.";
+        if (e.message.includes("User rejected")) errorMsg = "Вы отменили подпись в кошельке.";
+        
+        alert(errorMsg);
         
     } finally {
         // 6. ВОССТАНОВЛЕНИЕ UI
@@ -818,6 +826,7 @@ async function handleDeposit() {
         }
     }
 }
+
 
 
 
