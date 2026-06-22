@@ -124,42 +124,8 @@ const BACKUP_RPC_ENDPOINT = RPC_ENDPOINTS[0];
 
 
 
-// ==========================================
-// БЛОК 3: ИНИЦИАЛИЗАЦИЯ (ПРЕВРАЩАЕМ ТЕКСТ В КЛЮЧИ)
-// ==========================================
-function setupAddresses() {
-    if (!window.solanaWeb3) return false;
-    
-    try {
-        const pk = window.solanaWeb3.PublicKey;
-        const cfg = AFOX_OFFICIAL_KEYS;
 
-        // Создаем глобальные переменные
-        window.STAKING_PROGRAM_ID      = new pk(cfg.STAKING_PROGRAM);
-        window.TOKEN_MINT_ADDRESS = new pk(cfg.TOKEN_MINT);
-        window.POOL_STATE_PUBKEY  = new pk(cfg.POOL_STATE);
-        window.POOL_VAULT_PUBKEY  = new pk(cfg.POOL_VAULT);
-        window.REWARDS_VAULT_PUBKEY = new pk(cfg.REWARDS_VAULT);
-        window.DAO_TREASURY_VAULT_PUBKEY = new pk(cfg.DAO_TREASURY);
-        
-        window.TOKEN_PROGRAM_ID = new pk('?');
-        window.SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
-
-        console.log("✅ Ключи Solana успешно созданы!");
-        return true;
-    } catch (e) {
-        console.error("❌ Ошибка в ключах:", e);
-        return false;
-    }
-}
-
-
-
-
-
-
-
-let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, AFOX: 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
+let appState = { connection: null, provider: null, walletPublicKey: null, userBalances: { SOL: 0n, : 0n }, userStakingData: { stakedAmount: 0n, rewards: 0n, lockupEndTime: 0, poolIndex: 0, lending: 0n } };
 
 
 /**
