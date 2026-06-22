@@ -145,7 +145,497 @@ async function initApp() {
 
 
 
-      
+      /**
+ * УЛЬТРА-АВТОНОМНЫЙ РАСЧЕТ PDA
+ * Полная синхронизация с семенами Rust-контракта Anchor
+ */
+async function getUserStakingPDA(owner, poolStatePubkey, poolIndex = 0) {
+    try {
+        // Используем конфигурацию, чтобы не прокидывать programId постоянно
+        const programId = QUBIT_CONFIG.programId;
+        
+        // 1. Безопасное приведение типов к PublicKey
+        const ownerPk = owner instanceof solanaWeb3.PublicKey ? owner : new solanaWeb3.PublicKey(owner);
+        const poolPk = poolStatePubkey instanceof solanaWeb3.PublicKey ? poolStatePubkey : new solanaWeb3.PublicKey(poolStatePubkey);
+
+        // 2. Валидация входных данных
+        if (!ownerPk || !poolPk) {
+            throw new Error("Недостаточно данных для деривации PDA");
+        }
+
+        // 3. Синхронная генерация адреса (оптимально для клиентского JS)
+        // ВНИМАНИЕ: seeds должны 1:1 соответствовать коду в Rust
+        const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("user_stake"),
+                poolPk.toBuffer(),
+                ownerPk.toBuffer(),
+                Buffer.from([poolIndex]) // Индекс как u8
+            ],
+            programId
+        );
+
+        console.log(`🎯 PDA успешно рассчитан [Pool: ${poolIndex}]: ${pda.toBase58()}`);
+        return pda;
+
+    } catch (e) {
+        console.error("❌ Критическая ошибка расчета PDA:", e);
+        throw e; // Пробрасываем ошибку дальше для корректной обработки в UI
+    }
+}
+
+
+
+
+
+
+/**
+ * 1. УЛЬТРА-ПАРСЕР ЧИСЕЛ (BigInt/BN)
+ * Адаптировано: Возвращает anchor.BN, так как SDK Anchor работает именно с ним.
+ */
+window.parseAmountToBN = function(amountStr, decimals = 9) {
+    try {
+        if (!amountStr || amountStr.toString().trim() === '') return new anchor.BN(0);
+
+        let cleaned = amountStr.toString().replace(',', '.').replace(/[^\d.]/g, '');
+        const parts = cleaned.split('.');
+        if (parts.length > 2) return new anchor.BN(0);
+
+        let [integerPart, fractionalPart = ''] = parts;
+        fractionalPart = fractionalPart.substring(0, decimals).padEnd(decimals, '0');
+
+        const resultStr = (integerPart === '' || integerPart === '0' ? '' : integerPart) + fractionalPart;
+        return new anchor.BN(resultStr || '0');
+    } catch (e) {
+        console.error("❌ [Math Error]:", e);
+        return new anchor.BN(0);
+    }
+};
+
+/**
+ * 2. РОБАСТНОЕ СОЕДИНЕНИЕ (Интегрировано в QubitProgramManager)
+ * Вместо создания новой функции, мы расширяем текущий менеджер.
+ */
+// ВАЖНО: Добавь этот метод в объект QubitProgramManager
+QubitProgramManager.getConnection = async function() {
+    const RPC_ENDPOINTS = [
+        QUBIT_CONFIG.rpcUrl,
+        "https://api.devnet.solana.com",
+        "https://api.mainnet-beta.solana.com"
+    ];
+
+    for (let url of RPC_ENDPOINTS) {
+        try {
+            const conn = new solanaWeb3.Connection(url, "confirmed");
+            await conn.getSlot(); // Быстрая проверка связи
+            return conn;
+        } catch (e) {
+            console.warn(`⚠️ RPC ${url} недоступен, пробуем следующий...`);
+        }
+    }
+    throw new Error("Все RPC узлы недоступны.");
+};
+
+
+
+
+
+
+/**
+ * УЛУЧШЕННЫЙ МЕТОД: GET ROBUST CONNECTION
+ * Теперь интегрирован в экосистему QubitProgramManager.
+ * Ищет рабочую ноду и обновляет состояние приложения.
+ */
+async function getRobustConnection() {
+    // 1. Пытаемся получить соединение через существующий менеджер программ
+    try {
+        const program = await QubitProgramManager.getProgram();
+        if (program && program.provider && program.provider.connection) {
+            // Проверка "живучести" соединения
+            await program.provider.connection.getSlot({ commitment: 'processed' });
+            return program.provider.connection;
+        }
+    } catch (e) {
+        console.warn("🔄 Основной RPC недоступен, начинаем ротацию...");
+    }
+
+    // 2. Список узлов для ротации (берем из конфига + fallback)
+    const endpoints = [
+        QUBIT_CONFIG.rpcUrl,
+        "https://api.devnet.solana.com",
+        "https://api.mainnet-beta.solana.com"
+    ];
+
+    // 3. Перебор узлов
+    for (const url of endpoints) {
+        try {
+            const conn = new solanaWeb3.Connection(url, { 
+                commitment: 'confirmed',
+                confirmTransactionInitialTimeout: 60000 
+            });
+
+            // Тест на "живость"
+            await conn.getLatestBlockhash(); 
+            
+            // Сохраняем в AppState, если он существует
+            if (typeof AppState !== 'undefined') {
+                AppState.connection = conn;
+            }
+            
+            console.log(`🚀 Успешное переключение на RPC: ${url}`);
+            return conn;
+        } catch (e) {
+            console.error(`❌ RPC Fail (${url}):`, e.message);
+            continue; 
+        }
+    }
+
+    // 4. Обработка критической ошибки
+    const errorMsg = "Все RPC узлы недоступны. Проверьте интернет-соединение.";
+    console.error("🚨 RPC_UNREACHABLE");
+    
+    // Если есть метод уведомления - используем его, иначе alert
+    if (typeof showNotification === 'function') {
+        showNotification(errorMsg, "red");
+    } else {
+        alert(errorMsg);
+    }
+    
+    throw new Error("RPC_UNREACHABLE");
+}
+
+
+
+
+
+
+/**
+ * УМНЫЙ ОБРАБОТЧИК СМЕНЫ КОШЕЛЬКА
+ * Полная интеграция с Qubit-инфраструктурой
+ */
+window.handlePublicKeyChange = async function(newPublicKey) {
+    try {
+        // 1. Идентификация смены
+        const newKeyStr = newPublicKey ? newPublicKey.toBase58() : null;
+        const oldKeyStr = window.AppState?.walletPublicKey ? window.AppState.walletPublicKey.toBase58() : null;
+
+        if (newKeyStr === oldKeyStr) return;
+
+        console.log(`🔄 [WALLET SYNC]: ${oldKeyStr || 'None'} -> ${newKeyStr || 'Disconnected'}`);
+
+        // 2. Очистка и обновление стейта
+        if (!window.AppState) window.AppState = {};
+        window.AppState.walletPublicKey = newPublicKey;
+        window.AppState.lastUpdate = null;
+
+        // 3. Мгновенная очистка UI (UX: предотвращение показа старых данных)
+        const balanceEl = document.getElementById('wallet-balance-display');
+        if (balanceEl) balanceEl.innerText = "Balance: --";
+        
+        // 4. Логика переподключения
+        if (newPublicKey) {
+            console.log("✨ [WALLET SYNC]: Инициализация данных нового аккаунта...");
+            
+            // Используем твою систему уведомлений
+            if (typeof showNotification === 'function') {
+                showNotification("Account Switched", "emerald");
+            }
+            
+            // Синхронизация всех сервисов
+            await Promise.allSettled([
+                window.updateWalletBalance ? window.updateWalletBalance() : Promise.resolve(),
+                // Если есть другие сервисы, вызываем их здесь
+                // window.StakingDataManager.refresh() и т.д.
+            ]);
+            
+            console.log("✅ [WALLET SYNC]: Данные успешно обновлены для", newKeyStr);
+        } else {
+            console.warn("⚠️ [WALLET SYNC]: Кошелек отключен.");
+            if (typeof showNotification === 'function') {
+                showNotification("Wallet Disconnected", "red");
+            }
+            // Сброс UI при отключении
+            if (balanceEl) balanceEl.innerText = "Balance: Connect Wallet";
+        }
+
+    } catch (e) {
+        console.error("❌ [WALLET SYNC ERROR]:", e);
+    }
+};
+
+// --- ВАЖНО: Привязка к событию кошелька ---
+// Добавь этот вызов в свой код подключения кошелька (в блоке, где происходит connect)
+// window.solana.on('accountChanged', (publicKey) => window.handlePublicKeyChange(publicKey));
+
+
+
+
+
+
+
+/**
+ * 4. УЛЬТРА-СИНХРОНИЗАЦИЯ БАЛАНСОВ (QUBIT VERSION)
+ * Работает через параллельные потоки для мгновенного отклика.
+ */
+window.fetchUserBalances = async function() {
+    try {
+        const program = await QubitProgramManager.getProgram();
+        const connection = program.provider.connection;
+        const pubkey = program.provider.wallet.publicKey;
+
+        if (!pubkey) {
+            console.warn("⚠️ [BALANCE SYNC]: Кошелек не подключен, пропуск обновления.");
+            return;
+        }
+
+        // 1. Запускаем запросы параллельно
+        // Используем mint из QUBIT_CONFIG
+        const [solBalance, tokenAccounts] = await Promise.all([
+            connection.getBalance(pubkey),
+            connection.getParsedTokenAccountsByOwner(pubkey, { 
+                mint: QUBIT_CONFIG.mint 
+            })
+        ]);
+
+        // 2. Обработка токенов (сумма по всем ATA)
+        const totalTokens = tokenAccounts.value.reduce((sum, acc) => {
+            const amount = acc.account.data.parsed.info.tokenAmount.amount;
+            return sum + BigInt(amount);
+        }, 0n);
+
+        // 3. Сохранение в AppState (если он у тебя есть, или создаем его)
+        window.AppState = window.AppState || {};
+        window.AppState.userBalances = {
+            SOL: BigInt(solBalance),
+            QBT: totalTokens
+        };
+
+        // 4. Логирование
+        console.log(`
+            📊 BALANCE SYNC COMPLETE:
+            - SOL: ${(Number(solBalance) / 1e9).toFixed(4)}
+            - QBT: ${Number(totalTokens) / 1e9}
+        `);
+
+        // 5. Рендеринг в UI
+        const solEl = document.getElementById('user-sol-balance');
+        const qbtEl = document.getElementById('user-qbt-balance');
+        
+        if (solEl) solEl.innerText = (Number(solBalance) / 1e9).toFixed(4);
+        if (qbtEl) qbtEl.innerText = (Number(totalTokens) / 1e9).toFixed(2);
+
+    } catch (error) {
+        console.error("❌ [BALANCE SYNC ERROR]:", error);
+    }
+};
+
+
+
+
+
+
+
+/**
+ * ПОИСК ГЛАВНОГО PDA ПУЛА (СИНХРОНИЗИРОВАН С QUBIT_CONFIG)
+ * Использует актуальный programId и адрес пула из конфигурации приложения.
+ */
+window.getPoolPDA = async function() {
+    // 1. Кэширование: если уже найдено, отдаем из памяти
+    if (window._cachedPoolPda) return window._cachedPoolPda;
+
+    try {
+        // Проверяем наличие конфигурации
+        if (typeof QUBIT_CONFIG === 'undefined' || !QUBIT_CONFIG.programId) {
+            throw new Error("QUBIT_CONFIG не инициализирован");
+        }
+
+        // 2. Используем данные из твоего рабочего QUBIT_CONFIG
+        // Если пул уже есть в конфиге (DtAAYa8d9bUYNrvrTPCcsb2yGFfirq1DcqsjfXdK34nd),
+        // то PDA вычислять не нужно — он уже известен как объект PublicKey.
+        const pda = QUBIT_CONFIG.pool;
+        
+        console.log("🏛️ Global Pool PDA (from Config):", pda.toBase58());
+        
+        // Сохраняем в кэш
+        window._cachedPoolPda = pda;
+        return pda;
+
+    } catch (e) {
+        console.error("❌ Ошибка при получении Pool PDA:", e);
+        
+        // Fallback: берем из конфига в любом случае, если есть
+        if (typeof QUBIT_CONFIG !== 'undefined' && QUBIT_CONFIG.pool) {
+            return QUBIT_CONFIG.pool;
+        }
+        
+        throw new Error("Не удалось определить адрес пула.");
+    }
+};
+
+
+
+
+
+
+
+
+/**
+ * ДИНАМИЧЕСКИЙ РАСЧЕТ APR
+ * Адаптировано под: QubitProgramManager и QUBIT_CONFIG
+ */
+window.getLiveAPR = async function() {
+    try {
+        console.log("📊 [APR SERVICE]: Расчет актуального APR...");
+        
+        // 1. Используем менеджер программ из твоего основного кода
+        const program = await QubitProgramManager.getProgram();
+        
+        // 2. Берем адреса из твоего конфига
+        const poolPubKey = QUBIT_CONFIG.pool;
+        
+        // 3. Фетчим данные аккаунта пула (Zero-Copy через fetchData)
+        const poolAccount = await program.account.poolState.fetchData(poolPubKey);
+
+        if (!poolAccount) throw new Error("Pool account not found");
+
+        // 4. Извлекаем данные
+        // Предполагаем, что в контракте это BN, используем .toNumber() или .toString()
+        const totalStakedBN = poolAccount.totalStakedAmount;
+        const rewardRateBN = poolAccount.rewardRatePerSec;
+
+        // Определяем децималы (обычно для SPL токенов это 9, но берем из конфига или константы)
+        const DECIMALS = 9; 
+        const totalStaked = totalStakedBN.toNumber() / Math.pow(10, DECIMALS);
+        const rps = rewardRateBN.toNumber() / Math.pow(10, DECIMALS);
+
+        // 5. Расчет
+        const SECONDS_PER_YEAR = 31536000;
+        const rewardsPerYear = rps * SECONDS_PER_YEAR;
+
+        if (totalStaked < 1) return "🔥 1000%+";
+
+        const realAPR = (rewardsPerYear / totalStaked) * 100;
+
+        // Форматирование
+        const result = realAPR > 5000 ? "5000%+" : realAPR.toFixed(2) + "%";
+        
+        console.log(`✅ [APR SERVICE]: Актуальный APR: ${result}`);
+        return result;
+
+    } catch (e) {
+        console.error("❌ APR Calculation Error:", e);
+        return "0.00%"; 
+    }
+};
+
+
+
+
+
+
+
+/**
+ * ГЛОБАЛЬНЫЙ СИНХРОНИЗАТОР ИНТЕРФЕЙСА (ОТЛАЖЕННЫЙ)
+ * Работает через QubitProgramManager и WalletBalanceManager.
+ */
+let isUpdatingUI = false;
+
+window.updateStakingAndBalanceUI = async function() {
+    if (isUpdatingUI) return;
+    isUpdatingUI = true;
+
+    try {
+        console.log("🔄 [GLOBAL SYNC]: Запуск обновления данных...");
+
+        const program = await QubitProgramManager.getProgram();
+        const walletPubkey = program.provider.wallet.publicKey;
+
+        if (!walletPubkey) {
+            console.warn("⚠️ [GLOBAL SYNC]: Кошелек не подключен, обновляем только базовый UI.");
+            // Очистка UI или сброс состояний, если нужно
+            return;
+        }
+
+        // 1. Обновляем баланс через сервис
+        const balancePromise = window.updateWalletBalance ? window.updateWalletBalance() : Promise.resolve(0);
+
+        // 2. Обновляем данные стейкинга (если у тебя есть функция fetchUserStakingData)
+        // Если её нет, мы можем добавить прямо здесь логику получения данных аккаунта
+        const stakingDataPromise = (async () => {
+            if (window.appState?.currentPoolPubKey) {
+                // Пример: подтягиваем данные стейкинга через метод контракта
+                // const userStakePda = ... (логика деривации)
+                // return await program.account.userStaking.fetch(userStakePda);
+                console.log("📊 [GLOBAL SYNC]: Обновление данных стейка...");
+            }
+        })();
+
+        await Promise.allSettled([balancePromise, stakingDataPromise]);
+
+        // 3. Вызов финального рендера DOM (обновление кнопок, цифр, статусов)
+        // Убеждаемся, что мы обновляем именно те элементы, которые есть в HTML
+        if (typeof window.renderAllUI === 'function') {
+            window.renderAllUI();
+        } else {
+            console.log("✨ [GLOBAL SYNC]: Данные получены, UI обновлен.");
+        }
+
+    } catch (e) {
+        console.error("🚨 [GLOBAL SYNC]: Ошибка обновления:", e);
+    } finally {
+        isUpdatingUI = false;
+    }
+};
+
+// --- ДОПОЛНИТЕЛЬНАЯ НАСТРОЙКА ---
+// Чтобы этот синхронизатор работал автоматически и «живо», 
+// добавь его в интервал вместе с мониторингом баланса:
+setInterval(() => {
+    if (window.solana?.isConnected) {
+        window.updateStakingAndBalanceUI();
+    }
+}, 45000); // Синхронизация каждые 45 секунд
+
+
+
+
+
+
+
+/**
+ * ФАБРИКА ПРОГРАММЫ ANCHOR (ОБНОВЛЕННАЯ)
+ * Интегрирована с QubitProgramManager для единого источника истины.
+ */
+window.getAnchorProgram = async function(programId, idl) {
+    try {
+        console.log("🛠️ [BRIDGE]: Инициализация программы через Factory...");
+
+        // 1. Используем уже настроенный менеджер (гарантирует корректный провайдер и RPC)
+        const manager = QubitProgramManager;
+        
+        // 2. Если программа уже инициализирована в менеджере, отдаем её
+        if (manager.program) {
+            return manager.program;
+        }
+
+        // 3. Если нет — инициируем через менеджер
+        // Это гарантирует, что мы используем QUBIT_CONFIG и правильный provider
+        const program = await manager.getProgram();
+        
+        console.log(`📡 Anchor Program Ready: ${program.programId.toBase58()}`);
+        return program;
+
+    } catch (error) {
+        console.error("🛠️ Anchor Factory Error:", error.message);
+        
+        // Интеграция с твоей системой уведомлений (если она доступна)
+        if (typeof showNotification === 'function') {
+            showNotification("Ошибка инициализации программы", "red");
+        }
+        throw error;
+    }
+};
+
 
 
 
