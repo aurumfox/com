@@ -1916,6 +1916,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+// Метод для получения баланса токена (QBT)
+async function updateWalletBalance() {
+    try {
+        const program = await QubitProgramManager.getProgram();
+        const connection = program.provider.connection;
+        const walletPubkey = program.provider.wallet.publicKey;
+
+        // Находим ATA (Associated Token Account) пользователя для токена QBT
+        // QUBIT_CONFIG.mint — это адрес твоего токена
+        const [ata] = await anchor.web3.PublicKey.findProgramAddress(
+            [walletPubkey.toBuffer(), anchor.web3.TOKEN_PROGRAM_ID.toBuffer(), QUBIT_CONFIG.mint.toBuffer()],
+            new anchor.web3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
+        );
+
+        // Запрос баланса через RPC
+        const balanceInfo = await connection.getTokenAccountBalance(ata);
+        const balance = balanceInfo.value.uiAmount;
+
+        // Обновляем элемент в UI
+        const balanceDisplay = document.getElementById('wallet-balance-display');
+        if (balanceDisplay) {
+            balanceDisplay.innerText = `Доступно: ${balance} QBT`;
+        }
+        return balance;
+    } catch (e) {
+        console.warn("⚠️ Баланс не найден (возможно, нет токенов):", e.message);
+        document.getElementById('wallet-balance-display').innerText = "Доступно: 0 QBT";
+    }
+}
 
 
 
