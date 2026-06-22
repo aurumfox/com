@@ -136,13 +136,13 @@ function setupAddresses() {
 
         // Создаем глобальные переменные
         window.STAKING_PROGRAM_ID      = new pk(cfg.STAKING_PROGRAM);
-        window.AFOX_TOKEN_MINT_ADDRESS = new pk(cfg.TOKEN_MINT);
-        window.AFOX_POOL_STATE_PUBKEY  = new pk(cfg.POOL_STATE);
-        window.AFOX_POOL_VAULT_PUBKEY  = new pk(cfg.POOL_VAULT);
-        window.AFOX_REWARDS_VAULT_PUBKEY = new pk(cfg.REWARDS_VAULT);
+        window.TOKEN_MINT_ADDRESS = new pk(cfg.TOKEN_MINT);
+        window.POOL_STATE_PUBKEY  = new pk(cfg.POOL_STATE);
+        window.POOL_VAULT_PUBKEY  = new pk(cfg.POOL_VAULT);
+        window.REWARDS_VAULT_PUBKEY = new pk(cfg.REWARDS_VAULT);
         window.DAO_TREASURY_VAULT_PUBKEY = new pk(cfg.DAO_TREASURY);
         
-        window.TOKEN_PROGRAM_ID = new pk('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+        window.TOKEN_PROGRAM_ID = new pk('?');
         window.SYSTEM_PROGRAM_ID = window.solanaWeb3.SystemProgram.programId;
 
         console.log("✅ Ключи Solana успешно созданы!");
