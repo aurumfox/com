@@ -68,7 +68,7 @@ function formatBigInt(value, decimals) {
 
 // 1. Конфигурация: всё в одном месте, никаких магических глобальных window.*
 const QUBIT_CONFIG = {
-    programId: new solanaWeb3.PublicKey("77jJ2qm8VmsQWz82PgEgFJzj6gWpu1jLkqQ95YF7DaSz"),
+    programId: new solanaWeb3.PublicKey("BqqKdzVPiYt3cKKdgKsSir2ruVJaSi9bDrs5V8FbqeN8"),
     pool: new solanaWeb3.PublicKey("DtAAYa8d9bUYNrvrTPCcsb2yGFfirq1DcqsjfXdK34nd"),
     vault: new solanaWeb3.PublicKey("14jYS3KKLgp58hevDrHKcSkpQcTJ2mWZWM5CmfLGL6CZ"),
     mint: new solanaWeb3.PublicKey("DDVgZ5GYxG7fLkJS7BTsbiRXBuSCcFLWrMMzZCJhBfCd"),
