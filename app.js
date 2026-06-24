@@ -737,7 +737,8 @@ window.updateWalletBalance = () => WalletBalanceManager.updateBalance();
 
 
 
-/**
+
+       /**
  * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE (DEVNET FIXED)
  */
 window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
@@ -780,6 +781,7 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
                 owner: ownerPubkey,
                 systemProgram: anchor.web3.SystemProgram.programId,
                 clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+                rent: anchor.web3.SYSVAR_RENT_PUBKEY, // Добавлено для синхронизации с Utils и Rust драйвером
             })
             .preInstructions([
                 anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
@@ -869,7 +871,9 @@ async function handleConfirmInitialize() {
             // Читаем данные из блокчейна для подтверждения
             let stakeData;
             try {
-                stakeData = await program.account.userStaking.fetch(userStakePda);
+                // Синхронизация с тестами: динамически определяем имя структуры в IDL (userStakingAccount или userStaking)
+                const fetchMethod = program.account.userStakingAccount || program.account.userStaking;
+                stakeData = await fetchMethod.fetch(userStakePda);
                 
                 console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
                 console.log(`   - Owner: ${stakeData.owner.toBase58()}`);
