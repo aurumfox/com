@@ -265,7 +265,7 @@ async function getRobustConnection() {
     const endpoints = [
         QUBIT_CONFIG.rpcUrl,
         "https://api.devnet.solana.com",
-        "https://api.mainnet-beta.solana.com"
+        
     ];
 
     // 3. Перебор узлов
