@@ -539,10 +539,6 @@ window.getLiveAPR = async function() {
 
 
 
-/**
- * ГЛОБАЛЬНЫЙ СИНХРОНИЗАТОР ИНТЕРФЕЙСА (ОТЛАЖЕННЫЙ)
- * Работает через QubitProgramManager и WalletBalanceManager.
- */
 let isUpdatingUI = false;
 
 window.updateStakingAndBalanceUI = async function() {
@@ -550,56 +546,50 @@ window.updateStakingAndBalanceUI = async function() {
     isUpdatingUI = true;
 
     try {
-        console.log("🔄 [GLOBAL SYNC]: Запуск обновления данных...");
-
         const program = await QubitProgramManager.getProgram();
-        const walletPubkey = program.provider.wallet.publicKey;
+        const walletPubkey = program.provider.wallet?.publicKey;
 
         if (!walletPubkey) {
-            console.warn("⚠️ [GLOBAL SYNC]: Кошелек не подключен, обновляем только базовый UI.");
-            // Очистка UI или сброс состояний, если нужно
+            console.warn("⚠️ [GLOBAL SYNC]: Кошелек не подключен.");
             return;
         }
 
-        // 1. Обновляем баланс через сервис
-        const balancePromise = window.updateWalletBalance ? window.updateWalletBalance() : Promise.resolve(0);
+        console.log("🔄 [GLOBAL SYNC]: Запуск синхронизации...");
 
-        // 2. Обновляем данные стейкинга (если у тебя есть функция fetchUserStakingData)
-        // Если её нет, мы можем добавить прямо здесь логику получения данных аккаунта
+        // Запускаем запросы параллельно
+        const balancePromise = window.updateWalletBalance();
         const stakingDataPromise = (async () => {
             if (window.appState?.currentPoolPubKey) {
-                // Пример: подтягиваем данные стейкинга через метод контракта
-                // const userStakePda = ... (логика деривации)
-                // return await program.account.userStaking.fetch(userStakePda);
-                console.log("📊 [GLOBAL SYNC]: Обновление данных стейка...");
+                // Твоя логика стейкинга
             }
         })();
 
         await Promise.allSettled([balancePromise, stakingDataPromise]);
 
-        // 3. Вызов финального рендера DOM (обновление кнопок, цифр, статусов)
-        // Убеждаемся, что мы обновляем именно те элементы, которые есть в HTML
+        // Единая точка рендера для всего интерфейса
         if (typeof window.renderAllUI === 'function') {
             window.renderAllUI();
-        } else {
-            console.log("✨ [GLOBAL SYNC]: Данные получены, UI обновлен.");
         }
 
     } catch (e) {
-        console.error("🚨 [GLOBAL SYNC]: Ошибка обновления:", e);
+        console.error("🚨 [GLOBAL SYNC]: Ошибка:", e);
     } finally {
         isUpdatingUI = false;
     }
 };
 
-// --- ДОПОЛНИТЕЛЬНАЯ НАСТРОЙКА ---
-// Чтобы этот синхронизатор работал автоматически и «живо», 
-// добавь его в интервал вместе с мониторингом баланса:
-setInterval(() => {
-    if (window.solana?.isConnected) {
-        window.updateStakingAndBalanceUI();
+// Единый интервал, который не забивает сеть
+setInterval(async () => {
+    try {
+        const program = await QubitProgramManager.getProgram();
+        // Проверяем коннект через провайдер, а не только через Phantom
+        if (program.provider.wallet?.publicKey) {
+            window.updateStakingAndBalanceUI();
+        }
+    } catch (e) {
+        // Менеджер программы еще не инициализирован
     }
-}, 45000); // Синхронизация каждые 45 секунд
+}, 30000); // 30 секунд вполне достаточно
 
 
 
@@ -665,10 +655,6 @@ window.getAnchorProgram = async function(programId, idl) {
 
 
 
-/**
- * УМНЫЙ АВТОНОМНЫЙ БЛОК: УПРАВЛЕНИЕ БАЛАНСОМ
- * Работает как сервис: следит за состоянием, обновляет UI и готов отдавать баланс
- */
 const WalletBalanceManager = {
     cachedBalance: 0,
     isUpdating: false,
@@ -677,63 +663,35 @@ const WalletBalanceManager = {
         if (this.isUpdating) return this.cachedBalance;
         this.isUpdating = true;
         
-        const displayEl = document.getElementById('wallet-balance-display');
-        
         try {
             console.log("⚡ [BALANCE SERVICE]: Запрос баланса через RPC...");
-            
             const program = await QubitProgramManager.getProgram();
-            const connection = program.provider.connection;
             const walletPubkey = program.provider.wallet.publicKey;
 
-            if (!walletPubkey) {
-                if (displayEl) displayEl.innerText = "Balance: Connect Wallet";
-                return 0;
-            }
+            if (!walletPubkey) return 0;
 
-            // Находим ATA
+            // Убедись, что 'anchor' и 'QUBIT_CONFIG' глобально доступны
             const ata = await anchor.utils.token.associatedAddress({
                 mint: QUBIT_CONFIG.mint,
                 owner: walletPubkey
             });
 
-            // Запрос баланса
-            const balanceInfo = await connection.getTokenAccountBalance(ata);
-            const balance = balanceInfo.value.uiAmount;
+            const balanceInfo = await program.provider.connection.getTokenAccountBalance(ata);
+            this.cachedBalance = balanceInfo.value.uiAmount || 0;
             
-            this.cachedBalance = balance;
-            
-            if (displayEl) {
-                displayEl.innerText = `Balance: ${balance.toFixed(4)}`;
-                displayEl.classList.remove('text-red-400');
-            }
-            
-            console.log(`✅ [BALANCE SERVICE]: Обновлено до ${balance}`);
-            return balance;
+            console.log(`✅ [BALANCE SERVICE]: Баланс обновлен: ${this.cachedBalance}`);
+            return this.cachedBalance;
 
         } catch (e) {
             console.error("❌ [BALANCE SERVICE ERROR]:", e);
-            if (displayEl) {
-                displayEl.innerText = "Balance: 0.0000";
-                displayEl.classList.add('text-red-400');
-            }
-            return 0;
+            // Не сбрасываем кэш в 0 при ошибке сети, чтобы UI не мигал
+            return this.cachedBalance; 
         } finally {
             this.isUpdating = false;
         }
-    },
-
-    // Авто-инициализация: вызови это один раз при старте приложения
-    init() {
-        console.log("🚀 [BALANCE SERVICE]: Запуск авто-мониторинга...");
-        // Первое обновление
-        this.updateBalance();
-        // Обновление каждые 30 секунд для «живого» интерфейса
-        setInterval(() => this.updateBalance(), 30000);
     }
 };
 
-// Переопределяем глобальную функцию, чтобы handleDeposit её использовал
 window.updateWalletBalance = () => WalletBalanceManager.updateBalance();
 
 
