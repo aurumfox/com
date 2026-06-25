@@ -1,2730 +1,2106 @@
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
 
-    
+'use strict'
 
-// --- 1. УТИЛИТЫ ---
-function formatBigInt(value, decimals) {
-    if (!value) return "0";
-    let str = value.toString().padStart(decimals + 1, '0');
-    let intPart = str.slice(0, -decimals);
-    let fracPart = str.slice(-decimals).replace(/0+$/, '');
-    return fracPart ? (intPart + "." + fracPart) : intPart;
+const base64 = require('base64-js')
+const ieee754 = require('ieee754')
+const customInspectSymbol =
+  (typeof Symbol === 'function' && typeof Symbol['for'] === 'function') // eslint-disable-line dot-notation
+    ? Symbol['for']('nodejs.util.inspect.custom') // eslint-disable-line dot-notation
+    : null
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+
+const K_MAX_LENGTH = 0x7fffffff
+exports.kMaxLength = K_MAX_LENGTH
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Print warning and recommend using `buffer` v4.x which has an Object
+ *               implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * We report that the browser does not support typed arrays if the are not subclassable
+ * using __proto__. Firefox 4-29 lacks support for adding new properties to `Uint8Array`
+ * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438). IE 10 lacks support
+ * for __proto__ and has a buggy typed array implementation.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
+
+if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
+    typeof console.error === 'function') {
+  console.error(
+    'This browser lacks typed array (Uint8Array) support which is required by ' +
+    '`buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
+  )
 }
 
-// ============================================================
-// ГЛОБАЛЬНЫЙ МОСТ: CSP И SYNTAXERROR
-// ============================================================
-(function() {
-    console.log("🛠️ Запуск экстренного восстановления систем...");
-
-    // 1. Прямая настройка Buffer
-    window.Buffer = window.Buffer || (window.buffer ? window.buffer.Buffer : undefined);
-
-    // 2. Создаем «Виртуальный Anchor» прямо здесь
-    const createVirtualAnchor = () => {
-        return {
-            AnchorProvider: function(conn, wallet, opts) {
-                this.connection = conn;
-                this.wallet = wallet;
-                this.opts = opts || { preflightCommitment: 'processed' };
-            },
-            Program: function(idl, programId, provider) {
-                this.idl = idl;
-                this.programId = programId;
-                this.provider = provider;
-                console.log("✅ Виртуальная программа Anchor запущена!");
-            },
-            get PublicKey() {
-                return (window.solanaWeb3 && window.solanaWeb3.PublicKey) ? window.solanaWeb3.PublicKey : null;
-            }
-        };
-    };
-
-    // Принудительно ставим заглушку, если основная библиотека заблокирована
-    if (!window.anchor || !window.anchor.AnchorProvider) {
-        window.anchor = createVirtualAnchor();
-        window.Anchor = window.anchor;
-        console.log("⚓ Anchor Bridge: Принудительно активирован (Обход CSP)");
-    }
-
-    // 3. Финальный отчет в консоль
-    const report = () => {
-        const isSolReady = !!window.solanaWeb3;
-        const isAnchorReady = !!(window.anchor && (window.anchor.AnchorProvider || window.anchor.Provider));
-
-        console.log("--- СТАТУС ПОСЛЕ ВОССТАНОВЛЕНИЯ ---");
-        console.log("Buffer:", window.Buffer ? "✅" : "❌");
-        console.log("Solana Web3:", isSolReady ? "✅" : "❌ (Нужен локальный файл)");
-        console.log("Anchor (Real): ✅ (Работает через Bridge)");
-    };
-
-    setTimeout(report, 500);
-})();
-
-
-
-/**
- * ЦЕНТР КОНФИГУРАЦИИ И УПРАВЛЕНИЯ QUBIT
- * Полная синхронизация с Mainnet логами [БЕЗ ПОТЕРИ ДАННЫХ]
- */
-
-const QUBIT_CONFIG = {
-    // 1. Ключевые адреса программы и пула
-    programId: new solanaWeb3.PublicKey("BqqKdzVPiYt3cKKdgKsSir2ruVJaSi9bDrs5V8FbqeN8"),
-    pool: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Он же PoolState / Data Account
-    vault: new solanaWeb3.PublicKey("CHkoheNrLJVeqvnPREhvEfojyPAEksAwX2MJH2iX6cKq"), // Сейф пула
-    mint: new solanaWeb3.PublicKey("EgQptYNBBuhLqgrpfcLzRW5TYTWeSxYpyt6EQKwqVeag"), // Используемый токен
-
-    // 2. Личные и верифицированные PDA аккаунты из логов сети
-    userStakingPda: new solanaWeb3.PublicKey("GqJzDaUm9zHhG4bwfbVc6w3kEVk4EpvaspUQiqWaMPnf"), // Твой личный PDA Стейкинга
-    poolOwner: new solanaWeb3.PublicKey("5XSQUXBwxbssvEUBLoerSd7ZVzfuCfHqZQsvkja7xQ7v"), // Владелец из верификации памяти
-    stMintAuth: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Авторизация стейк-минта (равна пулу)
-
-    // 3. Системные переменные Solana (необходимы для вызова методов контракта)
-    systemProgram: solanaWeb3.SystemProgram.programId,
-    clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-    rent: solanaWeb3.SYSVAR_RENT_PUBKEY,
-
-    // 4. Метаданные транзакции (сохранено для истории/проверок)
-    lastTxReceipt: "EjkqRj9aagtWeNEDYz55yJ4uZeuXn6AmxNSRWrDBgAHu",
-    initializationTx: "3VT6F5cNkgb3DR1VG6UFbuhChadnStJzTPxEKDKow1CvTpnWj1HVWZmECUrJAiFWQGMZR1TTKQ22TzL63GbWAk8q",
-
-    // 5. Сетевое окружение (Переключено на Mainnet согласно логу "MAINNET READY")
-    rpcUrl: "https://api.mainnet-beta.solana.com"
-};
-
-// Сервис управления программой Anchor
-const QubitProgramManager = {
-    program: null,
-
-    async getProgram() {
-        if (this.program) return this.program;
-
-        try {
-            // Устанавливаем соединение с подтвержденным commitment
-            const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
-            
-            // Проверка наличия кошелька Phantom / Solflare
-            const wallet = window.solana && window.solana.isConnected ? window.solana : {
-                publicKey: null,
-                signTransaction: async () => { throw new Error("Кошелек не подключен"); },
-                signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
-            };
-
-            // Формируем провайдер Anchor
-            const provider = new anchor.AnchorProvider(
-                connection, 
-                wallet, 
-                { preflightCommitment: "confirmed" }
-            );
-
-            // Автоматическое получение IDL напрямую из блокчейна Mainnet
-            const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId.toBase58(), provider);
-            if (!idl) throw new Error("IDL программы не найден в сети. Проверьте правильность Program ID.");
-            
-            // Инициализируем инстанс программы для работы с методами
-            this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
-            console.log("✅ Qubit Program Manager: Успешно инициализирована в Mainnet");
-            
-            return this.program;
-        } catch (e) {
-            console.error("❌ Qubit Program Manager Error:", e);
-            throw e;
-        }
-    }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      /**
- * УЛЬТРА-АВТОНОМНЫЙ РАСЧЕТ PDA
- * Полная синхронизация с семенами Rust-контракта Anchor
- */
-async function getUserStakingPDA(owner, poolStatePubkey, poolIndex = 0) {
-    try {
-        // Используем конфигурацию, чтобы не прокидывать programId постоянно
-        const programId = QUBIT_CONFIG.programId;
-        
-        // 1. Безопасное приведение типов к PublicKey
-        const ownerPk = owner instanceof solanaWeb3.PublicKey ? owner : new solanaWeb3.PublicKey(owner);
-        const poolPk = poolStatePubkey instanceof solanaWeb3.PublicKey ? poolStatePubkey : new solanaWeb3.PublicKey(poolStatePubkey);
-
-        // 2. Валидация входных данных
-        if (!ownerPk || !poolPk) {
-            throw new Error("Недостаточно данных для деривации PDA");
-        }
-
-        // 3. Синхронная генерация адреса (оптимально для клиентского JS)
-        // ВНИМАНИЕ: seeds должны 1:1 соответствовать коду в Rust
-        const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPk.toBuffer(),
-                ownerPk.toBuffer(),
-                Buffer.from([poolIndex]) // Индекс как u8
-            ],
-            programId
-        );
-
-        console.log(`🎯 PDA успешно рассчитан [Pool: ${poolIndex}]: ${pda.toBase58()}`);
-        return pda;
-
-    } catch (e) {
-        console.error("❌ Критическая ошибка расчета PDA:", e);
-        throw e; // Пробрасываем ошибку дальше для корректной обработки в UI
-    }
+function typedArraySupport () {
+  // Can typed array instances can be augmented?
+  try {
+    const arr = new Uint8Array(1)
+    const proto = { foo: function () { return 42 } }
+    Object.setPrototypeOf(proto, Uint8Array.prototype)
+    Object.setPrototypeOf(arr, proto)
+    return arr.foo() === 42
+  } catch (e) {
+    return false
+  }
 }
 
+Object.defineProperty(Buffer.prototype, 'parent', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.buffer
+  }
+})
 
+Object.defineProperty(Buffer.prototype, 'offset', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.byteOffset
+  }
+})
 
-
-
-
-/**
- * 1. УЛЬТРА-ПАРСЕР ЧИСЕЛ (BigInt/BN)
- * Адаптировано: Возвращает anchor.BN, так как SDK Anchor работает именно с ним.
- */
-window.parseAmountToBN = function(amountStr, decimals = 9) {
-    try {
-        if (!amountStr || amountStr.toString().trim() === '') return new anchor.BN(0);
-
-        let cleaned = amountStr.toString().replace(',', '.').replace(/[^\d.]/g, '');
-        const parts = cleaned.split('.');
-        if (parts.length > 2) return new anchor.BN(0);
-
-        let [integerPart, fractionalPart = ''] = parts;
-        fractionalPart = fractionalPart.substring(0, decimals).padEnd(decimals, '0');
-
-        const resultStr = (integerPart === '' || integerPart === '0' ? '' : integerPart) + fractionalPart;
-        return new anchor.BN(resultStr || '0');
-    } catch (e) {
-        console.error("❌ [Math Error]:", e);
-        return new anchor.BN(0);
-    }
-};
+function createBuffer (length) {
+  if (length > K_MAX_LENGTH) {
+    throw new RangeError('The value "' + length + '" is invalid for option "size"')
+  }
+  // Return an augmented `Uint8Array` instance
+  const buf = new Uint8Array(length)
+  Object.setPrototypeOf(buf, Buffer.prototype)
+  return buf
+}
 
 /**
- * 2. РОБАСТНОЕ СОЕДИНЕНИЕ (Интегрировано в QubitProgramManager)
- * Вместо создания новой функции, мы расширяем текущий менеджер.
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
  */
-// ВАЖНО: Добавь этот метод в объект QubitProgramManager
-QubitProgramManager.getConnection = async function() {
-    const RPC_ENDPOINTS = [
-        QUBIT_CONFIG.rpcUrl,
-        "https://api.devnet.solana.com",
-        "https://api.mainnet-beta.solana.com"
-    ];
 
-    for (let url of RPC_ENDPOINTS) {
-        try {
-            const conn = new solanaWeb3.Connection(url, "confirmed");
-            await conn.getSlot(); // Быстрая проверка связи
-            return conn;
-        } catch (e) {
-            console.warn(`⚠️ RPC ${url} недоступен, пробуем следующий...`);
-        }
+function Buffer (arg, encodingOrOffset, length) {
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new TypeError(
+        'The "string" argument must be of type string. Received type number'
+      )
     }
-    throw new Error("Все RPC узлы недоступны.");
-};
+    return allocUnsafe(arg)
+  }
+  return from(arg, encodingOrOffset, length)
+}
 
+Buffer.poolSize = 8192 // not used by this implementation
 
+function from (value, encodingOrOffset, length) {
+  if (typeof value === 'string') {
+    return fromString(value, encodingOrOffset)
+  }
 
+  if (ArrayBuffer.isView(value)) {
+    return fromArrayView(value)
+  }
 
+  if (value == null) {
+    throw new TypeError(
+      'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+      'or Array-like Object. Received type ' + (typeof value)
+    )
+  }
 
+  if (isInstance(value, ArrayBuffer) ||
+      (value && isInstance(value.buffer, ArrayBuffer))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof SharedArrayBuffer !== 'undefined' &&
+      (isInstance(value, SharedArrayBuffer) ||
+      (value && isInstance(value.buffer, SharedArrayBuffer)))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'number') {
+    throw new TypeError(
+      'The "value" argument must not be of type number. Received type number'
+    )
+  }
+
+  const valueOf = value.valueOf && value.valueOf()
+  if (valueOf != null && valueOf !== value) {
+    return Buffer.from(valueOf, encodingOrOffset, length)
+  }
+
+  const b = fromObject(value)
+  if (b) return b
+
+  if (typeof Symbol !== 'undefined' && Symbol.toPrimitive != null &&
+      typeof value[Symbol.toPrimitive] === 'function') {
+    return Buffer.from(value[Symbol.toPrimitive]('string'), encodingOrOffset, length)
+  }
+
+  throw new TypeError(
+    'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+    'or Array-like Object. Received type ' + (typeof value)
+  )
+}
 
 /**
- * УЛУЧШЕННЫЙ МЕТОД: GET ROBUST CONNECTION
- * Теперь интегрирован в экосистему QubitProgramManager.
- * Ищет рабочую ноду и обновляет состояние приложения.
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(value, encodingOrOffset, length)
+}
+
+// Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
+// https://github.com/feross/buffer/pull/148
+Object.setPrototypeOf(Buffer.prototype, Uint8Array.prototype)
+Object.setPrototypeOf(Buffer, Uint8Array)
+
+function assertSize (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be of type number')
+  } else if (size < 0) {
+    throw new RangeError('The value "' + size + '" is invalid for option "size"')
+  }
+}
+
+function alloc (size, fill, encoding) {
+  assertSize(size)
+  if (size <= 0) {
+    return createBuffer(size)
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpreted as a start offset.
+    return typeof encoding === 'string'
+      ? createBuffer(size).fill(fill, encoding)
+      : createBuffer(size).fill(fill)
+  }
+  return createBuffer(size)
+}
+
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(size, fill, encoding)
+}
+
+function allocUnsafe (size) {
+  assertSize(size)
+  return createBuffer(size < 0 ? 0 : checked(size) | 0)
+}
+
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(size)
+}
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
  */
-async function getRobustConnection() {
-    // 1. Пытаемся получить соединение через существующий менеджер программ
-    try {
-        const program = await QubitProgramManager.getProgram();
-        if (program && program.provider && program.provider.connection) {
-            // Проверка "живучести" соединения
-            await program.provider.connection.getSlot({ commitment: 'processed' });
-            return program.provider.connection;
-        }
-    } catch (e) {
-        console.warn("🔄 Основной RPC недоступен, начинаем ротацию...");
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(size)
+}
+
+function fromString (string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8'
+  }
+
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('Unknown encoding: ' + encoding)
+  }
+
+  const length = byteLength(string, encoding) | 0
+  let buf = createBuffer(length)
+
+  const actual = buf.write(string, encoding)
+
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    buf = buf.slice(0, actual)
+  }
+
+  return buf
+}
+
+function fromArrayLike (array) {
+  const length = array.length < 0 ? 0 : checked(array.length) | 0
+  const buf = createBuffer(length)
+  for (let i = 0; i < length; i += 1) {
+    buf[i] = array[i] & 255
+  }
+  return buf
+}
+
+function fromArrayView (arrayView) {
+  if (isInstance(arrayView, Uint8Array)) {
+    const copy = new Uint8Array(arrayView)
+    return fromArrayBuffer(copy.buffer, copy.byteOffset, copy.byteLength)
+  }
+  return fromArrayLike(arrayView)
+}
+
+function fromArrayBuffer (array, byteOffset, length) {
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('"offset" is outside of buffer bounds')
+  }
+
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('"length" is outside of buffer bounds')
+  }
+
+  let buf
+  if (byteOffset === undefined && length === undefined) {
+    buf = new Uint8Array(array)
+  } else if (length === undefined) {
+    buf = new Uint8Array(array, byteOffset)
+  } else {
+    buf = new Uint8Array(array, byteOffset, length)
+  }
+
+  // Return an augmented `Uint8Array` instance
+  Object.setPrototypeOf(buf, Buffer.prototype)
+
+  return buf
+}
+
+function fromObject (obj) {
+  if (Buffer.isBuffer(obj)) {
+    const len = checked(obj.length) | 0
+    const buf = createBuffer(len)
+
+    if (buf.length === 0) {
+      return buf
     }
 
-    // 2. Список узлов для ротации (берем из конфига + fallback)
-    const endpoints = [
-        QUBIT_CONFIG.rpcUrl,
-        "https://api.devnet.solana.com",
-        "https://api.mainnet-beta.solana.com"
-    ];
+    obj.copy(buf, 0, 0, len)
+    return buf
+  }
 
-    // 3. Перебор узлов
-    for (const url of endpoints) {
-        try {
-            const conn = new solanaWeb3.Connection(url, { 
-                commitment: 'confirmed',
-                confirmTransactionInitialTimeout: 60000 
-            });
-
-            // Тест на "живость"
-            await conn.getLatestBlockhash(); 
-            
-            // Сохраняем в AppState, если он существует
-            if (typeof AppState !== 'undefined') {
-                AppState.connection = conn;
-            }
-            
-            console.log(`🚀 Успешное переключение на RPC: ${url}`);
-            return conn;
-        } catch (e) {
-            console.error(`❌ RPC Fail (${url}):`, e.message);
-            continue; 
-        }
+  if (obj.length !== undefined) {
+    if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
+      return createBuffer(0)
     }
+    return fromArrayLike(obj)
+  }
 
-    // 4. Обработка критической ошибки
-    const errorMsg = "Все RPC узлы недоступны. Проверьте интернет-соединение.";
-    console.error("🚨 RPC_UNREACHABLE");
-    
-    // Если есть метод уведомления - используем его, иначе alert
-    if (typeof showNotification === 'function') {
-        showNotification(errorMsg, "red");
+  if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
+    return fromArrayLike(obj.data)
+  }
+}
+
+function checked (length) {
+  // Note: cannot use `length < K_MAX_LENGTH` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= K_MAX_LENGTH) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + K_MAX_LENGTH.toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (length) {
+  if (+length != length) { // eslint-disable-line eqeqeq
+    length = 0
+  }
+  return Buffer.alloc(+length)
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return b != null && b._isBuffer === true &&
+    b !== Buffer.prototype // so Buffer.isBuffer(Buffer.prototype) will be false
+}
+
+Buffer.compare = function compare (a, b) {
+  if (isInstance(a, Uint8Array)) a = Buffer.from(a, a.offset, a.byteLength)
+  if (isInstance(b, Uint8Array)) b = Buffer.from(b, b.offset, b.byteLength)
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError(
+      'The "buf1", "buf2" arguments must be one of type Buffer or Uint8Array'
+    )
+  }
+
+  if (a === b) return 0
+
+  let x = a.length
+  let y = b.length
+
+  for (let i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!Array.isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers')
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0)
+  }
+
+  let i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length
+    }
+  }
+
+  const buffer = Buffer.allocUnsafe(length)
+  let pos = 0
+  for (i = 0; i < list.length; ++i) {
+    let buf = list[i]
+    if (isInstance(buf, Uint8Array)) {
+      if (pos + buf.length > buffer.length) {
+        if (!Buffer.isBuffer(buf)) buf = Buffer.from(buf)
+        buf.copy(buffer, pos)
+      } else {
+        Uint8Array.prototype.set.call(
+          buffer,
+          buf,
+          pos
+        )
+      }
+    } else if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers')
     } else {
-        alert(errorMsg);
+      buf.copy(buffer, pos)
     }
-    
-    throw new Error("RPC_UNREACHABLE");
+    pos += buf.length
+  }
+  return buffer
 }
 
+function byteLength (string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length
+  }
+  if (ArrayBuffer.isView(string) || isInstance(string, ArrayBuffer)) {
+    return string.byteLength
+  }
+  if (typeof string !== 'string') {
+    throw new TypeError(
+      'The "string" argument must be one of type string, Buffer, or ArrayBuffer. ' +
+      'Received type ' + typeof string
+    )
+  }
 
+  const len = string.length
+  const mustMatch = (arguments.length > 2 && arguments[2] === true)
+  if (!mustMatch && len === 0) return 0
 
-
-
-
-/**
- * УМНЫЙ ОБРАБОТЧИК СМЕНЫ КОШЕЛЬКА
- * Полная интеграция с Qubit-инфраструктурой
- */
-window.handlePublicKeyChange = async function(newPublicKey) {
-    try {
-        // 1. Идентификация смены
-        const newKeyStr = newPublicKey ? newPublicKey.toBase58() : null;
-        const oldKeyStr = window.AppState?.walletPublicKey ? window.AppState.walletPublicKey.toBase58() : null;
-
-        if (newKeyStr === oldKeyStr) return;
-
-        console.log(`🔄 [WALLET SYNC]: ${oldKeyStr || 'None'} -> ${newKeyStr || 'Disconnected'}`);
-
-        // 2. Очистка и обновление стейта
-        if (!window.AppState) window.AppState = {};
-        window.AppState.walletPublicKey = newPublicKey;
-        window.AppState.lastUpdate = null;
-
-        // 3. Мгновенная очистка UI (UX: предотвращение показа старых данных)
-        const balanceEl = document.getElementById('wallet-balance-display');
-        if (balanceEl) balanceEl.innerText = "Balance: --";
-        
-        // 4. Логика переподключения
-        if (newPublicKey) {
-            console.log("✨ [WALLET SYNC]: Инициализация данных нового аккаунта...");
-            
-            // Используем твою систему уведомлений
-            if (typeof showNotification === 'function') {
-                showNotification("Account Switched", "emerald");
-            }
-            
-            // Синхронизация всех сервисов
-            await Promise.allSettled([
-                window.updateWalletBalance ? window.updateWalletBalance() : Promise.resolve(),
-                // Если есть другие сервисы, вызываем их здесь
-                // window.StakingDataManager.refresh() и т.д.
-            ]);
-            
-            console.log("✅ [WALLET SYNC]: Данные успешно обновлены для", newKeyStr);
-        } else {
-            console.warn("⚠️ [WALLET SYNC]: Кошелек отключен.");
-            if (typeof showNotification === 'function') {
-                showNotification("Wallet Disconnected", "red");
-            }
-            // Сброс UI при отключении
-            if (balanceEl) balanceEl.innerText = "Balance: Connect Wallet";
+  // Use a for loop to avoid recursion
+  let loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len
+      case 'utf8':
+      case 'utf-8':
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) {
+          return mustMatch ? -1 : utf8ToBytes(string).length // assume utf8
         }
-
-    } catch (e) {
-        console.error("❌ [WALLET SYNC ERROR]:", e);
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
     }
-};
+  }
+}
+Buffer.byteLength = byteLength
 
-// --- ВАЖНО: Привязка к событию кошелька ---
-// Добавь этот вызов в свой код подключения кошелька (в блоке, где происходит connect)
-// window.solana.on('accountChanged', (publicKey) => window.handlePublicKeyChange(publicKey));
+function slowToString (encoding, start, end) {
+  let loweredCase = false
 
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
 
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return ''
+  }
 
+  if (end === undefined || end > this.length) {
+    end = this.length
+  }
 
+  if (end <= 0) {
+    return ''
+  }
 
+  // Force coercion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0
+  start >>>= 0
 
+  if (end <= start) {
+    return ''
+  }
 
-/**
- * 4. УЛЬТРА-СИНХРОНИЗАЦИЯ БАЛАНСОВ (QUBIT VERSION)
- * Работает через параллельные потоки для мгновенного отклика.
- */
-window.fetchUserBalances = async function() {
-    try {
-        const program = await QubitProgramManager.getProgram();
-        const connection = program.provider.connection;
-        const pubkey = program.provider.wallet.publicKey;
+  if (!encoding) encoding = 'utf8'
 
-        if (!pubkey) {
-            console.warn("⚠️ [BALANCE SYNC]: Кошелек не подключен, пропуск обновления.");
-            return;
-        }
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
 
-        // 1. Запускаем запросы параллельно
-        // Используем mint из QUBIT_CONFIG
-        const [solBalance, tokenAccounts] = await Promise.all([
-            connection.getBalance(pubkey),
-            connection.getParsedTokenAccountsByOwner(pubkey, { 
-                mint: QUBIT_CONFIG.mint 
-            })
-        ]);
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
 
-        // 2. Обработка токенов (сумма по всем ATA)
-        const totalTokens = tokenAccounts.value.reduce((sum, acc) => {
-            const amount = acc.account.data.parsed.info.tokenAmount.amount;
-            return sum + BigInt(amount);
-        }, 0n);
+      case 'ascii':
+        return asciiSlice(this, start, end)
 
-        // 3. Сохранение в AppState (если он у тебя есть, или создаем его)
-        window.AppState = window.AppState || {};
-        window.AppState.userBalances = {
-            SOL: BigInt(solBalance),
-            QBT: totalTokens
-        };
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end)
 
-        // 4. Логирование
-        console.log(`
-            📊 BALANCE SYNC COMPLETE:
-            - SOL: ${(Number(solBalance) / 1e9).toFixed(4)}
-            - QBT: ${Number(totalTokens) / 1e9}
-        `);
+      case 'base64':
+        return base64Slice(this, start, end)
 
-        // 5. Рендеринг в UI
-        const solEl = document.getElementById('user-sol-balance');
-        const qbtEl = document.getElementById('user-qbt-balance');
-        
-        if (solEl) solEl.innerText = (Number(solBalance) / 1e9).toFixed(4);
-        if (qbtEl) qbtEl.innerText = (Number(totalTokens) / 1e9).toFixed(2);
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
 
-    } catch (error) {
-        console.error("❌ [BALANCE SYNC ERROR]:", error);
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
     }
-};
-
-
-
-
-
-
-
-/**
- * ПОИСК ГЛАВНОГО PDA ПУЛА (СИНХРОНИЗИРОВАН С QUBIT_CONFIG)
- * Использует актуальный programId и адрес пула из конфигурации приложения.
- */
-window.getPoolPDA = async function() {
-    // 1. Кэширование: если уже найдено, отдаем из памяти
-    if (window._cachedPoolPda) return window._cachedPoolPda;
-
-    try {
-        // Проверяем наличие конфигурации
-        if (typeof QUBIT_CONFIG === 'undefined' || !QUBIT_CONFIG.programId) {
-            throw new Error("QUBIT_CONFIG не инициализирован");
-        }
-
-        // 2. Используем данные из твоего рабочего QUBIT_CONFIG
-        // Если пул уже есть в конфиге (DtAAYa8d9bUYNrvrTPCcsb2yGFfirq1DcqsjfXdK34nd),
-        // то PDA вычислять не нужно — он уже известен как объект PublicKey.
-        const pda = QUBIT_CONFIG.pool;
-        
-        console.log("🏛️ Global Pool PDA (from Config):", pda.toBase58());
-        
-        // Сохраняем в кэш
-        window._cachedPoolPda = pda;
-        return pda;
-
-    } catch (e) {
-        console.error("❌ Ошибка при получении Pool PDA:", e);
-        
-        // Fallback: берем из конфига в любом случае, если есть
-        if (typeof QUBIT_CONFIG !== 'undefined' && QUBIT_CONFIG.pool) {
-            return QUBIT_CONFIG.pool;
-        }
-        
-        throw new Error("Не удалось определить адрес пула.");
-    }
-};
-
-
-
-
-
-
-
-
-/**
- * ДИНАМИЧЕСКИЙ РАСЧЕТ APR
- * Адаптировано под: QubitProgramManager и QUBIT_CONFIG
- */
-window.getLiveAPR = async function() {
-    try {
-        console.log("📊 [APR SERVICE]: Расчет актуального APR...");
-        
-        // 1. Используем менеджер программ из твоего основного кода
-        const program = await QubitProgramManager.getProgram();
-        
-        // 2. Берем адреса из твоего конфига
-        const poolPubKey = QUBIT_CONFIG.pool;
-        
-        // 3. Фетчим данные аккаунта пула (Zero-Copy через fetchData)
-        const poolAccount = await program.account.poolState.fetchData(poolPubKey);
-
-        if (!poolAccount) throw new Error("Pool account not found");
-
-        // 4. Извлекаем данные
-        // Предполагаем, что в контракте это BN, используем .toNumber() или .toString()
-        const totalStakedBN = poolAccount.totalStakedAmount;
-        const rewardRateBN = poolAccount.rewardRatePerSec;
-
-        // Определяем децималы (обычно для SPL токенов это 9, но берем из конфига или константы)
-        const DECIMALS = 9; 
-        const totalStaked = totalStakedBN.toNumber() / Math.pow(10, DECIMALS);
-        const rps = rewardRateBN.toNumber() / Math.pow(10, DECIMALS);
-
-        // 5. Расчет
-        const SECONDS_PER_YEAR = 31536000;
-        const rewardsPerYear = rps * SECONDS_PER_YEAR;
-
-        if (totalStaked < 1) return "🔥 1000%+";
-
-        const realAPR = (rewardsPerYear / totalStaked) * 100;
-
-        // Форматирование
-        const result = realAPR > 5000 ? "5000%+" : realAPR.toFixed(2) + "%";
-        
-        console.log(`✅ [APR SERVICE]: Актуальный APR: ${result}`);
-        return result;
-
-    } catch (e) {
-        console.error("❌ APR Calculation Error:", e);
-        return "0.00%"; 
-    }
-};
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ СИНХРОНИЗАТОР ИНТЕРФЕЙСА (ОТЛАЖЕННЫЙ)
- * Работает через QubitProgramManager и WalletBalanceManager.
- */
-let isUpdatingUI = false;
-
-window.updateStakingAndBalanceUI = async function() {
-    if (isUpdatingUI) return;
-    isUpdatingUI = true;
-
-    try {
-        console.log("🔄 [GLOBAL SYNC]: Запуск обновления данных...");
-
-        const program = await QubitProgramManager.getProgram();
-        const walletPubkey = program.provider.wallet.publicKey;
-
-        if (!walletPubkey) {
-            console.warn("⚠️ [GLOBAL SYNC]: Кошелек не подключен, обновляем только базовый UI.");
-            // Очистка UI или сброс состояний, если нужно
-            return;
-        }
-
-        // 1. Обновляем баланс через сервис
-        const balancePromise = window.updateWalletBalance ? window.updateWalletBalance() : Promise.resolve(0);
-
-        // 2. Обновляем данные стейкинга (если у тебя есть функция fetchUserStakingData)
-        // Если её нет, мы можем добавить прямо здесь логику получения данных аккаунта
-        const stakingDataPromise = (async () => {
-            if (window.appState?.currentPoolPubKey) {
-                // Пример: подтягиваем данные стейкинга через метод контракта
-                // const userStakePda = ... (логика деривации)
-                // return await program.account.userStaking.fetch(userStakePda);
-                console.log("📊 [GLOBAL SYNC]: Обновление данных стейка...");
-            }
-        })();
-
-        await Promise.allSettled([balancePromise, stakingDataPromise]);
-
-        // 3. Вызов финального рендера DOM (обновление кнопок, цифр, статусов)
-        // Убеждаемся, что мы обновляем именно те элементы, которые есть в HTML
-        if (typeof window.renderAllUI === 'function') {
-            window.renderAllUI();
-        } else {
-            console.log("✨ [GLOBAL SYNC]: Данные получены, UI обновлен.");
-        }
-
-    } catch (e) {
-        console.error("🚨 [GLOBAL SYNC]: Ошибка обновления:", e);
-    } finally {
-        isUpdatingUI = false;
-    }
-};
-
-// --- ДОПОЛНИТЕЛЬНАЯ НАСТРОЙКА ---
-// Чтобы этот синхронизатор работал автоматически и «живо», 
-// добавь его в интервал вместе с мониторингом баланса:
-setInterval(() => {
-    if (window.solana?.isConnected) {
-        window.updateStakingAndBalanceUI();
-    }
-}, 45000); // Синхронизация каждые 45 секунд
-
-
-
-
-
-
-
-/**
- * ФАБРИКА ПРОГРАММЫ ANCHOR (ОБНОВЛЕННАЯ)
- * Интегрирована с QubitProgramManager для единого источника истины.
- */
-window.getAnchorProgram = async function(programId, idl) {
-    try {
-        console.log("🛠️ [BRIDGE]: Инициализация программы через Factory...");
-
-        // 1. Используем уже настроенный менеджер (гарантирует корректный провайдер и RPC)
-        const manager = QubitProgramManager;
-        
-        // 2. Если программа уже инициализирована в менеджере, отдаем её
-        if (manager.program) {
-            return manager.program;
-        }
-
-        // 3. Если нет — инициируем через менеджер
-        // Это гарантирует, что мы используем QUBIT_CONFIG и правильный provider
-        const program = await manager.getProgram();
-        
-        console.log(`📡 Anchor Program Ready: ${program.programId.toBase58()}`);
-        return program;
-
-    } catch (error) {
-        console.error("🛠️ Anchor Factory Error:", error.message);
-        
-        // Интеграция с твоей системой уведомлений (если она доступна)
-        if (typeof showNotification === 'function') {
-            showNotification("Ошибка инициализации программы", "red");
-        }
-        throw error;
-    }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * УМНЫЙ АВТОНОМНЫЙ БЛОК: УПРАВЛЕНИЕ БАЛАНСОМ
- * Работает как сервис: следит за состоянием, обновляет UI и готов отдавать баланс
- */
-const WalletBalanceManager = {
-    cachedBalance: 0,
-    isUpdating: false,
-
-    async updateBalance() {
-        if (this.isUpdating) return this.cachedBalance;
-        this.isUpdating = true;
-        
-        const displayEl = document.getElementById('wallet-balance-display');
-        
-        try {
-            console.log("⚡ [BALANCE SERVICE]: Запрос баланса через RPC...");
-            
-            const program = await QubitProgramManager.getProgram();
-            const connection = program.provider.connection;
-            const walletPubkey = program.provider.wallet.publicKey;
-
-            if (!walletPubkey) {
-                if (displayEl) displayEl.innerText = "Balance: Connect Wallet";
-                return 0;
-            }
-
-            // Находим ATA
-            const ata = await anchor.utils.token.associatedAddress({
-                mint: QUBIT_CONFIG.mint,
-                owner: walletPubkey
-            });
-
-            // Запрос баланса
-            const balanceInfo = await connection.getTokenAccountBalance(ata);
-            const balance = balanceInfo.value.uiAmount;
-            
-            this.cachedBalance = balance;
-            
-            if (displayEl) {
-                displayEl.innerText = `Balance: ${balance.toFixed(4)}`;
-                displayEl.classList.remove('text-red-400');
-            }
-            
-            console.log(`✅ [BALANCE SERVICE]: Обновлено до ${balance}`);
-            return balance;
-
-        } catch (e) {
-            console.error("❌ [BALANCE SERVICE ERROR]:", e);
-            if (displayEl) {
-                displayEl.innerText = "Balance: 0.0000";
-                displayEl.classList.add('text-red-400');
-            }
-            return 0;
-        } finally {
-            this.isUpdating = false;
-        }
-    },
-
-    // Авто-инициализация: вызови это один раз при старте приложения
-    init() {
-        console.log("🚀 [BALANCE SERVICE]: Запуск авто-мониторинга...");
-        // Первое обновление
-        this.updateBalance();
-        // Обновление каждые 30 секунд для «живого» интерфейса
-        setInterval(() => this.updateBalance(), 30000);
-    }
-};
-
-// Переопределяем глобальную функцию, чтобы handleDeposit её использовал
-window.updateWalletBalance = () => WalletBalanceManager.updateBalance();
-
-
-
-
-
-
-
-
-       /**
- * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE (DEVNET FIXED)
- */
-window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
-    try {
-        console.log("====================================================================================================");
-        console.log(`🛠 [START]: ИНИЦИАЛИЗАЦИЯ (DEVNET) | POOL INDEX: ${poolIndex}...`);
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        if (poolIndex < 0 || poolIndex > 4) {
-            throw new Error("⛔️ ОШИБКА: Неверный индекс пула (0-4).");
-        }
-
-        // 1. ДЕРИВАЦИЯ PDA
-        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPubKey.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Buffer.from([poolIndex])
-            ],
-            program.programId
-        );
-
-        // 2. ПРОВЕРКА СОСТОЯНИЯ
-        const accountInfo = await provider.connection.getAccountInfo(userStakePda);
-        if (accountInfo !== null) {
-            console.warn("⚠️ Аккаунт уже существует. Инициализация не требуется.");
-            return "ALREADY_INITIALIZED";
-        }
-
-        // 3. ФОРМИРОВАНИЕ ТРАНЗАКЦИИ
-        const tx = await program.methods
-            .initializeUserStake(poolIndex)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakePda,
-                owner: ownerPubkey,
-                systemProgram: anchor.web3.SystemProgram.programId,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-                rent: anchor.web3.SYSVAR_RENT_PUBKEY, // Добавлено для синхронизации с Utils и Rust драйвером
-            })
-            .preInstructions([
-                anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
-            ])
-            .rpc({
-                skipPreflight: false,
-                preflightCommitment: "confirmed"
-            });
-
-        console.log("✨ [SUCCESS]: Инициализация в Devnet прошла успешно. TX:", tx);
-        return tx;
-
-    } catch (e) {
-        console.error("❌ Initialize Error (Devnet):", e);
-        throw e;
-    }
-};
-
-
-
-
-/**
- * Единая функция инициализации (ПРОФЕССИОНАЛЬНЫЙ UI + ВЕРИФИКАЦИЯ)
- */
-async function handleConfirmInitialize() {
-    // Получаем кнопку для управления состоянием
-    const btn = document.querySelector('.tier-btn.active-tier');
-    // Безопасная проверка наличия кнопки перед тем, как брать текст
-    const originalText = btn ? btn.innerText : "Инициализировать";
-
-    try {
-        console.log("====================================================================================================");
-        console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ЧЕРЕЗ UI...");
-
-        // 1. БЛОКИРОВКА КНОПКИ (защита от повторного нажатия)
-        if (btn) {
-            btn.disabled = true;
-            btn.innerText = "⏳ Отправка...";
-        }
-
-        // --- ПРОВЕРКА СОЕДИНЕНИЯ И ПОЛУЧЕНИЕ ПУБЛИЧНОГО КЛЮЧА ---
-        const walletPubkey = await ensureWalletConnected();
-        
-        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
-        const signerEl = document.querySelector('.wallet-signer-display'); 
-        if (signerEl) signerEl.innerText = walletPubkey.toBase58();
-
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        if (!activeBtn) {
-            alert("⚠️ Пожалуйста, выберите тир перед инициализацией!");
-            return;
-        }
-        
-        const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
-        const poolPubKey = window.appState?.currentPoolPubKey;
-
-        if (!poolPubKey) {
-            throw new Error("Адрес пула (poolPubKey) не определен в приложении.");
-        }
-
-        console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
-
-        // 2. ВЫЗОВ МЕТОДА (через глобальный performInitializeUserStake)
-        const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
-
-        if (result === "ALREADY_INITIALIZED") {
-            console.warn("ℹ️ [UI INFO]: Аккаунт уже инициализирован.");
-            alert("ℹ️ Стейкинг-аккаунт уже был инициализирован ранее.");
-        } else {
-            console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
-            
-            // --- БЛОК ВЕРИФИКАЦИИ (Чтение данных из блокчейна) ---
-            const program = await QubitProgramManager.getProgram();
-            
-            // Вычисляем PDA для проверки
-            const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-                [
-                    Buffer.from("user_stake"),
-                    poolPubKey.toBuffer(),
-                    walletPubkey.toBuffer(),
-                    Buffer.from([poolIndex])
-                ],
-                program.programId
-            );
-
-            // Читаем данные из блокчейна для подтверждения
-            let stakeData;
-            try {
-                // Синхронизация с тестами: динамически определяем имя структуры в IDL (userStakingAccount или userStaking)
-                const fetchMethod = program.account.userStakingAccount || program.account.userStaking;
-                stakeData = await fetchMethod.fetch(userStakePda);
-                
-                console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
-                console.log(`   - Owner: ${stakeData.owner.toBase58()}`);
-                console.log(`   - Pool Index: ${stakeData.poolIndex}`);
-                console.log(`   - Is Initialized: ${stakeData.isInitialized}`);
-
-                // УСПЕШНЫЙ РЕЗУЛЬТАТ (ссылка на Solana Explorer)
-                const explorerUrl = `https://explorer.solana.com/tx/${result}?cluster=devnet`;
-                const message = `✅ Стейкинг-аккаунт успешно инициализирован и верифицирован!\n\nTX: ${result.slice(0, 8)}...\n\nНажмите OK, чтобы увидеть транзакцию в Explorer.`;
-                
-                if (confirm(message)) {
-                    window.open(explorerUrl, '_blank');
-                }
-
-            } catch (fetchErr) {
-                console.error("❌ Ошибка при чтении данных после инициализации:", fetchErr);
-                alert("✅ Транзакция прошла, но возникла ошибка при чтении данных для верификации.");
-            }
-        }
-
-    } catch (e) {
-        console.error("❌ Handle Confirm Initialize Error:", e.message);
-        
-        // ПРОФЕССИОНАЛЬНАЯ ОБРАБОТКА ОШИБОК
-        let errorMsg = "Ошибка транзакции: " + e.message;
-        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно средств на балансе.";
-        if (e.message.includes("User rejected")) errorMsg = "Вы отменили подпись в кошельке.";
-        
-        alert(errorMsg);
-    } finally {
-        // 4. ВОЗВРАТ СОСТОЯНИЯ КНОПКИ
-        if (btn) {
-            btn.disabled = false;
-            btn.innerText = originalText;
-        }
-    }
+  }
 }
 
-
-
-
-
-
-
-
-
-                
-    
-
-
- 
-            
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-            
-          
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE LENDING
- * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция, Аудит
- */
-window.performCollateralizeLending = async function(
-    poolPubKey, 
-    poolIndex, 
-    newLendingAmount, 
-    minHealthFactor, 
-    guardianKeypair, 
-    lendingAuthorityKeypair, 
-    oracleFeeds
-) {
-    try {
-        console.log("====================================================================================================");
-        console.log("🛡️ [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА УСТАНОВКИ ЗАЛОГА (COLLATERALIZE LENDING)...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        // 1. Деривация PDA и предварительный аудит
-        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPubKey.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Buffer.from([poolIndex])
-            ],
-            program.programId
-        );
-
-        // 2. Сборка транзакции с COMPUTE BUDGET
-        const transaction = new anchor.web3.Transaction();
-        
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        // 3. Формирование инструкции
-        const collateralizeInstruction = await program.methods
-            .collateralizeLending(newLendingAmount, minHealthFactor)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakePda,
-                owner: ownerPubkey,
-                guardian: guardianKeypair.publicKey,
-                lendingAuthority: lendingAuthorityKeypair.publicKey,
-                oracleFeeds: oracleFeeds,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-                systemProgram: anchor.web3.SystemProgram.programId,
-            })
-            .instruction();
-
-        transaction.add(collateralizeInstruction);
-
-        // 4. Подготовка транзакции и симуляция
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        // Важно: сначала подписываем внешними ключами (Guardian, LendingAuth)
-        transaction.partialSign(guardianKeypair);
-        transaction.partialSign(lendingAuthorityKeypair);
-
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Симуляция коллатерализации не пройдена: " + JSON.stringify(simulation.value.err));
-        }
-
-        // 5. Подпись кошельком пользователя и отправка
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        console.log("⏳ Ожидание подтверждения (Collateralize)...");
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        console.log("✨ [SUCCESS]: Залог установлен успешно. TX:", txId);
-        return txId;
-
-    } catch (e) {
-        if (e.logs) {
-            console.error("--- SOLANA LOGS (TRANSACTION) ---");
-            e.logs.forEach(line => console.error(line));
-        }
-        console.error("❌ Collateralize Error:", e.message);
-        throw e;
-    }
-};
-
-
-
-
-
-/**
- * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
- * Вызывается напрямую из атрибута onclick="handleCollateralize()" в твоем HTML
- */
-async function handleCollateralize() {
-    const btn = document.getElementById('collateralizeBtn'); // Предполагаем ID кнопки
-
-    try {
-        console.log("====================================================================================================");
-        console.log("🛡️ [UI EVENT]: ИНИЦИАЦИЯ COLLATERALIZE LENDING ЧЕРЕЗ UI...");
-
-        // 1. ПОЛУЧЕНИЕ И ВАЛИДАЦИЯ ДАННЫХ ИЗ ИНПУТА
-        const rawAmount = document.getElementById('collateralAmountInput')?.value;
-        if (!rawAmount || isNaN(rawAmount) || parseFloat(rawAmount) <= 0) {
-            throw new Error("Введите корректное число для залога.");
-        }
-        
-        const amount = new anchor.BN(rawAmount);
-        const minHF = 2000; 
-
-        // 2. ПОДГОТОВКА UI
-        if (btn) {
-            btn.innerText = "Processing...";
-            btn.disabled = true;
-        }
-
-        // 3. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ (Убеждаемся, что ключи и данные загружены)
-        if (!window.GUARDIAN_KEYPAIR || !window.LENDING_AUTH_KEYPAIR) {
-            throw new Error("Ключи Guardian или Lending Authority не загружены.");
-        }
-        if (typeof POOL_STATE_PUBKEY === 'undefined' || typeof ORACLE_FEEDS_ARRAY === 'undefined') {
-            throw new Error("Необходимые данные пула или оракулов не определены.");
-        }
-
-        console.log(`⚙️ Залог: ${rawAmount} | MinHF: ${minHF}`);
-
-        // 4. ВЫЗОВ ПРОВЕРЕННОГО SDK-МЕТОДА
-        await window.performCollateralizeLending(
-            POOL_STATE_PUBKEY, 
-            0, 
-            amount, 
-            new anchor.BN(minHF),
-            window.GUARDIAN_KEYPAIR, 
-            window.LENDING_AUTH_KEYPAIR, 
-            ORACLE_FEEDS_ARRAY
-        );
-
-        console.log("✨ [UI SUCCESS]: Залог успешно установлен.");
-        alert("✅ Залог успешно установлен!");
-
-    } catch (e) {
-        console.error("❌ Collateralize UI Error:", e.message);
-        alert("Ошибка при установке залога: " + e.message);
-        
-    } finally {
-        // 5. ВОССТАНОВЛЕНИЕ UI
-        if (btn) {
-            btn.innerText = "CONFIRM COLLATERAL";
-            btn.disabled = false;
-        }
-    }
+// This property is used by `Buffer.isBuffer` (and the `is-buffer` npm package)
+// to detect a Buffer instance. It's not possible to use `instanceof Buffer`
+// reliably in a browserify context because there could be multiple different
+// copies of the 'buffer' package in use. This method works even for Buffer
+// instances that were created from another copy of the `buffer` package.
+// See: https://github.com/feross/buffer/issues/154
+Buffer.prototype._isBuffer = true
+
+function swap (b, n, m) {
+  const i = b[n]
+  b[n] = b[m]
+  b[m] = i
 }
 
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE LENDING
- * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция
- */
-window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amountBN) {
-    try {
-        console.log("====================================================================================================");
-        console.log("🔓 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА СНЯТИЯ ЗАЛОГА (DECOLLATERALIZE LENDING)...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        // 1. ДЕРИВАЦИЯ PDA (строго по семенам из Rust)
-        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPubKey.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Buffer.from([poolIndex])
-            ],
-            program.programId
-        );
-
-        // 2. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
-        const transaction = new anchor.web3.Transaction();
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        // 3. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
-        const decollateralizeInstruction = await program.methods
-            .decollateralizeLending(amountBN)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakePda,
-                owner: ownerPubkey,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .instruction();
-
-        transaction.add(decollateralizeInstruction);
-
-        // 4. ПОДГОТОВКА И СИМУЛЯЦИЯ
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        // Добавляем симуляцию для предотвращения ошибок транзакции
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Симуляция снятия залога не пройдена: " + JSON.stringify(simulation.value.err));
-        }
-
-        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        console.log("⏳ Ожидание подтверждения (Decollateralize)...");
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        console.log("✨ [SUCCESS]: Залог успешно снят. TX:", txId);
-        return txId;
-
-    } catch (e) {
-        if (e.logs) {
-            console.error("--- SOLANA LOGS (TRANSACTION) ---");
-            e.logs.forEach(line => console.error(line));
-        }
-        console.error("❌ Decollateralize Error:", e.message);
-        throw e;
-    }
-};
-
-
-
-/**
- * ФУНКЦИЯ: SET AMOUNT (АВТО-РАСЧЕТ СУММЫ)
- * Установка процента от максимально доступного значения
- */
-window.setAmount = function(percent) {
-    try {
-        console.log("====================================================================================================");
-        console.log(`🔢 [START]: ИНИЦИАЦИЯ РАСЧЕТА СУММЫ (PERCENT: ${percent * 100}%)...`);
-
-        // 1. ПОЛУЧЕНИЕ МАКСИМАЛЬНОГО ЗНАЧЕНИЯ
-        const maxElement = document.getElementById('maxAvailableAmount');
-        const maxText = maxElement ? maxElement.innerText.replace(/,/g, '') : "0";
-        const max = parseFloat(maxText);
-
-        // 2. ПОЛУЧЕНИЕ ИНПУТА
-        const input = document.getElementById('decollateralizeAmountInput');
-        if (!input) {
-            throw new Error("Элемент decollateralizeAmountInput не найден в DOM.");
-        }
-
-        // 3. ПРОВЕРКА НА ВАЛИДНОСТЬ ДАННЫХ
-        if (isNaN(max) || max <= 0) {
-            console.warn("⚠️ [WARNING]: Максимально доступная сумма не определена или равна 0.");
-            input.value = "0.00";
-            return "0.00";
-        }
-
-        // 4. РАСЧЕТ И ФОРМАТИРОВАНИЕ (оставляем 2 знака после запятой)
-        const result = (max * percent).toFixed(2);
-
-        // 5. УСТАНОВКА ЗНАЧЕНИЯ
-        input.value = result;
-
-        console.log(`✨ [SUCCESS]: Сумма успешно рассчитана: ${result} (процент: ${percent * 100}%).`);
-        return result;
-
-    } catch (e) {
-        console.error("❌ Set Amount Error:", e.message);
-        // Не выбрасываем исключение наружу, чтобы не ломать поток в UI
-        return null;
-    }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: DEPOSIT
- * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
- * Исправлено: Авто-определение ATA и проверка состояний внутри метода.
- */
-window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poolIndex, amountBN) {
-    try {
-        console.log("====================================================================================================");
-        console.log("🚀 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ДЕПОЗИТА...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА (через fetchData для Zero-Copy)
-        const poolData = await program.account.poolState.fetchData(poolPubKey);
-
-        // --- БЛОК АВТО-ОПРЕДЕЛЕНИЯ (Если ATA не переданы из UI) ---
-        let finalSourceAta = userSourceAta;
-        let finalStAta = userStAta;
-
-        if (!finalSourceAta) {
-            finalSourceAta = await spl.getAssociatedTokenAddress(poolData.mint, ownerPubkey);
-            console.log("⚠️ [AUTO]: Адрес источника (ATA) определен автоматически:", finalSourceAta.toBase58());
-        }
-        if (!finalStAta) {
-            finalStAta = await spl.getAssociatedTokenAddress(poolData.stMint, ownerPubkey);
-            console.log("⚠️ [AUTO]: Адрес стейк-токена (ATA) определен автоматически:", finalStAta.toBase58());
-        }
-
-        // 2. ДЕРИВАЦИЯ PDA (строго по семенам из Rust)
-        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPubKey.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Buffer.from([poolIndex])
-            ],
-            program.programId
-        );
-
-        // 3. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
-        const transaction = new anchor.web3.Transaction();
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        // 4. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
-        const depositInstruction = await program.methods
-            .deposit(poolIndex, amountBN)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakePda,
-                owner: ownerPubkey,
-                vault: poolData.vault,
-                stMint: poolData.stMint,
-                userSourceAta: finalSourceAta,
-                userStAta: finalStAta,
-                tokenProgram: spl.TOKEN_PROGRAM_ID,
-                systemProgram: anchor.web3.SystemProgram.programId,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .instruction();
-
-        transaction.add(depositInstruction);
-
-        // 5. ПОДГОТОВКА И СИМУЛЯЦИЯ
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        // Добавляем симуляцию для предотвращения ошибок транзакции
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Симуляция депозита не пройдена: " + JSON.stringify(simulation.value.err));
-        }
-
-        // 6. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        console.log("⏳ Ожидание подтверждения (Deposit)...");
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        console.log("✨ [SUCCESS]: Депозит успешно принят. TX:", txId);
-        return txId;
-
-    } catch (e) {
-        if (e.logs) {
-            console.error("--- SOLANA LOGS (TRANSACTION) ---");
-            e.logs.forEach(line => console.error(line));
-        }
-        console.error("❌ Deposit Error:", e.message);
-        throw e;
-    }
-};
-
-
-
-
-/**
- * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS (ПРОФЕССИОНАЛЬНАЯ ВЕРСИЯ)
- * Вызывается напрямую из атрибута onclick="handleDeposit()" в твоем HTML
- */
-async function handleDeposit() {
-    const btn = document.getElementById('executeDepositBtn'); // Предполагаем ID кнопки
-
-    try {
-        console.log("====================================================================================================");
-        console.log("🚀 [UI EVENT]: ИНИЦИАЦИЯ ДЕПОЗИТА ЧЕРЕЗ UI...");
-
-        // 1. ПРОВЕРКА БАЛАНСА ПЕРЕД ДЕЙСТВИЕМ
-        const currentBalance = await updateWalletBalance(); 
-        const amountVal = document.getElementById('depositInput')?.value;
-        const indexElement = document.getElementById('currentPoolIndex');
-
-        if (!amountVal || parseFloat(amountVal) <= 0) {
-            throw new Error("Введите корректную сумму для депозита.");
-        }
-        if (parseFloat(amountVal) > currentBalance) {
-            throw new Error("Недостаточно средств на балансе!");
-        }
-        if (!indexElement) {
-            throw new Error("Не удалось определить индекс пула.");
-        }
-
-        const amountBN = new anchor.BN(amountVal);
-        const poolIndex = parseInt(indexElement.innerText);
-
-        // 2. ПОДГОТОВКА UI
-        if (btn) {
-            btn.innerText = "Подпись в кошельке...";
-            btn.disabled = true;
-        }
-
-        // 3. ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ ПЕРЕД ДЕПОЗИТОМ
-        console.log("🔄 Синхронизация данных перед отправкой...");
-        await window.syncUserAccountState(QUBIT_CONFIG.pool, QUBIT_CONFIG.mint);
-
-        // 4. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ
-        if (typeof POOL_PUBKEY === 'undefined' && typeof QUBIT_CONFIG !== 'undefined') {
-            window.POOL_PUBKEY = QUBIT_CONFIG.pool;
-        }
-        
-        if (!window.POOL_PUBKEY || !window.USER_SOURCE_ATA || !window.USER_ST_ATA) {
-            throw new Error("Необходимые данные (PUBKEY/ATA) не определены в контексте.");
-        }
-
-        console.log(`⚙️ Депозит: ${amountVal} | Пул: ${poolIndex}`);
-
-        // 5. ВЫЗОВ SDK-МЕТОДА
-        await window.performDeposit(
-            window.POOL_PUBKEY, 
-            window.USER_SOURCE_ATA, 
-            window.USER_ST_ATA, 
-            poolIndex, 
-            amountBN
-        );
-
-        console.log("✨ [UI SUCCESS]: Депозит успешно подтвержден.");
-        alert("✅ Депозит успешно выполнен!");
-
-    } catch (e) {
-        console.error("❌ Handle Deposit Error:", e.message);
-        
-        // ПРОФЕССИОНАЛЬНАЯ ОБРАБОТКА ОШИБОК
-        let errorMsg = "Ошибка депозита: " + e.message;
-        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно средств на балансе.";
-        if (e.message.includes("User rejected")) errorMsg = "Вы отменили подпись в кошельке.";
-        
-        alert(errorMsg);
-        
-    } finally {
-        // 6. ВОССТАНОВЛЕНИЕ UI
-        if (btn) {
-            btn.innerText = "CONFIRM DEPOSIT";
-            btn.disabled = false;
-        }
-    }
+Buffer.prototype.swap16 = function swap16 () {
+  const len = this.length
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits')
+  }
+  for (let i = 0; i < len; i += 2) {
+    swap(this, i, i + 1)
+  }
+  return this
 }
 
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: CLAIM ALL REWARDS
- * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция, Пост-аудит
- */
-window.performClaimAllRewards = async function(poolPubKey, poolIndices, userRewardsAta) {
-    try {
-        console.log("====================================================================================================");
-        console.log("🎁 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА CLAIM ALL REWARDS...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        if (!poolIndices || poolIndices.length === 0) {
-            throw new Error("ErrorCode::InvalidPoolIndices");
-        }
-
-        // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА (через fetchData для Zero-Copy)
-        const poolData = await program.account.poolState.fetchData(poolPubKey);
-
-        // 2. ФОРМИРОВАНИЕ REMAINING ACCOUNTS
-        const remainingAccounts = poolIndices.map(index => {
-            const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
-                [
-                    Buffer.from("user_stake"),
-                    poolPubKey.toBuffer(),
-                    ownerPubkey.toBuffer(),
-                    Buffer.from([index])
-                ],
-                program.programId
-            );
-            return {
-                pubkey: pda,
-                isWritable: true,
-                isSigner: false,
-            };
-        });
-
-        console.log(`📊 Обработка пулов: [${poolIndices.join(", ")}] | Аккаунтов: ${remainingAccounts.length}`);
-
-        // 3. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
-        const transaction = new anchor.web3.Transaction();
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1000000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        const claimInstruction = await program.methods
-            .claimAllRewards(poolIndices)
-            .accounts({
-                poolState: poolPubKey,
-                owner: ownerPubkey,
-                userRewardsAta: userRewardsAta,
-                vault: poolData.vault,
-                adminFeeVault: poolData.adminFeeVault,
-                rewardMint: poolData.rewardMint,
-                tokenProgram: spl.TOKEN_PROGRAM_ID,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .remainingAccounts(remainingAccounts)
-            .instruction();
-
-        transaction.add(claimInstruction);
-
-        // 4. ПОДГОТОВКА И СИМУЛЯЦИЯ
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Симуляция клейма не пройдена: " + JSON.stringify(simulation.value.err));
-        }
-
-        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        console.log("⏳ Ожидание подтверждения (Claim All)...");
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        console.log("✨ [SUCCESS]: Награды успешно заклеймлены! TX:", txId);
-        return txId;
-
-    } catch (e) {
-        if (e.logs) {
-            console.error("--- SOLANA LOGS (TRANSACTION) ---");
-            e.logs.forEach(line => console.error(line));
-        }
-        console.error("❌ Claim All Error:", e.message);
-        throw e;
-    }
-};
-
-
-
-
-/**
- * Улучшенная функция: автоматическое определение адресов и запуск клейма
- */
-async function executeClaimRewards() {
-    const btn = document.getElementById('executeClaimBtn'); // Предполагаем ID кнопки
-
-    try {
-        console.log("====================================================================================================");
-        console.log("🎁 [UI EVENT]: ИНИЦИАЦИЯ КЛЕЙМА НАГРАД ЧЕРЕЗ UI...");
-
-        // 1. ПОДГОТОВКА И ВАЛИДАЦИЯ ВЫБОРА
-        const selectedTiers = [];
-        document.querySelectorAll('.tier-btn.active').forEach(btn => {
-            selectedTiers.push(parseInt(btn.getAttribute('data-index')));
-        });
-
-        if (selectedTiers.length === 0) {
-            console.warn("⚠️ [UI WARNING]: Ни один пул не выбран.");
-            alert("Пожалуйста, выберите хотя бы один пул.");
-            return;
-        }
-
-        // 2. ПОДГОТОВКА UI
-        if (btn) {
-            btn.innerText = "Processing...";
-            btn.disabled = true;
-        }
-
-        // 3. АВТОМАТИЗАЦИЯ: Получаем программу и провайдер
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const owner = provider.wallet.publicKey;
-
-        // 4. ПРОВЕРКА СОСТОЯНИЯ (AppState)
-        if (!window.appState || !window.appState.currentPoolPubKey) {
-            throw new Error("Состояние пула не загружено.");
-        }
-        const poolPubKey = window.appState.currentPoolPubKey; 
-
-        // 5. АВТОМАТИЗАЦИЯ: Находим ATA наград пользователя
-        const rewardMint = window.appState.rewardMint; 
-        const userRewardsAta = await spl.getAssociatedTokenAddress(
-            rewardMint,
-            owner
-        );
-
-        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Существование ATA
-        const ataAccount = await provider.connection.getAccountInfo(userRewardsAta);
-        if (!ataAccount) {
-            throw new Error("ATA наград не найден. Инициализируйте кошелек для получения наград.");
-        }
-
-        console.log(`🔍 [UI INFO]: Адреса определены. Пулы: [${selectedTiers.join(", ")}].`);
-
-        // 6. ВЫЗОВ SDK-МЕТОДА
-        await window.performClaimAllRewards(
-            poolPubKey, 
-            selectedTiers, 
-            userRewardsAta
-        );
-
-        console.log("✨ [UI SUCCESS]: Награды успешно заклеймлены.");
-        alert("✅ Награды успешно заклеймлены!");
-
-    } catch (e) {
-        console.error("❌ Handle Claim Rewards Error:", e.message);
-        alert("Ошибка клейма: " + e.message);
-        
-    } finally {
-        // 7. ВОССТАНОВЛЕНИЕ UI
-        if (btn) {
-            btn.innerText = "CLAIM ALL REWARDS";
-            btn.disabled = false;
-        }
-    }
+Buffer.prototype.swap32 = function swap32 () {
+  const len = this.length
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits')
+  }
+  for (let i = 0; i < len; i += 4) {
+    swap(this, i, i + 3)
+    swap(this, i + 1, i + 2)
+  }
+  return this
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-   
-      
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: UNSTAKE (ВЫВОД СРЕДСТВ)
- * 100% синхронизация с SDK: PDA, Аудит, Compute Budget, Симуляция, RAW транзакция, Пост-аудит
- */
-window.performUnstake = async function(poolPubKey, userStAta, userRewardsAta, poolIndex, amountBN) {
-    try {
-        console.log("====================================================================================================");
-        console.log("📉 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ВЫВОДА СРЕДСТВ (UNSTAKE)...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        // Входной контроль
-        if (poolIndex < 0 || poolIndex > 4) throw new Error("ErrorCode::InvalidPoolIndex");
-        if (amountBN.isZero() || amountBN.isNeg()) throw new Error("ErrorCode::ZeroAmount");
-
-        // ШАГ 1: Деривация PDA и предварительный аудит
-        const [userStakePda, userStakeBump] = anchor.web3.PublicKey.findProgramAddressSync(
-            [
-                Buffer.from("user_stake"),
-                poolPubKey.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Buffer.from([poolIndex])
-            ],
-            program.programId
-        );
-
-        const [poolData, userState, currentSlot] = await Promise.all([
-            program.account.poolState.fetch(poolPubKey, "finalized"),
-            program.account.userStakingAccount.fetch(userStakePda, "finalized"),
-            provider.connection.getSlot("finalized")
-        ]);
-
-        if (poolData.globalPause !== 0) throw new Error("ErrorCode::ReentrancyGuardTriggered");
-        if (new anchor.BN(currentSlot).lte(new anchor.BN(userState.lastDepositSlot))) throw new Error("ErrorCode::OperationInSameSlot");
-        if (userState.stakedAmount.lt(amountBN)) throw new Error("ErrorCode::InsufficientStake");
-        
-        const lending = userState.lending || new anchor.BN(0);
-        if (!lending.isZero() && userState.stakedAmount.sub(lending).lt(amountBN)) throw new Error("ErrorCode::CollateralLock");
-
-        const isFullUnstake = userState.stakedAmount.eq(amountBN);
-
-        // ШАГ 2: Сборка транзакции
-        const transaction = new anchor.web3.Transaction();
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        const unstakeInstruction = await program.methods
-            .unstake(poolIndex, amountBN)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakePda,
-                owner: ownerPubkey,
-                vault: poolData.vault,
-                daoTreasuryVault: poolData.daoTreasuryVault,
-                adminFeeVault: poolData.adminFeeVault,
-                userRewardsAta: userRewardsAta,
-                userStAta: userStAta,
-                stMint: poolData.stMint,
-                rewardMint: poolData.rewardMint,
-                tokenProgram: spl.TOKEN_PROGRAM_ID,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .instruction();
-
-        transaction.add(unstakeInstruction);
-
-        // ШАГ 3: Симуляция и отправка
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Simulation failed: " + JSON.stringify(simulation.value.err));
-        }
-
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        // ШАГ 4: Пост-аудит
-        for (let attempt = 1; attempt <= 5; attempt++) {
-            await new Promise(r => setTimeout(r, 4000));
-            try {
-                const stakeAfter = await program.account.userStakingAccount.fetch(userStakePda, "finalized");
-                if (!isFullUnstake && stakeAfter.stakedAmount.lt(userState.stakedAmount)) break;
-            } catch (e) {
-                if (isFullUnstake) break;
-            }
-        }
-
-        console.log("✅ [SUCCESS]: Транзакция подтверждена. ID:", txId);
-        return txId;
-    } catch (e) {
-        if (e.logs) {
-            console.error("--- SOLANA LOGS (TRANSACTION) ---");
-            e.logs.forEach(line => console.error(line));
-        }
-        console.error("❌ Unstake Error:", e.message);
-        throw e;
-    }
-};
-
-
-
-
-
-async function handleUnstake() {
-    const input = document.getElementById('unstakeAmountInput');
-    const amount = parseFloat(input.value);
-    
-    if (!amount || amount <= 0) {
-        alert("Введите корректную сумму");
-        return;
-    }
-    
-    try {
-        // Добавьте визуальный индикатор загрузки
-        const btn = document.getElementById('executeUnstakeBtn');
-        btn.innerText = "Processing...";
-        btn.disabled = true;
-
-        const amountBN = new anchor.BN(amount * 1e9); 
-        await window.performUnstake(
-            window.appState.currentPoolPubKey, 
-            window.appState.userStAta, 
-            window.appState.userRewardsAta, 
-            window.appState.poolIndex, 
-            amountBN
-        );
-        alert("Успешно!");
-    } catch (err) {
-        console.error(err);
-        alert("Ошибка транзакции: " + err.message);
-    } finally {
-        const btn = document.getElementById('executeUnstakeBtn');
-        btn.innerText = "CONFIRM & EXIT";
-        btn.disabled = false;
-    }
+Buffer.prototype.swap64 = function swap64 () {
+  const len = this.length
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits')
+  }
+  for (let i = 0; i < len; i += 8) {
+    swap(this, i, i + 7)
+    swap(this, i + 1, i + 6)
+    swap(this, i + 2, i + 5)
+    swap(this, i + 3, i + 4)
+  }
+  return this
 }
 
-
-
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД: CLOSE STAKING ACCOUNT
- * 100% синхронизация с SDK: Compute Budget, Симуляция, RAW транзакция
- */
-window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, poolIndex) {
-    try {
-        console.log("====================================================================================================");
-        console.log("🗑️ [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ЗАКРЫТИЯ СТЕЙКИНГ-АККАУНТА...");
-        
-        const program = await QubitProgramManager.getProgram();
-        const provider = program.provider;
-        const ownerPubkey = provider.wallet.publicKey;
-
-        // 1. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
-        const transaction = new anchor.web3.Transaction();
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
-        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
-
-        // 2. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
-        const closeInstruction = await program.methods
-            .closeStakingAccount(poolIndex)
-            .accounts({
-                poolState: poolPubKey,
-                userStaking: userStakingPda,
-                owner: ownerPubkey,
-                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .instruction();
-
-        transaction.add(closeInstruction);
-
-        // 3. ПОДГОТОВКА И СИМУЛЯЦИЯ
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = ownerPubkey;
-
-        // Добавляем симуляцию для предотвращения ошибок транзакции
-        const simulation = await provider.connection.simulateTransaction(transaction);
-        if (simulation.value.err) {
-            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
-            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
-            throw new Error("Симуляция закрытия не пройдена: " + JSON.stringify(simulation.value.err));
-        }
-
-        // 4. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
-        const signedTx = await provider.wallet.signTransaction(transaction);
-        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: true,
-            preflightCommitment: "finalized"
-        });
-
-        console.log("⏳ Ожидание подтверждения (Close Account)...");
-        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
-
-        console.log("✨ [SUCCESS]: Аккаунт успешно закрыт, SOL возвращены. TX:", txId);
-        return txId;
-
-    } catch (e) {
-        if (e.logs) {
-            console.error("--- SOLANA LOGS (TRANSACTION) ---");
-            e.logs.forEach(line => console.error(line));
-        }
-        console.error("❌ Close Account Error:", e.message);
-        
-        // Логирование типичных ошибок контракта
-        if (e.message.includes("StakeStillExists")) {
-            console.error("⚠️ Внимание: в аккаунте остались средства (StakeStillExists).");
-        }
-        if (e.message.includes("UnclaimedRewardsExist")) {
-            console.error("⚠️ Внимание: остались невостребованные награды.");
-        }
-        
-        throw e;
-    }
-};
-
-
-
-
-/**
- * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
- * Вызывается напрямую из атрибута onclick="handleCloseAccount()" в твоем HTML
- */
-async function handleCloseAccount() {
-    const btn = document.getElementById('closeAccountBtn');
-
-    try {
-        console.log("====================================================================================================");
-        console.log("🗑️ [UI EVENT]: ИНИЦИАЦИЯ ЗАКРЫТИЯ СТЕЙКИНГ-АККАУНТА ЧЕРЕЗ UI...");
-
-        // 1. ПОДГОТОВКА UI
-        if (btn) {
-            btn.innerText = "Processing...";
-            btn.disabled = true;
-        }
-
-        // 2. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ (Убеждаемся, что данные подгружены)
-        if (typeof POOL_PUBKEY === 'undefined' || typeof USER_STAKING_PDA === 'undefined' || typeof CURRENT_INDEX === 'undefined') {
-            throw new Error("Необходимые данные (POOL_PUBKEY/PDA/INDEX) не определены в контексте.");
-        }
-
-        console.log(`⚙️ Закрытие аккаунта: ${USER_STAKING_PDA.toBase58()} | Индекс: ${CURRENT_INDEX}`);
-
-        // 3. ВЫЗОВ SDK-МЕТОДА
-        await window.performCloseStakingAccount(
-            POOL_PUBKEY, 
-            USER_STAKING_PDA, 
-            CURRENT_INDEX
-        );
-
-        console.log("✨ [UI SUCCESS]: Аккаунт успешно закрыт.");
-        alert("✅ Аккаунт успешно закрыт!");
-
-    } catch (e) {
-        console.error("❌ Handle Close Account Error:", e.message);
-        alert("Ошибка закрытия: " + e.message);
-        
-    } finally {
-        // 4. ВОССТАНОВЛЕНИЕ UI
-        if (btn) {
-            btn.innerText = "CLOSE ACCOUNT";
-            btn.disabled = false;
-        }
-    }
+Buffer.prototype.toString = function toString () {
+  const length = this.length
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
 }
 
+Buffer.prototype.toLocaleString = Buffer.prototype.toString
 
-    
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
 
-    
+Buffer.prototype.inspect = function inspect () {
+  let str = ''
+  const max = exports.INSPECT_MAX_BYTES
+  str = this.toString('hex', 0, max).replace(/(.{2})/g, '$1 ').trim()
+  if (this.length > max) str += ' ... '
+  return '<Buffer ' + str + '>'
+}
+if (customInspectSymbol) {
+  Buffer.prototype[customInspectSymbol] = Buffer.prototype.inspect
+}
 
+Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (isInstance(target, Uint8Array)) {
+    target = Buffer.from(target, target.offset, target.byteLength)
+  }
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError(
+      'The "target" argument must be one of type Buffer or Uint8Array. ' +
+      'Received type ' + (typeof target)
+    )
+  }
 
+  if (start === undefined) {
+    start = 0
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0
+  }
+  if (thisStart === undefined) {
+    thisStart = 0
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length
+  }
 
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index')
+  }
 
+  if (thisStart >= thisEnd && start >= end) {
+    return 0
+  }
+  if (thisStart >= thisEnd) {
+    return -1
+  }
+  if (start >= end) {
+    return 1
+  }
 
+  start >>>= 0
+  end >>>= 0
+  thisStart >>>= 0
+  thisEnd >>>= 0
 
+  if (this === target) return 0
 
+  let x = thisEnd - thisStart
+  let y = end - start
+  const len = Math.min(x, y)
 
+  const thisCopy = this.slice(thisStart, thisEnd)
+  const targetCopy = target.slice(start, end)
 
+  for (let i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i]
+      y = targetCopy[i]
+      break
+    }
+  }
 
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
 
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1
 
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset
+    byteOffset = 0
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000
+  }
+  byteOffset = +byteOffset // Coerce to Number.
+  if (numberIsNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : (buffer.length - 1)
+  }
 
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1
+    else byteOffset = buffer.length - 1
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0
+    else return -1
+  }
 
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding)
+  }
 
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+  } else if (typeof val === 'number') {
+    val = val & 0xFF // Search for a byte value [0-255]
+    if (typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+      }
+    }
+    return arrayIndexOf(buffer, [val], byteOffset, encoding, dir)
+  }
 
+  throw new TypeError('val must be string, number or Buffer')
+}
 
+function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+  let indexSize = 1
+  let arrLength = arr.length
+  let valLength = val.length
 
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase()
+    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+        encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1
+      }
+      indexSize = 2
+      arrLength /= 2
+      valLength /= 2
+      byteOffset /= 2
+    }
+  }
 
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-        
-
-   
-
-   
-
-   
-    
-
-       
-// В начале DOMContentLoaded
-window.showNotification = function(message, type = "emerald") {
-    const toast = document.createElement('div');
-    toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg text-white font-bold z-[10000] bg-${type}-600 shadow-xl transition-opacity duration-500`;
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 500);
-    }, 3000);
-};
-
-
-
-
-// ВЫНЕСЕНО ИЗ DOMContentLoaded В ГЛОБАЛЬНУЮ ОБЛАСТЬ
-window.switchView = function(viewId) {
-    const views = [
-        'initStakeView',  'collateralView', 
-        'decollateralizeView', 'depositView', 'claimView', 
-        'unstakeView', 'closeAccountView'
-    ];
-
-    // 1. Скрываем все
-    views.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-    });
-
-    // 2. Показываем нужный
-    const target = document.getElementById(viewId);
-    if (target) {
-        target.classList.remove('hidden');
-        console.log("Switched to:", viewId);
+  function read (buf, i) {
+    if (indexSize === 1) {
+      return buf[i]
     } else {
-        console.error("View not found:", viewId);
-        // Если что-то пошло не так, возвращаем главный экран, чтобы не было пустого экрана
-        const main = document.getElementById('mainStakingView');
-        if (main) main.classList.remove('hidden');
+      return buf.readUInt16BE(i * indexSize)
     }
-};
+  }
 
-
-document.addEventListener('DOMContentLoaded', () => {
-    // ... остальной ваш код ...
-
-
-
-    // --- УНИВЕРСАЛЬНАЯ ЛОГИКА НАВИГАЦИИ ---
-    // Убедитесь, что ID кнопок в HTML совпадают с этими (например, backToStakingBtn)
-    const backButtons = {
-        'backToStakingBtn': 'mainStakingView',
-        'backToStakingFromCollateral': 'mainStakingView',
-        'backToStakingFromDecollateralize': 'mainStakingView',
-        'backToStakingFromDeposit': 'mainStakingView',
-        'backToStakingFromClaim': 'mainStakingView',
-        'backToStakingFromUnstake': 'mainStakingView',
-        'backToStakingFromClose': 'mainStakingView'
-    };
-
-    Object.keys(backButtons).forEach(btnId => {
-        const btn = document.getElementById(btnId);
-        if (btn) {
-            btn.addEventListener('click', () => switchView(backButtons[btnId]));
+  let i
+  if (dir) {
+    let foundIndex = -1
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex
+        foundIndex = -1
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+    for (i = byteOffset; i >= 0; i--) {
+      let found = true
+      for (let j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false
+          break
         }
-    });
-
-    // --- ЛОГИКА ТИРОВ (InitStake) ---
-    const tierSelector = document.getElementById('tierSelector');
-    if (tierSelector) {
-        const tierBtns = tierSelector.querySelectorAll('.tier-btn');
-        tierBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                tierBtns.forEach(b => b.classList.remove('active-tier', 'border-blue-500'));
-                e.currentTarget.classList.add('active-tier', 'border-blue-500');
-                // ... ваш код обновления UI
-            });
-        });
+      }
+      if (found) return i
     }
+  }
 
-
-
-
-    // --- Интегрированная логика initStakeView ---
-    const initStakeContainer = document.getElementById('initStakeView');
-    if (initStakeContainer) {
-        // Навигация
-        const backBtn = document.getElementById('backToStakingBtn');
-        if (backBtn) backBtn.addEventListener('click', () => switchView('mainStakingView'));
-
-        const confirmBtn = document.getElementById('confirmInitBtn');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => {
-                console.log("Initialization confirmed");
-                if (typeof handleInitialize === 'function') handleInitialize();
-            });
-        }
-
-        // Логика выбора тиров
-        const tierBtns = document.querySelectorAll('.tier-btn');
-        tierBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const selectedBtn = e.currentTarget;
-                
-                // Сбрасываем все
-                tierBtns.forEach(b => {
-                    b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                    b.classList.add('border-white/10', 'bg-black/20');
-                });
-                
-                // Активируем одну
-                selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-                selectedBtn.classList.remove('border-white/10', 'bg-black/20');
-                
-                // Обновление индикаторов
-                const label = selectedBtn.dataset.label;
-                const index = selectedBtn.dataset.index;
-                const days = parseInt(selectedBtn.dataset.tier);
-                
-                document.getElementById('lockupDisplay').innerText = label;
-                document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
-                
-                const progressBar = document.getElementById('lockupProgressBar');
-                if (progressBar) {
-                    progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
-                }
-            });
-        });
-    }
-
-   
-
-   
-
-   
-    
-
-       
-
-
-
-
-    
-
-           // --- Навигация и логика Collateral ---
-    const backCollateral = document.getElementById('backToStakingFromCollateral');
-    if (backCollateral) {
-        backCollateral.addEventListener('click', () => switchView('mainStakingView'));
-    }
-
-    // 1. Управление выбором Health Factor (HF)
-    const hfButtons = document.querySelectorAll('.hf-btn');
-    hfButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Сначала сбрасываем стили у всех кнопок HF
-            hfButtons.forEach(b => {
-                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
-                b.classList.add('bg-white/10');
-            });
-            
-            // Добавляем синий стиль выбранной кнопке
-            e.currentTarget.classList.remove('bg-white/10');
-            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
-            
-            console.log("Selected HF:", e.currentTarget.dataset.value);
-        });
-    });
-
-    // 2. Управление процентами (%) и полем ввода
-    const collateralInput = document.getElementById('collateralAmountInput');
-    const walletBalance = 5000.00; // Пример баланса
-
-    const pctButtons = document.querySelectorAll('.pct-btn');
-    pctButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Сбрасываем стили у всех кнопок процентов (25, 50, 75, MAX)
-            pctButtons.forEach(b => {
-                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
-                b.classList.add('bg-white/5');
-            });
-
-            // Добавляем синий стиль выбранной кнопке
-            e.currentTarget.classList.remove('bg-white/5');
-            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
-
-            const pct = parseFloat(e.currentTarget.dataset.pct);
-            if (collateralInput) {
-                const calculatedValue = (walletBalance * (pct / 100)).toFixed(2);
-                collateralInput.value = calculatedValue;
-            }
-            console.log("Selected %:", pct);
-        });
-    });
-
-    // 3. Обработка кнопок действий
-    const claimRewardsBtn = document.getElementById('claimRewardsBtn');
-    if (claimRewardsBtn) {
-        claimRewardsBtn.addEventListener('click', () => {
-            console.log("Claiming all rewards...");
-        });
-    }
-
-    const adjustCollateralBtn = document.getElementById('adjustCollateralBtn');
-    if (adjustCollateralBtn) {
-        adjustCollateralBtn.addEventListener('click', () => {
-            const amount = collateralInput.value;
-            console.log("Adjusting collateral to:", amount);
-        });
-    }
-
-
-
-
-
-
-    
-
-      // --- Деколлатерализация ---
-    const backDecollateral = document.getElementById('backToStakingFromDecollateralize');
-    if (backDecollateral) {
-        backDecollateral.addEventListener('click', () => switchView('mainStakingView'));
-    }
-
-    // Логика управления процентами и визуалом
-    const decollateralizeInput = document.getElementById('decollateralizeAmountInput');
-    const maxAmountDisplay = document.getElementById('maxAvailableAmount');
-    const safetyWarning = document.getElementById('safetyWarning');
-    const decollateralizePctButtons = document.querySelectorAll('#decollateralizeView .pct-btn');
-
-    pctButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // 1. Сброс стилей всех кнопок процентов
-            pctButtons.forEach(b => {
-                b.classList.remove('bg-emerald-500/20', 'text-emerald-400');
-                b.classList.add('bg-white/5');
-            });
-
-            // 2. Подсветка выбранной кнопки
-            e.currentTarget.classList.remove('bg-white/5');
-            e.currentTarget.classList.add('bg-emerald-500/20', 'text-emerald-400');
-
-            // 3. Расчет суммы
-            const pct = parseFloat(e.currentTarget.dataset.pct);
-            const maxVal = parseFloat(maxAmountDisplay.innerText);
-            
-            if (decollateralizeInput) {
-                const calculatedValue = (maxVal * pct).toFixed(2);
-                decollateralizeInput.value = calculatedValue;
-            }
-
-            // 4. Показ предупреждения только при MAX (100%)
-            if (safetyWarning) {
-                if (pct === 1.00) {
-                    safetyWarning.classList.remove('hidden');
-                } else {
-                    safetyWarning.classList.add('hidden');
-                }
-            }
-
-            // Вызов внешней функции, если она есть
-            if (typeof setAmount === 'function') setAmount(pct);
-        });
-    });
-
-    const confirmDecollateralizeBtn = document.getElementById('confirmDecollateralizeBtn');
-    if (confirmDecollateralizeBtn) {
-        confirmDecollateralizeBtn.addEventListener('click', () => {
-            if (typeof handleDecollateralize === 'function') handleDecollateralize();
-        });
-    }
-
-
-
-
-
-
-    
-
-   
-            // --- Депозит ---
-    const backDeposit = document.getElementById('backToStakingFromDeposit');
-    if (backDeposit) {
-        backDeposit.addEventListener('click', () => switchView('mainStakingView'));
-    }
-
-    // Управление кнопками процентов и полем ввода
-    const depositInput = document.getElementById('depositInput');
-    const depositPctButtons = document.querySelectorAll('.deposit-pct-btn');
-    
-    // Исправлено: вместо жесткого const, используем динамический доступ к глобальному состоянию
-    // Убедитесь, что объект window.appState обновляется после подключения кошелька
-    const getWalletBalance = () => (window.appState && window.appState.walletBalance) ? parseFloat(window.appState.walletBalance) : 0.00;
-
-    depositPctButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // 1. Сбрасываем стили всех кнопок
-            depositPctButtons.forEach(b => {
-                b.classList.remove('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
-                b.classList.add('bg-white/5', 'border-white/5');
-            });
-
-            // 2. Подсвечиваем активную кнопку
-            e.currentTarget.classList.remove('bg-white/5', 'border-white/5');
-            e.currentTarget.classList.add('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
-
-            // 3. Расчет суммы (используем функцию для получения актуального баланса)
-            const pct = parseFloat(e.currentTarget.dataset.pct);
-            const currentBalance = getWalletBalance();
-            
-            if (depositInput) {
-                const calculatedValue = (currentBalance * pct).toFixed(2);
-                depositInput.value = calculatedValue;
-            }
-
-            // Вызов внешней функции, если она есть
-            if (typeof setDepositAmount === 'function') setDepositAmount(pct);
-            console.log("Deposit % selected:", pct, "Balance used:", currentBalance);
-        });
-    });
-
-    const confirmDepositBtn = document.getElementById('confirmDepositBtn');
-    if (confirmDepositBtn) {
-        confirmDepositBtn.addEventListener('click', () => {
-            console.log("Confirming deposit amount:", depositInput ? depositInput.value : "0");
-            if (typeof handleDeposit === 'function') handleDeposit();
-        });
-    }
-
-
-
-
-
-
-
-    
-        // --- Claim ---
-    const backClaim = document.getElementById('backToStakingFromClaim');
-    if (backClaim) {
-        backClaim.addEventListener('click', () => switchView('mainStakingView'));
-    }
-
-    // Логика выбора тиров
-    const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
-    if (selectAllTiersBtn) {
-        selectAllTiersBtn.addEventListener('click', () => {
-            const tierButtons = document.querySelectorAll('.tier-btn');
-            tierButtons.forEach(btn => {
-                btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
-                if (typeof toggleTier === 'function') toggleTier(btn.dataset.index);
-            });
-        });
-    }
-
-    document.querySelectorAll('.tier-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.currentTarget.classList.toggle('ring-2');
-            e.currentTarget.classList.toggle('ring-indigo-500');
-            e.currentTarget.classList.toggle('border-indigo-500');
-            
-            if (typeof toggleTier === 'function') {
-                toggleTier(e.currentTarget.dataset.index);
-            }
-        });
-    });
-
-    // Логика процентов (%) и поля ввода
-    const claimInput = document.getElementById('claimAmountInput');
-    const totalYield = 125.75; // Значение из твоего HTML
-    // Переименовано в claimPctButtons для исключения конфликта имен
-    const claimPctButtons = document.querySelectorAll('.claim-pct-btn');
-
-    claimPctButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // 1. Сброс стилей всех кнопок процентов
-            claimPctButtons.forEach(b => {
-                b.classList.remove('bg-indigo-500/20', 'text-indigo-400');
-                b.classList.add('bg-white/5');
-            });
-
-            // 2. Подсветка выбранной кнопки
-            e.currentTarget.classList.remove('bg-white/5');
-            e.currentTarget.classList.add('bg-indigo-500/20', 'text-indigo-400');
-
-            // 3. Расчет суммы
-            const pct = parseFloat(e.currentTarget.dataset.pct);
-            if (claimInput) {
-                const calculatedValue = (totalYield * pct).toFixed(2);
-                claimInput.value = calculatedValue;
-            }
-            console.log("Setting %:", pct);
-        });
-    });
-
-    const executeClaimBtn = document.getElementById('executeClaimBtn');
-    if (executeClaimBtn) {
-        executeClaimBtn.addEventListener('click', () => {
-            console.log("Executing claim for amount:", claimInput ? claimInput.value : "0");
-            if (typeof executeClaimRewards === 'function') executeClaimRewards();
-        });
-    }
-
-
-
-
-
-
-
-
-    
-
-
-       // --- Unstake ---
-    const backUnstake = document.getElementById('backToStakingFromUnstake');
-    if (backUnstake) {
-        backUnstake.addEventListener('click', () => switchView('mainStakingView'));
-    }
-
-    // Управление кнопками процентов и полем ввода
-    const unstakeInput = document.getElementById('unstakeAmountInput');
-    const unstakePctButtons = document.querySelectorAll('.unstake-pct-btn');
-    const liquidityAlert = document.getElementById('liquidityAlert');
-
-    unstakePctButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // 1. Сброс стилей всех кнопок
-            unstakePctButtons.forEach(b => {
-                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
-                b.classList.add('bg-white/5');
-            });
-
-            // 2. Подсветка выбранной кнопки
-            e.currentTarget.classList.remove('bg-white/5');
-            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
-
-            // 3. Расчет суммы (логика процента)
-            const pct = parseFloat(e.currentTarget.dataset.pct);
-            
-            // Если выбрано 100% (MAX), показываем алерт ликвидности
-            if (liquidityAlert) {
-                if (pct === 1.00) {
-                    liquidityAlert.classList.remove('hidden');
-                } else {
-                    liquidityAlert.classList.add('hidden');
-                }
-            }
-
-            // Вызов внешней функции
-            if (typeof setUnstakeAmount === 'function') setUnstakeAmount(pct);
-            console.log("Unstake % selected:", pct);
-        });
-    });
-
-    const executeUnstakeBtn = document.getElementById('executeUnstakeBtn');
-    if (executeUnstakeBtn) {
-        executeUnstakeBtn.addEventListener('click', () => {
-            console.log("Executing unstake amount:", unstakeInput ? unstakeInput.value : "0");
-            if (typeof handleUnstake === 'function') handleUnstake();
-        });
-    }
-
-
-
-    
-
-        // --- Close Account ---
-    // Навигация назад к главному экрану
-    const backClose = document.getElementById('backToStakingFromClose');
-    if (backClose) {
-        backClose.addEventListener('click', () => switchView('mainStakingView'));
-    }
-
-    // Подтверждение перманентного закрытия аккаунта
-    const confirmCloseAccountBtn = document.getElementById('confirmCloseAccountBtn');
-    if (confirmCloseAccountBtn) {
-        confirmCloseAccountBtn.addEventListener('click', () => {
-            console.log("Initiating permanent account closure...");
-            // Проверка на существование функции перед вызовом
-            if (typeof handleCloseAccount === 'function') {
-                handleCloseAccount();
-            } else {
-                console.warn("Function handleCloseAccount is not defined");
-            }
-        });
-    
-    }
-
-
-    
-
-    // --- Дропдаун ---
-    const trigger = document.getElementById('dropdownTrigger');
-    const list = document.getElementById('dropdownList');
-    const icon = document.getElementById('dropdownIcon');
-    const selectedText = document.getElementById('selectedTierText');
-    const initializeBtn = document.getElementById('initializeBtn');
-    const tierInputs = document.querySelectorAll('.tier-input');
-
-    if (trigger && list) {
-        trigger.addEventListener('click', (e) => {
-            list.classList.toggle('open');
-            icon.classList.toggle('rotated');
-            e.stopPropagation();
-        });
-    }
-
-    tierInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            if (selectedText) {
-                selectedText.innerText = `Selected: ${e.target.value} Days`;
-                selectedText.classList.add('text-white', 'font-bold');
-            }
-            if (initializeBtn) {
-                initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
-            }
-            if (list) list.classList.remove('open');
-            if (icon) icon.classList.remove('rotated');
-        });
-    });
-
-    document.addEventListener('click', (e) => {
-        if (list && trigger && !list.contains(e.target) && !trigger.contains(e.target)) {
-            list.classList.remove('open');
-            icon.classList.remove('rotated');
-        }
-    });
-
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Метод для получения баланса токена (QBT)
-async function updateWalletBalance() {
-    try {
-        const program = await QubitProgramManager.getProgram();
-        const connection = program.provider.connection;
-        const walletPubkey = program.provider.wallet.publicKey;
-
-        // Находим ATA (Associated Token Account) пользователя для токена QBT
-        // QUBIT_CONFIG.mint — это адрес твоего токена
-        const [ata] = await anchor.web3.PublicKey.findProgramAddress(
-            [walletPubkey.toBuffer(), anchor.web3.TOKEN_PROGRAM_ID.toBuffer(), QUBIT_CONFIG.mint.toBuffer()],
-            new anchor.web3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
-        );
-
-        // Запрос баланса через RPC
-        const balanceInfo = await connection.getTokenAccountBalance(ata);
-        const balance = balanceInfo.value.uiAmount;
-
-        // Обновляем элемент в UI
-        const balanceDisplay = document.getElementById('wallet-balance-display');
-        if (balanceDisplay) {
-            balanceDisplay.innerText = `Доступно: ${balance} QBT`;
-        }
-        return balance;
-    } catch (e) {
-        console.warn("⚠️ Баланс не найден (возможно, нет токенов):", e.message);
-        document.getElementById('wallet-balance-display').innerText = "Доступно: 0 QBT";
-    }
+  return -1
 }
 
+Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1
+}
 
+Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+}
 
+Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+}
 
-  // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
-const walletBtn = document.getElementById('connectWalletBtn');
-const walletModal = document.getElementById('walletModal'); 
-const walletList = document.getElementById('walletList');
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  const remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
 
-let currentProvider = null;
-let isManualDisconnect = false;
-let availableWallets = [];
+  const strLen = string.length
 
-const updateUI = (publicKey = null) => {
-    if (!walletBtn) return;
-    if (publicKey) {
-        const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-        walletBtn.innerText = `Connected: ${short}`;
-        walletBtn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
-        localStorage.setItem('wallet_connected', publicKey);
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  let i
+  for (i = 0; i < length; ++i) {
+    const parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (numberIsNaN(parsed)) return i
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset >>> 0
+    if (isFinite(length)) {
+      length = length >>> 0
+      if (encoding === undefined) encoding = 'utf8'
     } else {
-        walletBtn.innerText = "Connect Wallet";
-        walletBtn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
-        localStorage.removeItem('wallet_connected');
+      encoding = length
+      length = undefined
     }
-};
+  } else {
+    throw new Error(
+      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+    )
+  }
 
-const scanForWallets = () => {
-    const found = [];
-    const providers = [
-        { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
-        { name: 'Solflare', check: () => window.solflare?.isSolflare ? window.solflare : window.solflare },
-        { name: 'Backpack', check: () => window.backpack },
-        { name: 'Glow', check: () => window.glowSolana },
-        { name: 'Coinbase', check: () => window.coinbaseSolana }
-    ];
+  const remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
 
-    providers.forEach(p => {
-        try {
-            const provider = p.check();
-            if (provider && !found.find(w => w.name === p.name)) {
-                found.push({ name: p.name, provider });
-            }
-        } catch (e) { console.error(`Error detecting ${p.name}:`, e); }
-    });
-    return found;
-};
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds')
+  }
 
-const triggerDeepLink = () => {
-    const url = window.location.href;
-    const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
-    showNotification("Opening Wallet App...", "emerald");
-    window.location.href = phantomDeepLink;
-};
+  if (!encoding) encoding = 'utf8'
 
-const getAvailableWallets = () => {
-    return new Promise((resolve) => {
-        const found = scanForWallets();
-        if (found.length > 0) return resolve(found);
+  let loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
 
-        let attempts = 0;
-        const interval = setInterval(() => {
-            attempts++;
-            const foundAgain = scanForWallets();
-            if (foundAgain.length > 0 || attempts >= 40) {
-                clearInterval(interval);
-                resolve(foundAgain);
-            }
-        }, 200);
-    });
-};
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
 
-if (walletBtn) {
-    walletBtn.addEventListener('click', async () => {
-        if (currentProvider) {
-            try { 
-                isManualDisconnect = true; 
-                await currentProvider.disconnect(); 
-                currentProvider = null;
-                updateUI(null);
-                showNotification("Wallet Disconnected", "red");
-            } catch (err) { console.error(err); }
-            finally {
-                isManualDisconnect = false;
-            }
-            return;
-        }
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return asciiWrite(this, string, offset, length)
 
-        const originalText = walletBtn.innerText;
-        walletBtn.innerText = "Loading...";
-        walletBtn.disabled = true;
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
 
-        availableWallets = await getAvailableWallets();
-        
-        walletBtn.innerText = originalText;
-        walletBtn.disabled = false;
-        
-        if (availableWallets.length === 0) {
-            triggerDeepLink();
-            return;
-        }
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
 
-        if (availableWallets.length === 1) {
-            connectWallet(availableWallets[0]);
-        } else {
-            if (walletList) {
-                walletList.innerHTML = '';
-                availableWallets.forEach(w => {
-                    const item = document.createElement('button');
-                    item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
-                    item.innerText = w.name;
-                    item.onclick = () => { connectWallet(w); };
-                    walletList.appendChild(item);
-                });
-                if (walletModal) walletModal.classList.remove('hidden');
-            }
-        }
-    });
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
 }
 
-async function connectWallet(wallet) {
-    try {
-        currentProvider = wallet.provider;
-        const resp = await currentProvider.connect();
-        const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-        updateUI(publicKey);
-        showNotification(`${wallet.name} Connected!`);
-        
-        // Исправление: принудительно скрываем окно и возвращаем фокус на окно браузера
-        if (walletModal) {
-            walletModal.classList.add('hidden');
-        }
-        window.focus(); 
-        
-        currentProvider.removeAllListeners?.('disconnect');
-        currentProvider.on('disconnect', () => {
-            if (!isManualDisconnect) {
-                currentProvider = null;
-                updateUI(null);
-                showNotification("Disconnected by wallet", "red");
-            }
-        });
-    } catch (err) {
-        console.error("Connection Error:", err);
-        showNotification("Connection Failed", "red");
-    }
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
 }
 
-// Авто-коннект при загрузке
-setTimeout(async () => {
-    const savedWallet = localStorage.getItem('wallet_connected');
-    if (savedWallet) {
-        const wallets = await getAvailableWallets();
-        const phantom = wallets.find(w => w.name === 'Phantom');
-        if (phantom) {
-            try {
-                const resp = await phantom.provider.connect({ onlyIfTrusted: true });
-                const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-                updateUI(pubKey);
-                currentProvider = phantom.provider;
-            } catch (e) { console.log("Auto-connect trust-check skipped."); }
-        }
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  const res = []
+
+  let i = start
+  while (i < end) {
+    const firstByte = buf[i]
+    let codePoint = null
+    let bytesPerSequence = (firstByte > 0xEF)
+      ? 4
+      : (firstByte > 0xDF)
+          ? 3
+          : (firstByte > 0xBF)
+              ? 2
+              : 1
+
+    if (i + bytesPerSequence <= end) {
+      let secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
     }
-}, 1000);
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+const MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  const len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  let res = ''
+  let i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  let ret = ''
+  end = Math.min(buf.length, end)
+
+  for (let i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function latin1Slice (buf, start, end) {
+  let ret = ''
+  end = Math.min(buf.length, end)
+
+  for (let i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  const len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  let out = ''
+  for (let i = start; i < end; ++i) {
+    out += hexSliceLookupTable[buf[i]]
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  const bytes = buf.slice(start, end)
+  let res = ''
+  // If bytes.length is odd, the last 8 bits must be ignored (same as node.js)
+  for (let i = 0; i < bytes.length - 1; i += 2) {
+    res += String.fromCharCode(bytes[i] + (bytes[i + 1] * 256))
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  const len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  const newBuf = this.subarray(start, end)
+  // Return an augmented `Uint8Array` instance
+  Object.setPrototypeOf(newBuf, Buffer.prototype)
+
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUintLE =
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  let val = this[offset]
+  let mul = 1
+  let i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUintBE =
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  let val = this[offset + --byteLength]
+  let mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUint8 =
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUint16LE =
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUint16BE =
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUint32LE =
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUint32BE =
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readBigUInt64LE = defineBigIntMethod(function readBigUInt64LE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const lo = first +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 24
+
+  const hi = this[++offset] +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    last * 2 ** 24
+
+  return BigInt(lo) + (BigInt(hi) << BigInt(32))
+})
+
+Buffer.prototype.readBigUInt64BE = defineBigIntMethod(function readBigUInt64BE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const hi = first * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    this[++offset]
+
+  const lo = this[++offset] * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    last
+
+  return (BigInt(hi) << BigInt(32)) + BigInt(lo)
+})
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  let val = this[offset]
+  let mul = 1
+  let i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  let i = byteLength
+  let mul = 1
+  let val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  const val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  const val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readBigInt64LE = defineBigIntMethod(function readBigInt64LE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const val = this[offset + 4] +
+    this[offset + 5] * 2 ** 8 +
+    this[offset + 6] * 2 ** 16 +
+    (last << 24) // Overflow
+
+  return (BigInt(val) << BigInt(32)) +
+    BigInt(first +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 24)
+})
+
+Buffer.prototype.readBigInt64BE = defineBigIntMethod(function readBigInt64BE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const val = (first << 24) + // Overflow
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    this[++offset]
+
+  return (BigInt(val) << BigInt(32)) +
+    BigInt(this[++offset] * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    last)
+})
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+}
+
+Buffer.prototype.writeUintLE =
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    const maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  let mul = 1
+  let i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUintBE =
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    const maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  let i = byteLength - 1
+  let mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUint8 =
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeUint16LE =
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeUint16BE =
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeUint32LE =
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset + 3] = (value >>> 24)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 1] = (value >>> 8)
+  this[offset] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeUint32BE =
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+function wrtBigUInt64LE (buf, value, offset, min, max) {
+  checkIntBI(value, min, max, buf, offset, 7)
+
+  let lo = Number(value & BigInt(0xffffffff))
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  let hi = Number(value >> BigInt(32) & BigInt(0xffffffff))
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  return offset
+}
+
+function wrtBigUInt64BE (buf, value, offset, min, max) {
+  checkIntBI(value, min, max, buf, offset, 7)
+
+  let lo = Number(value & BigInt(0xffffffff))
+  buf[offset + 7] = lo
+  lo = lo >> 8
+  buf[offset + 6] = lo
+  lo = lo >> 8
+  buf[offset + 5] = lo
+  lo = lo >> 8
+  buf[offset + 4] = lo
+  let hi = Number(value >> BigInt(32) & BigInt(0xffffffff))
+  buf[offset + 3] = hi
+  hi = hi >> 8
+  buf[offset + 2] = hi
+  hi = hi >> 8
+  buf[offset + 1] = hi
+  hi = hi >> 8
+  buf[offset] = hi
+  return offset + 8
+}
+
+Buffer.prototype.writeBigUInt64LE = defineBigIntMethod(function writeBigUInt64LE (value, offset = 0) {
+  return wrtBigUInt64LE(this, value, offset, BigInt(0), BigInt('0xffffffffffffffff'))
+})
+
+Buffer.prototype.writeBigUInt64BE = defineBigIntMethod(function writeBigUInt64BE (value, offset = 0) {
+  return wrtBigUInt64BE(this, value, offset, BigInt(0), BigInt('0xffffffffffffffff'))
+})
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    const limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  let i = 0
+  let mul = 1
+  let sub = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    const limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  let i = byteLength - 1
+  let mul = 1
+  let sub = 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 3] = (value >>> 24)
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeBigInt64LE = defineBigIntMethod(function writeBigInt64LE (value, offset = 0) {
+  return wrtBigUInt64LE(this, value, offset, -BigInt('0x8000000000000000'), BigInt('0x7fffffffffffffff'))
+})
+
+Buffer.prototype.writeBigInt64BE = defineBigIntMethod(function writeBigInt64BE (value, offset = 0) {
+  return wrtBigUInt64BE(this, value, offset, -BigInt('0x8000000000000000'), BigInt('0x7fffffffffffffff'))
+})
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (offset < 0) throw new RangeError('Index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!Buffer.isBuffer(target)) throw new TypeError('argument should be a Buffer')
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('Index out of range')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  const len = end - start
+
+  if (this === target && typeof Uint8Array.prototype.copyWithin === 'function') {
+    // Use built-in when available, missing from IE11
+    this.copyWithin(targetStart, start, end)
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, end),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start
+      start = 0
+      end = this.length
+    } else if (typeof end === 'string') {
+      encoding = end
+      end = this.length
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string')
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding)
+    }
+    if (val.length === 1) {
+      const code = val.charCodeAt(0)
+      if ((encoding === 'utf8' && code < 128) ||
+          encoding === 'latin1') {
+        // Fast path: If `val` fits into a single byte, use that numeric value.
+        val = code
+      }
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255
+  } else if (typeof val === 'boolean') {
+    val = Number(val)
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index')
+  }
+
+  if (end <= start) {
+    return this
+  }
+
+  start = start >>> 0
+  end = end === undefined ? this.length : end >>> 0
+
+  if (!val) val = 0
+
+  let i
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val
+    }
+  } else {
+    const bytes = Buffer.isBuffer(val)
+      ? val
+      : Buffer.from(val, encoding)
+    const len = bytes.length
+    if (len === 0) {
+      throw new TypeError('The value "' + val +
+        '" is invalid for argument "value"')
+    }
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// CUSTOM ERRORS
+// =============
+
+// Simplified versions from Node, changed for Buffer-only usage
+const errors = {}
+function E (sym, getMessage, Base) {
+  errors[sym] = class NodeError extends Base {
+    constructor () {
+      super()
+
+      Object.defineProperty(this, 'message', {
+        value: getMessage.apply(this, arguments),
+        writable: true,
+        configurable: true
+      })
+
+      // Add the error code to the name to include it in the stack trace.
+      this.name = `${this.name} [${sym}]`
+      // Access the stack to generate the error message including the error code
+      // from the name.
+      this.stack // eslint-disable-line no-unused-expressions
+      // Reset the name to the actual name.
+      delete this.name
+    }
+
+    get code () {
+      return sym
+    }
+
+    set code (value) {
+      Object.defineProperty(this, 'code', {
+        configurable: true,
+        enumerable: true,
+        value,
+        writable: true
+      })
+    }
+
+    toString () {
+      return `${this.name} [${sym}]: ${this.message}`
+    }
+  }
+}
+
+E('ERR_BUFFER_OUT_OF_BOUNDS',
+  function (name) {
+    if (name) {
+      return `${name} is outside of buffer bounds`
+    }
+
+    return 'Attempt to access memory outside buffer bounds'
+  }, RangeError)
+E('ERR_INVALID_ARG_TYPE',
+  function (name, actual) {
+    return `The "${name}" argument must be of type number. Received type ${typeof actual}`
+  }, TypeError)
+E('ERR_OUT_OF_RANGE',
+  function (str, range, input) {
+    let msg = `The value of "${str}" is out of range.`
+    let received = input
+    if (Number.isInteger(input) && Math.abs(input) > 2 ** 32) {
+      received = addNumericalSeparator(String(input))
+    } else if (typeof input === 'bigint') {
+      received = String(input)
+      if (input > BigInt(2) ** BigInt(32) || input < -(BigInt(2) ** BigInt(32))) {
+        received = addNumericalSeparator(received)
+      }
+      received += 'n'
+    }
+    msg += ` It must be ${range}. Received ${received}`
+    return msg
+  }, RangeError)
+
+function addNumericalSeparator (val) {
+  let res = ''
+  let i = val.length
+  const start = val[0] === '-' ? 1 : 0
+  for (; i >= start + 4; i -= 3) {
+    res = `_${val.slice(i - 3, i)}${res}`
+  }
+  return `${val.slice(0, i)}${res}`
+}
+
+// CHECK FUNCTIONS
+// ===============
+
+function checkBounds (buf, offset, byteLength) {
+  validateNumber(offset, 'offset')
+  if (buf[offset] === undefined || buf[offset + byteLength] === undefined) {
+    boundsError(offset, buf.length - (byteLength + 1))
+  }
+}
+
+function checkIntBI (value, min, max, buf, offset, byteLength) {
+  if (value > max || value < min) {
+    const n = typeof min === 'bigint' ? 'n' : ''
+    let range
+    if (byteLength > 3) {
+      if (min === 0 || min === BigInt(0)) {
+        range = `>= 0${n} and < 2${n} ** ${(byteLength + 1) * 8}${n}`
+      } else {
+        range = `>= -(2${n} ** ${(byteLength + 1) * 8 - 1}${n}) and < 2 ** ` +
+                `${(byteLength + 1) * 8 - 1}${n}`
+      }
+    } else {
+      range = `>= ${min}${n} and <= ${max}${n}`
+    }
+    throw new errors.ERR_OUT_OF_RANGE('value', range, value)
+  }
+  checkBounds(buf, offset, byteLength)
+}
+
+function validateNumber (value, name) {
+  if (typeof value !== 'number') {
+    throw new errors.ERR_INVALID_ARG_TYPE(name, 'number', value)
+  }
+}
+
+function boundsError (value, length, type) {
+  if (Math.floor(value) !== value) {
+    validateNumber(value, type)
+    throw new errors.ERR_OUT_OF_RANGE(type || 'offset', 'an integer', value)
+  }
+
+  if (length < 0) {
+    throw new errors.ERR_BUFFER_OUT_OF_BOUNDS()
+  }
+
+  throw new errors.ERR_OUT_OF_RANGE(type || 'offset',
+                                    `>= ${type ? 1 : 0} and <= ${length}`,
+                                    value)
+}
+
+// HELPER FUNCTIONS
+// ================
+
+const INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node takes equal signs as end of the Base64 encoding
+  str = str.split('=')[0]
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = str.trim().replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  let codePoint
+  const length = string.length
+  let leadSurrogate = null
+  const bytes = []
+
+  for (let i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  const byteArray = []
+  for (let i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  let c, hi, lo
+  const byteArray = []
+  for (let i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  let i
+  for (i = 0; i < length; ++i) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+// ArrayBuffer or Uint8Array objects from other contexts (i.e. iframes) do not pass
+// the `instanceof` check but they should be treated as of that type.
+// See: https://github.com/feross/buffer/issues/166
+function isInstance (obj, type) {
+  return obj instanceof type ||
+    (obj != null && obj.constructor != null && obj.constructor.name != null &&
+      obj.constructor.name === type.name)
+}
+function numberIsNaN (obj) {
+  // For IE11 support
+  return obj !== obj // eslint-disable-line no-self-compare
+}
+
+// Create lookup table for `toString('hex')`
+// See: https://github.com/feross/buffer/issues/219
+const hexSliceLookupTable = (function () {
+  const alphabet = '0123456789abcdef'
+  const table = new Array(256)
+  for (let i = 0; i < 16; ++i) {
+    const i16 = i * 16
+    for (let j = 0; j < 16; ++j) {
+      table[i16 + j] = alphabet[i] + alphabet[j]
+    }
+  }
+  return table
+})()
+
+// Return not function with Error if BigInt not supported
+function defineBigIntMethod (fn) {
+  return typeof BigInt === 'undefined' ? BufferBigIntNotDefined : fn
+}
+
+function BufferBigIntNotDefined () {
+  throw new Error('BigInt not supported')
+}
