@@ -72,6 +72,11 @@ function formatBigInt(value, decimals) {
 
 
 
+
+
+// ==========================================
+// 1. КОНФИГУРАЦИЯ И ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ
+// ==========================================
 const QUBIT_CONFIG = {
     // 1. Ключевые адреса программы и пула
     programId: new solanaWeb3.PublicKey("BqqKdzVPiYt3cKKdgKsSir2ruVJaSi9bDrs5V8FbqeN8"),
@@ -97,7 +102,9 @@ const QUBIT_CONFIG = {
     rpcUrl: "https://api.devnet.solana.com"
 };
 
-// Сервис управления программой Anchor
+// ==========================================
+// 2. СЕРВИС УПРАВЛЕНИЯ ПРОГРАММОЙ ANCHOR
+// ==========================================
 const QubitProgramManager = {
     program: null,
 
@@ -150,6 +157,62 @@ const QubitProgramManager = {
         }
     }
 };
+
+// ==========================================
+// 3. УЛЬТРА-СИНХРОНИЗАЦИЯ БАЛАНСОВ (QUBIT VERSION)
+// ==========================================
+window.fetchUserBalances = async function() {
+    try {
+        const program = await QubitProgramManager.getProgram();
+        const connection = program.provider.connection;
+        const pubkey = program.provider.wallet.publicKey;
+
+        if (!pubkey) {
+            console.warn("⚠️ [BALANCE SYNC]: Кошелек не подключен, пропуск обновления.");
+            return;
+        }
+
+        // 1. Запускаем запросы параллельно
+        // Используем mint из QUBIT_CONFIG
+        const [solBalance, tokenAccounts] = await Promise.all([
+            connection.getBalance(pubkey),
+            connection.getParsedTokenAccountsByOwner(pubkey, { 
+                mint: QUBIT_CONFIG.mint 
+            })
+        ]);
+
+        // 2. Обработка токенов (сумма по всем ATA)
+        const totalTokens = tokenAccounts.value.reduce((sum, acc) => {
+            const amount = acc.account.data.parsed.info.tokenAmount.amount;
+            return sum + BigInt(amount);
+        }, 0n);
+
+        // 3. Сохранение в AppState (если он у тебя есть, или создаем его)
+        window.AppState = window.AppState || {};
+        window.AppState.userBalances = {
+            SOL: BigInt(solBalance),
+            QBT: totalTokens
+        };
+
+        // 4. Логирование
+        console.log(`
+            📊 BALANCE SYNC COMPLETE:
+            - SOL: ${(Number(solBalance) / 1e9).toFixed(4)}
+            - QBT: ${Number(totalTokens) / 1e9}
+        `);
+
+        // 5. Рендеринг в UI
+        const solEl = document.getElementById('user-sol-balance');
+        const qbtEl = document.getElementById('user-qbt-balance');
+        
+        if (solEl) solEl.innerText = (Number(solBalance) / 1e9).toFixed(4);
+        if (qbtEl) qbtEl.innerText = (Number(totalTokens) / 1e9).toFixed(2);
+
+    } catch (error) {
+        console.error("❌ [BALANCE SYNC ERROR]:", error);
+    }
+};
+
 
 
 
@@ -392,61 +455,7 @@ window.handlePublicKeyChange = async function(newPublicKey) {
 
 
 
-/**
- * 4. УЛЬТРА-СИНХРОНИЗАЦИЯ БАЛАНСОВ (QUBIT VERSION)
- * Работает через параллельные потоки для мгновенного отклика.
- */
-window.fetchUserBalances = async function() {
-    try {
-        const program = await QubitProgramManager.getProgram();
-        const connection = program.provider.connection;
-        const pubkey = program.provider.wallet.publicKey;
 
-        if (!pubkey) {
-            console.warn("⚠️ [BALANCE SYNC]: Кошелек не подключен, пропуск обновления.");
-            return;
-        }
-
-        // 1. Запускаем запросы параллельно
-        // Используем mint из QUBIT_CONFIG
-        const [solBalance, tokenAccounts] = await Promise.all([
-            connection.getBalance(pubkey),
-            connection.getParsedTokenAccountsByOwner(pubkey, { 
-                mint: QUBIT_CONFIG.mint 
-            })
-        ]);
-
-        // 2. Обработка токенов (сумма по всем ATA)
-        const totalTokens = tokenAccounts.value.reduce((sum, acc) => {
-            const amount = acc.account.data.parsed.info.tokenAmount.amount;
-            return sum + BigInt(amount);
-        }, 0n);
-
-        // 3. Сохранение в AppState (если он у тебя есть, или создаем его)
-        window.AppState = window.AppState || {};
-        window.AppState.userBalances = {
-            SOL: BigInt(solBalance),
-            QBT: totalTokens
-        };
-
-        // 4. Логирование
-        console.log(`
-            📊 BALANCE SYNC COMPLETE:
-            - SOL: ${(Number(solBalance) / 1e9).toFixed(4)}
-            - QBT: ${Number(totalTokens) / 1e9}
-        `);
-
-        // 5. Рендеринг в UI
-        const solEl = document.getElementById('user-sol-balance');
-        const qbtEl = document.getElementById('user-qbt-balance');
-        
-        if (solEl) solEl.innerText = (Number(solBalance) / 1e9).toFixed(4);
-        if (qbtEl) qbtEl.innerText = (Number(totalTokens) / 1e9).toFixed(2);
-
-    } catch (error) {
-        console.error("❌ [BALANCE SYNC ERROR]:", error);
-    }
-};
 
 
 
