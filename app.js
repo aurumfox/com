@@ -279,9 +279,9 @@ async function getRobustConnection() {
             // Тест на "живость"
             await conn.getLatestBlockhash(); 
             
-            // Сохраняем в AppState, если он существует
-            if (typeof AppState !== 'undefined') {
-                AppState.connection = conn;
+            // Сохраняем в appState, если он существует
+            if (typeof appState !== 'undefined') {
+                appState.connection = conn;
             }
             
             console.log(`🚀 Успешное переключение на RPC: ${url}`);
@@ -319,16 +319,16 @@ window.handlePublicKeyChange = async function(newPublicKey) {
     try {
         // 1. Идентификация смены
         const newKeyStr = newPublicKey ? newPublicKey.toBase58() : null;
-        const oldKeyStr = window.AppState?.walletPublicKey ? window.AppState.walletPublicKey.toBase58() : null;
+        const oldKeyStr = window.appState?.walletPublicKey ? window.appState.walletPublicKey.toBase58() : null;
 
         if (newKeyStr === oldKeyStr) return;
 
         console.log(`🔄 [WALLET SYNC]: ${oldKeyStr || 'None'} -> ${newKeyStr || 'Disconnected'}`);
 
         // 2. Очистка и обновление стейта
-        if (!window.AppState) window.AppState = {};
-        window.AppState.walletPublicKey = newPublicKey;
-        window.AppState.lastUpdate = null;
+        if (!window.appState) window.appState = {};
+        window.appState.walletPublicKey = newPublicKey;
+        window.appState.lastUpdate = null;
 
         // 3. Мгновенная очистка UI (UX: предотвращение показа старых данных)
         const balanceEl = document.getElementById('wallet-balance-display');
@@ -405,9 +405,9 @@ window.fetchUserBalances = async function() {
             return sum + BigInt(amount);
         }, 0n);
 
-        // 3. Сохранение в AppState (если он у тебя есть, или создаем его)
-        window.AppState = window.AppState || {};
-        window.AppState.userBalances = {
+        // 3. Сохранение в appState (если он у тебя есть, или создаем его)
+        window.appState = window.appState || {};
+        window.appState.userBalances = {
             SOL: BigInt(solBalance),
             QBT: totalTokens
         };
@@ -1595,7 +1595,7 @@ async function executeClaimRewards() {
         const provider = program.provider;
         const owner = provider.wallet.publicKey;
 
-        // 4. ПРОВЕРКА СОСТОЯНИЯ (AppState)
+        // 4. ПРОВЕРКА СОСТОЯНИЯ (appState)
         if (!window.appState || !window.appState.currentPoolPubKey) {
             throw new Error("Состояние пула не загружено.");
         }
