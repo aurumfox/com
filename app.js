@@ -682,7 +682,7 @@ const WalletBalanceManager = {
 
             if (!walletPubkey) return 0;
 
-            // Убедись, что 'anchor' и 'QUBIT_CONFIG' глобально доступны
+            // Используем официальный безопасный метод Anchor для определения ATA-адреса токена
             const ata = await anchor.utils.token.associatedAddress({
                 mint: QUBIT_CONFIG.mint,
                 owner: walletPubkey
@@ -692,11 +692,35 @@ const WalletBalanceManager = {
             this.cachedBalance = balanceInfo.value.uiAmount || 0;
             
             console.log(`✅ [BALANCE SERVICE]: Баланс обновлен: ${this.cachedBalance}`);
+            
+            // Безопасное обновление текстовых блоков в UI (если они есть на странице)
+            const displayElements = ['wallet-balance-display', 'user-qbt-balance'];
+            displayElements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    // Если это блок ввода или кнопка, пишем "Доступно:", если обычный спан — просто цифру
+                    if (id === 'wallet-balance-display') {
+                        el.innerText = `Доступно: ${this.cachedBalance} QBT`;
+                    } else {
+                        el.innerText = this.cachedBalance.toFixed(2);
+                    }
+                }
+            });
+
             return this.cachedBalance;
 
         } catch (e) {
             console.error("❌ [BALANCE SERVICE ERROR]:", e);
-            // Не сбрасываем кэш в 0 при ошибке сети, чтобы UI не мигал
+            
+            // При ошибке (например, у юзера вообще 0 токенов и нет ATA кошелька в сети) выводим аккуратно 0
+            const displayElements = ['wallet-balance-display', 'user-qbt-balance'];
+            displayElements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerText = id === 'wallet-balance-display' ? "Доступно: 0 QBT" : "0.00";
+                }
+            });
+            
             return this.cachedBalance; 
         } finally {
             this.isUpdating = false;
