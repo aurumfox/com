@@ -108,12 +108,19 @@ const QubitProgramManager = {
             // Устанавливаем соединение с подтвержденным commitment
             const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
             
-            // Проверка наличия кошелька Phantom / Solflare
-            const wallet = window.solana && window.solana.isConnected ? window.solana : {
-                publicKey: null,
-                signTransaction: async () => { throw new Error("Кошелек не подключен"); },
-                signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
-            };
+            // ИСПРАВЛЕНО: Сначала проверяем активный выбранный кошелек (currentProvider), затем дефолтный window.solana
+            let wallet = null;
+            if (typeof currentProvider !== 'undefined' && currentProvider && currentProvider.isConnected) {
+                wallet = currentProvider;
+            } else if (window.solana && window.solana.isConnected) {
+                wallet = window.solana;
+            } else {
+                wallet = {
+                    publicKey: null,
+                    signTransaction: async () => { throw new Error("Кошелек не подключен"); },
+                    signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
+                };
+            }
 
             // Формируем провайдер Anchor
             const provider = new anchor.AnchorProvider(
@@ -122,7 +129,7 @@ const QubitProgramManager = {
                 { preflightCommitment: "confirmed" }
             );
 
-            // ИСПРАВЛЕНО: Безопасное динамическое получение IDL без падения скрипта в любой версии библиотеки
+            // Безопасное динамическое получение IDL без падения скрипта в любой версии библиотеки
             let idl = null;
             if (typeof anchor.fetchIdl === 'function') {
                 idl = await anchor.fetchIdl(QUBIT_CONFIG.programId, provider);
@@ -143,6 +150,7 @@ const QubitProgramManager = {
         }
     }
 };
+
 
 
 
