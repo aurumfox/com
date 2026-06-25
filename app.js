@@ -2548,7 +2548,7 @@ async function updateWalletBalance() {
         // QUBIT_CONFIG.mint — это адрес твоего токена
         const [ata] = await anchor.web3.PublicKey.findProgramAddress(
             [walletPubkey.toBuffer(), anchor.web3.TOKEN_PROGRAM_ID.toBuffer(), QUBIT_CONFIG.mint.toBuffer()],
-            new anchor.web3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
+            new anchor.web3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
         );
 
         // Запрос баланса через RPC
