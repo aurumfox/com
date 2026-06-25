@@ -663,8 +663,8 @@ window.getAnchorProgram = async function(programId, idl) {
 
 
 /**
- * УМНЫЙ АВТОНОМНЫЙ БЛОК: УПРАВЛЕНИЕ БАЛАНСОМ
- * Работает как сервис: следит за состоянием, обновляет UI и готов отдавать баланс
+ * УМНЫЙ ОБРАБОТЧИК БАЛАНСА (ОБЪЕДИНЕННЫЙ И ИСПРАВЛЕННЫЙ)
+ * Заменяет собой все старые конфликтующие функции. Безопасно возвращает 0, если токенов нет.
  */
 const WalletBalanceManager = {
     cachedBalance: 0,
@@ -675,6 +675,7 @@ const WalletBalanceManager = {
         this.isUpdating = true;
         
         const displayEl = document.getElementById('wallet-balance-display');
+        const qbtEl = document.getElementById('user-qbt-balance');
         
         try {
             console.log("⚡ [BALANCE SERVICE]: Запрос баланса через RPC...");
@@ -685,54 +686,63 @@ const WalletBalanceManager = {
 
             if (!walletPubkey) {
                 if (displayEl) displayEl.innerText = "Balance: Connect Wallet";
+                this.cachedBalance = 0;
                 return 0;
             }
 
-            // Находим ATA
+            // Находим ATA токена
             const ata = await anchor.utils.token.associatedAddress({
                 mint: QUBIT_CONFIG.mint,
                 owner: walletPubkey
             });
 
-            // Запрос баланса
-            const balanceInfo = await connection.getTokenAccountBalance(ata);
-            const balance = balanceInfo.value.uiAmount;
+            let balance = 0;
+            try {
+                const balanceInfo = await connection.getTokenAccountBalance(ata);
+                balance = balanceInfo.value.uiAmount || 0;
+            } catch (ataErr) {
+                // Если ATA аккаунт в блокчейне еще не создан — это значит, что у юзера просто 0 токенов
+                console.log("ℹ️ Токен-аккаунт отсутствует в сети, баланс принят за 0");
+                balance = 0;
+            }
             
             this.cachedBalance = balance;
             
+            // Синхронно обновляем все возможные UI элементы на разных экранах
             if (displayEl) {
-                displayEl.innerText = `Balance: ${balance.toFixed(4)}`;
+                displayEl.innerText = `Доступно: ${balance.toFixed(4)} QBT`;
                 displayEl.classList.remove('text-red-400');
             }
+            if (qbtEl) {
+                qbtEl.innerText = balance.toFixed(2);
+            }
             
-            console.log(`✅ [BALANCE SERVICE]: Обновлено до ${balance}`);
+            console.log(`✅ [BALANCE SERVICE]: Баланс успешно обновлен: ${balance}`);
             return balance;
 
         } catch (e) {
             console.error("❌ [BALANCE SERVICE ERROR]:", e);
             if (displayEl) {
-                displayEl.innerText = "Balance: 0.0000";
+                displayEl.innerText = "Доступно: 0.0000 QBT";
                 displayEl.classList.add('text-red-400');
             }
-            return 0;
+            this.cachedBalance = 0;
+            return 0; // Строго возвращаем 0 вместо undefined, чтобы не ломать проверки в handleDeposit
         } finally {
             this.isUpdating = false;
         }
     },
 
-    // Авто-инициализация: вызови это один раз при старте приложения
     init() {
-        console.log("🚀 [BALANCE SERVICE]: Запуск авто-мониторинга...");
-        // Первое обновление
+        console.log("🚀 [BALANCE SERVICE]: Авто-мониторинг запущен...");
         this.updateBalance();
-        // Обновление каждые 30 секунд для «живого» интерфейса
         setInterval(() => this.updateBalance(), 30000);
     }
 };
 
-// Переопределяем глобальную функцию, чтобы handleDeposit её использовал
+// Привязываем все глобальные мосты к единому сервису, уничтожая конфликты имен
 window.updateWalletBalance = () => WalletBalanceManager.updateBalance();
-
+window.fetchUserBalances = () => WalletBalanceManager.updateBalance();
 
 
 
