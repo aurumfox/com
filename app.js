@@ -596,12 +596,12 @@ window.updateStakingAndBalanceUI = async function() {
 setInterval(async () => {
     try {
         const program = await QubitProgramManager.getProgram();
-        // Проверяем коннект через провайдер, а не только через Phantom
+        // Проверяем коннект через провайдер
         if (program.provider.wallet?.publicKey) {
             window.updateStakingAndBalanceUI();
         }
     } catch (e) {
-        // Менеджер программы еще не инициализирован
+        // Менеджер программы еще не инициализирован, это нормально
     }
 }, 30000); // 30 секунд вполне достаточно
 
