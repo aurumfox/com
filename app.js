@@ -69,60 +69,6 @@ function formatBigInt(value, decimals) {
  * Полная синхронизация с Mainnet логами [БЕЗ ПОТЕРИ ДАННЫХ]
  */
 
-let isUpdatingUI = false;
-
-window.updateStakingAndBalanceUI = async function() {
-    if (isUpdatingUI) return;
-    isUpdatingUI = true;
-
-    try {
-        const program = await QubitProgramManager.getProgram();
-        const walletPubkey = program.provider.wallet?.publicKey;
-
-        if (!walletPubkey) {
-            console.warn("⚠️ [GLOBAL SYNC]: Кошелек не подключен.");
-            return;
-        }
-
-        console.log("🔄 [GLOBAL SYNC]: Запуск синхронизации...");
-
-        // Запускаем запросы параллельно
-        const balancePromise = window.updateWalletBalance();
-        const stakingDataPromise = (async () => {
-            if (window.appState?.currentPoolPubKey) {
-                // Твоя логика стейкинга
-            }
-        })();
-
-        await Promise.allSettled([balancePromise, stakingDataPromise]);
-
-        // Единая точка рендера для всего интерфейса
-        if (typeof window.renderAllUI === 'function') {
-            window.renderAllUI();
-        }
-
-    } catch (e) {
-        console.error("🚨 [GLOBAL SYNC]: Ошибка:", e);
-    } finally {
-        isUpdatingUI = false;
-    }
-};
-
-// Единый интервал, который не забивает сеть
-setInterval(async () => {
-    try {
-        const program = await QubitProgramManager.getProgram();
-        // Проверяем коннект через провайдер, а не только через Phantom
-        if (program.provider.wallet?.publicKey) {
-            window.updateStakingAndBalanceUI();
-        }
-    } catch (e) {
-        // Менеджер программы еще не инициализирован
-    }
-}, 30000); // 30 секунд вполне достаточно
-
-
-
 
 
 
@@ -650,8 +596,6 @@ setInterval(async () => {
         // Менеджер программы еще не инициализирован
     }
 }, 30000); // 30 секунд вполне достаточно
-
-
 
 
 
