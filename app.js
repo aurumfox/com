@@ -2696,12 +2696,19 @@ if (walletBtn) {
 async function connectWallet(wallet) {
     try {
         currentProvider = wallet.provider;
+        window.activeWalletProvider = wallet.provider; // Передаем провайдер глобально
+        
+        // Сбрасываем старый инстанс программы, чтобы он переинициализировался с новым кошельком
+        if (QubitProgramManager) QubitProgramManager.program = null;
+
         const resp = await currentProvider.connect();
         const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
         updateUI(publicKey);
         showNotification(`${wallet.name} Connected!`);
         
-        // Исправление: принудительно скрываем окно и возвращаем фокус на окно браузера
+        // Принудительно и мгновенно запрашиваем баланс для нового кошелька
+        if (window.updateWalletBalance) window.updateWalletBalance();
+        
         if (walletModal) {
             walletModal.classList.add('hidden');
         }
@@ -2711,8 +2718,11 @@ async function connectWallet(wallet) {
         currentProvider.on('disconnect', () => {
             if (!isManualDisconnect) {
                 currentProvider = null;
+                window.activeWalletProvider = null;
+                if (QubitProgramManager) QubitProgramManager.program = null;
                 updateUI(null);
                 showNotification("Disconnected by wallet", "red");
+                if (window.updateWalletBalance) window.updateWalletBalance();
             }
         });
     } catch (err) {
@@ -2720,20 +2730,3 @@ async function connectWallet(wallet) {
         showNotification("Connection Failed", "red");
     }
 }
-
-// Авто-коннект при загрузке
-setTimeout(async () => {
-    const savedWallet = localStorage.getItem('wallet_connected');
-    if (savedWallet) {
-        const wallets = await getAvailableWallets();
-        const phantom = wallets.find(w => w.name === 'Phantom');
-        if (phantom) {
-            try {
-                const resp = await phantom.provider.connect({ onlyIfTrusted: true });
-                const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-                updateUI(pubKey);
-                currentProvider = phantom.provider;
-            } catch (e) { console.log("Auto-connect trust-check skipped."); }
-        }
-    }
-}, 1000);
