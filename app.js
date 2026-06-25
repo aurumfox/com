@@ -500,47 +500,6 @@ window.fetchUserBalances = async function() {
 
 
 
-/**
- * ПОИСК ГЛАВНОГО PDA ПУЛА (СИНХРОНИЗИРОВАН С QUBIT_CONFIG)
- * Использует актуальный programId и адрес пула из конфигурации приложения.
- */
-window.getPoolPDA = async function() {
-    // 1. Кэширование: если уже найдено, отдаем из памяти
-    if (window._cachedPoolPda) return window._cachedPoolPda;
-
-    try {
-        // Проверяем наличие конфигурации
-        if (typeof QUBIT_CONFIG === 'undefined' || !QUBIT_CONFIG.programId) {
-            throw new Error("QUBIT_CONFIG не инициализирован");
-        }
-
-        // 2. Используем данные из твоего рабочего QUBIT_CONFIG
-        // Если пул уже есть в конфиге (DtAAYa8d9bUYNrvrTPCcsb2yGFfirq1DcqsjfXdK34nd),
-        // то PDA вычислять не нужно — он уже известен как объект PublicKey.
-        const pda = QUBIT_CONFIG.pool;
-        
-        console.log("🏛️ Global Pool PDA (from Config):", pda.toBase58());
-        
-        // Сохраняем в кэш
-        window._cachedPoolPda = pda;
-        return pda;
-
-    } catch (e) {
-        console.error("❌ Ошибка при получении Pool PDA:", e);
-        
-        // Fallback: берем из конфига в любом случае, если есть
-        if (typeof QUBIT_CONFIG !== 'undefined' && QUBIT_CONFIG.pool) {
-            return QUBIT_CONFIG.pool;
-        }
-        
-        throw new Error("Не удалось определить адрес пула.");
-    }
-};
-
-
-
-
-
 
 
 
