@@ -91,7 +91,7 @@ const QUBIT_CONFIG = {
     rpcUrl: "https://api.devnet.solana.com"
 };
 
-// Сервис управления программой Anchor
+// Сервис управления программой Anchor (ИСПРАВЛЕНО)
 const QubitProgramManager = {
     program: null,
 
@@ -99,30 +99,30 @@ const QubitProgramManager = {
         if (this.program) return this.program;
 
         try {
-            // Устанавливаем соединение с подтвержденным commitment
             const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
             
-            // Проверка наличия кошелька Phantom / Solflare
-            const wallet = window.solana && window.solana.isConnected ? window.solana : {
+            // Динамически определяем текущий активный кошелек (Phantom, Solflare, Backpack и т.д.)
+            const activeWallet = window.activeWalletProvider || 
+                                 (window.solana && window.solana.isConnected ? window.solana : null) ||
+                                 (window.solflare && window.solflare.isConnected ? window.solflare : null);
+
+            const wallet = activeWallet && activeWallet.publicKey ? activeWallet : {
                 publicKey: null,
                 signTransaction: async () => { throw new Error("Кошелек не подключен"); },
                 signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
             };
 
-            // Формируем провайдер Anchor
             const provider = new anchor.AnchorProvider(
                 connection, 
                 wallet, 
                 { preflightCommitment: "confirmed" }
             );
 
-            // Автоматическое получение IDL напрямую из блокчейна Mainnet
             const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId.toBase58(), provider);
             if (!idl) throw new Error("IDL программы не найден в сети. Проверьте правильность Program ID.");
             
-            // Инициализируем инстанс программы для работы с методами
             this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
-            console.log("✅ Qubit Program Manager: Успешно инициализирована в Mainnet");
+            console.log("✅ Qubit Program Manager: Успешно инициализирована с активным кошельком");
             
             return this.program;
         } catch (e) {
