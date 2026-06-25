@@ -223,7 +223,7 @@ QubitProgramManager.getConnection = async function() {
     const RPC_ENDPOINTS = [
         QUBIT_CONFIG.rpcUrl,
         "https://api.devnet.solana.com",
-        "https://api.mainnet-beta.solana.com"
+        
     ];
 
     for (let url of RPC_ENDPOINTS) {
