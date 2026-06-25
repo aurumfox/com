@@ -1,5 +1,6 @@
+
     
-// --
+
 // --- 1. УТИЛИТЫ ---
 function formatBigInt(value, decimals) {
     if (!value) return "0";
@@ -88,10 +89,10 @@ const QUBIT_CONFIG = {
     initializationTx: "3VT6F5cNkgb3DR1VG6UFbuhChadnStJzTPxEKDKow1CvTpnWj1HVWZmECUrJAiFWQGMZR1TTKQ22TzL63GbWAk8q",
 
     // 5. Сетевое окружение (Переключено на Mainnet согласно логу "MAINNET READY")
-    rpcUrl: "https://api.devnet.solana.com"
+    rpcUrl: "https://api.mainnet-beta.solana.com"
 };
 
-// Сервис управления программой Anchor (ИСПРАВЛЕНО)
+// Сервис управления программой Anchor
 const QubitProgramManager = {
     program: null,
 
@@ -99,30 +100,30 @@ const QubitProgramManager = {
         if (this.program) return this.program;
 
         try {
+            // Устанавливаем соединение с подтвержденным commitment
             const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
             
-            // Динамически определяем текущий активный кошелек (Phantom, Solflare, Backpack и т.д.)
-            const activeWallet = window.activeWalletProvider || 
-                                 (window.solana && window.solana.isConnected ? window.solana : null) ||
-                                 (window.solflare && window.solflare.isConnected ? window.solflare : null);
-
-            const wallet = activeWallet && activeWallet.publicKey ? activeWallet : {
+            // Проверка наличия кошелька Phantom / Solflare
+            const wallet = window.solana && window.solana.isConnected ? window.solana : {
                 publicKey: null,
                 signTransaction: async () => { throw new Error("Кошелек не подключен"); },
                 signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
             };
 
+            // Формируем провайдер Anchor
             const provider = new anchor.AnchorProvider(
                 connection, 
                 wallet, 
                 { preflightCommitment: "confirmed" }
             );
 
+            // Автоматическое получение IDL напрямую из блокчейна Mainnet
             const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId.toBase58(), provider);
             if (!idl) throw new Error("IDL программы не найден в сети. Проверьте правильность Program ID.");
             
+            // Инициализируем инстанс программы для работы с методами
             this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
-            console.log("✅ Qubit Program Manager: Успешно инициализирована с активным кошельком");
+            console.log("✅ Qubit Program Manager: Успешно инициализирована в Mainnet");
             
             return this.program;
         } catch (e) {
@@ -223,7 +224,7 @@ QubitProgramManager.getConnection = async function() {
     const RPC_ENDPOINTS = [
         QUBIT_CONFIG.rpcUrl,
         "https://api.devnet.solana.com",
-        
+        "https://api.mainnet-beta.solana.com"
     ];
 
     for (let url of RPC_ENDPOINTS) {
@@ -265,7 +266,7 @@ async function getRobustConnection() {
     const endpoints = [
         QUBIT_CONFIG.rpcUrl,
         "https://api.devnet.solana.com",
-        
+        "https://api.mainnet-beta.solana.com"
     ];
 
     // 3. Перебор узлов
@@ -279,9 +280,9 @@ async function getRobustConnection() {
             // Тест на "живость"
             await conn.getLatestBlockhash(); 
             
-            // Сохраняем в appState, если он существует
-            if (typeof appState !== 'undefined') {
-                appState.connection = conn;
+            // Сохраняем в AppState, если он существует
+            if (typeof AppState !== 'undefined') {
+                AppState.connection = conn;
             }
             
             console.log(`🚀 Успешное переключение на RPC: ${url}`);
@@ -319,16 +320,16 @@ window.handlePublicKeyChange = async function(newPublicKey) {
     try {
         // 1. Идентификация смены
         const newKeyStr = newPublicKey ? newPublicKey.toBase58() : null;
-        const oldKeyStr = window.appState?.walletPublicKey ? window.appState.walletPublicKey.toBase58() : null;
+        const oldKeyStr = window.AppState?.walletPublicKey ? window.AppState.walletPublicKey.toBase58() : null;
 
         if (newKeyStr === oldKeyStr) return;
 
         console.log(`🔄 [WALLET SYNC]: ${oldKeyStr || 'None'} -> ${newKeyStr || 'Disconnected'}`);
 
         // 2. Очистка и обновление стейта
-        if (!window.appState) window.appState = {};
-        window.appState.walletPublicKey = newPublicKey;
-        window.appState.lastUpdate = null;
+        if (!window.AppState) window.AppState = {};
+        window.AppState.walletPublicKey = newPublicKey;
+        window.AppState.lastUpdate = null;
 
         // 3. Мгновенная очистка UI (UX: предотвращение показа старых данных)
         const balanceEl = document.getElementById('wallet-balance-display');
@@ -405,9 +406,9 @@ window.fetchUserBalances = async function() {
             return sum + BigInt(amount);
         }, 0n);
 
-        // 3. Сохранение в appState (если он у тебя есть, или создаем его)
-        window.appState = window.appState || {};
-        window.appState.userBalances = {
+        // 3. Сохранение в AppState (если он у тебя есть, или создаем его)
+        window.AppState = window.AppState || {};
+        window.AppState.userBalances = {
             SOL: BigInt(solBalance),
             QBT: totalTokens
         };
@@ -663,8 +664,8 @@ window.getAnchorProgram = async function(programId, idl) {
 
 
 /**
- * УМНЫЙ ОБРАБОТЧИК БАЛАНСА (ОБЪЕДИНЕННЫЙ И ИСПРАВЛЕННЫЙ)
- * Заменяет собой все старые конфликтующие функции. Безопасно возвращает 0, если токенов нет.
+ * УМНЫЙ АВТОНОМНЫЙ БЛОК: УПРАВЛЕНИЕ БАЛАНСОМ
+ * Работает как сервис: следит за состоянием, обновляет UI и готов отдавать баланс
  */
 const WalletBalanceManager = {
     cachedBalance: 0,
@@ -675,7 +676,6 @@ const WalletBalanceManager = {
         this.isUpdating = true;
         
         const displayEl = document.getElementById('wallet-balance-display');
-        const qbtEl = document.getElementById('user-qbt-balance');
         
         try {
             console.log("⚡ [BALANCE SERVICE]: Запрос баланса через RPC...");
@@ -686,63 +686,54 @@ const WalletBalanceManager = {
 
             if (!walletPubkey) {
                 if (displayEl) displayEl.innerText = "Balance: Connect Wallet";
-                this.cachedBalance = 0;
                 return 0;
             }
 
-            // Находим ATA токена
+            // Находим ATA
             const ata = await anchor.utils.token.associatedAddress({
                 mint: QUBIT_CONFIG.mint,
                 owner: walletPubkey
             });
 
-            let balance = 0;
-            try {
-                const balanceInfo = await connection.getTokenAccountBalance(ata);
-                balance = balanceInfo.value.uiAmount || 0;
-            } catch (ataErr) {
-                // Если ATA аккаунт в блокчейне еще не создан — это значит, что у юзера просто 0 токенов
-                console.log("ℹ️ Токен-аккаунт отсутствует в сети, баланс принят за 0");
-                balance = 0;
-            }
+            // Запрос баланса
+            const balanceInfo = await connection.getTokenAccountBalance(ata);
+            const balance = balanceInfo.value.uiAmount;
             
             this.cachedBalance = balance;
             
-            // Синхронно обновляем все возможные UI элементы на разных экранах
             if (displayEl) {
-                displayEl.innerText = `Доступно: ${balance.toFixed(4)} QBT`;
+                displayEl.innerText = `Balance: ${balance.toFixed(4)}`;
                 displayEl.classList.remove('text-red-400');
             }
-            if (qbtEl) {
-                qbtEl.innerText = balance.toFixed(2);
-            }
             
-            console.log(`✅ [BALANCE SERVICE]: Баланс успешно обновлен: ${balance}`);
+            console.log(`✅ [BALANCE SERVICE]: Обновлено до ${balance}`);
             return balance;
 
         } catch (e) {
             console.error("❌ [BALANCE SERVICE ERROR]:", e);
             if (displayEl) {
-                displayEl.innerText = "Доступно: 0.0000 QBT";
+                displayEl.innerText = "Balance: 0.0000";
                 displayEl.classList.add('text-red-400');
             }
-            this.cachedBalance = 0;
-            return 0; // Строго возвращаем 0 вместо undefined, чтобы не ломать проверки в handleDeposit
+            return 0;
         } finally {
             this.isUpdating = false;
         }
     },
 
+    // Авто-инициализация: вызови это один раз при старте приложения
     init() {
-        console.log("🚀 [BALANCE SERVICE]: Авто-мониторинг запущен...");
+        console.log("🚀 [BALANCE SERVICE]: Запуск авто-мониторинга...");
+        // Первое обновление
         this.updateBalance();
+        // Обновление каждые 30 секунд для «живого» интерфейса
         setInterval(() => this.updateBalance(), 30000);
     }
 };
 
-// Привязываем все глобальные мосты к единому сервису, уничтожая конфликты имен
+// Переопределяем глобальную функцию, чтобы handleDeposit её использовал
 window.updateWalletBalance = () => WalletBalanceManager.updateBalance();
-window.fetchUserBalances = () => WalletBalanceManager.updateBalance();
+
 
 
 
@@ -1605,7 +1596,7 @@ async function executeClaimRewards() {
         const provider = program.provider;
         const owner = provider.wallet.publicKey;
 
-        // 4. ПРОВЕРКА СОСТОЯНИЯ (appState)
+        // 4. ПРОВЕРКА СОСТОЯНИЯ (AppState)
         if (!window.appState || !window.appState.currentPoolPubKey) {
             throw new Error("Состояние пула не загружено.");
         }
@@ -2555,7 +2546,7 @@ async function updateWalletBalance() {
         // QUBIT_CONFIG.mint — это адрес твоего токена
         const [ata] = await anchor.web3.PublicKey.findProgramAddress(
             [walletPubkey.toBuffer(), anchor.web3.TOKEN_PROGRAM_ID.toBuffer(), QUBIT_CONFIG.mint.toBuffer()],
-            new anchor.web3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
+            new anchor.web3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
         );
 
         // Запрос баланса через RPC
@@ -2696,19 +2687,12 @@ if (walletBtn) {
 async function connectWallet(wallet) {
     try {
         currentProvider = wallet.provider;
-        window.activeWalletProvider = wallet.provider; // Передаем провайдер глобально
-        
-        // Сбрасываем старый инстанс программы, чтобы он переинициализировался с новым кошельком
-        if (QubitProgramManager) QubitProgramManager.program = null;
-
         const resp = await currentProvider.connect();
         const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
         updateUI(publicKey);
         showNotification(`${wallet.name} Connected!`);
         
-        // Принудительно и мгновенно запрашиваем баланс для нового кошелька
-        if (window.updateWalletBalance) window.updateWalletBalance();
-        
+        // Исправление: принудительно скрываем окно и возвращаем фокус на окно браузера
         if (walletModal) {
             walletModal.classList.add('hidden');
         }
@@ -2718,11 +2702,8 @@ async function connectWallet(wallet) {
         currentProvider.on('disconnect', () => {
             if (!isManualDisconnect) {
                 currentProvider = null;
-                window.activeWalletProvider = null;
-                if (QubitProgramManager) QubitProgramManager.program = null;
                 updateUI(null);
                 showNotification("Disconnected by wallet", "red");
-                if (window.updateWalletBalance) window.updateWalletBalance();
             }
         });
     } catch (err) {
@@ -2730,3 +2711,20 @@ async function connectWallet(wallet) {
         showNotification("Connection Failed", "red");
     }
 }
+
+// Авто-коннект при загрузке
+setTimeout(async () => {
+    const savedWallet = localStorage.getItem('wallet_connected');
+    if (savedWallet) {
+        const wallets = await getAvailableWallets();
+        const phantom = wallets.find(w => w.name === 'Phantom');
+        if (phantom) {
+            try {
+                const resp = await phantom.provider.connect({ onlyIfTrusted: true });
+                const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
+                updateUI(pubKey);
+                currentProvider = phantom.provider;
+            } catch (e) { console.log("Auto-connect trust-check skipped."); }
+        }
+    }
+}, 1000);
