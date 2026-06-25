@@ -63,20 +63,35 @@ function formatBigInt(value, decimals) {
 
 /**
  * ЦЕНТР КОНФИГУРАЦИИ И УПРАВЛЕНИЯ QUBIT
- * Единая точка доступа ко всем данным и методам
+ * Полная синхронизация с Mainnet логами [БЕЗ ПОТЕРИ ДАННЫХ]
  */
 
-// 1. Конфигурация: всё в одном месте, никаких магических глобальных window.*
 const QUBIT_CONFIG = {
+    // 1. Ключевые адреса программы и пула
     programId: new solanaWeb3.PublicKey("BqqKdzVPiYt3cKKdgKsSir2ruVJaSi9bDrs5V8FbqeN8"),
-    pool: new solanaWeb3.PublicKey("DtAAYa8d9bUYNrvrTPCcsb2yGFfirq1DcqsjfXdK34nd"),
-    vault: new solanaWeb3.PublicKey("14jYS3KKLgp58hevDrHKcSkpQcTJ2mWZWM5CmfLGL6CZ"),
-    mint: new solanaWeb3.PublicKey("DDVgZ5GYxG7fLkJS7BTsbiRXBuSCcFLWrMMzZCJhBfCd"),
-    // RPC адрес вынесен сюда, чтобы можно было легко менять при необходимости
-    rpcUrl: "https://api.devnet.solana.com"
+    pool: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Он же PoolState / Data Account
+    vault: new solanaWeb3.PublicKey("CHkoheNrLJVeqvnPREhvEfojyPAEksAwX2MJH2iX6cKq"), // Сейф пула
+    mint: new solanaWeb3.PublicKey("EgQptYNBBuhLqgrpfcLzRW5TYTWeSxYpyt6EQKwqVeag"), // Используемый токен
+
+    // 2. Личные и верифицированные PDA аккаунты из логов сети
+    userStakingPda: new solanaWeb3.PublicKey("GqJzDaUm9zHhG4bwfbVc6w3kEVk4EpvaspUQiqWaMPnf"), // Твой личный PDA Стейкинга
+    poolOwner: new solanaWeb3.PublicKey("5XSQUXBwxbssvEUBLoerSd7ZVzfuCfHqZQsvkja7xQ7v"), // Владелец из верификации памяти
+    stMintAuth: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Авторизация стейк-минта (равна пулу)
+
+    // 3. Системные переменные Solana (необходимы для вызова методов контракта)
+    systemProgram: solanaWeb3.SystemProgram.programId,
+    clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+    rent: solanaWeb3.SYSVAR_RENT_PUBKEY,
+
+    // 4. Метаданные транзакции (сохранено для истории/проверок)
+    lastTxReceipt: "EjkqRj9aagtWeNEDYz55yJ4uZeuXn6AmxNSRWrDBgAHu",
+    initializationTx: "3VT6F5cNkgb3DR1VG6UFbuhChadnStJzTPxEKDKow1CvTpnWj1HVWZmECUrJAiFWQGMZR1TTKQ22TzL63GbWAk8q",
+
+    // 5. Сетевое окружение (Переключено на Mainnet согласно логу "MAINNET READY")
+    rpcUrl: "https://api.mainnet-beta.solana.com"
 };
 
-// 2. Сервис управления программой
+// Сервис управления программой Anchor
 const QubitProgramManager = {
     program: null,
 
@@ -84,26 +99,30 @@ const QubitProgramManager = {
         if (this.program) return this.program;
 
         try {
+            // Устанавливаем соединение с подтвержденным commitment
             const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
             
-            // Если Phantom не подключен, используем только Read-Only провайдер
+            // Проверка наличия кошелька Phantom / Solflare
             const wallet = window.solana && window.solana.isConnected ? window.solana : {
                 publicKey: null,
                 signTransaction: async () => { throw new Error("Кошелек не подключен"); },
                 signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
             };
 
+            // Формируем провайдер Anchor
             const provider = new anchor.AnchorProvider(
                 connection, 
                 wallet, 
                 { preflightCommitment: "confirmed" }
             );
 
+            // Автоматическое получение IDL напрямую из блокчейна Mainnet
             const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId.toBase58(), provider);
-            if (!idl) throw new Error("IDL программы не найден");
+            if (!idl) throw new Error("IDL программы не найден в сети. Проверьте правильность Program ID.");
             
+            // Инициализируем инстанс программы для работы с методами
             this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
-            console.log("✅ Qubit Program Manager: Инициализирована");
+            console.log("✅ Qubit Program Manager: Успешно инициализирована в Mainnet");
             
             return this.program;
         } catch (e) {
@@ -113,25 +132,8 @@ const QubitProgramManager = {
     }
 };
 
-// 3. Состояние приложения (вместо мусорных глобальных переменных)
-const AppState = {
-    connection: null,
-    isInitialized: false,
-    lastUpdate: null
-};
 
-// 4. Инициализация (вызывай один раз при старте страницы)
-async function initApp() {
-    console.log("🚀 Запуск инициализации Qubit App...");
-    try {
-        await QubitProgramManager.getProgram();
-        AppState.isInitialized = true;
-        // Здесь можно вызвать WalletBalanceManager.init() из прошлого сообщения
-        console.log("✨ App Ready");
-    } catch (e) {
-        console.error("⚠️ Ошибка инициализации приложения:", e);
-    }
-}
+
 
 
 
