@@ -91,7 +91,7 @@ const QUBIT_CONFIG = {
     initializationTx: "3VT6F5cNkgb3DR1VG6UFbuhChadnStJzTPxEKDKow1CvTpnWj1HVWZmECUrJAiFWQGMZR1TTKQ22TzL63GbWAk8q",
 
     // 5. Сетевое окружение (Переключено на Mainnet согласно логу "MAINNET READY")
-    rpcUrl: "https://api.mainnet-beta.solana.com"
+    rpcUrl: "https://api.devnet.solana.com"
 };
 
 // Сервис управления программой Anchor
