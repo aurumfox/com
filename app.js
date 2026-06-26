@@ -479,7 +479,7 @@ window.getLiveAPR = async function() {
         const rewardRateBN = poolAccount.rewardRatePerSec;
 
         // Определяем децималы (обычно для SPL токенов это 9, но берем из конфига или константы)
-        const DECIMALS = 9; 
+        const DECIMALS = 6; 
         const totalStaked = totalStakedBN.toNumber() / Math.pow(10, DECIMALS);
         const rps = rewardRateBN.toNumber() / Math.pow(10, DECIMALS);
 
