@@ -616,6 +616,65 @@ window.getAnchorProgram = async function(programId, idl) {
 
 
 
+// ==========================================
+// 3. УЛЬТРА-СИНХРОНИЗАЦИЯ БАЛАНСА ТОКЕНА
+// ==========================================
+window.fetchUserBalances = async function() {
+    try {
+        const program = await QubitProgramManager.getProgram();
+        const connection = program.provider.connection;
+        const pubkey = program.provider.wallet.publicKey;
+
+        if (!pubkey) {
+            console.warn("⚠️ [BALANCE SYNC]: Кошелек не подключен, пропуск обновления.");
+            return;
+        }
+
+        // 1. Запрашиваем аккаунты строго для токена из QUBIT_CONFIG.mint
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubkey, { 
+            mint: QUBIT_CONFIG.mint 
+        });
+
+        // 2. Собираем реальный баланс (используем uiAmount, чтобы сеть сама дала правильное число)
+        const totalBalance = tokenAccounts.value.reduce((sum, acc) => {
+            const uiAmount = acc.account.data.parsed.info.tokenAmount.uiAmount;
+            return sum + (uiAmount || 0);
+        }, 0);
+
+        // 3. Сохраняем в AppState в чистом виде
+        window.AppState = window.AppState || {};
+        window.AppState.userBalances = {
+            token: totalBalance
+        };
+
+        // 4. Логирование чистого результата
+        console.log(`📊 BALANCE SYNC COMPLETE: ${totalBalance}`);
+
+        // 5. Рендеринг напрямую в интерфейс (заменяем "Balance: Loading...")
+        const tags = document.getElementsByTagName('*');
+        let elementFound = false;
+
+        for (let i = 0; i < tags.length; i++) {
+            if (tags[i].textContent && tags[i].textContent.includes('Balance: Loading...')) {
+                tags[i].textContent = `Balance: ${totalBalance.toFixed(2)}`;
+                elementFound = true;
+                break;
+            }
+        }
+
+        if (!elementFound) {
+            console.warn("⚠️ [BALANCE SYNC]: Элемент 'Balance: Loading...' не найден на странице.");
+        }
+
+    } catch (error) {
+        console.error("❌ [BALANCE SYNC ERROR]:", error);
+    }
+};
+
+
+
+
+
 
 
 
