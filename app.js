@@ -73,9 +73,8 @@ function formatBigInt(value, decimals) {
 
 
 
-
 // ==========================================
-// 1. КОНФИГУРАЦИЯ И ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ
+// 1. ГЛОБАЛЬНЫЙ КОНФИГ (Перенесён на самый верх для 100% синхронизации)
 // ==========================================
 const QUBIT_CONFIG = {
     // 1. Ключевые адреса программы и пула
@@ -98,7 +97,7 @@ const QUBIT_CONFIG = {
     lastTxReceipt: "EjkqRj9aagtWeNEDYz55yJ4uZeuXn6AmxNSRWrDBgAHu",
     initializationTx: "3VT6F5cNkgb3DR1VG6UFbuhChadnStJzTPxEKDKow1CvTpnWj1HVWZmECUrJAiFWQGMZR1TTKQ22TzL63GbWAk8q",
 
-    // 5. Сетевое окружение (Переключено на Mainnet согласно логу "MAINNET READY")
+    // 5. Сетевое окружение (Переключено на Devnet/Testnet для тестов)
     rpcUrl: "https://api.devnet.solana.com"
 };
 
@@ -206,12 +205,25 @@ window.fetchUserBalances = async function() {
         const qbtEl = document.getElementById('user-qbt-balance');
         
         if (solEl) solEl.innerText = (Number(solBalance) / 1e9).toFixed(4);
-        if (qbtEl) qbtEl.innerText = (Number(totalTokens) / 1e9).toFixed(2);
+        if (qbtEl) {
+            qbtEl.innerText = (Number(totalTokens) / 1e9).toFixed(2);
+        } else {
+            // ФОЛБЕК ДЛЯ ИНТЕРФЕЙСА: Если ID элемента не задан, ищем текст "Balance: Loading..." со скриншота 
+            // и заменяем его на реальное число найденных токенов из QUBIT_CONFIG.mint
+            const tags = document.getElementsByTagName('*');
+            for (let i = 0; i < tags.length; i++) {
+                if (tags[i].textContent && tags[i].textContent.includes('Balance: Loading...')) {
+                    tags[i].textContent = `Balance: ${(Number(totalTokens) / 1e9).toFixed(2)}`;
+                    break;
+                }
+            }
+        }
 
     } catch (error) {
         console.error("❌ [BALANCE SYNC ERROR]:", error);
     }
 };
+
 
 
 
