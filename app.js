@@ -2696,19 +2696,3 @@ async function connectWallet(wallet) {
     }
 }
 
-// Авто-коннект при загрузке
-setTimeout(async () => {
-    const savedWallet = localStorage.getItem('wallet_connected');
-    if (savedWallet) {
-        const wallets = await getAvailableWallets();
-        const phantom = wallets.find(w => w.name === 'Phantom');
-        if (phantom) {
-            try {
-                const resp = await phantom.provider.connect({ onlyIfTrusted: true });
-                const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-                updateUI(pubKey);
-                currentProvider = phantom.provider;
-            } catch (e) { console.log("Auto-connect trust-check skipped."); }
-        }
-    }
-}, 1000);
