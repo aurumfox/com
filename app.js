@@ -64,10 +64,6 @@ function formatBigInt(value, decimals) {
 
 
 
-/**
- * ЦЕНТР КОНФИГУРАЦИИ И УПРАВЛЕНИЯ QUBIT
- * Полная синхронизация с Mainnet логами [БЕЗ ПОТЕРИ ДАННЫХ]
- */
 
 
 
