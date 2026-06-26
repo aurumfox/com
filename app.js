@@ -2617,32 +2617,7 @@ const getAvailableWallets = () => {
     });
 };
 
-// Функция фактического подключения кошелька
-const connectWallet = async (walletObj) => {
-    try {
-        currentProvider = walletObj.provider;
-        await currentProvider.connect();
-        
-        const pubKey = currentProvider.publicKey.toString();
-        updateUI(pubKey);
-        
-        if (walletModal) walletModal.classList.add('hidden');
-        showNotification(`Connected to ${walletObj.name}`, "emerald");
-        
-        // СБРОС КЭША И МГНОВЕННЫЙ ВЫЗОВ ОБНОВЛЕНИЯ БАЛАНСА ПРИ ПОДКЛЮЧЕНИИ
-        if (QubitProgramManager.program) QubitProgramManager.program = null; 
-        setTimeout(() => {
-            if (typeof window.updateWalletBalance === 'function') {
-                window.updateWalletBalance();
-            }
-        }, 500);
 
-    } catch (err) {
-        console.error("Connection error:", err);
-        showNotification("Connection cancelled", "red");
-        updateUI(null);
-    }
-};
 
 if (walletBtn) {
     walletBtn.addEventListener('click', async () => {
