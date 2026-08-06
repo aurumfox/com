@@ -61,7 +61,7 @@ function formatBigInt(value, decimals) {
 // ==========================================
 // 0. ЛОКАЛЬНЫЙ IDL (Вставляем напрямую, чтобы не зависеть от RPC Devnet)
 // ==========================================
-const QUBIT_IDL = /* ВСТАВЬ СЮДА ВЕСЬ ТЕКСТ ИЗ target/idl/qubit.json ИЛИ start.json */;
+const QUBIT_IDL = CJ2FV9ixkCMWocSeLCxmm6cJPp3vNDxvp1gWaMMDE8nY;
 
 // ==========================================
 // 1. ГЛОБАЛЬНЫЙ КОНФИГ (Перенесён на самый верх для 100% синхронизации)
