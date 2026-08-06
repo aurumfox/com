@@ -79,7 +79,6 @@ function formatBigInt(value, decimals) {
 const QUBIT_CONFIG = {
     // 1. Ключевые адреса программы и пула
     programId: new solanaWeb3.PublicKey("BqqKdzVPiYt3cKKdgKsSir2ruVJaSi9bDrs5V8FbqeN8"),
-    idlAccount: new solanaWeb3.PublicKey("CJ2FV9ixkCMWocSeLCxmm6cJPp3vNDxvp1gWaMMDE8nY"), // Созданный IDL аккаунт из логов деплоя
     pool: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Он же PoolState / Data Account
     vault: new solanaWeb3.PublicKey("CHkoheNrLJVeqvnPREhvEfojyPAEksAwX2MJH2iX6cKq"), // Сейф пула
     mint: new solanaWeb3.PublicKey("EgQptYNBBuhLqgrpfcLzRW5TYTWeSxYpyt6EQKwqVeag"), // Используемый токен
@@ -136,24 +135,13 @@ const QubitProgramManager = {
 
             // Безопасное динамическое получение IDL без падения скрипта в любой версии библиотеки
             let idl = null;
-
-            try {
-                if (typeof anchor.fetchIdl === 'function') {
-                    idl = await anchor.fetchIdl(QUBIT_CONFIG.programId, provider);
-                } else if (anchor.Program && typeof anchor.Program.fetchIdl === 'function') {
-                    idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId, provider);
-                }
-            } catch (fetchErr) {
-                console.warn("⚠️ Не удалось загрузить IDL из сети из-за лимитов RPC Devnet. Пробуем резервный вариант...", fetchErr);
+            if (typeof anchor.fetchIdl === 'function') {
+                idl = await anchor.fetchIdl(QUBIT_CONFIG.programId, provider);
+            } else if (anchor.Program && typeof anchor.Program.fetchIdl === 'function') {
+                idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId, provider);
             }
 
-            // Если сетевой fetchIdl вернул null (из-за таймаута RPC), используем глобальный резерв QUBIT_IDL (если объявление есть в коде)
-            if (!idl && typeof QUBIT_IDL !== 'undefined') {
-                console.log("ℹ️ Использование локального резервного QUBIT_IDL");
-                idl = QUBIT_IDL;
-            }
-
-            if (!idl) throw new Error("IDL программы не найден в сети. Проверьте правильность Program ID или стабильность Devnet RPC.");
+            if (!idl) throw new Error("IDL программы не найден в сети. Проверьте правильность Program ID.");
             
             // Инициализируем инстанс программы для работы с методами
             this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
