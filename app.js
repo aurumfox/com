@@ -79,6 +79,8 @@ function formatBigInt(value, decimals) {
 const QUBIT_CONFIG = {
     // 1. Ключевые адреса программы и пула
     programId: new solanaWeb3.PublicKey("BqqKdzVPiYt3cKKdgKsSir2ruVJaSi9bDrs5V8FbqeN8"),
+   idlAccount: new solanaWeb3.PublicKey("CJ2FV9ixkCMWocSeLCxmm6cJPp3vNDxvp1gWaMMDE8nY"), // Созданный IDL аккаунт из логов деплоя
+ 
     pool: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Он же PoolState / Data Account
     vault: new solanaWeb3.PublicKey("CHkoheNrLJVeqvnPREhvEfojyPAEksAwX2MJH2iX6cKq"), // Сейф пула
     mint: new solanaWeb3.PublicKey("EgQptYNBBuhLqgrpfcLzRW5TYTWeSxYpyt6EQKwqVeag"), // Используемый токен
