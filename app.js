@@ -1,5 +1,4 @@
 
-
 // --
 // --- 1. УТИЛИТЫ ---
 function formatBigInt(value, decimals) {
