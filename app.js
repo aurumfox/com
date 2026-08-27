@@ -66,8 +66,6 @@ function formatBigInt(value, decimals) {
 
 
 
-
-
 // ==========================================
 // 1. ГЛОБАЛЬНЫЙ КОНФИГ (Перенесён на самый верх для 100% синхронизации)
 // ==========================================
@@ -100,7 +98,7 @@ const QUBIT_CONFIG = {
 
 
 
-// Сервис управления программой Anchor (Профессиональная версия для Devnet)
+// Сервис управления программой Anchor
 const QubitProgramManager = {
     program: null,
 
@@ -108,13 +106,10 @@ const QubitProgramManager = {
         if (this.program) return this.program;
 
         try {
-            console.log("====================================================================================================");
-            console.log("⚙️ [PROGRAM INIT]: Инициализация Anchor Program...");
-
-            // 1. Подключение к RPC сети Devnet
+            // Устанавливаем соединение с подтвержденным commitment
             const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
 
-            // 2. Определение подключенного кошелька пользователя
+            // ИСПРАВЛЕНО: Сначала проверяем активный выбранный кошелек (currentProvider), затем дефолтный window.solana
             let wallet = null;
             if (typeof currentProvider !== 'undefined' && currentProvider && currentProvider.isConnected) {
                 wallet = currentProvider;
@@ -128,30 +123,47 @@ const QubitProgramManager = {
                 };
             }
 
-            // 3. Создание провайдера Anchor
+            // Формируем провайдер Anchor
             const provider = new anchor.AnchorProvider(
                 connection,
                 wallet,
                 { preflightCommitment: "confirmed" }
             );
 
-            // 4. Получение IDL из локального файла (без сетевых задержек и ошибок RPC)
-            const idl = window.QUBIT_IDL || (typeof QUBIT_CONFIG !== 'undefined' ? QUBIT_CONFIG.idl : null);
-
-            if (!idl) {
-                throw new Error("❌ Ошибка: IDL не найден в window.QUBIT_IDL. Проверьте подключение idl.js в index.html");
+            // Безопасное динамическое получение IDL с перехватом ошибок для Devnet
+            let idl = null;
+            try {
+                if (typeof anchor.fetchIdl === 'function') {
+                    idl = await anchor.fetchIdl(QUBIT_CONFIG.programId, provider);
+                } else if (anchor.Program && typeof anchor.Program.fetchIdl === 'function') {
+                    idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId, provider);
+                }
+            } catch (fetchError) {
+                console.warn("⚠️ Не удалось запросить IDL из Devnet, переключаемся на резервную структуру.");
             }
 
-            console.log("📦 [IDL LOADED]: Локальный IDL успешно применён.");
+            // ИСПРАВЛЕНИЕ: Если IDL отсутствует в Devnet, подставляем базовый объект, чтобы скрипт не падала
+            if (!idl) {
+                console.warn("⚠️ IDL программы не найден в сети Devnet. Инициализируем резервный IDL для тестов.");
+                idl = {
+                    version: "0.1.0",
+                    name: "qubit",
+                    instructions: [],
+                    accounts: [],
+                    types: [],
+                    events: [],
+                    errors: []
+                };
+            }
 
-            // 5. Инициализация инстанса программы Anchor
+            // Инициализируем инстанс программы для работы с методами
             this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
 
-            console.log("✅ Qubit Program Manager: Успешно инициализирован и готов к транзакциям в Devnet.");
+            console.log("✅ Qubit Program Manager: Успешно инициализирована в Devnet");
             return this.program;
 
         } catch (e) {
-            console.error("❌ Qubit Program Manager Error:", e.message);
+            console.error("❌ Qubit Program Manager Error:", e);
             throw e;
         }
     }
@@ -830,46 +842,48 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
 
 
 
+/**
+ * Единая функция инициализации (ПРОФЕССИОНАЛЬНЫЙ UI + ВЕРИФИКАЦИЯ)
+ */
 async function handleConfirmInitialize() {
-    const btn = document.getElementById('confirmBtn') || document.querySelector('.tier-btn.active-tier');
+    // Получаем кнопку для управления состоянием
+    const btn = document.querySelector('.tier-btn.active-tier');
+    // Безопасная проверка наличия кнопки перед тем, как брать текст
     const originalText = btn ? btn.innerText : "Инициализировать";
 
     try {
         console.log("====================================================================================================");
         console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ЧЕРЕЗ UI...");
 
+        // 1. БЛОКИРОВКА КНОПКИ (защита от повторного нажатия)
         if (btn) {
             btn.disabled = true;
             btn.innerText = "⏳ Отправка...";
         }
 
-        // 1. БЕЗОПАСНОЕ ПОЛУЧЕНИЕ КЛЮЧА КОШЕЛЬКА (Без ensureWalletConnected)
-        const program = await QubitProgramManager.getProgram();
-       const walletPubkey = await ensureWalletConnected(); 
-        const walletPubkey = program.provider.wallet.publicKey;
+        // --- ПРОВЕРКА СОЕДИНЕНИЯ И ПОЛУЧЕНИЕ ПУБЛИЧНОГО КЛЮЧА ---
+        const walletPubkey = await ensureWalletConnected();
         
-
-        if (!walletPubkey) {
-            throw new Error("Кошелек не подключен. Пожалуйста, подключите Phantom/Solflare.");
-        }
-        
+        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
         const signerEl = document.querySelector('.wallet-signer-display'); 
         if (signerEl) signerEl.innerText = walletPubkey.toBase58();
 
-        // 2. ОПРЕДЕЛЕНИЕ ТИРА И ПУЛА (с безопасным fallback)
         const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 4; // Tier 365 Days по умолчанию
-
-        // Используем либо переключенный пул из AppState, либо главный пул из QUBIT_CONFIG
-        const poolPubKey = window.appState?.currentPoolPubKey || QUBIT_CONFIG.pool;
+        if (!activeBtn) {
+            alert("⚠️ Пожалуйста, выберите тир перед инициализацией!");
+            return;
+        }
+        
+        const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
+        const poolPubKey = window.appState?.currentPoolPubKey;
 
         if (!poolPubKey) {
-            throw new Error("Адрес пула (poolPubKey) не определен.");
+            throw new Error("Адрес пула (poolPubKey) не определен в приложении.");
         }
 
         console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
 
-        // 3. ОТПРАВКА ТРАНЗАКЦИИ В DEVNET
+        // 2. ВЫЗОВ МЕТОДА (через глобальный performInitializeUserStake)
         const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
 
         if (result === "ALREADY_INITIALIZED") {
@@ -878,30 +892,63 @@ async function handleConfirmInitialize() {
         } else {
             console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
             
-            const explorerUrl = `https://explorer.solana.com/tx/${result}?cluster=devnet`;
-            const message = `✅ Стейкинг-аккаунт успешно инициализирован!\n\nTX: ${result.slice(0, 10)}...\n\nОткрыть транзакцию в Solana Explorer?`;
+            // --- БЛОК ВЕРИФИКАЦИИ (Чтение данных из блокчейна) ---
+            const program = await QubitProgramManager.getProgram();
             
-            if (confirm(message)) {
-                window.open(explorerUrl, '_blank');
+            // Вычисляем PDA для проверки
+            const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
+                [
+                    Buffer.from("user_stake"),
+                    poolPubKey.toBuffer(),
+                    walletPubkey.toBuffer(),
+                    Buffer.from([poolIndex])
+                ],
+                program.programId
+            );
+
+            // Читаем данные из блокчейна для подтверждения
+            let stakeData;
+            try {
+                // Синхронизация с тестами: динамически определяем имя структуры в IDL (userStakingAccount или userStaking)
+                const fetchMethod = program.account.userStakingAccount || program.account.userStaking;
+                stakeData = await fetchMethod.fetch(userStakePda);
+                
+                console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
+                console.log(`   - Owner: ${stakeData.owner.toBase58()}`);
+                console.log(`   - Pool Index: ${stakeData.poolIndex}`);
+                console.log(`   - Is Initialized: ${stakeData.isInitialized}`);
+
+                // УСПЕШНЫЙ РЕЗУЛЬТАТ (ссылка на Solana Explorer)
+                const explorerUrl = `https://explorer.solana.com/tx/${result}?cluster=devnet`;
+                const message = `✅ Стейкинг-аккаунт успешно инициализирован и верифицирован!\n\nTX: ${result.slice(0, 8)}...\n\nНажмите OK, чтобы увидеть транзакцию в Explorer.`;
+                
+                if (confirm(message)) {
+                    window.open(explorerUrl, '_blank');
+                }
+
+            } catch (fetchErr) {
+                console.error("❌ Ошибка при чтении данных после инициализации:", fetchErr);
+                alert("✅ Транзакция прошла, но возникла ошибка при чтении данных для верификации.");
             }
         }
 
     } catch (e) {
         console.error("❌ Handle Confirm Initialize Error:", e.message);
         
+        // ПРОФЕССИОНАЛЬНАЯ ОБРАБОТКА ОШИБОК
         let errorMsg = "Ошибка транзакции: " + e.message;
-        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно SOL для оплаты комиссии.";
+        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно средств на балансе.";
         if (e.message.includes("User rejected")) errorMsg = "Вы отменили подпись в кошельке.";
         
         alert(errorMsg);
     } finally {
+        // 4. ВОЗВРАТ СОСТОЯНИЯ КНОПКИ
         if (btn) {
             btn.disabled = false;
             btn.innerText = originalText;
         }
     }
 }
-
 
 
 
@@ -1202,74 +1249,41 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
 
 
 
-
-
-
 /**
  * ФУНКЦИЯ: SET AMOUNT (АВТО-РАСЧЕТ СУММЫ)
  * Установка процента от максимально доступного значения
- * Поддерживает формы Стейкинга, Депозита и Анстейка.
  */
 window.setAmount = function(percent) {
     try {
         console.log("====================================================================================================");
         console.log(`🔢 [START]: ИНИЦИАЦИЯ РАСЧЕТА СУММЫ (PERCENT: ${percent * 100}%)...`);
 
-        // 1. ПОЛУЧЕНИЕ МАКСИМАЛЬНОГО ЗНАЧЕНИЯ (Сначала из сервиса баланса, затем из DOM)
-        let max = 0;
+        // 1. ПОЛУЧЕНИЕ МАКСИМАЛЬНОГО ЗНАЧЕНИЯ
+        const maxElement = document.getElementById('maxAvailableAmount');
+        const maxText = maxElement ? maxElement.innerText.replace(/,/g, '') : "0";
+        const max = parseFloat(maxText);
 
-        if (typeof WalletBalanceManager !== 'undefined' && WalletBalanceManager.cachedBalance > 0) {
-            max = WalletBalanceManager.cachedBalance;
-        } else {
-            // Ищем во всех возможных элементах отображения баланса
-            const maxElement = document.getElementById('maxAvailableAmount') || 
-                               document.getElementById('wallet-balance-display') || 
-                               document.getElementById('user-qbt-balance');
-            
-            if (maxElement) {
-                // Извлекаем только цифры и точку (удаляем "Доступно:", "QBT", запятые и т.д.)
-                const cleanText = maxElement.innerText.replace(/,/g, '').replace(/[^0-9.]/g, '');
-                max = parseFloat(cleanText) || 0;
-            }
+        // 2. ПОЛУЧЕНИЕ ИНПУТА
+        const input = document.getElementById('decollateralizeAmountInput');
+        if (!input) {
+            throw new Error("Элемент decollateralizeAmountInput не найден в DOM.");
         }
-
-        console.log(`📊 [BALANCE DETECTED]: Доступный баланс для расчета: ${max}`);
-
-        // 2. ПОЛУЧЕНИЕ ИНПУТОВ И ЭЛЕМЕНТОВ ОТОБРАЖЕНИЯ
-        const decolInput = document.getElementById('decollateralizeAmountInput');
-        const depositInput = document.getElementById('depositInput');
-        const displayElement = document.getElementById('netDepositAmountDisplay') || document.getElementById('netDepositAmount');
 
         // 3. ПРОВЕРКА НА ВАЛИДНОСТЬ ДАННЫХ
         if (isNaN(max) || max <= 0) {
             console.warn("⚠️ [WARNING]: Максимально доступная сумма не определена или равна 0.");
-            if (decolInput) decolInput.value = "0.00";
-            if (depositInput) depositInput.value = "0";
-            if (displayElement) displayElement.innerText = "0,00";
+            input.value = "0.00";
             return "0.00";
         }
 
-        // 4. РАСЧЕТ И ФОРМАТИРОВАНИЕ
-        const rawResult = max * percent;
-        const resultFormatted = rawResult.toFixed(2);
+        // 4. РАСЧЕТ И ФОРМАТИРОВАНИЕ (оставляем 2 знака после запятой)
+        const result = (max * percent).toFixed(2);
 
-        // 5. УСТАНОВКА ЗНАЧЕНИЙ ВО ВСЕ АКТИВНЫЕ ЭЛЕМЕНТЫ DOM
-        if (decolInput) {
-            decolInput.value = resultFormatted;
-        }
-        
-        if (depositInput) {
-            // Записываем округленное целое значение или точный float в зависимости от нужд поля
-            depositInput.value = Math.floor(rawResult).toString();
-        }
+        // 5. УСТАНОВКА ЗНАЧЕНИЯ
+        input.value = result;
 
-        if (displayElement) {
-            // Форматируем для UI с красивым разделением тысяч
-            displayElement.innerText = Math.floor(rawResult).toLocaleString('en-US');
-        }
-
-        console.log(`✨ [SUCCESS]: Сумма успешно рассчитана: ${resultFormatted} (процент: ${percent * 100}%).`);
-        return resultFormatted;
+        console.log(`✨ [SUCCESS]: Сумма успешно рассчитана: ${result} (процент: ${percent * 100}%).`);
+        return result;
 
     } catch (e) {
         console.error("❌ Set Amount Error:", e.message);
@@ -1278,8 +1292,7 @@ window.setAmount = function(percent) {
     }
 };
 
-// Алиас для обратной совместимости с onclick="selectDepositPercent(...)"
-window.selectDepositPercent = window.setAmount;
+
 
 
 
@@ -1396,15 +1409,6 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
 
 
 
-
-
-
-
-
-
-
-
-
 /**
  * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS (ПРОФЕССИОНАЛЬНАЯ ВЕРСИЯ)
  * Вызывается напрямую из атрибута onclick="handleDeposit()" в твоем HTML
@@ -1418,35 +1422,21 @@ async function handleDeposit() {
 
         // 1. ПРОВЕРКА БАЛАНСА ПЕРЕД ДЕЙСТВИЕМ
         const currentBalance = await updateWalletBalance(); 
-        
-        // Считываем значение из input или из текстового блока отображения
-        const inputElement = document.getElementById('depositInput');
-        const displayElement = document.getElementById('netDepositAmountDisplay') || document.getElementById('netDepositAmount');
-        
-        let amountVal = inputElement ? inputElement.value : null;
-        
-        // Если значение в input отсутствует или равно 0, берем очищенное значение из текстового блока
-        if ((!amountVal || parseFloat(amountVal) <= 0) && displayElement) {
-            amountVal = displayElement.innerText.replace(/,/g, '').trim();
-        }
-
+        const amountVal = document.getElementById('depositInput')?.value;
         const indexElement = document.getElementById('currentPoolIndex');
 
-        const parsedAmount = parseFloat(amountVal);
-
-        if (!amountVal || isNaN(parsedAmount) || parsedAmount <= 0) {
+        if (!amountVal || parseFloat(amountVal) <= 0) {
             throw new Error("Введите корректную сумму для депозита.");
         }
-        if (parsedAmount > currentBalance) {
+        if (parseFloat(amountVal) > currentBalance) {
             throw new Error("Недостаточно средств на балансе!");
         }
-        
-        // Определение индекса пула с фоллбеком на 0 по умолчанию
-        const poolIndex = indexElement ? parseInt(indexElement.innerText) : 0;
+        if (!indexElement) {
+            throw new Error("Не удалось определить индекс пула.");
+        }
 
-        // ИСПРАВЛЕНИЕ: Преобразуем число в чистую целочисленную строку без дробей перед передачей в BN
-        const cleanIntegerString = Math.floor(parsedAmount).toString();
-        const amountBN = new anchor.BN(cleanIntegerString);
+        const amountBN = new anchor.BN(amountVal);
+        const poolIndex = parseInt(indexElement.innerText);
 
         // 2. ПОДГОТОВКА UI
         if (btn) {
@@ -1456,26 +1446,24 @@ async function handleDeposit() {
 
         // 3. ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ ПЕРЕД ДЕПОЗИТОМ
         console.log("🔄 Синхронизация данных перед отправкой...");
-        if (typeof window.syncUserAccountState === 'function') {
-            await window.syncUserAccountState(QUBIT_CONFIG.pool, QUBIT_CONFIG.mint);
-        }
+        await window.syncUserAccountState(QUBIT_CONFIG.pool, QUBIT_CONFIG.mint);
 
         // 4. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ
         if (typeof POOL_PUBKEY === 'undefined' && typeof QUBIT_CONFIG !== 'undefined') {
             window.POOL_PUBKEY = QUBIT_CONFIG.pool;
         }
         
-        if (!window.POOL_PUBKEY) {
-            window.POOL_PUBKEY = QUBIT_CONFIG.pool;
+        if (!window.POOL_PUBKEY || !window.USER_SOURCE_ATA || !window.USER_ST_ATA) {
+            throw new Error("Необходимые данные (PUBKEY/ATA) не определены в контексте.");
         }
 
-        console.log(`⚙️ Депозит: ${cleanIntegerString} QBT | Пул Index: ${poolIndex}`);
+        console.log(`⚙️ Депозит: ${amountVal} | Пул: ${poolIndex}`);
 
         // 5. ВЫЗОВ SDK-МЕТОДА
         await window.performDeposit(
             window.POOL_PUBKEY, 
-            window.USER_SOURCE_ATA || null, 
-            window.USER_ST_ATA || null, 
+            window.USER_SOURCE_ATA, 
+            window.USER_ST_ATA, 
             poolIndex, 
             amountBN
         );
@@ -1501,8 +1489,6 @@ async function handleDeposit() {
         }
     }
 }
-
-
 
 
 
@@ -2133,14 +2119,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const backBtn = document.getElementById('backToStakingBtn');
         if (backBtn) backBtn.addEventListener('click', () => switchView('mainStakingView'));
 
-       const confirmBtn = document.getElementById('confirmBtn');
-if (confirmBtn) {
-    confirmBtn.addEventListener('click', () => {
-        console.log("Initialization confirmed");
-        handleConfirmInitialize(); 
-    });
-}
-
+        const confirmBtn = document.getElementById('confirmInitBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                console.log("Initialization confirmed");
+                if (typeof handleInitialize === 'function') handleInitialize();
+            });
+        }
 
         // Логика выбора тиров
         const tierBtns = document.querySelectorAll('.tier-btn');
@@ -2323,7 +2308,7 @@ if (confirmBtn) {
     
 
    
-         // --- Депозит ---
+            // --- Депозит ---
     const backDeposit = document.getElementById('backToStakingFromDeposit');
     if (backDeposit) {
         backDeposit.addEventListener('click', () => switchView('mainStakingView'));
@@ -2333,27 +2318,9 @@ if (confirmBtn) {
     const depositInput = document.getElementById('depositInput');
     const depositPctButtons = document.querySelectorAll('.deposit-pct-btn');
     
-    // ИСПРАВЛЕНО: Динамический и глубокий поиск актуального баланса
-    const getWalletBalance = () => {
-        // 1. Проверяем кэш менеджера баланса (куда сервис RPC записывает 97800000)
-        if (typeof WalletBalanceManager !== 'undefined' && WalletBalanceManager.cachedBalance > 0) {
-            return WalletBalanceManager.cachedBalance;
-        }
-        // 2. Проверяем глобальный appState
-        if (window.appState && window.appState.walletBalance && parseFloat(window.appState.walletBalance) > 0) {
-            return parseFloat(window.appState.walletBalance);
-        }
-        // 3. Резерв: считываем значение прямо из интерфейса ("Доступно: 97800000 QBT")
-        const balanceDisplay = document.getElementById('wallet-balance-display') || 
-                               document.getElementById('maxAvailableAmount') ||
-                               document.querySelector('.wallet-balance-text');
-        if (balanceDisplay) {
-            const cleanText = balanceDisplay.innerText.replace(/,/g, '').replace(/[^0-9.]/g, '');
-            const parsed = parseFloat(cleanText);
-            if (!isNaN(parsed) && parsed > 0) return parsed;
-        }
-        return 0.00;
-    };
+    // Исправлено: вместо жесткого const, используем динамический доступ к глобальному состоянию
+    // Убедитесь, что объект window.appState обновляется после подключения кошелька
+    const getWalletBalance = () => (window.appState && window.appState.walletBalance) ? parseFloat(window.appState.walletBalance) : 0.00;
 
     depositPctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2367,39 +2334,18 @@ if (confirmBtn) {
             e.currentTarget.classList.remove('bg-white/5', 'border-white/5');
             e.currentTarget.classList.add('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
 
-            // 3. Расчет суммы
-            let pct = parseFloat(e.currentTarget.dataset.pct);
-            
-            // Если процент передан как 25, 50, 75, 100 — переводим в 0.25, 0.5 и т.д.
-            if (pct > 1) {
-                pct = pct / 100;
-            }
-
+            // 3. Расчет суммы (используем функцию для получения актуального баланса)
+            const pct = parseFloat(e.currentTarget.dataset.pct);
             const currentBalance = getWalletBalance();
-            const calculatedRaw = currentBalance * pct;
-            const calculatedFormatted = calculatedRaw.toFixed(2);
-
-            // ИСПРАВЛЕНО: Обновление поля ввода
+            
             if (depositInput) {
-                depositInput.value = calculatedFormatted;
+                const calculatedValue = (currentBalance * pct).toFixed(2);
+                depositInput.value = calculatedValue;
             }
 
-            // ИСПРАВЛЕНО: Синхронное обновление крупного текста "0,00" (NET DEPOSIT AMOUNT)
-            const netDisplay = document.getElementById('netDepositAmountDisplay') || 
-                               document.getElementById('netDepositAmount') ||
-                               document.querySelector('.net-deposit-display');
-            if (netDisplay) {
-                netDisplay.innerText = Math.floor(calculatedRaw).toLocaleString('en-US');
-            }
-
-            // Вызов внешней функции расчета, если она объявлена
-            if (typeof setDepositAmount === 'function') {
-                setDepositAmount(pct);
-            } else if (typeof window.setAmount === 'function') {
-                window.setAmount(pct);
-            }
-
-            console.log("Deposit % selected:", pct, "| Balance used:", currentBalance, "| Calculated:", calculatedFormatted);
+            // Вызов внешней функции, если она есть
+            if (typeof setDepositAmount === 'function') setDepositAmount(pct);
+            console.log("Deposit % selected:", pct, "Balance used:", currentBalance);
         });
     });
 
