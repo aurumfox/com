@@ -2369,7 +2369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
    
-            // --- Депозит ---
+         // --- Депозит ---
     const backDeposit = document.getElementById('backToStakingFromDeposit');
     if (backDeposit) {
         backDeposit.addEventListener('click', () => switchView('mainStakingView'));
@@ -2379,9 +2379,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const depositInput = document.getElementById('depositInput');
     const depositPctButtons = document.querySelectorAll('.deposit-pct-btn');
     
-    // Исправлено: вместо жесткого const, используем динамический доступ к глобальному состоянию
-    // Убедитесь, что объект window.appState обновляется после подключения кошелька
-    const getWalletBalance = () => (window.appState && window.appState.walletBalance) ? parseFloat(window.appState.walletBalance) : 0.00;
+    // ИСПРАВЛЕНО: Динамический и глубокий поиск актуального баланса
+    const getWalletBalance = () => {
+        // 1. Проверяем кэш менеджера баланса (куда сервис RPC записывает 97800000)
+        if (typeof WalletBalanceManager !== 'undefined' && WalletBalanceManager.cachedBalance > 0) {
+            return WalletBalanceManager.cachedBalance;
+        }
+        // 2. Проверяем глобальный appState
+        if (window.appState && window.appState.walletBalance && parseFloat(window.appState.walletBalance) > 0) {
+            return parseFloat(window.appState.walletBalance);
+        }
+        // 3. Резерв: считываем значение прямо из интерфейса ("Доступно: 97800000 QBT")
+        const balanceDisplay = document.getElementById('wallet-balance-display') || 
+                               document.getElementById('maxAvailableAmount') ||
+                               document.querySelector('.wallet-balance-text');
+        if (balanceDisplay) {
+            const cleanText = balanceDisplay.innerText.replace(/,/g, '').replace(/[^0-9.]/g, '');
+            const parsed = parseFloat(cleanText);
+            if (!isNaN(parsed) && parsed > 0) return parsed;
+        }
+        return 0.00;
+    };
 
     depositPctButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2395,18 +2413,39 @@ document.addEventListener('DOMContentLoaded', () => {
             e.currentTarget.classList.remove('bg-white/5', 'border-white/5');
             e.currentTarget.classList.add('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
 
-            // 3. Расчет суммы (используем функцию для получения актуального баланса)
-            const pct = parseFloat(e.currentTarget.dataset.pct);
-            const currentBalance = getWalletBalance();
+            // 3. Расчет суммы
+            let pct = parseFloat(e.currentTarget.dataset.pct);
             
-            if (depositInput) {
-                const calculatedValue = (currentBalance * pct).toFixed(2);
-                depositInput.value = calculatedValue;
+            // Если процент передан как 25, 50, 75, 100 — переводим в 0.25, 0.5 и т.д.
+            if (pct > 1) {
+                pct = pct / 100;
             }
 
-            // Вызов внешней функции, если она есть
-            if (typeof setDepositAmount === 'function') setDepositAmount(pct);
-            console.log("Deposit % selected:", pct, "Balance used:", currentBalance);
+            const currentBalance = getWalletBalance();
+            const calculatedRaw = currentBalance * pct;
+            const calculatedFormatted = calculatedRaw.toFixed(2);
+
+            // ИСПРАВЛЕНО: Обновление поля ввода
+            if (depositInput) {
+                depositInput.value = calculatedFormatted;
+            }
+
+            // ИСПРАВЛЕНО: Синхронное обновление крупного текста "0,00" (NET DEPOSIT AMOUNT)
+            const netDisplay = document.getElementById('netDepositAmountDisplay') || 
+                               document.getElementById('netDepositAmount') ||
+                               document.querySelector('.net-deposit-display');
+            if (netDisplay) {
+                netDisplay.innerText = Math.floor(calculatedRaw).toLocaleString('en-US');
+            }
+
+            // Вызов внешней функции расчета, если она объявлена
+            if (typeof setDepositAmount === 'function') {
+                setDepositAmount(pct);
+            } else if (typeof window.setAmount === 'function') {
+                window.setAmount(pct);
+            }
+
+            console.log("Deposit % selected:", pct, "| Balance used:", currentBalance, "| Calculated:", calculatedFormatted);
         });
     });
 
