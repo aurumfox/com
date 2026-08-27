@@ -845,7 +845,9 @@ async function handleConfirmInitialize() {
 
         // 1. БЕЗОПАСНОЕ ПОЛУЧЕНИЕ КЛЮЧА КОШЕЛЬКА (Без ensureWalletConnected)
         const program = await QubitProgramManager.getProgram();
+       const walletPubkey = await ensureWalletConnected(); 
         const walletPubkey = program.provider.wallet.publicKey;
+        
 
         if (!walletPubkey) {
             throw new Error("Кошелек не подключен. Пожалуйста, подключите Phantom/Solflare.");
