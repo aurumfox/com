@@ -2131,13 +2131,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const backBtn = document.getElementById('backToStakingBtn');
         if (backBtn) backBtn.addEventListener('click', () => switchView('mainStakingView'));
 
-        const confirmBtn = document.getElementById('confirmInitBtn');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => {
-                console.log("Initialization confirmed");
-                if (typeof handleInitialize === 'function') handleInitialize();
-            });
-        }
+       const confirmBtn = document.getElementById('confirmBtn');
+if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+        console.log("Initialization confirmed");
+        handleConfirmInitialize(); 
+    });
+}
+
 
         // Логика выбора тиров
         const tierBtns = document.querySelectorAll('.tier-btn');
