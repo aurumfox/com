@@ -1,4 +1,4 @@
-{
+window.QUBIT_IDL = {
   "address": "BqqKdzVPiYt3cKKdgKsSir2ruVJaSi9bDrs5V8FbqeN8",
   "metadata": {
     "name": "start",
