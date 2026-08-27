@@ -1249,41 +1249,74 @@ window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amo
 
 
 
+
+
+
 /**
  * ФУНКЦИЯ: SET AMOUNT (АВТО-РАСЧЕТ СУММЫ)
  * Установка процента от максимально доступного значения
+ * Поддерживает формы Стейкинга, Депозита и Анстейка.
  */
 window.setAmount = function(percent) {
     try {
         console.log("====================================================================================================");
         console.log(`🔢 [START]: ИНИЦИАЦИЯ РАСЧЕТА СУММЫ (PERCENT: ${percent * 100}%)...`);
 
-        // 1. ПОЛУЧЕНИЕ МАКСИМАЛЬНОГО ЗНАЧЕНИЯ
-        const maxElement = document.getElementById('maxAvailableAmount');
-        const maxText = maxElement ? maxElement.innerText.replace(/,/g, '') : "0";
-        const max = parseFloat(maxText);
+        // 1. ПОЛУЧЕНИЕ МАКСИМАЛЬНОГО ЗНАЧЕНИЯ (Сначала из сервиса баланса, затем из DOM)
+        let max = 0;
 
-        // 2. ПОЛУЧЕНИЕ ИНПУТА
-        const input = document.getElementById('decollateralizeAmountInput');
-        if (!input) {
-            throw new Error("Элемент decollateralizeAmountInput не найден в DOM.");
+        if (typeof WalletBalanceManager !== 'undefined' && WalletBalanceManager.cachedBalance > 0) {
+            max = WalletBalanceManager.cachedBalance;
+        } else {
+            // Ищем во всех возможных элементах отображения баланса
+            const maxElement = document.getElementById('maxAvailableAmount') || 
+                               document.getElementById('wallet-balance-display') || 
+                               document.getElementById('user-qbt-balance');
+            
+            if (maxElement) {
+                // Извлекаем только цифры и точку (удаляем "Доступно:", "QBT", запятые и т.д.)
+                const cleanText = maxElement.innerText.replace(/,/g, '').replace(/[^0-9.]/g, '');
+                max = parseFloat(cleanText) || 0;
+            }
         }
+
+        console.log(`📊 [BALANCE DETECTED]: Доступный баланс для расчета: ${max}`);
+
+        // 2. ПОЛУЧЕНИЕ ИНПУТОВ И ЭЛЕМЕНТОВ ОТОБРАЖЕНИЯ
+        const decolInput = document.getElementById('decollateralizeAmountInput');
+        const depositInput = document.getElementById('depositInput');
+        const displayElement = document.getElementById('netDepositAmountDisplay') || document.getElementById('netDepositAmount');
 
         // 3. ПРОВЕРКА НА ВАЛИДНОСТЬ ДАННЫХ
         if (isNaN(max) || max <= 0) {
             console.warn("⚠️ [WARNING]: Максимально доступная сумма не определена или равна 0.");
-            input.value = "0.00";
+            if (decolInput) decolInput.value = "0.00";
+            if (depositInput) depositInput.value = "0";
+            if (displayElement) displayElement.innerText = "0,00";
             return "0.00";
         }
 
-        // 4. РАСЧЕТ И ФОРМАТИРОВАНИЕ (оставляем 2 знака после запятой)
-        const result = (max * percent).toFixed(2);
+        // 4. РАСЧЕТ И ФОРМАТИРОВАНИЕ
+        const rawResult = max * percent;
+        const resultFormatted = rawResult.toFixed(2);
 
-        // 5. УСТАНОВКА ЗНАЧЕНИЯ
-        input.value = result;
+        // 5. УСТАНОВКА ЗНАЧЕНИЙ ВО ВСЕ АКТИВНЫЕ ЭЛЕМЕНТЫ DOM
+        if (decolInput) {
+            decolInput.value = resultFormatted;
+        }
+        
+        if (depositInput) {
+            // Записываем округленное целое значение или точный float в зависимости от нужд поля
+            depositInput.value = Math.floor(rawResult).toString();
+        }
 
-        console.log(`✨ [SUCCESS]: Сумма успешно рассчитана: ${result} (процент: ${percent * 100}%).`);
-        return result;
+        if (displayElement) {
+            // Форматируем для UI с красивым разделением тысяч
+            displayElement.innerText = Math.floor(rawResult).toLocaleString('en-US');
+        }
+
+        console.log(`✨ [SUCCESS]: Сумма успешно рассчитана: ${resultFormatted} (процент: ${percent * 100}%).`);
+        return resultFormatted;
 
     } catch (e) {
         console.error("❌ Set Amount Error:", e.message);
@@ -1292,7 +1325,8 @@ window.setAmount = function(percent) {
     }
 };
 
-
+// Алиас для обратной совместимости с onclick="selectDepositPercent(...)"
+window.selectDepositPercent = window.setAmount;
 
 
 
@@ -1418,7 +1452,6 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
 
 
 
-
 /**
  * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS (ПРОФЕССИОНАЛЬНАЯ ВЕРСИЯ)
  * Вызывается напрямую из атрибута onclick="handleDeposit()" в твоем HTML
@@ -1439,25 +1472,28 @@ async function handleDeposit() {
         
         let amountVal = inputElement ? inputElement.value : null;
         
-        // Если значение в input отсутствует, берем очищенное числовое значение из текстового блока
-        if (!amountVal && displayElement) {
+        // Если значение в input отсутствует или равно 0, берем очищенное значение из текстового блока
+        if ((!amountVal || parseFloat(amountVal) <= 0) && displayElement) {
             amountVal = displayElement.innerText.replace(/,/g, '').trim();
         }
 
         const indexElement = document.getElementById('currentPoolIndex');
 
-        if (!amountVal || parseFloat(amountVal) <= 0 || isNaN(parseFloat(amountVal))) {
+        const parsedAmount = parseFloat(amountVal);
+
+        if (!amountVal || isNaN(parsedAmount) || parsedAmount <= 0) {
             throw new Error("Введите корректную сумму для депозита.");
         }
-        if (parseFloat(amountVal) > currentBalance) {
+        if (parsedAmount > currentBalance) {
             throw new Error("Недостаточно средств на балансе!");
         }
-        if (!indexElement) {
-            throw new Error("Не удалось определить индекс пула.");
-        }
+        
+        // Определение индекса пула с фоллбеком на 0 по умолчанию
+        const poolIndex = indexElement ? parseInt(indexElement.innerText) : 0;
 
-        const amountBN = new anchor.BN(amountVal);
-        const poolIndex = parseInt(indexElement.innerText);
+        // ИСПРАВЛЕНИЕ: Преобразуем число в чистую целочисленную строку без дробей перед передачей в BN
+        const cleanIntegerString = Math.floor(parsedAmount).toString();
+        const amountBN = new anchor.BN(cleanIntegerString);
 
         // 2. ПОДГОТОВКА UI
         if (btn) {
@@ -1467,24 +1503,26 @@ async function handleDeposit() {
 
         // 3. ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ ПЕРЕД ДЕПОЗИТОМ
         console.log("🔄 Синхронизация данных перед отправкой...");
-        await window.syncUserAccountState(QUBIT_CONFIG.pool, QUBIT_CONFIG.mint);
+        if (typeof window.syncUserAccountState === 'function') {
+            await window.syncUserAccountState(QUBIT_CONFIG.pool, QUBIT_CONFIG.mint);
+        }
 
         // 4. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ
         if (typeof POOL_PUBKEY === 'undefined' && typeof QUBIT_CONFIG !== 'undefined') {
             window.POOL_PUBKEY = QUBIT_CONFIG.pool;
         }
         
-        if (!window.POOL_PUBKEY || !window.USER_SOURCE_ATA || !window.USER_ST_ATA) {
-            throw new Error("Необходимые данные (PUBKEY/ATA) не определены в контексте.");
+        if (!window.POOL_PUBKEY) {
+            window.POOL_PUBKEY = QUBIT_CONFIG.pool;
         }
 
-        console.log(`⚙️ Депозит: ${amountVal} | Пул: ${poolIndex}`);
+        console.log(`⚙️ Депозит: ${cleanIntegerString} QBT | Пул Index: ${poolIndex}`);
 
         // 5. ВЫЗОВ SDK-МЕТОДА
         await window.performDeposit(
             window.POOL_PUBKEY, 
-            window.USER_SOURCE_ATA, 
-            window.USER_ST_ATA, 
+            window.USER_SOURCE_ATA || null, 
+            window.USER_ST_ATA || null, 
             poolIndex, 
             amountBN
         );
