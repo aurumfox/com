@@ -1409,6 +1409,16 @@ window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poo
 
 
 
+
+
+
+
+
+
+
+
+
+
 /**
  * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS (ПРОФЕССИОНАЛЬНАЯ ВЕРСИЯ)
  * Вызывается напрямую из атрибута onclick="handleDeposit()" в твоем HTML
@@ -1422,10 +1432,21 @@ async function handleDeposit() {
 
         // 1. ПРОВЕРКА БАЛАНСА ПЕРЕД ДЕЙСТВИЕМ
         const currentBalance = await updateWalletBalance(); 
-        const amountVal = document.getElementById('depositInput')?.value;
+        
+        // Считываем значение из input или из текстового блока отображения
+        const inputElement = document.getElementById('depositInput');
+        const displayElement = document.getElementById('netDepositAmountDisplay') || document.getElementById('netDepositAmount');
+        
+        let amountVal = inputElement ? inputElement.value : null;
+        
+        // Если значение в input отсутствует, берем очищенное числовое значение из текстового блока
+        if (!amountVal && displayElement) {
+            amountVal = displayElement.innerText.replace(/,/g, '').trim();
+        }
+
         const indexElement = document.getElementById('currentPoolIndex');
 
-        if (!amountVal || parseFloat(amountVal) <= 0) {
+        if (!amountVal || parseFloat(amountVal) <= 0 || isNaN(parseFloat(amountVal))) {
             throw new Error("Введите корректную сумму для депозита.");
         }
         if (parseFloat(amountVal) > currentBalance) {
@@ -1489,6 +1510,8 @@ async function handleDeposit() {
         }
     }
 }
+
+
 
 
 
