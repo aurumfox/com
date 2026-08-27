@@ -64,6 +64,64 @@ function formatBigInt(value, decimals) {
 
 
 
+// Сервис управления программой Anchor (Профессиональная версия для Devnet)
+const QubitProgramManager = {
+    program: null,
+
+    async getProgram() {
+        if (this.program) return this.program;
+
+        try {
+            console.log("====================================================================================================");
+            console.log("⚙️ [PROGRAM INIT]: Инициализация Anchor Program...");
+
+            // 1. Подключение к RPC сети Devnet
+            const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
+
+            // 2. Определение подключенного кошелька пользователя
+            let wallet = null;
+            if (typeof currentProvider !== 'undefined' && currentProvider && currentProvider.isConnected) {
+                wallet = currentProvider;
+            } else if (window.solana && window.solana.isConnected) {
+                wallet = window.solana;
+            } else {
+                wallet = {
+                    publicKey: null,
+                    signTransaction: async () => { throw new Error("Кошелек не подключен"); },
+                    signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
+                };
+            }
+
+            // 3. Создание провайдера Anchor
+            const provider = new anchor.AnchorProvider(
+                connection,
+                wallet,
+                { preflightCommitment: "confirmed" }
+            );
+
+            // 4. Получение IDL из локального файла (без сетевых задержек и ошибок RPC)
+            const idl = window.QUBIT_IDL || (typeof QUBIT_CONFIG !== 'undefined' ? QUBIT_CONFIG.idl : null);
+
+            if (!idl) {
+                throw new Error("❌ Ошибка: IDL не найден в window.QUBIT_IDL. Проверьте подключение idl.js в index.html");
+            }
+
+            console.log("📦 [IDL LOADED]: Локальный IDL успешно применён.");
+
+            // 5. Инициализация инстанса программы Anchor
+            this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
+
+            console.log("✅ Qubit Program Manager: Успешно инициализирован и готов к транзакциям в Devnet.");
+            return this.program;
+
+        } catch (e) {
+            console.error("❌ Qubit Program Manager Error:", e.message);
+            throw e;
+        }
+    }
+};
+
+
 
 
 // ==========================================
