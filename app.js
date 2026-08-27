@@ -830,48 +830,44 @@ window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
 
 
 
-/**
- * Единая функция инициализации (ПРОФЕССИОНАЛЬНЫЙ UI + ВЕРИФИКАЦИЯ)
- */
 async function handleConfirmInitialize() {
-    // Получаем кнопку для управления состоянием
-    const btn = document.querySelector('.tier-btn.active-tier');
-    // Безопасная проверка наличия кнопки перед тем, как брать текст
+    const btn = document.getElementById('confirmBtn') || document.querySelector('.tier-btn.active-tier');
     const originalText = btn ? btn.innerText : "Инициализировать";
 
     try {
         console.log("====================================================================================================");
         console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ЧЕРЕЗ UI...");
 
-        // 1. БЛОКИРОВКА КНОПКИ (защита от повторного нажатия)
         if (btn) {
             btn.disabled = true;
             btn.innerText = "⏳ Отправка...";
         }
 
-        // --- ПРОВЕРКА СОЕДИНЕНИЯ И ПОЛУЧЕНИЕ ПУБЛИЧНОГО КЛЮЧА ---
-        const walletPubkey = await ensureWalletConnected();
+        // 1. БЕЗОПАСНОЕ ПОЛУЧЕНИЕ КЛЮЧА КОШЕЛЬКА (Без ensureWalletConnected)
+        const program = await QubitProgramManager.getProgram();
+        const walletPubkey = program.provider.wallet.publicKey;
+
+        if (!walletPubkey) {
+            throw new Error("Кошелек не подключен. Пожалуйста, подключите Phantom/Solflare.");
+        }
         
-        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
         const signerEl = document.querySelector('.wallet-signer-display'); 
         if (signerEl) signerEl.innerText = walletPubkey.toBase58();
 
+        // 2. ОПРЕДЕЛЕНИЕ ТИРА И ПУЛА (с безопасным fallback)
         const activeBtn = document.querySelector('.tier-btn.active-tier');
-        if (!activeBtn) {
-            alert("⚠️ Пожалуйста, выберите тир перед инициализацией!");
-            return;
-        }
-        
-        const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
-        const poolPubKey = window.appState?.currentPoolPubKey;
+        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 4; // Tier 365 Days по умолчанию
+
+        // Используем либо переключенный пул из AppState, либо главный пул из QUBIT_CONFIG
+        const poolPubKey = window.appState?.currentPoolPubKey || QUBIT_CONFIG.pool;
 
         if (!poolPubKey) {
-            throw new Error("Адрес пула (poolPubKey) не определен в приложении.");
+            throw new Error("Адрес пула (poolPubKey) не определен.");
         }
 
         console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
 
-        // 2. ВЫЗОВ МЕТОДА (через глобальный performInitializeUserStake)
+        // 3. ОТПРАВКА ТРАНЗАКЦИИ В DEVNET
         const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
 
         if (result === "ALREADY_INITIALIZED") {
@@ -880,63 +876,30 @@ async function handleConfirmInitialize() {
         } else {
             console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
             
-            // --- БЛОК ВЕРИФИКАЦИИ (Чтение данных из блокчейна) ---
-            const program = await QubitProgramManager.getProgram();
+            const explorerUrl = `https://explorer.solana.com/tx/${result}?cluster=devnet`;
+            const message = `✅ Стейкинг-аккаунт успешно инициализирован!\n\nTX: ${result.slice(0, 10)}...\n\nОткрыть транзакцию в Solana Explorer?`;
             
-            // Вычисляем PDA для проверки
-            const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
-                [
-                    Buffer.from("user_stake"),
-                    poolPubKey.toBuffer(),
-                    walletPubkey.toBuffer(),
-                    Buffer.from([poolIndex])
-                ],
-                program.programId
-            );
-
-            // Читаем данные из блокчейна для подтверждения
-            let stakeData;
-            try {
-                // Синхронизация с тестами: динамически определяем имя структуры в IDL (userStakingAccount или userStaking)
-                const fetchMethod = program.account.userStakingAccount || program.account.userStaking;
-                stakeData = await fetchMethod.fetch(userStakePda);
-                
-                console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
-                console.log(`   - Owner: ${stakeData.owner.toBase58()}`);
-                console.log(`   - Pool Index: ${stakeData.poolIndex}`);
-                console.log(`   - Is Initialized: ${stakeData.isInitialized}`);
-
-                // УСПЕШНЫЙ РЕЗУЛЬТАТ (ссылка на Solana Explorer)
-                const explorerUrl = `https://explorer.solana.com/tx/${result}?cluster=devnet`;
-                const message = `✅ Стейкинг-аккаунт успешно инициализирован и верифицирован!\n\nTX: ${result.slice(0, 8)}...\n\nНажмите OK, чтобы увидеть транзакцию в Explorer.`;
-                
-                if (confirm(message)) {
-                    window.open(explorerUrl, '_blank');
-                }
-
-            } catch (fetchErr) {
-                console.error("❌ Ошибка при чтении данных после инициализации:", fetchErr);
-                alert("✅ Транзакция прошла, но возникла ошибка при чтении данных для верификации.");
+            if (confirm(message)) {
+                window.open(explorerUrl, '_blank');
             }
         }
 
     } catch (e) {
         console.error("❌ Handle Confirm Initialize Error:", e.message);
         
-        // ПРОФЕССИОНАЛЬНАЯ ОБРАБОТКА ОШИБОК
         let errorMsg = "Ошибка транзакции: " + e.message;
-        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно средств на балансе.";
+        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно SOL для оплаты комиссии.";
         if (e.message.includes("User rejected")) errorMsg = "Вы отменили подпись в кошельке.";
         
         alert(errorMsg);
     } finally {
-        // 4. ВОЗВРАТ СОСТОЯНИЯ КНОПКИ
         if (btn) {
             btn.disabled = false;
             btn.innerText = originalText;
         }
     }
 }
+
 
 
 
