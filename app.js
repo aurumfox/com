@@ -695,7 +695,6 @@ window.fetchUserBalances = async function() {
 
 
 
-
 const WalletBalanceManager = {
     cachedBalance: 0,
     isUpdating: false,
@@ -711,11 +710,18 @@ const WalletBalanceManager = {
 
             if (!walletPubkey) return 0;
 
-            // Используем официальный безопасный метод Anchor для определения ATA-адреса токена
-            const ata = await anchor.utils.token.associatedAddress({
-                mint: QUBIT_CONFIG.mint,
-                owner: walletPubkey
-            });
+            // ИСПРАВЛЕНО: Безопасное получение ATA без использования нестабильного anchor.utils.token
+            const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+            const ASSOCIATED_TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+
+            const [ata] = solanaWeb3.PublicKey.findProgramAddressSync(
+                [
+                    walletPubkey.toBuffer(),
+                    TOKEN_PROGRAM_ID.toBuffer(),
+                    QUBIT_CONFIG.mint.toBuffer()
+                ],
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            );
 
             const balanceInfo = await program.provider.connection.getTokenAccountBalance(ata);
             this.cachedBalance = balanceInfo.value.uiAmount || 0;
@@ -758,6 +764,10 @@ const WalletBalanceManager = {
 };
 
 window.updateWalletBalance = () => WalletBalanceManager.updateBalance();
+
+
+
+
 
 
 
