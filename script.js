@@ -59,339 +59,902 @@ function formatBigInt(value, decimals) {
     setTimeout(report, 500);
 })();
 
-// --- 2. КОНФИГУРАЦИЯ QUBIT ---
+
+
+
+
+
+
+
+// ==========================================
+// 1. ГЛОБАЛЬНЫЙ КОНФИГ (Перенесён на самый верх для 100% синхронизации)
+// ==========================================
 const QUBIT_CONFIG = {
-    programId: "Auzd7mGQJSCSDJgopWrLtLqQPvgWBCXLQbQ8SNgDaYbb",
-    idlAccount: "F3LMDpRENLbFWaYB9GJAszKXkoc3PhZ9bwecxmHg2sP",
-    // Сюда вставьте ваш JSON IDL (если он короткий) 
-    // или укажите путь, если вы подгружаете его отдельно
-    idl: null 
+    // 1. Ключевые адреса программы и пула
+    programId: new solanaWeb3.PublicKey("BqqKdzVPiYt3cKKdgKsSir2ruVJaSi9bDrs5V8FbqeN8"),
+    pool: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Он же PoolState / Data Account
+    vault: new solanaWeb3.PublicKey("CHkoheNrLJVeqvnPREhvEfojyPAEksAwX2MJH2iX6cKq"), // Сейф пула
+    mint: new solanaWeb3.PublicKey("EgQptYNBBuhLqgrpfcLzRW5TYTWeSxYpyt6EQKwqVeag"), // Используемый токен
+
+    // 2. Личные и верифицированные PDA аккаунты из логов сети
+    userStakingPda: new solanaWeb3.PublicKey("GqJzDaUm9zHhG4bwfbVc6w3kEVk4EpvaspUQiqWaMPnf"), // Твой личный PDA Стейкинга
+    poolOwner: new solanaWeb3.PublicKey("5XSQUXBwxbssvEUBLoerSd7ZVzfuCfHqZQsvkja7xQ7v"), // Владелец из верификации памяти
+    stMintAuth: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Авторизация стейк-минта (равна пулу)
+
+    // 3. Системные переменные Solana (необходимы для вызова методов контракта)
+    systemProgram: solanaWeb3.SystemProgram.programId,
+    clock: solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+    rent: solanaWeb3.SYSVAR_RENT_PUBKEY,
+
+    // 4. Метаданные транзакции (сохранено для истории/проверок)
+    lastTxReceipt: "EjkqRj9aagtWeNEDYz55yJ4uZeuXn6AmxNSRWrDBgAHu",
+    initializationTx: "3VT6F5cNkgb3DR1VG6UFbuhChadnStJzTPxEKDKow1CvTpnWj1HVWZmECUrJAiFWQGMZR1TTKQ22TzL63GbWAk8q",
+
+    // 5. Сетевое окружение (Тестирование в Devnet)
+    rpcUrl: "https://api.devnet.solana.com"
 };
 
-// Менеджер программы
+
+
+
+
+// Сервис управления программой Anchor
 const QubitProgramManager = {
     program: null,
 
     async getProgram() {
         if (this.program) return this.program;
 
-        // Инициализация провайдера (через phantom/solflare)
-        const provider = new anchor.AnchorProvider(
-            new solanaWeb3.Connection("https://api.devnet.solana.com"), // или devnet
-            window.solana, 
-            { preflightCommitment: "confirmed" }
-        );
+        try {
+            // Устанавливаем соединение с подтвержденным commitment
+            const connection = new solanaWeb3.Connection(QUBIT_CONFIG.rpcUrl, "confirmed");
 
-        // Если IDL еще не загружен, можно попробовать взять его из сети 
-        // через idlAccount (наиболее профессиональный путь)
-        const idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId, provider);
-        
-        this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
-        return this.program;
+            // ИСПРАВЛЕНО: Сначала проверяем активный выбранный кошелек (currentProvider), затем дефолтный window.solana
+            let wallet = null;
+            if (typeof currentProvider !== 'undefined' && currentProvider && currentProvider.isConnected) {
+                wallet = currentProvider;
+            } else if (window.solana && window.solana.isConnected) {
+                wallet = window.solana;
+            } else {
+                wallet = {
+                    publicKey: null,
+                    signTransaction: async () => { throw new Error("Кошелек не подключен"); },
+                    signAllTransactions: async () => { throw new Error("Кошелек не подключен"); }
+                };
+            }
+
+            // Формируем провайдер Anchor
+            const provider = new anchor.AnchorProvider(
+                connection,
+                wallet,
+                { preflightCommitment: "confirmed" }
+            );
+
+            // Безопасное динамическое получение IDL с перехватом ошибок для Devnet
+            let idl = null;
+            try {
+                if (typeof anchor.fetchIdl === 'function') {
+                    idl = await anchor.fetchIdl(QUBIT_CONFIG.programId, provider);
+                } else if (anchor.Program && typeof anchor.Program.fetchIdl === 'function') {
+                    idl = await anchor.Program.fetchIdl(QUBIT_CONFIG.programId, provider);
+                }
+            } catch (fetchError) {
+                console.warn("⚠️ Не удалось запросить IDL из Devnet, переключаемся на резервную структуру.");
+            }
+
+            // ИСПРАВЛЕНИЕ: Если IDL отсутствует в Devnet, подставляем базовый объект, чтобы скрипт не падала
+            if (!idl) {
+                console.warn("⚠️ IDL программы не найден в сети Devnet. Инициализируем резервный IDL для тестов.");
+                idl = {
+                    version: "0.1.0",
+                    name: "qubit",
+                    instructions: [],
+                    accounts: [],
+                    types: [],
+                    events: [],
+                    errors: []
+                };
+            }
+
+            // Инициализируем инстанс программы для работы с методами
+            this.program = new anchor.Program(idl, QUBIT_CONFIG.programId, provider);
+
+            console.log("✅ Qubit Program Manager: Успешно инициализирована в Devnet");
+            return this.program;
+
+        } catch (e) {
+            console.error("❌ Qubit Program Manager Error:", e);
+            throw e;
+        }
     }
 };
 
-// --- 3. ГЛОБАЛЬНЫЕ КОНСТАНТЫ И ЛОГИКА ---
-const FIREBASE_PROXY_URL = 'https://firebasejs-key--snowy-cherry-0a92.wnikolay28.workers.dev/';
 
-window.createStakingAccount = async function() {
+
+
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      /**
+ * УЛЬТРА-АВТОНОМНЫЙ РАСЧЕТ PDA
+ * Полная синхронизация с семенами Rust-контракта Anchor
+ */
+async function getUserStakingPDA(owner, poolStatePubkey, poolIndex = 0) {
     try {
-        // 1. Получаем текущий выбранный индекс из UI
-        // Ищем кнопку с классом 'active-tier' и забираем её data-index
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        // Используем конфигурацию, чтобы не прокидывать programId постоянно
+        const programId = QUBIT_CONFIG.programId;
         
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        // 1. Безопасное приведение типов к PublicKey
+        const ownerPk = owner instanceof solanaWeb3.PublicKey ? owner : new solanaWeb3.PublicKey(owner);
+        const poolPk = poolStatePubkey instanceof solanaWeb3.PublicKey ? poolStatePubkey : new solanaWeb3.PublicKey(poolStatePubkey);
+
+        // 2. Валидация входных данных
+        if (!ownerPk || !poolPk) {
+            throw new Error("Недостаточно данных для деривации PDA");
         }
 
-        const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
-
-        // 2. Расчет PDA (используем poolIndex, полученный выше)
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // 3. Синхронная генерация адреса (оптимально для клиентского JS)
+        // ВНИМАНИЕ: seeds должны 1:1 соответствовать коду в Rust
+        const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex]) // Важно: используем Uint8Array для индекса
+                poolPk.toBuffer(),
+                ownerPk.toBuffer(),
+                Buffer.from([poolIndex]) // Индекс как u8
+            ],
+            programId
+        );
+
+        console.log(`🎯 PDA успешно рассчитан [Pool: ${poolIndex}]: ${pda.toBase58()}`);
+        return pda;
+
+    } catch (e) {
+        console.error("❌ Критическая ошибка расчета PDA:", e);
+        throw e; // Пробрасываем ошибку дальше для корректной обработки в UI
+    }
+}
+
+
+
+
+
+
+/**
+ * 1. УЛЬТРА-ПАРСЕР ЧИСЕЛ (BigInt/BN)
+ * Адаптировано: Возвращает anchor.BN, так как SDK Anchor работает именно с ним.
+ */
+window.parseAmountToBN = function(amountStr, decimals = 9) {
+    try {
+        if (!amountStr || amountStr.toString().trim() === '') return new anchor.BN(0);
+
+        let cleaned = amountStr.toString().replace(',', '.').replace(/[^\d.]/g, '');
+        const parts = cleaned.split('.');
+        if (parts.length > 2) return new anchor.BN(0);
+
+        let [integerPart, fractionalPart = ''] = parts;
+        fractionalPart = fractionalPart.substring(0, decimals).padEnd(decimals, '0');
+
+        const resultStr = (integerPart === '' || integerPart === '0' ? '' : integerPart) + fractionalPart;
+        return new anchor.BN(resultStr || '0');
+    } catch (e) {
+        console.error("❌ [Math Error]:", e);
+        return new anchor.BN(0);
+    }
+};
+
+/**
+ * 2. РОБАСТНОЕ СОЕДИНЕНИЕ (Интегрировано в QubitProgramManager)
+ * Вместо создания новой функции, мы расширяем текущий менеджер.
+ */
+// ВАЖНО: Добавь этот метод в объект QubitProgramManager
+QubitProgramManager.getConnection = async function() {
+    const RPC_ENDPOINTS = [
+        QUBIT_CONFIG.rpcUrl,
+        "https://api.devnet.solana.com",
+        "https://api.mainnet-beta.solana.com"
+    ];
+
+    for (let url of RPC_ENDPOINTS) {
+        try {
+            const conn = new solanaWeb3.Connection(url, "confirmed");
+            await conn.getSlot(); // Быстрая проверка связи
+            return conn;
+        } catch (e) {
+            console.warn(`⚠️ RPC ${url} недоступен, пробуем следующий...`);
+        }
+    }
+    throw new Error("Все RPC узлы недоступны.");
+};
+
+
+
+
+
+
+/**
+ * УЛУЧШЕННЫЙ МЕТОД: GET ROBUST CONNECTION
+ * Теперь интегрирован в экосистему QubitProgramManager.
+ * Ищет рабочую ноду и обновляет состояние приложения.
+ */
+async function getRobustConnection() {
+    // 1. Пытаемся получить соединение через существующий менеджер программ
+    try {
+        const program = await QubitProgramManager.getProgram();
+        if (program && program.provider && program.provider.connection) {
+            // Проверка "живучести" соединения
+            await program.provider.connection.getSlot({ commitment: 'processed' });
+            return program.provider.connection;
+        }
+    } catch (e) {
+        console.warn("🔄 Основной RPC недоступен, начинаем ротацию...");
+    }
+
+    // 2. Список узлов для ротации (берем из конфига + fallback)
+    const endpoints = [
+        QUBIT_CONFIG.rpcUrl,
+        "https://api.devnet.solana.com",
+        "https://api.mainnet-beta.solana.com"
+    ];
+
+    // 3. Перебор узлов
+    for (const url of endpoints) {
+        try {
+            const conn = new solanaWeb3.Connection(url, { 
+                commitment: 'confirmed',
+                confirmTransactionInitialTimeout: 60000 
+            });
+
+            // Тест на "живость"
+            await conn.getLatestBlockhash(); 
+            
+            // Сохраняем в AppState, если он существует
+            if (typeof AppState !== 'undefined') {
+                AppState.connection = conn;
+            }
+            
+            console.log(`🚀 Успешное переключение на RPC: ${url}`);
+            return conn;
+        } catch (e) {
+            console.error(`❌ RPC Fail (${url}):`, e.message);
+            continue; 
+        }
+    }
+
+    // 4. Обработка критической ошибки
+    const errorMsg = "Все RPC узлы недоступны. Проверьте интернет-соединение.";
+    console.error("🚨 RPC_UNREACHABLE");
+    
+    // Если есть метод уведомления - используем его, иначе alert
+    if (typeof showNotification === 'function') {
+        showNotification(errorMsg, "red");
+    } else {
+        alert(errorMsg);
+    }
+    
+    throw new Error("RPC_UNREACHABLE");
+}
+
+
+
+
+
+
+/**
+ * УМНЫЙ ОБРАБОТЧИК СМЕНЫ КОШЕЛЬКА
+ * Полная интеграция с Qubit-инфраструктурой
+ */
+window.handlePublicKeyChange = async function(newPublicKey) {
+    try {
+        // 1. Идентификация смены
+        const newKeyStr = newPublicKey ? newPublicKey.toBase58() : null;
+        const oldKeyStr = window.AppState?.walletPublicKey ? window.AppState.walletPublicKey.toBase58() : null;
+
+        if (newKeyStr === oldKeyStr) return;
+
+        console.log(`🔄 [WALLET SYNC]: ${oldKeyStr || 'None'} -> ${newKeyStr || 'Disconnected'}`);
+
+        // 2. Очистка и обновление стейта
+        if (!window.AppState) window.AppState = {};
+        window.AppState.walletPublicKey = newPublicKey;
+        window.AppState.lastUpdate = null;
+
+        // 3. Мгновенная очистка UI (UX: предотвращение показа старых данных)
+        const balanceEl = document.getElementById('wallet-balance-display');
+        if (balanceEl) balanceEl.innerText = "Balance: --";
+        
+        // 4. Логика переподключения
+        if (newPublicKey) {
+            console.log("✨ [WALLET SYNC]: Инициализация данных нового аккаунта...");
+            
+            // Используем твою систему уведомлений
+            if (typeof showNotification === 'function') {
+                showNotification("Account Switched", "emerald");
+            }
+            
+            // Синхронизация всех сервисов
+            await Promise.allSettled([
+                window.updateWalletBalance ? window.updateWalletBalance() : Promise.resolve(),
+                // Если есть другие сервисы, вызываем их здесь
+                // window.StakingDataManager.refresh() и т.д.
+            ]);
+            
+            console.log("✅ [WALLET SYNC]: Данные успешно обновлены для", newKeyStr);
+        } else {
+            console.warn("⚠️ [WALLET SYNC]: Кошелек отключен.");
+            if (typeof showNotification === 'function') {
+                showNotification("Wallet Disconnected", "red");
+            }
+            // Сброс UI при отключении
+            if (balanceEl) balanceEl.innerText = "Balance: Connect Wallet";
+        }
+
+    } catch (e) {
+        console.error("❌ [WALLET SYNC ERROR]:", e);
+    }
+};
+
+// --- ВАЖНО: Привязка к событию кошелька ---
+// Добавь этот вызов в свой код подключения кошелька (в блоке, где происходит connect)
+// window.solana.on('accountChanged', (publicKey) => window.handlePublicKeyChange(publicKey));
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ПОИСК ГЛАВНОГО PDA ПУЛА (СИНХРОНИЗИРОВАН С QUBIT_CONFIG)
+ * Использует актуальный programId и адрес пула из конфигурации приложения.
+ */
+window.getPoolPDA = async function() {
+    // 1. Кэширование: если уже найдено, отдаем из памяти
+    if (window._cachedPoolPda) return window._cachedPoolPda;
+
+    try {
+        // Проверяем наличие конфигурации
+        if (typeof QUBIT_CONFIG === 'undefined' || !QUBIT_CONFIG.programId) {
+            throw new Error("QUBIT_CONFIG не инициализирован");
+        }
+
+        // 2. Используем данные из твоего рабочего QUBIT_CONFIG
+        // Если пул уже есть в конфиге (DtAAYa8d9bUYNrvrTPCcsb2yGFfirq1DcqsjfXdK34nd),
+        // то PDA вычислять не нужно — он уже известен как объект PublicKey.
+        const pda = QUBIT_CONFIG.pool;
+        
+        console.log("🏛️ Global Pool PDA (from Config):", pda.toBase58());
+        
+        // Сохраняем в кэш
+        window._cachedPoolPda = pda;
+        return pda;
+
+    } catch (e) {
+        console.error("❌ Ошибка при получении Pool PDA:", e);
+        
+        // Fallback: берем из конфига в любом случае, если есть
+        if (typeof QUBIT_CONFIG !== 'undefined' && QUBIT_CONFIG.pool) {
+            return QUBIT_CONFIG.pool;
+        }
+        
+        throw new Error("Не удалось определить адрес пула.");
+    }
+};
+
+
+
+
+
+
+
+
+
+/**
+ * ДИНАМИЧЕСКИЙ РАСЧЕТ APR
+ * Адаптировано под: QubitProgramManager и QUBIT_CONFIG
+ */
+window.getLiveAPR = async function() {
+    try {
+        console.log("📊 [APR SERVICE]: Расчет актуального APR...");
+        
+        // 1. Используем менеджер программ из твоего основного кода
+        const program = await QubitProgramManager.getProgram();
+        
+        // 2. Берем адреса из твоего конфига
+        const poolPubKey = QUBIT_CONFIG.pool;
+        
+        // 3. Фетчим данные аккаунта пула (Zero-Copy через fetchData)
+        const poolAccount = await program.account.poolState.fetchData(poolPubKey);
+
+        if (!poolAccount) throw new Error("Pool account not found");
+
+        // 4. Извлекаем данные
+        // Предполагаем, что в контракте это BN, используем .toNumber() или .toString()
+        const totalStakedBN = poolAccount.totalStakedAmount;
+        const rewardRateBN = poolAccount.rewardRatePerSec;
+
+        // Определяем децималы (обычно для SPL токенов это 9, но берем из конфига или константы)
+        const DECIMALS = 6; 
+        const totalStaked = totalStakedBN.toNumber() / Math.pow(10, DECIMALS);
+        const rps = rewardRateBN.toNumber() / Math.pow(10, DECIMALS);
+
+        // 5. Расчет
+        const SECONDS_PER_YEAR = 31536000;
+        const rewardsPerYear = rps * SECONDS_PER_YEAR;
+
+        if (totalStaked < 1) return "🔥 1000%+";
+
+        const realAPR = (rewardsPerYear / totalStaked) * 100;
+
+        // Форматирование
+        const result = realAPR > 5000 ? "5000%+" : realAPR.toFixed(2) + "%";
+        
+        console.log(`✅ [APR SERVICE]: Актуальный APR: ${result}`);
+        return result;
+
+    } catch (e) {
+        console.error("❌ APR Calculation Error:", e);
+        return "0.00%"; 
+    }
+};
+
+
+
+
+
+
+let isUpdatingUI = false;
+
+window.updateStakingAndBalanceUI = async function() {
+    if (isUpdatingUI) return;
+    isUpdatingUI = true;
+
+    try {
+        const program = await QubitProgramManager.getProgram();
+        const walletPubkey = program.provider.wallet?.publicKey;
+
+        if (!walletPubkey) {
+            console.warn("⚠️ [GLOBAL SYNC]: Кошелек не подключен.");
+            return;
+        }
+
+        console.log("🔄 [GLOBAL SYNC]: Запуск синхронизации...");
+
+        // Запускаем запросы параллельно
+        const balancePromise = window.updateWalletBalance();
+        const stakingDataPromise = (async () => {
+            if (window.appState?.currentPoolPubKey) {
+                // Твоя логика стейкинга
+            }
+        })();
+
+        await Promise.allSettled([balancePromise, stakingDataPromise]);
+
+        // Единая точка рендера для всего интерфейса
+        if (typeof window.renderAllUI === 'function') {
+            window.renderAllUI();
+        }
+
+    } catch (e) {
+        console.error("🚨 [GLOBAL SYNC]: Ошибка:", e);
+    } finally {
+        isUpdatingUI = false;
+    }
+};
+
+// Единый интервал, который не забивает сеть
+setInterval(async () => {
+    try {
+        const program = await QubitProgramManager.getProgram();
+        // Проверяем коннект через провайдер
+        if (program.provider.wallet?.publicKey) {
+            window.updateStakingAndBalanceUI();
+        }
+    } catch (e) {
+        // Менеджер программы еще не инициализирован, это нормально
+    }
+}, 30000); // 30 секунд вполне достаточно
+
+
+
+
+
+
+
+/**
+ * ФАБРИКА ПРОГРАММЫ ANCHOR (ОБНОВЛЕННАЯ)
+ * Интегрирована с QubitProgramManager для единого источника истины.
+ */
+window.getAnchorProgram = async function(programId, idl) {
+    try {
+        console.log("🛠️ [BRIDGE]: Инициализация программы через Factory...");
+
+        // 1. Используем уже настроенный менеджер (гарантирует корректный провайдер и RPC)
+        const manager = QubitProgramManager;
+        
+        // 2. Если программа уже инициализирована в менеджере, отдаем её
+        if (manager.program) {
+            return manager.program;
+        }
+
+        // 3. Если нет — инициируем через менеджер
+        // Это гарантирует, что мы используем QUBIT_CONFIG и правильный provider
+        const program = await manager.getProgram();
+        
+        console.log(`📡 Anchor Program Ready: ${program.programId.toBase58()}`);
+        return program;
+
+    } catch (error) {
+        console.error("🛠️ Anchor Factory Error:", error.message);
+        
+        // Интеграция с твоей системой уведомлений (если она доступна)
+        if (typeof showNotification === 'function') {
+            showNotification("Ошибка инициализации программы", "red");
+        }
+        throw error;
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ==========================================
+// 3. УЛЬТРА-СИНХРОНИЗАЦИЯ БАЛАНСА ТОКЕНА
+// ==========================================
+window.fetchUserBalances = async function() {
+    try {
+        const program = await QubitProgramManager.getProgram();
+        const connection = program.provider.connection;
+        const pubkey = program.provider.wallet.publicKey;
+
+        if (!pubkey) {
+            console.warn("⚠️ [BALANCE SYNC]: Кошелек не подключен, пропуск обновления.");
+            return;
+        }
+
+        // 1. Запрашиваем аккаунты строго для токена из QUBIT_CONFIG.mint
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubkey, { 
+            mint: QUBIT_CONFIG.mint 
+        });
+
+        // 2. Собираем реальный баланс (используем uiAmount, чтобы сеть сама дала правильное число)
+        const totalBalance = tokenAccounts.value.reduce((sum, acc) => {
+            const uiAmount = acc.account.data.parsed.info.tokenAmount.uiAmount;
+            return sum + (uiAmount || 0);
+        }, 0);
+
+        // 3. Сохраняем в AppState в чистом виде
+        window.AppState = window.AppState || {};
+        window.AppState.userBalances = {
+            token: totalBalance
+        };
+
+        // 4. Логирование чистого результата
+        console.log(`📊 BALANCE SYNC COMPLETE: ${totalBalance}`);
+
+        // 5. Рендеринг напрямую в интерфейс (заменяем "Balance: Loading...")
+        const tags = document.getElementsByTagName('*');
+        let elementFound = false;
+
+        for (let i = 0; i < tags.length; i++) {
+            if (tags[i].textContent && tags[i].textContent.includes('Balance: Loading...')) {
+                tags[i].textContent = `Balance: ${totalBalance.toFixed(2)}`;
+                elementFound = true;
+                break;
+            }
+        }
+
+        if (!elementFound) {
+            console.warn("⚠️ [BALANCE SYNC]: Элемент 'Balance: Loading...' не найден на странице.");
+        }
+
+    } catch (error) {
+        console.error("❌ [BALANCE SYNC ERROR]:", error);
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+const WalletBalanceManager = {
+    cachedBalance: 0,
+    isUpdating: false,
+
+    async updateBalance() {
+        if (this.isUpdating) return this.cachedBalance;
+        this.isUpdating = true;
+        
+        try {
+            console.log("⚡ [BALANCE SERVICE]: Запрос баланса через RPC...");
+            const program = await QubitProgramManager.getProgram();
+            const walletPubkey = program.provider.wallet.publicKey;
+
+            if (!walletPubkey) return 0;
+
+            // Используем официальный безопасный метод Anchor для определения ATA-адреса токена
+            const ata = await anchor.utils.token.associatedAddress({
+                mint: QUBIT_CONFIG.mint,
+                owner: walletPubkey
+            });
+
+            const balanceInfo = await program.provider.connection.getTokenAccountBalance(ata);
+            this.cachedBalance = balanceInfo.value.uiAmount || 0;
+            
+            console.log(`✅ [BALANCE SERVICE]: Баланс обновлен: ${this.cachedBalance}`);
+            
+            // Безопасное обновление текстовых блоков в UI (если они есть на странице)
+            const displayElements = ['wallet-balance-display', 'user-qbt-balance'];
+            displayElements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    // Если это блок ввода или кнопка, пишем "Доступно:", если обычный спан — просто цифру
+                    if (id === 'wallet-balance-display') {
+                        el.innerText = `Доступно: ${this.cachedBalance} QBT`;
+                    } else {
+                        el.innerText = this.cachedBalance.toFixed(2);
+                    }
+                }
+            });
+
+            return this.cachedBalance;
+
+        } catch (e) {
+            console.error("❌ [BALANCE SERVICE ERROR]:", e);
+            
+            // При ошибке (например, у юзера вообще 0 токенов и нет ATA кошелька в сети) выводим аккуратно 0
+            const displayElements = ['wallet-balance-display', 'user-qbt-balance'];
+            displayElements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerText = id === 'wallet-balance-display' ? "Доступно: 0 QBT" : "0.00";
+                }
+            });
+            
+            return this.cachedBalance; 
+        } finally {
+            this.isUpdating = false;
+        }
+    }
+};
+
+window.updateWalletBalance = () => WalletBalanceManager.updateBalance();
+
+
+
+
+
+
+
+
+       /**
+ * ГЛОБАЛЬНЫЙ МЕТОД: INITIALIZE USER STAKE (DEVNET FIXED)
+ */
+window.performInitializeUserStake = async function(poolPubKey, poolIndex) {
+    try {
+        console.log("====================================================================================================");
+        console.log(`🛠 [START]: ИНИЦИАЛИЗАЦИЯ (DEVNET) | POOL INDEX: ${poolIndex}...`);
+        
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
+
+        if (poolIndex < 0 || poolIndex > 4) {
+            throw new Error("⛔️ ОШИБКА: Неверный индекс пула (0-4).");
+        }
+
+        // 1. ДЕРИВАЦИЯ PDA
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("user_stake"),
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
             ],
             program.programId
         );
 
-        AurumFoxEngine.notify("PREPARING STORAGE...", "WAIT");
+        // 2. ПРОВЕРКА СОСТОЯНИЯ
+        const accountInfo = await provider.connection.getAccountInfo(userStakePda);
+        if (accountInfo !== null) {
+            console.warn("⚠️ Аккаунт уже существует. Инициализация не требуется.");
+            return "ALREADY_INITIALIZED";
+        }
 
-        // 3. Вызов метода
+        // 3. ФОРМИРОВАНИЕ ТРАНЗАКЦИИ
         const tx = await program.methods
             .initializeUserStake(poolIndex)
             .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPda,
-                owner: userPubKey,
-                systemProgram: window.solanaWeb3.SystemProgram.programId,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                rent: window.solanaWeb3.SYSVAR_RENT_PUBKEY,
-            })
-            .rpc();
-
-        console.log("🚀 Initialization Signature:", tx);
-        AurumFoxEngine.notify("ACCOUNT DEPLOYED!", "SUCCESS");
-
-    } catch (e) {
-        console.error("🛠️ Init Error:", e);
-        // Обработка ошибок
-        if (e.message.includes("0x1770") || e.message.includes("already in use")) {
-            AurumFoxEngine.notify("ALREADY INITIALIZED", "SUCCESS");
-        } else {
-            AurumFoxEngine.notify("INIT FAILED", "FAILED");
-        }
-    }
-};
-
-// --- 4. ОБРАБОТЧИКИ UI ---
-document.querySelectorAll('.tier-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        // Убираем активность со всех
-        document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10'));
-        // Добавляем текущей
-        this.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
-        
-        // Обновляем текст в карточке2
-        const label = this.getAttribute('data-label');
-        const lockupDisplay = document.getElementById('lockupDisplay');
-        const poolIndexDisplay = document.getElementById('poolIndexDisplay');
-        const lockupProgressBar = document.getElementById('lockupProgressBar');
-
-        if (lockupDisplay) lockupDisplay.innerText = label;
-        if (poolIndexDisplay) poolIndexDisplay.innerText = `Tier ${label} (Index ${this.getAttribute('data-index')})`;
-        
-        // Обновляем прогресс-бар
-        if (lockupProgressBar) {
-            const percent = (parseInt(this.getAttribute('data-index')) + 1) * 20;
-            lockupProgressBar.style.width = `${percent}%`;
-        }
-    });
-});
-
-// Привязка кнопки подтверждения инициализации (используем селектор для защиты)
-const confirmButton = document.querySelector('.bg-emerald-500\\/20');
-if (confirmButton) {
-    confirmButton.addEventListener('click', () => {
-        window.createStakingAccount();
-    });
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * ГЛОБАЛЬНЫЙ МЕТОД ДЕПОЗИТА (DEPOSIT ENGINE)
- * Полная синхронизация с PDA и архитектурой контракта
- */
-window.performDeposit = async function(amountInTokens) {
-    try {
-        // 1. Получаем индекс пула из интерфейса
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
-
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        AurumFoxEngine.notify("PREPARING DEPOSIT...", "WAIT");
-
-        // 2. Инициализируем программу
-        const program = await QubitProgramManager.getProgram();
-        const ownerPubkey = program.provider.wallet.publicKey;
-
-        // 3. Получаем данные пула (Fetch pool state)
-        const poolData = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
-
-        // 4. Вычисляем PDA для user_staking
-        const [userStakePda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [
-                Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                ownerPubkey.toBuffer(),
-                Uint8Array.from([poolIndex])
-            ],
-            program.programId
-        );
-
-        // ВАЖНО: Предполагаем, что у тебя есть функции для получения ATA
-        // Если нет — убедись, что userSourceAta и userStAta переданы правильно
-        // Здесь мы используем логику, которая у тебя была в Utils
-        const userSourceAta = await spl.getAssociatedTokenAddress(poolData.mint, ownerPubkey);
-        const userStAta = await spl.getAssociatedTokenAddress(poolData.stMint, ownerPubkey);
-
-        console.log(`🚀 Депозит для Пула ${poolIndex}, Сумма: ${amountInTokens}`);
-
-        // 5. Выполнение транзакции
-        const tx = await program.methods
-            .deposit(poolIndex, new anchor.BN(amountInTokens))
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
+                poolState: poolPubKey,
                 userStaking: userStakePda,
                 owner: ownerPubkey,
-                vault: poolData.vault,
-                stMint: poolData.stMint,
-                userSourceAta: userSourceAta,
-                userStAta: userStAta,
-                tokenProgram: spl.TOKEN_PROGRAM_ID,
-                systemProgram: window.solanaWeb3.SystemProgram.programId,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                systemProgram: anchor.web3.SystemProgram.programId,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+                rent: anchor.web3.SYSVAR_RENT_PUBKEY, // Добавлено для синхронизации с Utils и Rust драйвером
             })
-            .rpc();
+            .preInstructions([
+                anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
+                anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
+            ])
+            .rpc({
+                skipPreflight: false,
+                preflightCommitment: "confirmed"
+            });
 
-        console.log("✅ Deposit Signature:", tx);
-        AurumFoxEngine.notify("DEPOSIT SUCCESS!", "SUCCESS");
+        console.log("✨ [SUCCESS]: Инициализация в Devnet прошла успешно. TX:", tx);
+        return tx;
 
     } catch (e) {
-        console.error("❌ Deposit Error:", e);
-        AurumFoxEngine.notify("DEPOSIT FAILED", "FAILED");
+        console.error("❌ Initialize Error (Devnet):", e);
+        throw e;
     }
 };
-
-// Привязка кнопки депозита (убедись, что класс кнопки совпадает с твоим)
-const depositButton = document.getElementById('depositButton'); // Замени на нужный ID/класс
-if (depositButton) {
-    depositButton.addEventListener('click', () => {
-        // Пример: берем сумму из input с ID 'amountInput'
-        const amount = document.getElementById('amountInput')?.value || "0";
-        window.performDeposit(amount);
-    });
-}
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 /**
- * ГЛОБАЛЬНЫЙ МЕТОД: CLAIM REWARDS
- * Одиночный или пакетный сбор наград
+ * Единая функция инициализации (ПРОФЕССИОНАЛЬНЫЙ UI + ВЕРИФИКАЦИЯ)
  */
-window.executeClaimRewards = async function() {
+async function handleConfirmInitialize() {
+    // Получаем кнопку для управления состоянием
+    const btn = document.querySelector('.tier-btn.active-tier');
+    // Безопасная проверка наличия кнопки перед тем, как брать текст
+    const originalText = btn ? btn.innerText : "Инициализировать";
+
     try {
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
+        console.log("====================================================================================================");
+        console.log("🛠 [UI EVENT]: ИНИЦИАЦИЯ СТЕЙКИНГА ЧЕРЕЗ UI...");
+
+        // 1. БЛОКИРОВКА КНОПКИ (защита от повторного нажатия)
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "⏳ Отправка...";
         }
 
-        const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
+        // --- ПРОВЕРКА СОЕДИНЕНИЯ И ПОЛУЧЕНИЕ ПУБЛИЧНОГО КЛЮЧА ---
+        const walletPubkey = await ensureWalletConnected();
         
-        // 1. Собираем активные индексы из UI
-        const activeButtons = document.querySelectorAll('.tier-btn.active');
-        const poolIndices = Array.from(activeButtons).map(btn => parseInt(btn.getAttribute('data-index')));
+        // ОБНОВЛЯЕМ UI ДИНАМИЧЕСКИ
+        const signerEl = document.querySelector('.wallet-signer-display'); 
+        if (signerEl) signerEl.innerText = walletPubkey.toBase58();
 
-        if (poolIndices.length === 0) {
-            return AurumFoxEngine.notify("SELECT POOLS", "FAILED");
+        const activeBtn = document.querySelector('.tier-btn.active-tier');
+        if (!activeBtn) {
+            alert("⚠️ Пожалуйста, выберите тир перед инициализацией!");
+            return;
+        }
+        
+        const poolIndex = parseInt(activeBtn.getAttribute('data-index'));
+        const poolPubKey = window.appState?.currentPoolPubKey;
+
+        if (!poolPubKey) {
+            throw new Error("Адрес пула (poolPubKey) не определен в приложении.");
         }
 
-        AurumFoxEngine.notify("CLAIMING REWARDS...", "WAIT");
+        console.log(`⚙️ Инициализация пула: ${poolIndex} | Адрес: ${poolPubKey.toBase58()}`);
 
-        // 2. Получаем данные пула
-        const poolData = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
-        
-        // 3. Получаем ATA пользователя для наград
-        const userRewardsAta = await spl.getAssociatedTokenAddress(poolData.rewardMint, userPubKey);
+        // 2. ВЫЗОВ МЕТОДА (через глобальный performInitializeUserStake)
+        const result = await window.performInitializeUserStake(poolPubKey, poolIndex);
 
-        let tx;
-        if (poolIndices.length === 1) {
-            // ОДИНОЧНЫЙ КЛЕЙМ
-            const poolIndex = poolIndices[0];
-            const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        if (result === "ALREADY_INITIALIZED") {
+            console.warn("ℹ️ [UI INFO]: Аккаунт уже инициализирован.");
+            alert("ℹ️ Стейкинг-аккаунт уже был инициализирован ранее.");
+        } else {
+            console.log("✨ [UI SUCCESS]: Инициализация прошла успешно. TX:", result);
+            
+            // --- БЛОК ВЕРИФИКАЦИИ (Чтение данных из блокчейна) ---
+            const program = await QubitProgramManager.getProgram();
+            
+            // Вычисляем PDA для проверки
+            const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
                 [
                     Buffer.from("user_stake"),
-                    AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                    userPubKey.toBuffer(),
-                    Uint8Array.from([poolIndex])
+                    poolPubKey.toBuffer(),
+                    walletPubkey.toBuffer(),
+                    Buffer.from([poolIndex])
                 ],
                 program.programId
             );
 
-            tx = await program.methods.claimRewards(poolIndex)
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    userStaking: userStakingPda,
-                    owner: userPubKey,
-                    vault: poolData.vault,
-                    adminFeeVault: poolData.adminFeeVault,
-                    userRewardsAta: userRewardsAta,
-                    rewardMint: poolData.rewardMint,
-                    tokenProgram: spl.TOKEN_PROGRAM_ID,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                }).rpc();
-        } else {
-            // ПАКЕТНЫЙ КЛЕЙМ (CLAIM ALL)
-            const remainingAccounts = poolIndices.map(index => {
-                const [pda] = window.solanaWeb3.PublicKey.findProgramAddressSync(
-                    [Buffer.from("user_stake"), AFOX_POOL_STATE_PUBKEY.toBuffer(), userPubKey.toBuffer(), Uint8Array.from([index])],
-                    program.programId
-                );
-                return { pubkey: pda, isWritable: true, isSigner: false };
-            });
+            // Читаем данные из блокчейна для подтверждения
+            let stakeData;
+            try {
+                // Синхронизация с тестами: динамически определяем имя структуры в IDL (userStakingAccount или userStaking)
+                const fetchMethod = program.account.userStakingAccount || program.account.userStaking;
+                stakeData = await fetchMethod.fetch(userStakePda);
+                
+                console.log("📊 [VERIFICATION]: ДАННЫЕ В БЛОКЧЕЙНЕ:");
+                console.log(`   - Owner: ${stakeData.owner.toBase58()}`);
+                console.log(`   - Pool Index: ${stakeData.poolIndex}`);
+                console.log(`   - Is Initialized: ${stakeData.isInitialized}`);
 
-            tx = await program.methods.claimAllRewards(poolIndices)
-                .accounts({
-                    poolState: AFOX_POOL_STATE_PUBKEY,
-                    owner: userPubKey,
-                    userRewardsAta: userRewardsAta,
-                    vault: poolData.vault,
-                    adminFeeVault: poolData.adminFeeVault,
-                    rewardMint: poolData.rewardMint,
-                    tokenProgram: spl.TOKEN_PROGRAM_ID,
-                    clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-                })
-                .remainingAccounts(remainingAccounts)
-                .rpc();
+                // УСПЕШНЫЙ РЕЗУЛЬТАТ (ссылка на Solana Explorer)
+                const explorerUrl = `https://explorer.solana.com/tx/${result}?cluster=devnet`;
+                const message = `✅ Стейкинг-аккаунт успешно инициализирован и верифицирован!\n\nTX: ${result.slice(0, 8)}...\n\nНажмите OK, чтобы увидеть транзакцию в Explorer.`;
+                
+                if (confirm(message)) {
+                    window.open(explorerUrl, '_blank');
+                }
+
+            } catch (fetchErr) {
+                console.error("❌ Ошибка при чтении данных после инициализации:", fetchErr);
+                alert("✅ Транзакция прошла, но возникла ошибка при чтении данных для верификации.");
+            }
         }
 
-        console.log("💎 Claim Signature:", tx);
-        AurumFoxEngine.notify("REWARDS RECEIVED!", "SUCCESS");
-
     } catch (e) {
-        console.error("❌ Claim Error:", e);
-        AurumFoxEngine.notify("CLAIM FAILED", "FAILED");
+        console.error("❌ Handle Confirm Initialize Error:", e.message);
+        
+        // ПРОФЕССИОНАЛЬНАЯ ОБРАБОТКА ОШИБОК
+        let errorMsg = "Ошибка транзакции: " + e.message;
+        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно средств на балансе.";
+        if (e.message.includes("User rejected")) errorMsg = "Вы отменили подпись в кошельке.";
+        
+        alert(errorMsg);
+    } finally {
+        // 4. ВОЗВРАТ СОСТОЯНИЯ КНОПКИ
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
     }
-};
+}
 
-// --- 4. ОБРАБОТЧИКИ UI ДЛЯ CLAIM VIEW ---
-// Toggle для одной кнопки (Tier)
-window.toggleTier = function(id) {
-    const buttons = document.querySelectorAll('.tier-btn');
-    if (buttons[id]) {
-        buttons[id].classList.toggle('active');
-    }
-};
 
-// Toggle для всех кнопок
-window.toggleAllTiers = function() {
-    const buttons = document.querySelectorAll('.tier-btn');
-    const allActive = Array.from(buttons).every(btn => btn.classList.contains('active'));
-    buttons.forEach(btn => {
-        allActive ? btn.classList.remove('active') : btn.classList.add('active');
-    });
-};
+
+
+
+
+
+
+
+                
+    
+
+
+ 
+            
+    
 
 
 
@@ -407,6 +970,12 @@ window.toggleAllTiers = function() {
 
 
 
+
+    
+
+            
+          
+        
 
 
 
@@ -422,75 +991,164 @@ window.toggleAllTiers = function() {
 
 
 /**
- * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE (УСТАНОВКА ЗАЛОГА)
- * Синхронизировано с логикой лендинг-модуля контракта Qubit
+ * ГЛОБАЛЬНЫЙ МЕТОД: COLLATERALIZE LENDING
+ * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция, Аудит
  */
-window.collateralizeLending = async function() {
+window.performCollateralizeLending = async function(
+    poolPubKey, 
+    poolIndex, 
+    newLendingAmount, 
+    minHealthFactor, 
+    guardianKeypair, 
+    lendingAuthorityKeypair, 
+    oracleFeeds
+) {
     try {
-        // 1. Получаем активный индекс пула и сумму для залога
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        console.log("====================================================================================================");
+        console.log("🛡️ [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА УСТАНОВКИ ЗАЛОГА (COLLATERALIZE LENDING)...");
         
-        const amountInput = document.querySelector('input[type="number"]');
-        const amountValue = amountInput ? amountInput.value : "0";
-        const newLendingAmount = new anchor.BN(amountValue);
-
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        if (newLendingAmount.isZero()) {
-            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
-        }
-
-        AurumFoxEngine.notify("LOCKING COLLATERAL...", "WAIT");
-
         const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 2. Расчет PDA стейкинга
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // 1. Деривация PDA и предварительный аудит
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex])
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
             ],
             program.programId
         );
 
-        // 3. Вызов метода контракта
-        const tx = await program.methods
-            .collateralizeLending(newLendingAmount)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPda,
-                owner: userPubKey,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .rpc();
+        // 2. Сборка транзакции с COMPUTE BUDGET
+        const transaction = new anchor.web3.Transaction();
+        
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
-        console.log("🛡️ Collateralize Signature:", tx);
-        AurumFoxEngine.notify("COLLATERAL UPDATED!", "SUCCESS");
+        // 3. Формирование инструкции
+        const collateralizeInstruction = await program.methods
+            .collateralizeLending(newLendingAmount, minHealthFactor)
+            .accounts({
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                guardian: guardianKeypair.publicKey,
+                lendingAuthority: lendingAuthorityKeypair.publicKey,
+                oracleFeeds: oracleFeeds,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+                systemProgram: anchor.web3.SystemProgram.programId,
+            })
+            .instruction();
+
+        transaction.add(collateralizeInstruction);
+
+        // 4. Подготовка транзакции и симуляция
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        // Важно: сначала подписываем внешними ключами (Guardian, LendingAuth)
+        transaction.partialSign(guardianKeypair);
+        transaction.partialSign(lendingAuthorityKeypair);
+
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция коллатерализации не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 5. Подпись кошельком пользователя и отправка
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Collateralize)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✨ [SUCCESS]: Залог установлен успешно. TX:", txId);
+        return txId;
 
     } catch (e) {
-        console.error("🛠️ Collateral Error:", e);
-        // Обработка ошибок (например, нехватка стейка для покрытия залога)
-        if (e.message.includes("0x1775")) {
-            AurumFoxEngine.notify("EXCEEDS AVAILABLE STAKE", "FAILED");
-        } else {
-            AurumFoxEngine.notify("COLLATERAL FAILED", "FAILED");
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
         }
+        console.error("❌ Collateralize Error:", e.message);
+        throw e;
     }
 };
 
-// --- ПРИВЯЗКА КНОПКИ UI ---
-// Привязываем событие к кнопке ADJUST COLLATERAL
-const adjustBtn = document.querySelector('.btn-action');
-if (adjustBtn) {
-    adjustBtn.addEventListener('click', () => {
-        window.collateralizeLending();
-    });
+
+
+
+
+/**
+ * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
+ * Вызывается напрямую из атрибута onclick="handleCollateralize()" в твоем HTML
+ */
+async function handleCollateralize() {
+    const btn = document.getElementById('collateralizeBtn'); // Предполагаем ID кнопки
+
+    try {
+        console.log("====================================================================================================");
+        console.log("🛡️ [UI EVENT]: ИНИЦИАЦИЯ COLLATERALIZE LENDING ЧЕРЕЗ UI...");
+
+        // 1. ПОЛУЧЕНИЕ И ВАЛИДАЦИЯ ДАННЫХ ИЗ ИНПУТА
+        const rawAmount = document.getElementById('collateralAmountInput')?.value;
+        if (!rawAmount || isNaN(rawAmount) || parseFloat(rawAmount) <= 0) {
+            throw new Error("Введите корректное число для залога.");
+        }
+        
+        const amount = new anchor.BN(rawAmount);
+        const minHF = 2000; 
+
+        // 2. ПОДГОТОВКА UI
+        if (btn) {
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+        }
+
+        // 3. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ (Убеждаемся, что ключи и данные загружены)
+        if (!window.GUARDIAN_KEYPAIR || !window.LENDING_AUTH_KEYPAIR) {
+            throw new Error("Ключи Guardian или Lending Authority не загружены.");
+        }
+        if (typeof POOL_STATE_PUBKEY === 'undefined' || typeof ORACLE_FEEDS_ARRAY === 'undefined') {
+            throw new Error("Необходимые данные пула или оракулов не определены.");
+        }
+
+        console.log(`⚙️ Залог: ${rawAmount} | MinHF: ${minHF}`);
+
+        // 4. ВЫЗОВ ПРОВЕРЕННОГО SDK-МЕТОДА
+        await window.performCollateralizeLending(
+            POOL_STATE_PUBKEY, 
+            0, 
+            amount, 
+            new anchor.BN(minHF),
+            window.GUARDIAN_KEYPAIR, 
+            window.LENDING_AUTH_KEYPAIR, 
+            ORACLE_FEEDS_ARRAY
+        );
+
+        console.log("✨ [UI SUCCESS]: Залог успешно установлен.");
+        alert("✅ Залог успешно установлен!");
+
+    } catch (e) {
+        console.error("❌ Collateralize UI Error:", e.message);
+        alert("Ошибка при установке залога: " + e.message);
+        
+    } finally {
+        // 5. ВОССТАНОВЛЕНИЕ UI
+        if (btn) {
+            btn.innerText = "CONFIRM COLLATERAL";
+            btn.disabled = false;
+        }
+    }
 }
 
 
@@ -498,6 +1156,131 @@ if (adjustBtn) {
 
 
 
+
+
+
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE LENDING
+ * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция
+ */
+window.performDecollateralizeLending = async function(poolPubKey, poolIndex, amountBN) {
+    try {
+        console.log("====================================================================================================");
+        console.log("🔓 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА СНЯТИЯ ЗАЛОГА (DECOLLATERALIZE LENDING)...");
+        
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
+
+        // 1. ДЕРИВАЦИЯ PDA (строго по семенам из Rust)
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("user_stake"),
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
+            ],
+            program.programId
+        );
+
+        // 2. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
+        const transaction = new anchor.web3.Transaction();
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
+
+        // 3. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
+        const decollateralizeInstruction = await program.methods
+            .decollateralizeLending(amountBN)
+            .accounts({
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .instruction();
+
+        transaction.add(decollateralizeInstruction);
+
+        // 4. ПОДГОТОВКА И СИМУЛЯЦИЯ
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        // Добавляем симуляцию для предотвращения ошибок транзакции
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция снятия залога не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Decollateralize)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✨ [SUCCESS]: Залог успешно снят. TX:", txId);
+        return txId;
+
+    } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
+        console.error("❌ Decollateralize Error:", e.message);
+        throw e;
+    }
+};
+
+
+
+/**
+ * ФУНКЦИЯ: SET AMOUNT (АВТО-РАСЧЕТ СУММЫ)
+ * Установка процента от максимально доступного значения
+ */
+window.setAmount = function(percent) {
+    try {
+        console.log("====================================================================================================");
+        console.log(`🔢 [START]: ИНИЦИАЦИЯ РАСЧЕТА СУММЫ (PERCENT: ${percent * 100}%)...`);
+
+        // 1. ПОЛУЧЕНИЕ МАКСИМАЛЬНОГО ЗНАЧЕНИЯ
+        const maxElement = document.getElementById('maxAvailableAmount');
+        const maxText = maxElement ? maxElement.innerText.replace(/,/g, '') : "0";
+        const max = parseFloat(maxText);
+
+        // 2. ПОЛУЧЕНИЕ ИНПУТА
+        const input = document.getElementById('decollateralizeAmountInput');
+        if (!input) {
+            throw new Error("Элемент decollateralizeAmountInput не найден в DOM.");
+        }
+
+        // 3. ПРОВЕРКА НА ВАЛИДНОСТЬ ДАННЫХ
+        if (isNaN(max) || max <= 0) {
+            console.warn("⚠️ [WARNING]: Максимально доступная сумма не определена или равна 0.");
+            input.value = "0.00";
+            return "0.00";
+        }
+
+        // 4. РАСЧЕТ И ФОРМАТИРОВАНИЕ (оставляем 2 знака после запятой)
+        const result = (max * percent).toFixed(2);
+
+        // 5. УСТАНОВКА ЗНАЧЕНИЯ
+        input.value = result;
+
+        console.log(`✨ [SUCCESS]: Сумма успешно рассчитана: ${result} (процент: ${percent * 100}%).`);
+        return result;
+
+    } catch (e) {
+        console.error("❌ Set Amount Error:", e.message);
+        // Не выбрасываем исключение наружу, чтобы не ломать поток в UI
+        return null;
+    }
+};
 
 
 
@@ -513,78 +1296,373 @@ if (adjustBtn) {
 
 
 /**
- * ГЛОБАЛЬНЫЙ МЕТОД: DECOLLATERALIZE (СНЯТИЕ ЗАЛОГА)
- * Синхронизированный вызов контракта Qubit
+ * ГЛОБАЛЬНЫЙ МЕТОД: DEPOSIT
+ * 100% синхронизация с SDK (AccountLoader/Zero-Copy, Remaining Accounts)
+ * Исправлено: Авто-определение ATA и проверка состояний внутри метода.
  */
-window.performDecollateralize = async function() {
+window.performDeposit = async function(poolPubKey, userSourceAta, userStAta, poolIndex, amountBN) {
     try {
-        // 1. Получаем индекс пула (из активной кнопки) и сумму из input
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
+        console.log("====================================================================================================");
+        console.log("🚀 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ДЕПОЗИТА...");
         
-        const amountInput = document.querySelector('input[type="number"]');
-        const amountValue = amountInput ? amountInput.value : "0";
-        
-        // Преобразуем сумму в BN (учитывая, что в контракте скорее всего u64)
-        const amount = new anchor.BN(amountValue);
-
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        if (amount.isZero()) {
-            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
-        }
-
-        AurumFoxEngine.notify("RELEASING COLLATERAL...", "WAIT");
-
         const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 2. Расчет PDA стейкинга
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА (через fetchData для Zero-Copy)
+        const poolData = await program.account.poolState.fetchData(poolPubKey);
+
+        // --- БЛОК АВТО-ОПРЕДЕЛЕНИЯ (Если ATA не переданы из UI) ---
+        let finalSourceAta = userSourceAta;
+        let finalStAta = userStAta;
+
+        if (!finalSourceAta) {
+            finalSourceAta = await spl.getAssociatedTokenAddress(poolData.mint, ownerPubkey);
+            console.log("⚠️ [AUTO]: Адрес источника (ATA) определен автоматически:", finalSourceAta.toBase58());
+        }
+        if (!finalStAta) {
+            finalStAta = await spl.getAssociatedTokenAddress(poolData.stMint, ownerPubkey);
+            console.log("⚠️ [AUTO]: Адрес стейк-токена (ATA) определен автоматически:", finalStAta.toBase58());
+        }
+
+        // 2. ДЕРИВАЦИЯ PDA (строго по семенам из Rust)
+        const [userStakePda] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex])
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
             ],
             program.programId
         );
 
-        // 3. Вызов метода контракта
-        const tx = await program.methods
-            .decollateralizeLending(amount)
-            .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
-                userStaking: userStakingPda,
-                owner: userPubKey,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
-            })
-            .rpc();
+        // 3. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
+        const transaction = new anchor.web3.Transaction();
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
-        console.log("🔓 Decollateralize Signature:", tx);
-        AurumFoxEngine.notify("COLLATERAL RELEASED!", "SUCCESS");
+        // 4. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
+        const depositInstruction = await program.methods
+            .deposit(poolIndex, amountBN)
+            .accounts({
+                poolState: poolPubKey,
+                userStaking: userStakePda,
+                owner: ownerPubkey,
+                vault: poolData.vault,
+                stMint: poolData.stMint,
+                userSourceAta: finalSourceAta,
+                userStAta: finalStAta,
+                tokenProgram: spl.TOKEN_PROGRAM_ID,
+                systemProgram: anchor.web3.SystemProgram.programId,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .instruction();
+
+        transaction.add(depositInstruction);
+
+        // 5. ПОДГОТОВКА И СИМУЛЯЦИЯ
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        // Добавляем симуляцию для предотвращения ошибок транзакции
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция депозита не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 6. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Deposit)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✨ [SUCCESS]: Депозит успешно принят. TX:", txId);
+        return txId;
 
     } catch (e) {
-        console.error("🛠️ Decollateralize Error:", e);
-        
-        // Обработка специфических ошибок контракта
-        if (e.message.includes("0x1774")) {
-            AurumFoxEngine.notify("LENDING LOCK ACTIVE", "FAILED");
-        } else {
-            AurumFoxEngine.notify("RELEASE FAILED", "FAILED");
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
         }
+        console.error("❌ Deposit Error:", e.message);
+        throw e;
     }
 };
 
-// --- ПРИВЯЗКА КНОПКИ UI ---
-// Привязываем событие к кнопке CONFIRM DECOLLATERALIZE
-const decollateralizeBtn = document.querySelector('#decollateralizeView button.bg-emerald-500\\/20');
-if (decollateralizeBtn) {
-    decollateralizeBtn.addEventListener('click', () => {
-        window.performDecollateralize();
-    });
+
+
+
+/**
+ * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS (ПРОФЕССИОНАЛЬНАЯ ВЕРСИЯ)
+ * Вызывается напрямую из атрибута onclick="handleDeposit()" в твоем HTML
+ */
+async function handleDeposit() {
+    const btn = document.getElementById('executeDepositBtn'); // Предполагаем ID кнопки
+
+    try {
+        console.log("====================================================================================================");
+        console.log("🚀 [UI EVENT]: ИНИЦИАЦИЯ ДЕПОЗИТА ЧЕРЕЗ UI...");
+
+        // 1. ПРОВЕРКА БАЛАНСА ПЕРЕД ДЕЙСТВИЕМ
+        const currentBalance = await updateWalletBalance(); 
+        const amountVal = document.getElementById('depositInput')?.value;
+        const indexElement = document.getElementById('currentPoolIndex');
+
+        if (!amountVal || parseFloat(amountVal) <= 0) {
+            throw new Error("Введите корректную сумму для депозита.");
+        }
+        if (parseFloat(amountVal) > currentBalance) {
+            throw new Error("Недостаточно средств на балансе!");
+        }
+        if (!indexElement) {
+            throw new Error("Не удалось определить индекс пула.");
+        }
+
+        const amountBN = new anchor.BN(amountVal);
+        const poolIndex = parseInt(indexElement.innerText);
+
+        // 2. ПОДГОТОВКА UI
+        if (btn) {
+            btn.innerText = "Подпись в кошельке...";
+            btn.disabled = true;
+        }
+
+        // 3. ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ ПЕРЕД ДЕПОЗИТОМ
+        console.log("🔄 Синхронизация данных перед отправкой...");
+        await window.syncUserAccountState(QUBIT_CONFIG.pool, QUBIT_CONFIG.mint);
+
+        // 4. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ
+        if (typeof POOL_PUBKEY === 'undefined' && typeof QUBIT_CONFIG !== 'undefined') {
+            window.POOL_PUBKEY = QUBIT_CONFIG.pool;
+        }
+        
+        if (!window.POOL_PUBKEY || !window.USER_SOURCE_ATA || !window.USER_ST_ATA) {
+            throw new Error("Необходимые данные (PUBKEY/ATA) не определены в контексте.");
+        }
+
+        console.log(`⚙️ Депозит: ${amountVal} | Пул: ${poolIndex}`);
+
+        // 5. ВЫЗОВ SDK-МЕТОДА
+        await window.performDeposit(
+            window.POOL_PUBKEY, 
+            window.USER_SOURCE_ATA, 
+            window.USER_ST_ATA, 
+            poolIndex, 
+            amountBN
+        );
+
+        console.log("✨ [UI SUCCESS]: Депозит успешно подтвержден.");
+        alert("✅ Депозит успешно выполнен!");
+
+    } catch (e) {
+        console.error("❌ Handle Deposit Error:", e.message);
+        
+        // ПРОФЕССИОНАЛЬНАЯ ОБРАБОТКА ОШИБОК
+        let errorMsg = "Ошибка депозита: " + e.message;
+        if (e.message.includes("0x1")) errorMsg = "Ошибка: Недостаточно средств на балансе.";
+        if (e.message.includes("User rejected")) errorMsg = "Вы отменили подпись в кошельке.";
+        
+        alert(errorMsg);
+        
+    } finally {
+        // 6. ВОССТАНОВЛЕНИЕ UI
+        if (btn) {
+            btn.innerText = "CONFIRM DEPOSIT";
+            btn.disabled = false;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+/**
+ * ГЛОБАЛЬНЫЙ МЕТОД: CLAIM ALL REWARDS
+ * 100% синхронизация с SDK: PDA, Compute Budget, Симуляция, RAW транзакция, Пост-аудит
+ */
+window.performClaimAllRewards = async function(poolPubKey, poolIndices, userRewardsAta) {
+    try {
+        console.log("====================================================================================================");
+        console.log("🎁 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА CLAIM ALL REWARDS...");
+        
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
+
+        if (!poolIndices || poolIndices.length === 0) {
+            throw new Error("ErrorCode::InvalidPoolIndices");
+        }
+
+        // 1. ПОЛУЧЕНИЕ ДАННЫХ ПУЛА (через fetchData для Zero-Copy)
+        const poolData = await program.account.poolState.fetchData(poolPubKey);
+
+        // 2. ФОРМИРОВАНИЕ REMAINING ACCOUNTS
+        const remainingAccounts = poolIndices.map(index => {
+            const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
+                [
+                    Buffer.from("user_stake"),
+                    poolPubKey.toBuffer(),
+                    ownerPubkey.toBuffer(),
+                    Buffer.from([index])
+                ],
+                program.programId
+            );
+            return {
+                pubkey: pda,
+                isWritable: true,
+                isSigner: false,
+            };
+        });
+
+        console.log(`📊 Обработка пулов: [${poolIndices.join(", ")}] | Аккаунтов: ${remainingAccounts.length}`);
+
+        // 3. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
+        const transaction = new anchor.web3.Transaction();
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1000000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
+
+        const claimInstruction = await program.methods
+            .claimAllRewards(poolIndices)
+            .accounts({
+                poolState: poolPubKey,
+                owner: ownerPubkey,
+                userRewardsAta: userRewardsAta,
+                vault: poolData.vault,
+                adminFeeVault: poolData.adminFeeVault,
+                rewardMint: poolData.rewardMint,
+                tokenProgram: spl.TOKEN_PROGRAM_ID,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+            })
+            .remainingAccounts(remainingAccounts)
+            .instruction();
+
+        transaction.add(claimInstruction);
+
+        // 4. ПОДГОТОВКА И СИМУЛЯЦИЯ
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция клейма не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 5. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Claim All)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✨ [SUCCESS]: Награды успешно заклеймлены! TX:", txId);
+        return txId;
+
+    } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
+        console.error("❌ Claim All Error:", e.message);
+        throw e;
+    }
+};
+
+
+
+
+/**
+ * Улучшенная функция: автоматическое определение адресов и запуск клейма
+ */
+async function executeClaimRewards() {
+    const btn = document.getElementById('executeClaimBtn'); // Предполагаем ID кнопки
+
+    try {
+        console.log("====================================================================================================");
+        console.log("🎁 [UI EVENT]: ИНИЦИАЦИЯ КЛЕЙМА НАГРАД ЧЕРЕЗ UI...");
+
+        // 1. ПОДГОТОВКА И ВАЛИДАЦИЯ ВЫБОРА
+        const selectedTiers = [];
+        document.querySelectorAll('.tier-btn.active').forEach(btn => {
+            selectedTiers.push(parseInt(btn.getAttribute('data-index')));
+        });
+
+        if (selectedTiers.length === 0) {
+            console.warn("⚠️ [UI WARNING]: Ни один пул не выбран.");
+            alert("Пожалуйста, выберите хотя бы один пул.");
+            return;
+        }
+
+        // 2. ПОДГОТОВКА UI
+        if (btn) {
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+        }
+
+        // 3. АВТОМАТИЗАЦИЯ: Получаем программу и провайдер
+        const program = await QubitProgramManager.getProgram();
+        const provider = program.provider;
+        const owner = provider.wallet.publicKey;
+
+        // 4. ПРОВЕРКА СОСТОЯНИЯ (AppState)
+        if (!window.appState || !window.appState.currentPoolPubKey) {
+            throw new Error("Состояние пула не загружено.");
+        }
+        const poolPubKey = window.appState.currentPoolPubKey; 
+
+        // 5. АВТОМАТИЗАЦИЯ: Находим ATA наград пользователя
+        const rewardMint = window.appState.rewardMint; 
+        const userRewardsAta = await spl.getAssociatedTokenAddress(
+            rewardMint,
+            owner
+        );
+
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Существование ATA
+        const ataAccount = await provider.connection.getAccountInfo(userRewardsAta);
+        if (!ataAccount) {
+            throw new Error("ATA наград не найден. Инициализируйте кошелек для получения наград.");
+        }
+
+        console.log(`🔍 [UI INFO]: Адреса определены. Пулы: [${selectedTiers.join(", ")}].`);
+
+        // 6. ВЫЗОВ SDK-МЕТОДА
+        await window.performClaimAllRewards(
+            poolPubKey, 
+            selectedTiers, 
+            userRewardsAta
+        );
+
+        console.log("✨ [UI SUCCESS]: Награды успешно заклеймлены.");
+        alert("✅ Награды успешно заклеймлены!");
+
+    } catch (e) {
+        console.error("❌ Handle Claim Rewards Error:", e.message);
+        alert("Ошибка клейма: " + e.message);
+        
+    } finally {
+        // 7. ВОССТАНОВЛЕНИЕ UI
+        if (btn) {
+            btn.innerText = "CLAIM ALL REWARDS";
+            btn.disabled = false;
+        }
+    }
 }
 
 
@@ -599,15 +1677,8 @@ if (decollateralizeBtn) {
 
 
 
-
-
-
-
-
-
-
-
-
+   
+      
 
 
 
@@ -618,54 +1689,58 @@ if (decollateralizeBtn) {
 
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: UNSTAKE (ВЫВОД СРЕДСТВ)
- * Синхронизированная версия с поддержкой Compute Budget и анти-MEV аудита
+ * 100% синхронизация с SDK: PDA, Аудит, Compute Budget, Симуляция, RAW транзакция, Пост-аудит
  */
-window.performUnstake = async function() {
+window.performUnstake = async function(poolPubKey, userStAta, userRewardsAta, poolIndex, amountBN) {
     try {
-        // 1. Получаем активный пул и сумму из UI
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
-        const amountInput = document.querySelector('input[type="number"]');
-        const amount = amountInput ? new anchor.BN(amountInput.value) : new anchor.BN(0);
-
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        if (amount.isZero()) {
-            return AurumFoxEngine.notify("ENTER AMOUNT", "FAILED");
-        }
-
-        AurumFoxEngine.notify("INITIALIZING UNSTAKE...", "WAIT");
-
+        console.log("====================================================================================================");
+        console.log("📉 [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ВЫВОДА СРЕДСТВ (UNSTAKE)...");
+        
         const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 2. Получаем данные пула
-        const poolData = await program.account.poolState.fetch(AFOX_POOL_STATE_PUBKEY);
+        // Входной контроль
+        if (poolIndex < 0 || poolIndex > 4) throw new Error("ErrorCode::InvalidPoolIndex");
+        if (amountBN.isZero() || amountBN.isNeg()) throw new Error("ErrorCode::ZeroAmount");
 
-        // 3. Вычисление PDA для стейкинга
-        const [userStakePda] = await window.solanaWeb3.PublicKey.findProgramAddress(
+        // ШАГ 1: Деривация PDA и предварительный аудит
+        const [userStakePda, userStakeBump] = anchor.web3.PublicKey.findProgramAddressSync(
             [
                 Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex])
+                poolPubKey.toBuffer(),
+                ownerPubkey.toBuffer(),
+                Buffer.from([poolIndex])
             ],
             program.programId
         );
 
-        // 4. Получаем ATA адреса
-        const userStAta = await spl.getAssociatedTokenAddress(poolData.stMint, userPubKey);
-        const userRewardsAta = await spl.getAssociatedTokenAddress(poolData.rewardMint, userPubKey);
+        const [poolData, userState, currentSlot] = await Promise.all([
+            program.account.poolState.fetch(poolPubKey, "finalized"),
+            program.account.userStakingAccount.fetch(userStakePda, "finalized"),
+            provider.connection.getSlot("finalized")
+        ]);
 
-        // 5. Формирование транзакции с оптимизацией лимитов
-        const tx = await program.methods
-            .unstake(poolIndex, amount)
+        if (poolData.globalPause !== 0) throw new Error("ErrorCode::ReentrancyGuardTriggered");
+        if (new anchor.BN(currentSlot).lte(new anchor.BN(userState.lastDepositSlot))) throw new Error("ErrorCode::OperationInSameSlot");
+        if (userState.stakedAmount.lt(amountBN)) throw new Error("ErrorCode::InsufficientStake");
+        
+        const lending = userState.lending || new anchor.BN(0);
+        if (!lending.isZero() && userState.stakedAmount.sub(lending).lt(amountBN)) throw new Error("ErrorCode::CollateralLock");
+
+        const isFullUnstake = userState.stakedAmount.eq(amountBN);
+
+        // ШАГ 2: Сборка транзакции
+        const transaction = new anchor.web3.Transaction();
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
+
+        const unstakeInstruction = await program.methods
+            .unstake(poolIndex, amountBN)
             .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
+                poolState: poolPubKey,
                 userStaking: userStakePda,
-                owner: userPubKey,
+                owner: ownerPubkey,
                 vault: poolData.vault,
                 daoTreasuryVault: poolData.daoTreasuryVault,
                 adminFeeVault: poolData.adminFeeVault,
@@ -674,36 +1749,91 @@ window.performUnstake = async function() {
                 stMint: poolData.stMint,
                 rewardMint: poolData.rewardMint,
                 tokenProgram: spl.TOKEN_PROGRAM_ID,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             })
-            .preInstructions([
-                window.solanaWeb3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-                window.solanaWeb3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
-            ])
-            .rpc();
+            .instruction();
 
-        console.log("📉 Unstake Signature:", tx);
-        AurumFoxEngine.notify("UNSTAKE SUCCESS!", "SUCCESS");
+        transaction.add(unstakeInstruction);
 
-    } catch (e) {
-        console.error("🛠️ Unstake Error:", e);
-        // Обработка специфических ошибок контракта
-        if (e.message.includes("0x1770")) {
-            AurumFoxEngine.notify("INSUFFICIENT FUNDS", "FAILED");
-        } else if (e.message.includes("0x1771")) {
-            AurumFoxEngine.notify("LOCKED IN LENDING", "FAILED");
-        } else {
-            AurumFoxEngine.notify("UNSTAKE FAILED", "FAILED");
+        // ШАГ 3: Симуляция и отправка
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Simulation failed: " + JSON.stringify(simulation.value.err));
         }
+
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        // ШАГ 4: Пост-аудит
+        for (let attempt = 1; attempt <= 5; attempt++) {
+            await new Promise(r => setTimeout(r, 4000));
+            try {
+                const stakeAfter = await program.account.userStakingAccount.fetch(userStakePda, "finalized");
+                if (!isFullUnstake && stakeAfter.stakedAmount.lt(userState.stakedAmount)) break;
+            } catch (e) {
+                if (isFullUnstake) break;
+            }
+        }
+
+        console.log("✅ [SUCCESS]: Транзакция подтверждена. ID:", txId);
+        return txId;
+    } catch (e) {
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
+        }
+        console.error("❌ Unstake Error:", e.message);
+        throw e;
     }
 };
 
-// --- ПРИВЯЗКА КНОПКИ UI ---
-const unstakeButton = document.getElementById('unstakeBtn');
-if (unstakeButton) {
-    unstakeButton.addEventListener('click', () => {
-        window.performUnstake();
-    });
+
+
+
+
+async function handleUnstake() {
+    const input = document.getElementById('unstakeAmountInput');
+    const amount = parseFloat(input.value);
+    
+    if (!amount || amount <= 0) {
+        alert("Введите корректную сумму");
+        return;
+    }
+    
+    try {
+        // Добавьте визуальный индикатор загрузки
+        const btn = document.getElementById('executeUnstakeBtn');
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        const amountBN = new anchor.BN(amount * 1e9); 
+        await window.performUnstake(
+            window.appState.currentPoolPubKey, 
+            window.appState.userStAta, 
+            window.appState.userRewardsAta, 
+            window.appState.poolIndex, 
+            amountBN
+        );
+        alert("Успешно!");
+    } catch (err) {
+        console.error(err);
+        alert("Ошибка транзакции: " + err.message);
+    } finally {
+        const btn = document.getElementById('executeUnstakeBtn');
+        btn.innerText = "CONFIRM & EXIT";
+        btn.disabled = false;
+    }
 }
 
 
@@ -718,72 +1848,134 @@ if (unstakeButton) {
 
 /**
  * ГЛОБАЛЬНЫЙ МЕТОД: CLOSE STAKING ACCOUNT
- * Полная синхронизация с контрактом для деаллокации (Rent Recovery)
+ * 100% синхронизация с SDK: Compute Budget, Симуляция, RAW транзакция
  */
-window.closeStakingAccount = async function() {
+window.performCloseStakingAccount = async function(poolPubKey, userStakingPda, poolIndex) {
     try {
-        // 1. Получаем активный индекс (как в Init/Unstake)
-        const activeBtn = document.querySelector('.tier-btn.active-tier');
-        const poolIndex = activeBtn ? parseInt(activeBtn.getAttribute('data-index')) : 0;
-
-        if (!window.solana?.isConnected) {
-            return AurumFoxEngine.notify("CONNECT WALLET", "FAILED");
-        }
-
-        AurumFoxEngine.notify("DEACTIVATING ACCOUNT...", "WAIT");
-
+        console.log("====================================================================================================");
+        console.log("🗑️ [START]: ИНИЦИАЦИЯ СИНХРОННОГО ПРОЦЕССА ЗАКРЫТИЯ СТЕЙКИНГ-АККАУНТА...");
+        
         const program = await QubitProgramManager.getProgram();
-        const userPubKey = program.provider.wallet.publicKey;
+        const provider = program.provider;
+        const ownerPubkey = provider.wallet.publicKey;
 
-        // 2. Расчет PDA для закрываемого аккаунта
-        const [userStakingPda] = await window.solanaWeb3.PublicKey.findProgramAddress(
-            [
-                Buffer.from("user_stake"),
-                AFOX_POOL_STATE_PUBKEY.toBuffer(),
-                userPubKey.toBuffer(),
-                Uint8Array.from([poolIndex])
-            ],
-            program.programId
-        );
+        // 1. СБОРКА ТРАНЗАКЦИИ С COMPUTE BUDGET
+        const transaction = new anchor.web3.Transaction();
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }));
+        transaction.add(anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 }));
 
-        // 3. Вызов метода закрытия
-        const tx = await program.methods
+        // 2. ФОРМИРОВАНИЕ ИНСТРУКЦИИ
+        const closeInstruction = await program.methods
             .closeStakingAccount(poolIndex)
             .accounts({
-                poolState: AFOX_POOL_STATE_PUBKEY,
+                poolState: poolPubKey,
                 userStaking: userStakingPda,
-                owner: userPubKey,
-                clock: window.solanaWeb3.SYSVAR_CLOCK_PUBKEY,
+                owner: ownerPubkey,
+                clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             })
-            .rpc();
+            .instruction();
 
-        console.log("🗑️ Account Closed Signature:", tx);
-        AurumFoxEngine.notify("ACCOUNT CLOSED!", "SUCCESS");
+        transaction.add(closeInstruction);
+
+        // 3. ПОДГОТОВКА И СИМУЛЯЦИЯ
+        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPubkey;
+
+        // Добавляем симуляцию для предотвращения ошибок транзакции
+        const simulation = await provider.connection.simulateTransaction(transaction);
+        if (simulation.value.err) {
+            console.error("--- SOLANA LOGS (SIMULATION FAILED) ---");
+            if (simulation.value.logs) simulation.value.logs.forEach(line => console.error(line));
+            throw new Error("Симуляция закрытия не пройдена: " + JSON.stringify(simulation.value.err));
+        }
+
+        // 4. ОТПРАВКА И ПОДТВЕРЖДЕНИЕ
+        const signedTx = await provider.wallet.signTransaction(transaction);
+        const txId = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+
+        console.log("⏳ Ожидание подтверждения (Close Account)...");
+        await provider.connection.confirmTransaction({ signature: txId, blockhash, lastValidBlockHeight }, "finalized");
+
+        console.log("✨ [SUCCESS]: Аккаунт успешно закрыт, SOL возвращены. TX:", txId);
+        return txId;
 
     } catch (e) {
-        console.error("❌ Close Error:", e);
-        
-        // Обработка специфических ошибок безопасности контракта
-        if (e.message.includes("0x1772")) { // Пример кода ошибки "StillExists"
-            AurumFoxEngine.notify("STAKE STILL EXISTS", "FAILED");
-        } else if (e.message.includes("0x1773")) { // Пример кода "DustRemaining"
-            AurumFoxEngine.notify("REWARD DUST EXISTS", "FAILED");
-        } else {
-            AurumFoxEngine.notify("CLOSE FAILED", "FAILED");
+        if (e.logs) {
+            console.error("--- SOLANA LOGS (TRANSACTION) ---");
+            e.logs.forEach(line => console.error(line));
         }
+        console.error("❌ Close Account Error:", e.message);
+        
+        // Логирование типичных ошибок контракта
+        if (e.message.includes("StakeStillExists")) {
+            console.error("⚠️ Внимание: в аккаунте остались средства (StakeStillExists).");
+        }
+        if (e.message.includes("UnclaimedRewardsExist")) {
+            console.error("⚠️ Внимание: остались невостребованные награды.");
+        }
+        
+        throw e;
     }
 };
 
-// --- ПРИВЯЗКА КНОПКИ UI ---
-// Ищем кнопку по тексту или классу внутри closeAccountView
-const closeButton = document.querySelector('#closeAccountView button.bg-red-600\\/20');
-if (closeButton) {
-    closeButton.addEventListener('click', () => {
-        window.closeStakingAccount();
-    });
+
+
+
+/**
+ * БРИДЖ-ФУНКЦИЯ ДЛЯ СИНХРОНИЗАЦИИ HTML И JS
+ * Вызывается напрямую из атрибута onclick="handleCloseAccount()" в твоем HTML
+ */
+async function handleCloseAccount() {
+    const btn = document.getElementById('closeAccountBtn');
+
+    try {
+        console.log("====================================================================================================");
+        console.log("🗑️ [UI EVENT]: ИНИЦИАЦИЯ ЗАКРЫТИЯ СТЕЙКИНГ-АККАУНТА ЧЕРЕЗ UI...");
+
+        // 1. ПОДГОТОВКА UI
+        if (btn) {
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+        }
+
+        // 2. ПРОВЕРКА ГЛОБАЛЬНЫХ КОНТЕКСТОВ (Убеждаемся, что данные подгружены)
+        if (typeof POOL_PUBKEY === 'undefined' || typeof USER_STAKING_PDA === 'undefined' || typeof CURRENT_INDEX === 'undefined') {
+            throw new Error("Необходимые данные (POOL_PUBKEY/PDA/INDEX) не определены в контексте.");
+        }
+
+        console.log(`⚙️ Закрытие аккаунта: ${USER_STAKING_PDA.toBase58()} | Индекс: ${CURRENT_INDEX}`);
+
+        // 3. ВЫЗОВ SDK-МЕТОДА
+        await window.performCloseStakingAccount(
+            POOL_PUBKEY, 
+            USER_STAKING_PDA, 
+            CURRENT_INDEX
+        );
+
+        console.log("✨ [UI SUCCESS]: Аккаунт успешно закрыт.");
+        alert("✅ Аккаунт успешно закрыт!");
+
+    } catch (e) {
+        console.error("❌ Handle Close Account Error:", e.message);
+        alert("Ошибка закрытия: " + e.message);
+        
+    } finally {
+        // 4. ВОССТАНОВЛЕНИЕ UI
+        if (btn) {
+            btn.innerText = "CLOSE ACCOUNT";
+            btn.disabled = false;
+        }
+    }
 }
 
 
+    
+
+    
 
 
 
@@ -813,49 +2005,517 @@ if (closeButton) {
 
 
 
+    
+
+
+
+        
+
+   
+
+   
+
+   
+    
+
+       
+// В начале DOMContentLoaded
+window.showNotification = function(message, type = "emerald") {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg text-white font-bold z-[10000] bg-${type}-600 shadow-xl transition-opacity duration-500`;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+};
 
 
 
 
+// ВЫНЕСЕНО ИЗ DOMContentLoaded В ГЛОБАЛЬНУЮ ОБЛАСТЬ
+window.switchView = function(viewId) {
+    const views = [
+        'initStakeView',  'collateralView', 
+        'decollateralizeView', 'depositView', 'claimView', 
+        'unstakeView', 'closeAccountView'
+    ];
 
+    // 1. Скрываем все
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    // 2. Показываем нужный
+    const target = document.getElementById(viewId);
+    if (target) {
+        target.classList.remove('hidden');
+        console.log("Switched to:", viewId);
+    } else {
+        console.error("View not found:", viewId);
+        // Если что-то пошло не так, возвращаем главный экран, чтобы не было пустого экрана
+        const main = document.getElementById('mainStakingView');
+        if (main) main.classList.remove('hidden');
+    }
+};
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // --- 1. ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВИДОВ ---
-    window.switchView = function(viewId) {
-        const views = [
-            'initStakeView', 'mainStakingView', 'collateralView', 
-            'decollateralizeView', 'depositView', 'claimView', 
-            'unstakeView', 'closeAccountView'
-        ];
-        views.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('hidden');
-        });
-        const target = document.getElementById(viewId);
-        if (target) target.classList.remove('hidden');
+    // ... остальной ваш код ...
+
+
+
+    // --- УНИВЕРСАЛЬНАЯ ЛОГИКА НАВИГАЦИИ ---
+    // Убедитесь, что ID кнопок в HTML совпадают с этими (например, backToStakingBtn)
+    const backButtons = {
+        'backToStakingBtn': 'mainStakingView',
+        'backToStakingFromCollateral': 'mainStakingView',
+        'backToStakingFromDecollateralize': 'mainStakingView',
+        'backToStakingFromDeposit': 'mainStakingView',
+        'backToStakingFromClaim': 'mainStakingView',
+        'backToStakingFromUnstake': 'mainStakingView',
+        'backToStakingFromClose': 'mainStakingView'
     };
 
-    // --- 2. ЛОГИКА ИНИЦИАЛИЗАЦИИ (DROPDOWN) ---
+    Object.keys(backButtons).forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', () => switchView(backButtons[btnId]));
+        }
+    });
+
+    // --- ЛОГИКА ТИРОВ (InitStake) ---
+    const tierSelector = document.getElementById('tierSelector');
+    if (tierSelector) {
+        const tierBtns = tierSelector.querySelectorAll('.tier-btn');
+        tierBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tierBtns.forEach(b => b.classList.remove('active-tier', 'border-blue-500'));
+                e.currentTarget.classList.add('active-tier', 'border-blue-500');
+                // ... ваш код обновления UI
+            });
+        });
+    }
+
+
+
+
+    // --- Интегрированная логика initStakeView ---
+    const initStakeContainer = document.getElementById('initStakeView');
+    if (initStakeContainer) {
+        // Навигация
+        const backBtn = document.getElementById('backToStakingBtn');
+        if (backBtn) backBtn.addEventListener('click', () => switchView('mainStakingView'));
+
+        const confirmBtn = document.getElementById('confirmInitBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                console.log("Initialization confirmed");
+                if (typeof handleInitialize === 'function') handleInitialize();
+            });
+        }
+
+        // Логика выбора тиров
+        const tierBtns = document.querySelectorAll('.tier-btn');
+        tierBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const selectedBtn = e.currentTarget;
+                
+                // Сбрасываем все
+                tierBtns.forEach(b => {
+                    b.classList.remove('active-tier', 'border-blue-500', 'bg-blue-500/10');
+                    b.classList.add('border-white/10', 'bg-black/20');
+                });
+                
+                // Активируем одну
+                selectedBtn.classList.add('active-tier', 'border-blue-500', 'bg-blue-500/10');
+                selectedBtn.classList.remove('border-white/10', 'bg-black/20');
+                
+                // Обновление индикаторов
+                const label = selectedBtn.dataset.label;
+                const index = selectedBtn.dataset.index;
+                const days = parseInt(selectedBtn.dataset.tier);
+                
+                document.getElementById('lockupDisplay').innerText = label;
+                document.getElementById('poolIndexDisplay').innerText = `Tier ${label} (Index ${index})`;
+                
+                const progressBar = document.getElementById('lockupProgressBar');
+                if (progressBar) {
+                    progressBar.style.width = Math.min((days / 365) * 100, 100) + '%';
+                }
+            });
+        });
+    }
+
+   
+
+   
+
+   
+    
+
+       
+
+
+
+
+    
+
+           // --- Навигация и логика Collateral ---
+    const backCollateral = document.getElementById('backToStakingFromCollateral');
+    if (backCollateral) {
+        backCollateral.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    // 1. Управление выбором Health Factor (HF)
+    const hfButtons = document.querySelectorAll('.hf-btn');
+    hfButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Сначала сбрасываем стили у всех кнопок HF
+            hfButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/10');
+            });
+            
+            // Добавляем синий стиль выбранной кнопке
+            e.currentTarget.classList.remove('bg-white/10');
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+            
+            console.log("Selected HF:", e.currentTarget.dataset.value);
+        });
+    });
+
+    // 2. Управление процентами (%) и полем ввода
+    const collateralInput = document.getElementById('collateralAmountInput');
+    const walletBalance = 5000.00; // Пример баланса
+
+    const pctButtons = document.querySelectorAll('.pct-btn');
+    pctButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Сбрасываем стили у всех кнопок процентов (25, 50, 75, MAX)
+            pctButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/5');
+            });
+
+            // Добавляем синий стиль выбранной кнопке
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (collateralInput) {
+                const calculatedValue = (walletBalance * (pct / 100)).toFixed(2);
+                collateralInput.value = calculatedValue;
+            }
+            console.log("Selected %:", pct);
+        });
+    });
+
+    // 3. Обработка кнопок действий
+    const claimRewardsBtn = document.getElementById('claimRewardsBtn');
+    if (claimRewardsBtn) {
+        claimRewardsBtn.addEventListener('click', () => {
+            console.log("Claiming all rewards...");
+        });
+    }
+
+    const adjustCollateralBtn = document.getElementById('adjustCollateralBtn');
+    if (adjustCollateralBtn) {
+        adjustCollateralBtn.addEventListener('click', () => {
+            const amount = collateralInput.value;
+            console.log("Adjusting collateral to:", amount);
+        });
+    }
+
+
+
+
+
+
+    
+
+      // --- Деколлатерализация ---
+    const backDecollateral = document.getElementById('backToStakingFromDecollateralize');
+    if (backDecollateral) {
+        backDecollateral.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    // Логика управления процентами и визуалом
+    const decollateralizeInput = document.getElementById('decollateralizeAmountInput');
+    const maxAmountDisplay = document.getElementById('maxAvailableAmount');
+    const safetyWarning = document.getElementById('safetyWarning');
+    const decollateralizePctButtons = document.querySelectorAll('#decollateralizeView .pct-btn');
+
+    pctButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // 1. Сброс стилей всех кнопок процентов
+            pctButtons.forEach(b => {
+                b.classList.remove('bg-emerald-500/20', 'text-emerald-400');
+                b.classList.add('bg-white/5');
+            });
+
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-emerald-500/20', 'text-emerald-400');
+
+            // 3. Расчет суммы
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            const maxVal = parseFloat(maxAmountDisplay.innerText);
+            
+            if (decollateralizeInput) {
+                const calculatedValue = (maxVal * pct).toFixed(2);
+                decollateralizeInput.value = calculatedValue;
+            }
+
+            // 4. Показ предупреждения только при MAX (100%)
+            if (safetyWarning) {
+                if (pct === 1.00) {
+                    safetyWarning.classList.remove('hidden');
+                } else {
+                    safetyWarning.classList.add('hidden');
+                }
+            }
+
+            // Вызов внешней функции, если она есть
+            if (typeof setAmount === 'function') setAmount(pct);
+        });
+    });
+
+    const confirmDecollateralizeBtn = document.getElementById('confirmDecollateralizeBtn');
+    if (confirmDecollateralizeBtn) {
+        confirmDecollateralizeBtn.addEventListener('click', () => {
+            if (typeof handleDecollateralize === 'function') handleDecollateralize();
+        });
+    }
+
+
+
+
+
+
+    
+
+   
+            // --- Депозит ---
+    const backDeposit = document.getElementById('backToStakingFromDeposit');
+    if (backDeposit) {
+        backDeposit.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    // Управление кнопками процентов и полем ввода
+    const depositInput = document.getElementById('depositInput');
+    const depositPctButtons = document.querySelectorAll('.deposit-pct-btn');
+    
+    // Исправлено: вместо жесткого const, используем динамический доступ к глобальному состоянию
+    // Убедитесь, что объект window.appState обновляется после подключения кошелька
+    const getWalletBalance = () => (window.appState && window.appState.walletBalance) ? parseFloat(window.appState.walletBalance) : 0.00;
+
+    depositPctButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // 1. Сбрасываем стили всех кнопок
+            depositPctButtons.forEach(b => {
+                b.classList.remove('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
+                b.classList.add('bg-white/5', 'border-white/5');
+            });
+
+            // 2. Подсвечиваем активную кнопку
+            e.currentTarget.classList.remove('bg-white/5', 'border-white/5');
+            e.currentTarget.classList.add('bg-indigo-500/20', 'text-white', 'border-indigo-500/50');
+
+            // 3. Расчет суммы (используем функцию для получения актуального баланса)
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            const currentBalance = getWalletBalance();
+            
+            if (depositInput) {
+                const calculatedValue = (currentBalance * pct).toFixed(2);
+                depositInput.value = calculatedValue;
+            }
+
+            // Вызов внешней функции, если она есть
+            if (typeof setDepositAmount === 'function') setDepositAmount(pct);
+            console.log("Deposit % selected:", pct, "Balance used:", currentBalance);
+        });
+    });
+
+    const confirmDepositBtn = document.getElementById('confirmDepositBtn');
+    if (confirmDepositBtn) {
+        confirmDepositBtn.addEventListener('click', () => {
+            console.log("Confirming deposit amount:", depositInput ? depositInput.value : "0");
+            if (typeof handleDeposit === 'function') handleDeposit();
+        });
+    }
+
+
+
+
+
+
+
+    
+        // --- Claim ---
+    const backClaim = document.getElementById('backToStakingFromClaim');
+    if (backClaim) {
+        backClaim.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    // Логика выбора тиров
+    const selectAllTiersBtn = document.getElementById('selectAllTiersBtn');
+    if (selectAllTiersBtn) {
+        selectAllTiersBtn.addEventListener('click', () => {
+            const tierButtons = document.querySelectorAll('.tier-btn');
+            tierButtons.forEach(btn => {
+                btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
+                if (typeof toggleTier === 'function') toggleTier(btn.dataset.index);
+            });
+        });
+    }
+
+    document.querySelectorAll('.tier-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('ring-2');
+            e.currentTarget.classList.toggle('ring-indigo-500');
+            e.currentTarget.classList.toggle('border-indigo-500');
+            
+            if (typeof toggleTier === 'function') {
+                toggleTier(e.currentTarget.dataset.index);
+            }
+        });
+    });
+
+    // Логика процентов (%) и поля ввода
+    const claimInput = document.getElementById('claimAmountInput');
+    const totalYield = 125.75; // Значение из твоего HTML
+    // Переименовано в claimPctButtons для исключения конфликта имен
+    const claimPctButtons = document.querySelectorAll('.claim-pct-btn');
+
+    claimPctButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // 1. Сброс стилей всех кнопок процентов
+            claimPctButtons.forEach(b => {
+                b.classList.remove('bg-indigo-500/20', 'text-indigo-400');
+                b.classList.add('bg-white/5');
+            });
+
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-indigo-500/20', 'text-indigo-400');
+
+            // 3. Расчет суммы
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            if (claimInput) {
+                const calculatedValue = (totalYield * pct).toFixed(2);
+                claimInput.value = calculatedValue;
+            }
+            console.log("Setting %:", pct);
+        });
+    });
+
+    const executeClaimBtn = document.getElementById('executeClaimBtn');
+    if (executeClaimBtn) {
+        executeClaimBtn.addEventListener('click', () => {
+            console.log("Executing claim for amount:", claimInput ? claimInput.value : "0");
+            if (typeof executeClaimRewards === 'function') executeClaimRewards();
+        });
+    }
+
+
+
+
+
+
+
+
+    
+
+
+       // --- Unstake ---
+    const backUnstake = document.getElementById('backToStakingFromUnstake');
+    if (backUnstake) {
+        backUnstake.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    // Управление кнопками процентов и полем ввода
+    const unstakeInput = document.getElementById('unstakeAmountInput');
+    const unstakePctButtons = document.querySelectorAll('.unstake-pct-btn');
+    const liquidityAlert = document.getElementById('liquidityAlert');
+
+    unstakePctButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // 1. Сброс стилей всех кнопок
+            unstakePctButtons.forEach(b => {
+                b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+                b.classList.add('bg-white/5');
+            });
+
+            // 2. Подсветка выбранной кнопки
+            e.currentTarget.classList.remove('bg-white/5');
+            e.currentTarget.classList.add('bg-blue-500/20', 'text-blue-400', 'border', 'border-blue-500/50');
+
+            // 3. Расчет суммы (логика процента)
+            const pct = parseFloat(e.currentTarget.dataset.pct);
+            
+            // Если выбрано 100% (MAX), показываем алерт ликвидности
+            if (liquidityAlert) {
+                if (pct === 1.00) {
+                    liquidityAlert.classList.remove('hidden');
+                } else {
+                    liquidityAlert.classList.add('hidden');
+                }
+            }
+
+            // Вызов внешней функции
+            if (typeof setUnstakeAmount === 'function') setUnstakeAmount(pct);
+            console.log("Unstake % selected:", pct);
+        });
+    });
+
+    const executeUnstakeBtn = document.getElementById('executeUnstakeBtn');
+    if (executeUnstakeBtn) {
+        executeUnstakeBtn.addEventListener('click', () => {
+            console.log("Executing unstake amount:", unstakeInput ? unstakeInput.value : "0");
+            if (typeof handleUnstake === 'function') handleUnstake();
+        });
+    }
+
+
+
+    
+
+        // --- Close Account ---
+    // Навигация назад к главному экрану
+    const backClose = document.getElementById('backToStakingFromClose');
+    if (backClose) {
+        backClose.addEventListener('click', () => switchView('mainStakingView'));
+    }
+
+    // Подтверждение перманентного закрытия аккаунта
+    const confirmCloseAccountBtn = document.getElementById('confirmCloseAccountBtn');
+    if (confirmCloseAccountBtn) {
+        confirmCloseAccountBtn.addEventListener('click', () => {
+            console.log("Initiating permanent account closure...");
+            // Проверка на существование функции перед вызовом
+            if (typeof handleCloseAccount === 'function') {
+                handleCloseAccount();
+            } else {
+                console.warn("Function handleCloseAccount is not defined");
+            }
+        });
+    
+    }
+
+
+    
+
+    // --- Дропдаун ---
     const trigger = document.getElementById('dropdownTrigger');
     const list = document.getElementById('dropdownList');
     const icon = document.getElementById('dropdownIcon');
+    const selectedText = document.getElementById('selectedTierText');
+    const initializeBtn = document.getElementById('initializeBtn');
+    const tierInputs = document.querySelectorAll('.tier-input');
+
     if (trigger && list) {
         trigger.addEventListener('click', (e) => {
             list.classList.toggle('open');
@@ -864,151 +2524,117 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 3. ОБЩИЙ ОБРАБОТЧИК КНОПОК (НАВИГАЦИЯ И ДЕЙСТВИЯ) ---
-    // Здесь мы собираем все твои ID из HTML
-    const buttonMap = {
-        'initStakeBtn': () => switchView('initStakeView'),
-        'depositBtn': () => switchView('depositView'),
-        'claimAllBtn': () => switchView('claimView'),
-        'enableCollateralBtn': () => switchView('collateralView'),
-        'disableCollateralBtn': () => switchView('decollateralizeView'),
-        'unstakeBtn': () => switchView('unstakeView'),
-        'closeAccountBtn': () => switchView('closeAccountView'),
-        
-        // Кнопки возврата
-        'backToStakingBtn': () => switchView('mainStakingView'),
-        'backToStakingFromCollateral': () => switchView('mainStakingView'),
-        'backToStakingFromDecollateralize': () => switchView('mainStakingView'),
-        'backToStakingFromDeposit': () => switchView('mainStakingView'),
-        'backToStakingFromClaim': () => switchView('mainStakingView'),
-        'backToStakingFromUnstake': () => switchView('mainStakingView'),
-        'backToStakingFromClose': () => switchView('mainStakingView'),
-
-        // Исполняемые функции (замени на свои названия функций)
-        'confirmInitBtn': () => console.log("Initializing..."),
-        'confirmDepositBtn': () => handleDeposit(),
-        'executeClaimBtn': () => executeClaimRewards(),
-        'executeUnstakeBtn': () => handleUnstake(),
-        'confirmDecollateralizeBtn': () => handleDecollateralize(),
-        'confirmCloseAccountBtn': () => handleCloseAccount()
-    };
-
-    // Автоматическая привязка всех кнопок из списка выше
-    Object.keys(buttonMap).forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.addEventListener('click', buttonMap[id]);
-    });
-
-    // --- 4. ОСТАЛЬНАЯ ЛОГИКА (ПРОЦЕНТЫ, ТИРЫ И Т.Д.) ---
-    // Сюда можно добавить обработку .pct-btn, .tier-btn и т.д.
-    document.querySelectorAll('.pct-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const pct = e.currentTarget.dataset.pct;
-            console.log("Setting %:", pct);
-            // setAmount(pct);
+    tierInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            if (selectedText) {
+                selectedText.innerText = `Selected: ${e.target.value} Days`;
+                selectedText.classList.add('text-white', 'font-bold');
+            }
+            if (initializeBtn) {
+                initializeBtn.innerText = `INITIALIZE STAKE (${e.target.value} Days)`;
+            }
+            if (list) list.classList.remove('open');
+            if (icon) icon.classList.remove('rotated');
         });
     });
-});
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// --- ФУНКЦИЯ УВЕДОМЛЕНИЙ (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ---
-function showNotification(text, color = 'emerald') {
-    const existingNotifications = Array.from(document.querySelectorAll('.toast-notification'));
-    if (existingNotifications.some(n => n.innerText === text)) return;
-
-    const toast = document.createElement('div');
-    toast.className = `toast-notification fixed top-20 right-5 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[9999] border ${color === 'emerald' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-red-900/90 border-red-500 text-red-100'}`;
-    toast.innerText = text;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('connectWalletBtn');
-    const modal = document.getElementById('walletModal');
-    const list = document.getElementById('walletList');
-
-    let currentProvider = null;
-    let availableWallets = [];
-    let isManualDisconnect = false; // Флаг для предотвращения дублей при дисконнекте
-
-    const updateUI = (publicKey = null) => {
-        if (publicKey) {
-            const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-            btn.innerText = `Connected: ${short}`;
-            btn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
-            localStorage.setItem('wallet_connected', publicKey);
-        } else {
-            btn.innerText = "Connect Wallet";
-            btn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
-            localStorage.removeItem('wallet_connected');
+    document.addEventListener('click', (e) => {
+        if (list && trigger && !list.contains(e.target) && !trigger.contains(e.target)) {
+            list.classList.remove('open');
+            icon.classList.remove('rotated');
         }
-    };
+    });
 
-    const scanForWallets = () => {
-        const found = [];
-        const providers = [
-            { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
-            { name: 'Solflare', check: () => window.solflare?.isSolflare ? window.solflare : window.solflare },
-            { name: 'Backpack', check: () => window.backpack },
-            { name: 'Glow', check: () => window.glowSolana },
-            { name: 'Coinbase', check: () => window.coinbaseSolana }
-        ];
+    });
 
-        providers.forEach(p => {
-            try {
-                const provider = p.check();
-                if (provider && !found.find(w => w.name === p.name)) {
-                    found.push({ name: p.name, provider });
-                }
-            } catch (e) { console.error(`Error detecting ${p.name}:`, e); }
-        });
-        return found;
-    };
 
-    const triggerDeepLink = () => {
-        const url = window.location.href;
-        const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
-        showNotification("Opening Wallet App...", "emerald");
-        window.location.href = phantomDeepLink;
-    };
 
-    const getAvailableWallets = () => {
-        return new Promise((resolve) => {
-            const found = scanForWallets();
-            if (found.length > 0) return resolve(found);
 
-            let attempts = 0;
-            const interval = setInterval(() => {
-                attempts++;
-                const foundAgain = scanForWallets();
-                if (foundAgain.length > 0 || attempts >= 40) {
-                    clearInterval(interval);
-                    resolve(foundAgain);
-                }
-            }, 200);
-        });
-    };
 
-    btn.addEventListener('click', async () => {
+
+
+
+
+
+
+
+
+
+
+
+
+  // --- ИЗОЛИРОВАННЫЙ БЛОК CONNECT WALLET ---
+const walletBtn = document.getElementById('connectWalletBtn');
+const walletModal = document.getElementById('walletModal'); 
+const walletList = document.getElementById('walletList');
+
+let currentProvider = null;
+let isManualDisconnect = false;
+let availableWallets = [];
+
+const updateUI = (publicKey = null) => {
+    if (!walletBtn) return;
+    if (publicKey) {
+        const short = publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+        walletBtn.innerText = `Connected: ${short}`;
+        walletBtn.classList.replace('bg-blue-600/10', 'bg-emerald-600/20');
+        localStorage.setItem('wallet_connected', publicKey);
+    } else {
+        walletBtn.innerText = "Connect Wallet";
+        walletBtn.classList.replace('bg-emerald-600/20', 'bg-blue-600/10');
+        localStorage.removeItem('wallet_connected');
+    }
+};
+
+const scanForWallets = () => {
+    const found = [];
+    const providers = [
+        { name: 'Phantom', check: () => window.solana?.isPhantom ? window.solana : window.phantom?.solana },
+        { name: 'Solflare', check: () => window.solflare?.isSolflare ? window.solflare : window.solflare },
+        { name: 'Backpack', check: () => window.backpack },
+        { name: 'Glow', check: () => window.glowSolana },
+        { name: 'Coinbase', check: () => window.coinbaseSolana }
+    ];
+
+    providers.forEach(p => {
+        try {
+            const provider = p.check();
+            if (provider && !found.find(w => w.name === p.name)) {
+                found.push({ name: p.name, provider });
+            }
+        } catch (e) { console.error(`Error detecting ${p.name}:`, e); }
+    });
+    return found;
+};
+
+const triggerDeepLink = () => {
+    const url = window.location.href;
+    const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(url)}`;
+    showNotification("Opening Wallet App...", "emerald");
+    window.location.href = phantomDeepLink;
+};
+
+const getAvailableWallets = () => {
+    return new Promise((resolve) => {
+        const found = scanForWallets();
+        if (found.length > 0) return resolve(found);
+
+        let attempts = 0;
+        const interval = setInterval(() => {
+            attempts++;
+            const foundAgain = scanForWallets();
+            if (foundAgain.length > 0 || attempts >= 40) {
+                clearInterval(interval);
+                resolve(foundAgain);
+            }
+        }, 200);
+    });
+};
+
+
+
+if (walletBtn) {
+    walletBtn.addEventListener('click', async () => {
         if (currentProvider) {
             try { 
                 isManualDisconnect = true; 
@@ -1023,18 +2649,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- ДОБАВЛЕНО: Индикация загрузки ---
-        const originalText = btn.innerText;
-        btn.innerText = "Loading...";
-        btn.disabled = true; // Блокируем кнопку, чтобы не нажимали повторно
-        // -------------------------------------
+        const originalText = walletBtn.innerText;
+        walletBtn.innerText = "Loading...";
+        walletBtn.disabled = true;
 
         availableWallets = await getAvailableWallets();
         
-        // --- ДОБАВЛЕНО: Сброс состояния загрузки ---
-        btn.innerText = originalText;
-        btn.disabled = false;
-        // --------------------------------------------
+        walletBtn.innerText = originalText;
+        walletBtn.disabled = false;
         
         if (availableWallets.length === 0) {
             triggerDeepLink();
@@ -1044,82 +2666,63 @@ document.addEventListener('DOMContentLoaded', () => {
         if (availableWallets.length === 1) {
             connectWallet(availableWallets[0]);
         } else {
-            list.innerHTML = '';
-            availableWallets.forEach(w => {
-                const item = document.createElement('button');
-                item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
-                item.innerText = w.name;
-                item.onclick = () => { connectWallet(w); modal.classList.add('hidden'); };
-                list.appendChild(item);
-            });
-            modal.classList.remove('hidden');
+            if (walletList) {
+                walletList.innerHTML = '';
+                availableWallets.forEach(w => {
+                    const item = document.createElement('button');
+                    item.className = "w-full p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all border border-gray-600 mb-2";
+                    item.innerText = w.name;
+                    item.onclick = () => { connectWallet(w); };
+                    walletList.appendChild(item);
+                });
+                if (walletModal) walletModal.classList.remove('hidden');
+            }
         }
     });
+}
 
-    async function connectWallet(wallet) {
-        try {
-            currentProvider = wallet.provider;
-            const resp = await currentProvider.connect();
-            const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-            updateUI(publicKey);
-            showNotification(`${wallet.name} Connected!`);
-            
-            currentProvider.removeAllListeners?.('disconnect');
-            currentProvider.on('disconnect', () => {
-                // Если мы отключились сами кнопкой, мы уже показали уведомление выше.
-                // Поэтому тут показываем сообщение только если кошелек отвалился САМ (из расширения).
-                if (!isManualDisconnect) {
-                    currentProvider = null;
-                    updateUI(null);
-                    showNotification("Disconnected by wallet", "red");
-                }
-            });
-        } catch (err) {
-            console.error("Connection Error:", err);
-            showNotification("Connection Failed", "red");
+
+async function connectWallet(wallet) {
+    try {
+        currentProvider = wallet.provider;
+        const resp = await currentProvider.connect();
+        const publicKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
+        updateUI(publicKey);
+        showNotification(`${wallet.name} Connected!`);
+        
+        // Исправление: принудительно скрываем окно и возвращаем фокус на окно браузера
+        if (walletModal) {
+            walletModal.classList.add('hidden');
+        }
+        window.focus(); 
+        
+        currentProvider.removeAllListeners?.('disconnect');
+        currentProvider.on('disconnect', () => {
+            if (!isManualDisconnect) {
+                currentProvider = null;
+                updateUI(null);
+                showNotification("Disconnected by wallet", "red");
+            }
+        });
+    } catch (err) {
+        console.error("Connection Error:", err);
+        showNotification("Connection Failed", "red");
+    }
+}
+
+// Авто-коннект при загрузке
+setTimeout(async () => {
+    const savedWallet = localStorage.getItem('wallet_connected');
+    if (savedWallet) {
+        const wallets = await getAvailableWallets();
+        const phantom = wallets.find(w => w.name === 'Phantom');
+        if (phantom) {
+            try {
+                const resp = await phantom.provider.connect({ onlyIfTrusted: true });
+                const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
+                updateUI(pubKey);
+                currentProvider = phantom.provider;
+            } catch (e) { console.log("Auto-connect trust-check skipped."); }
         }
     }
-
-    window.addEventListener('load', async () => {
-        setTimeout(async () => {
-            const savedWallet = localStorage.getItem('wallet_connected');
-            if (savedWallet) {
-                const wallets = await getAvailableWallets();
-                const phantom = wallets.find(w => w.name === 'Phantom');
-                if (phantom) {
-                    try {
-                        const resp = await phantom.provider.connect({ onlyIfTrusted: true });
-                        const pubKey = resp.publicKey ? resp.publicKey.toString() : resp.toString();
-                        updateUI(pubKey);
-                        currentProvider = phantom.provider;
-                    } catch (e) { console.log("Auto-connect trust-check skipped."); }
-                }
-            }
-        }, 1000);
-    });
-});
-
-
-
-
-
-
-
-
-            
-
-
-
-
-
-
-            
-
-
-
-
-
-
-
-            
-
+}, 1000);
