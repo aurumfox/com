@@ -63,10 +63,7 @@ function formatBigInt(value, decimals) {
 
 
 
-
-
-
-// ==========================================
+  // ==========================================
 // 1. ГЛОБАЛЬНЫЙ КОНФИГ (Перенесён на самый верх для 100% синхронизации)
 // ==========================================
 const QUBIT_CONFIG = {
@@ -77,6 +74,7 @@ const QUBIT_CONFIG = {
     mint: new solanaWeb3.PublicKey("EgQptYNBBuhLqgrpfcLzRW5TYTWeSxYpyt6EQKwqVeag"), // Используемый токен
 
     // 2. Личные и верифицированные PDA аккаунты из логов сети
+    pdaAddress: new solanaWeb3.PublicKey("CJ2FV9ixkCMWocSeLCxmm6cJPp3vNDxvp1gWaMMDE8nY"), // Добавленный PDA адрес
     userStakingPda: new solanaWeb3.PublicKey("GqJzDaUm9zHhG4bwfbVc6w3kEVk4EpvaspUQiqWaMPnf"), // Твой личный PDA Стейкинга
     poolOwner: new solanaWeb3.PublicKey("5XSQUXBwxbssvEUBLoerSd7ZVzfuCfHqZQsvkja7xQ7v"), // Владелец из верификации памяти
     stMintAuth: new solanaWeb3.PublicKey("8nHURwqYpz67Rtp2abN33MqU7d765e6WCuPgxyGTraaW"), // Авторизация стейк-минта (равна пулу)
